@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defaultExclude, defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
@@ -16,6 +16,9 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    // webapp/ é o ex-repo linka-webapp (consolidado em 2026-07-23), app
+    // standalone com sua própria suíte de testes — não roda junto da raiz.
+    exclude: [...defaultExclude, 'webapp/**'],
   },
   plugins: [
     react(),
