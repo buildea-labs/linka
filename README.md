@@ -45,7 +45,7 @@ src/types/        Tipagens globais
 src/utils/        Speedtest, diagnóstico, histórico e exportação
 docs/             Documentação técnica e funcional
 webapp/           Ex-repo linka-webapp, consolidado aqui em 2026-07-23 — app
-                  próprio (build/deploy independentes), ver webapp/README.md
+                  próprio, sem deploy automático, ver webapp/README.md
 ```
 
 ## Desenvolvimento
@@ -107,8 +107,8 @@ Projeto funcional em manutenção. Pendências técnicas e regras detalhadas dev
 
 `webapp/` (ex-repo `linka-webapp`) foi consolidado aqui em 2026-07-23 — é um app PWA irmão, com
 build/testes próprios e isolado do lint e da suíte de testes da raiz. CI conectado em
-`.github/workflows/webapp-ci.yml` (dispara só com mudanças em `webapp/**`). Deploy automático
-ainda não conectado — ver `webapp/README.md` e `webapp/docs/release/CI-CD.md`.
+`.github/workflows/webapp-ci.yml` (dispara só com mudanças em `webapp/**`). Sem deploy
+automático — nunca chegou a ir pro ar; ver `webapp/README.md` e `webapp/docs/release/CI-CD.md`.
 
 ## Licença
 

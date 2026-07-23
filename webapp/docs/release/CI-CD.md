@@ -22,17 +22,11 @@ O artefato `dist/` pode ser anexado para inspeção.
 
 ## Release
 
-**Ainda não conectado.** O `release.yml` original tinha um bug: o nome default do projeto
-Cloudflare Pages estava configurado como `linka-speedtest` — o projeto do *outro* app deste
-repo. Conectar sem corrigir isso sobrescreveria o Pages de produção do speedtest. Precisa do
-nome real do projeto Pages do webapp (ou confirmação de que nunca chegou a ser criado) antes de
-ligar o deploy automático.
-
-## Secrets (quando o release for conectado)
-
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_PAGES_PROJECT` (nome do projeto Pages específico do webapp — NÃO reusar o do speedtest)
+Não existe. O `release.yml` original (removido nesta consolidação) nunca chegou a publicar nada
+em produção — tinha um bug de nome de projeto Cloudflare Pages (`linka-speedtest`, o do *outro*
+app deste repo) e nunca foi corrigido. Sem deploy automático por ora; se este app for publicado
+no futuro, criar um workflow novo na raiz (`paths: ['webapp/**']`, mesmo padrão do
+`webapp-ci.yml`) com um projeto Cloudflare Pages próprio — nunca reusar o do speedtest.
 
 ## Fora de Escopo
 
