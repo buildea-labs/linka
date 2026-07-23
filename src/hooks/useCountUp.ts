@@ -86,7 +86,11 @@ export function useCountUp(
   const epsilon = epsilonFor(decimals);
 
   // Mantém uma referência ao valor atual sem virar dependência do efeito.
-  valueRef.current = value;
+  // Sincronizado em effect (não durante o render) — roda antes do efeito de
+  // animação abaixo, na mesma ordem de commit.
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   useEffect(() => {
     // Se o valor renderizado já está dentro do epsilon do target, nada a
@@ -102,6 +106,8 @@ export function useCountUp(
     const hasRaf = typeof requestAnimationFrame === 'function';
     if (!hasRaf) {
       targetRef.current = safeTarget;
+      // Sem RAF (SSR/teste) não há loop de animação pra aplicar o valor depois.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValue(safeTarget);
       return;
     }

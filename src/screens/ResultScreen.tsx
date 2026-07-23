@@ -957,6 +957,9 @@ export function ResultScreen({
             <p className="lk-result__use-header">EXPERIÊNCIA DE USO</p>
             <div className="lk-result__use-divider" />
             {interpreted.useCases.map(({ id, status, blockingFactors }) => {
+              // useCaseGrade é função pura (src/core/useCaseGrade.ts), não hook —
+              // o nome com prefixo "use" engana a regra rules-of-hooks.
+              // eslint-disable-next-line react-hooks/rules-of-hooks
               const grade = useCaseGrade({ id, status, blockingFactors }, result, profile);
               const isPositive = grade === 'A' || grade === 'B';
               const gStyle = gradeStyle(grade);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import './InfoTooltip.css';
 
@@ -65,7 +65,7 @@ export function InfoTooltip({ label, ariaLabel = typeof label === 'string' ? `In
     setPosition(wouldOverflowBottom ? 'above' : 'below');
   }, [open]);
 
-  const id = `lk-tip-${Math.random().toString(36).slice(2, 8)}`;
+  const id = useId();
 
   return (
     <span className="lk-info-tooltip" ref={containerRef}>
