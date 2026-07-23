@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workflow Squad — Ecossistema Linka</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 20px;
+}
+
+/* ──── HEADER ──── */
+.header {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.header-title h1 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #f1f5f9;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+.header-title h2 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin-top: 2px;
+}
+.header-title .sub {
+  font-size: 11px;
+  color: #6366f1;
+  font-weight: 600;
+  margin-top: 6px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.header-right {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.info-box {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.info-box h4 {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+}
+
+.info-box ul { list-style: none; }
+.info-box ul li {
+  color: #94a3b8;
+  font-size: 11px;
+  padding: 2px 0;
+}
+.info-box ul li::before { content: "• "; color: #6366f1; }
+
+.comp-table { width: 100%; }
+.comp-table tr td {
+  padding: 3px 4px;
+  font-size: 11px;
+  color: #94a3b8;
+  vertical-align: top;
+}
+.comp-table tr td:first-child { font-size: 14px; width: 22px; }
+.comp-table tr td:nth-child(2) { color: #f1f5f9; font-weight: 600; white-space: nowrap; width: 90px; }
+
+.arch-flow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.arch-box {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+.arch-box.you { border-color: #6366f1; color: #818cf8; }
+.arch-box.claudete { border-color: #3b82f6; color: #60a5fa; }
+.arch-box.subs { border-color: #22c55e; color: #4ade80; }
+.arch-box.delivery { border-color: #06b6d4; color: #22d3ee; }
+.arch-arrow { color: #475569; font-size: 16px; }
+.feedback-loop {
+  margin-top: 8px;
+  font-size: 10px;
+  color: #6366f1;
+  border-top: 1px dashed #334155;
+  padding-top: 6px;
+  text-align: center;
+}
+
+/* ──── FLUXO PRINCIPAL ──── */
+.section {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.flow-steps {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.step-arrow {
+  color: #475569;
+  font-size: 20px;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.step-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 130px;
+  flex: 1;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.step-card:hover { border-color: #6366f1; }
+
+.step-num {
+  width: 22px;
+  height: 22px;
+  background: #6366f1;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.step-icon { font-size: 22px; margin-bottom: 6px; }
+
+.step-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #f1f5f9;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.step-desc {
+  font-size: 10px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* ──── AGENTS GRID ──── */
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.agent-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  border-top: 4px solid;
+  padding: 12px;
+  transition: transform 0.2s;
+}
+.agent-card:hover { transform: translateY(-2px); }
+
+.agent-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 2px;
+}
+.agent-role {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.agent-card ul { list-style: none; }
+.agent-card ul li {
+  font-size: 10px;
+  color: #94a3b8;
+  padding: 2px 0;
+  border-bottom: 1px solid #1e293b;
+}
+.agent-card ul li::before { content: "• "; color: #475569; }
+.agent-card ul li:last-child { border-bottom: none; }
+
+.agent-footer {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.pill {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+}
+.pill.haiku { color: #f59e0b; border-color: #f59e0b44; }
+.pill.sonnet { color: #818cf8; border-color: #818cf844; }
+.pill.accept { color: #4ade80; border-color: #4ade8044; }
+.pill.plan { color: #60a5fa; border-color: #60a5fa44; }
+.pill.wt { color: #f97316; border-color: #f9731644; }
+.pill.star { color: #ef4444; border-color: #ef444444; }
+
+/* ──── 3 COLUNAS ──── */
+.three-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.specialist-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-left: 3px solid;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.specialist-name { font-size: 12px; font-weight: 700; color: #f1f5f9; margin-bottom: 2px; }
+.specialist-role { font-size: 10px; color: #94a3b8; margin-bottom: 6px; }
+.specialist-card ul { list-style: none; }
+.specialist-card ul li { font-size: 10px; color: #94a3b8; padding: 1px 0; }
+.specialist-card ul li::before { content: "• "; color: #475569; }
+
+.skill-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #334155;
+}
+.skill-item:last-child { border-bottom: none; }
+.skill-name { font-size: 11px; font-weight: 700; color: #818cf8; white-space: nowrap; }
+.skill-desc { font-size: 11px; color: #94a3b8; }
+
+.teams-table { width: 100%; border-collapse: collapse; }
+.teams-table th {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid #334155;
+}
+.teams-table td {
+  font-size: 10px;
+  color: #94a3b8;
+  padding: 5px 8px;
+  border-bottom: 1px solid #1e293b;
+  vertical-align: top;
+}
+.teams-table td:first-child { color: #f1f5f9; font-weight: 600; white-space: nowrap; }
+.teams-table tr:hover td { background: #0f172a; }
+
+.parallel-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.parallel-center {
+  background: #6366f1;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 6px;
+}
+.parallel-agents {
+  display: flex;
+  gap: 8px;
+}
+.parallel-agent {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid;
+}
+
+/* ──── RODAPÉ ──── */
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.footer-box {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 14px;
+}
+.footer-box h4 {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+}
+
+.model-row { margin-bottom: 8px; }
+.model-label {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 3px;
+}
+.model-label.haiku { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b44; }
+.model-label.sonnet { background: #6366f122; color: #818cf8; border: 1px solid #6366f144; }
+.model-desc { font-size: 10px; color: #94a3b8; }
+
+.rule-item {
+  font-size: 11px;
+  color: #94a3b8;
+  padding: 3px 0;
+}
+.rule-item::before { content: "★ "; color: #f59e0b; }
+
+.cycle-flow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.cycle-step {
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+.cycle-arrow { color: #475569; font-size: 14px; }
+.cycle-desc { font-size: 10px; color: #94a3b8; margin-top: 8px; }
+
+.worktree-desc { font-size: 11px; color: #94a3b8; line-height: 1.5; }
+.worktree-icon { font-size: 24px; margin-bottom: 6px; display: block; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ HEADER -->
+<div class="header">
+  <div class="header-title">
+    <h1>WORKFLOW AGILE<br>/ SQUAD</h1>
+    <h2>COM AGENTES DO ECOSSISTEMA LINKA</h2>
+    <div class="sub">Fluxo ponta a ponta de entrega</div>
+  </div>
+
+  <div class="header-right">
+    <div class="info-box">
+      <h4>Princípios do Fluxo</h4>
+      <ul>
+        <li>Entregas incrementais e iterativas</li>
+        <li>Especialistas no que fazem</li>
+        <li>Qualidade antes de considerar pronto</li>
+        <li>Transparência e rastreabilidade</li>
+        <li>Agente certo para cada tarefa</li>
+      </ul>
+    </div>
+
+    <div class="info-box">
+      <h4>Componentes Claude Code</h4>
+      <table class="comp-table">
+        <tr><td>👥</td><td>SUBAGENTS</td><td>Especialistas chamados sob demanda</td></tr>
+        <tr><td>🤝</td><td>AGENT TEAMS</td><td>Trabalho realmente paralelo</td></tr>
+        <tr><td>⚡</td><td>SKILLS</td><td>Rituais e processos repetíveis</td></tr>
+        <tr><td>📄</td><td>CLAUDE.md</td><td>Regras e contexto permanente</td></tr>
+        <tr><td>🌿</td><td>WORKTREES</td><td>Isolamento para trabalho paralelo</td></tr>
+      </table>
+    </div>
+
+    <div class="info-box">
+      <h4>Arquitetura Geral</h4>
+      <div class="arch-flow">
+        <div class="arch-box you">Você</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box claudete">Claudete<br><small style="font-weight:400;font-size:9px">Orquestradora</small></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box subs">Subagentes<br><small style="font-weight:400;font-size:9px">Especialistas</small></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box delivery">Entrega<br><small style="font-weight:400;font-size:9px">com Qualidade</small></div>
+      </div>
+      <div class="feedback-loop">⟵ Feedback e Iteração Contínua ⟵</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ FLUXO PRINCIPAL -->
+<div class="section">
+  <div class="section-title">Fluxo Principal (Passo a Passo)</div>
+  <div class="flow-steps">
+
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-icon">💬</div>
+      <div class="step-title">Solicitação Inicial</div>
+      <div class="step-desc">Você envia a ideia, problema ou melhoria desejada.</div>
+    </div>
+    <div class="step-arrow">→</div>
+
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-icon">🎯</div>
+      <div class="step-title">Refinamento</div>
+      <div class="step-desc">Claudete classifica o tipo (BUGFIX / FEATURE / REVIEW / DOCS / DIAGNÓSTICO) e define direção do produto.</div>
+    </div>
+    <div class="step-arrow">→</div>
+
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-icon">📋</div>
+      <div class="step-title">Plano de Entrega</div>
+      <div class="step-desc">Cláudio quebra em tasks pequenas, mapeia impacto, identifica riscos e define ordem de execução.</div>
+    </div>
+    <div class="step-arrow">→</div>
+
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <div class="step-icon">🔍</div>
+      <div class="step-title">Validação Especializada</div>
+      <div class="step-desc">Otávio valida Android/OEM. Bernardo valida redes/ANATEL. Lia revisa estados visuais antes da implementação.</div>
+    </div>
+    <div class="step-arrow">→</div>
+
+    <div class="step-card">
+      <div class="step-num">5</div>
+      <div class="step-icon">🚀</div>
+      <div class="step-title">Execução das Tasks</div>
+      <div class="step-desc">Camilo (Android) e/ou Renan (PWA) implementam. Marcelo faz buscas e tasks ≤5 arquivos.</div>
+    </div>
+    <div class="step-arrow">→</div>
+
+    <div class="step-card">
+      <div class="step-num">6</div>
+      <div class="step-icon">✅</div>
+      <div class="step-title">Verificação (QA)</div>
+      <div class="step-desc">Gema revisa código, detecta bugs e regressões. Lia revisa visual pós-implementação em paralelo.</div>
+    </div>
+    <div class="step-arrow">→</div>
+
+    <div class="step-card">
+      <div class="step-num">7</div>
+      <div class="step-icon">📦</div>
+      <div class="step-title">Pós-Entrega</div>
+      <div class="step-desc">Nina atualiza versão e CHANGELOG, executa testes E2E. Taisa atualiza docs se necessário.</div>
+    </div>
+    <div class="step-arrow">→</div>
+
+    <div class="step-card">
+      <div class="step-num">8</div>
+      <div class="step-icon">🎁</div>
+      <div class="step-title">Entrega &amp; Feedback</div>
+      <div class="step-desc">Entrega final validada. Você dá feedback. Ciclo recomeça se necessário.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ AGENTES -->
+<div class="section">
+  <div class="section-title">Agentes (Papéis do Squad)</div>
+  <div class="agents-grid">
+
+    <div class="agent-card" style="border-top-color:#3b82f6">
+      <div class="agent-name">Claudete</div>
+      <div class="agent-role">Orquestradora</div>
+      <ul>
+        <li>Classifica tipo de tarefa</li>
+        <li>Define direção do produto</li>
+        <li>Spawna times automaticamente</li>
+        <li>Coordena handoffs</li>
+      </ul>
+      <div class="agent-footer">
+        <span class="pill haiku">Haiku</span>
+        <span class="pill plan">plan</span>
+      </div>
+    </div>
+
+    <div class="agent-card" style="border-top-color:#06b6d4">
+      <div class="agent-name">Cláudio</div>
+      <div class="agent-role">Líder Técnico</div>
+      <ul>
+        <li>Quebra em tasks pequenas</li>
+        <li>Mapeia impacto nos módulos</li>
+        <li>Identifica riscos</li>
+        <li>Define ordem segura</li>
+      </ul>
+      <div class="agent-footer">
+        <span class="pill sonnet">Sonnet</span>
+        <span class="pill plan">plan</span>
+      </div>
+    </div>
+
+    <div class="agent-card" style="border-top-color:#ec4899">
+      <div class="agent-name">Lia</div>
+      <div class="agent-role">UX / UI</div>
+      <ul>
+        <li>Estados visuais MD3</li>
+        <li>Microcopy e acessibilidade</li>
+        <li>Android ↔ PWA consistente</li>
+        <li>Antes E após implementação</li>
+      </ul>
+      <div class="agent-footer">
+        <span class="pill sonnet">Sonnet</span>
+        <span class="pill plan">plan</span>
+      </div>
+    </div>
+
+    <div class="agent-card" style="border-top-color:#ef4444">
+      <div class="agent-name">Camilo</div>
+      <div class="agent-role">Dev Android</div>
+      <ul>
+        <li>Kotlin / Jetpack Compose</li>
+        <li>ViewModel e StateFlow</li>
+        <li>Diagnóstico nativo e IA</li>
+        <li>Delega tasks ao Marcelo</li>
+      </ul>
+      <div class="agent-footer">
+        <span class="pill sonnet">Sonnet</span>
+        <span class="pill accept">acceptEdits</span>
+        <span class="pill wt">worktree</span>
+      </div>
+    </div>
+
+    <div class="agent-card" style="border-top-color:#8b5cf6">
+      <div class="agent-name">Renan</div>
+      <div class="agent-role">Lead PWA</div>
+      <ul>
+        <li>React / TypeScript / Vite</li>
+        <li>Paridade real com Android</li>
+        <li>Limites do navegador</li>
+        <li>Deploy Cloudflare Pages</li>
+      </ul>
+      <div class="agent-footer">
+        <span class="pill sonnet">Sonnet</span>
+        <span class="pill accept">acceptEdits</span>
+        <span class="pill wt">worktree</span>
+      </div>
+    </div>
+
+    <div class="agent-card" style="border-top-color:#22c55e">
+      <div class="agent-name">Gema</div>
+      <div class="agent-role">QA / Revisão</div>
+      <ul>
+        <li>Detecta bugs e regressões</li>
+        <li>Classifica: Crítico/Médio/Menor</li>
+        <li>Valida critérios de aceite</li>
+        <li>Aprova ou reprova entrega</li>
+      </ul>
+      <div class="agent-footer">
+        <span class="pill sonnet">Sonnet</span>
+      </div>
+    </div>
+
+    <div class="agent-card" style="border-top-color:#f97316">
+      <div class="agent-name">Marcelo ★</div>
+      <div class="agent-role">Analista Júnior · chamado por TODOS</div>
+      <ul>
+        <li>Buscas, Grep, Glob, triagem</li>
+        <li>Dev pequeno ≤5 arquivos</li>
+        <li>Obrigatório antes de Grep/Glob</li>
+        <li>Economiza tokens Sonnet</li>
+      </ul>
+      <div class="agent-footer">
+        <span class="pill haiku">Haiku</span>
+        <span class="pill accept">acceptEdits</span>
+        <span class="pill star">★ TODOS</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ 3 COLUNAS -->
+<div class="section">
+  <div class="three-cols">
+
+    <!-- ESPECIALISTAS -->
+    <div>
+      <div class="section-title" style="margin-bottom:12px">Especialistas Transversais</div>
+      <p style="font-size:10px;color:#64748b;margin-bottom:10px">Consultores chamados por domínio específico</p>
+
+      <div class="specialist-card" style="border-left-color:#22c55e">
+        <div class="specialist-name">Otávio</div>
+        <div class="specialist-role">Android / OEM / API Level</div>
+        <ul>
+          <li>OEM quirks (Samsung, Xiaomi, Moto)</li>
+          <li>API levels e restrições Play Store</li>
+          <li>Wi-Fi, DNS, Background service</li>
+          <li>Obrigatório antes de Camilo em tasks críticas</li>
+        </ul>
+      </div>
+
+      <div class="specialist-card" style="border-left-color:#06b6d4">
+        <div class="specialist-name">Bernardo</div>
+        <div class="specialist-role">Redes / ANATEL / ISPs</div>
+        <ul>
+          <li>WiFi 2.4/5/6GHz, Fibra FTTH/GPON</li>
+          <li>4G LTE / 5G NSA/SA, thresholds</li>
+          <li>CGNAT, duplo-NAT, ISPs brasileiros</li>
+          <li>Conforme Resolução ANATEL 614/2013</li>
+        </ul>
+      </div>
+
+      <div class="specialist-card" style="border-left-color:#eab308">
+        <div class="specialist-name">Nina</div>
+        <div class="specialist-role">Pós-entrega · Haiku</div>
+        <ul>
+          <li>Versionamento (Android e PWA)</li>
+          <li>CHANGELOG atualizado</li>
+          <li>Testes E2E de regressão</li>
+          <li>Obrigatória ao final de toda entrega</li>
+        </ul>
+      </div>
+
+      <div class="specialist-card" style="border-left-color:#a78bfa">
+        <div class="specialist-name">Taisa</div>
+        <div class="specialist-role">Documentação Especializada</div>
+        <ul>
+          <li>Docs funcional, técnica e de testes</li>
+          <li>PPT e HTML de especificação</li>
+          <li>Features novas ou mudança arquitetural</li>
+          <li>Diferencia Android de PWA nos docs</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SKILLS -->
+    <div>
+      <div class="section-title" style="margin-bottom:12px">Skills (Rituais e Processos)</div>
+      <p style="font-size:10px;color:#64748b;margin-bottom:10px">Acionadas com /nome — encapsulam fluxos reutilizáveis</p>
+
+      <div class="skill-item"><span class="skill-name">/dev-linka</span><span class="skill-desc">Ponto de entrada — classifica e roteia</span></div>
+      <div class="skill-item"><span class="skill-name">/map-impact</span><span class="skill-desc">Mapeamento antes de feature média/grande</span></div>
+      <div class="skill-item"><span class="skill-name">/design-review</span><span class="skill-desc">Revisão UX/UI e Material Design 3</span></div>
+      <div class="skill-item"><span class="skill-name">/compare-kotlin-pwa</span><span class="skill-desc">Verificar paridade Android ↔ PWA</span></div>
+      <div class="skill-item"><span class="skill-name">/diagnostic-engine</span><span class="skill-desc">Tarefas de diagnóstico e speedtest</span></div>
+      <div class="skill-item"><span class="skill-name">/android-device-rules</span><span class="skill-desc">Regras por API level e OEM quirks</span></div>
+      <div class="skill-item"><span class="skill-name">/anti-overengineering</span><span class="skill-desc">Detectar abstrações desnecessárias</span></div>
+      <div class="skill-item"><span class="skill-name">/linka-release</span><span class="skill-desc">Fluxo completo de release com APK</span></div>
+      <div class="skill-item"><span class="skill-name">/nina-post-delivery</span><span class="skill-desc">Regressão E2E + docs pós-entrega</span></div>
+    </div>
+
+    <!-- TIMES PARALELOS -->
+    <div>
+      <div class="section-title" style="margin-bottom:12px">Execução Paralela (Agent Teams)</div>
+      <p style="font-size:10px;color:#64748b;margin-bottom:10px">Use agent team quando o trabalho for realmente paralelo e independente.</p>
+
+      <table class="teams-table">
+        <tr>
+          <th>Tipo</th>
+          <th>Time spawnad</th>
+        </tr>
+        <tr><td>BUGFIX</td><td>Marcelo → Camilo/Renan → Nina</td></tr>
+        <tr><td>FEATURE Android</td><td>Marcelo + Cláudio + Camilo + Gema + Lia</td></tr>
+        <tr><td>FEATURE PWA</td><td>Marcelo + Cláudio + Renan + Gema + Lia</td></tr>
+        <tr><td>FEATURE PARITY</td><td>Marcelo + Cláudio + Camilo + Renan + Gema + Lia</td></tr>
+        <tr><td>REVIEW / QA</td><td>Marcelo + Gema + Lia</td></tr>
+        <tr><td>DOCS</td><td>Nina + Taisa</td></tr>
+        <tr><td>DIAGNÓSTICO</td><td>Marcelo + Bernardo + Camilo/Renan</td></tr>
+      </table>
+
+      <div class="parallel-diagram">
+        <div class="parallel-center">Claudete (squad-lead)</div>
+        <div style="color:#475569;font-size:18px">↓ ↓ ↓ ↓</div>
+        <div class="parallel-agents">
+          <div class="parallel-agent" style="border-color:#ef4444;color:#ef4444">Camilo</div>
+          <div class="parallel-agent" style="border-color:#8b5cf6;color:#8b5cf6">Renan</div>
+          <div class="parallel-agent" style="border-color:#ec4899;color:#ec4899">Lia</div>
+          <div class="parallel-agent" style="border-color:#22c55e;color:#22c55e">Gema</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ RODAPÉ -->
+<div class="section">
+  <div class="footer-grid">
+
+    <div class="footer-box">
+      <h4>Indicação de Modelos</h4>
+      <div class="model-row">
+        <div class="model-label haiku">Haiku</div>
+        <div class="model-desc"><strong style="color:#f1f5f9">Claudete, Marcelo, Nina</strong><br>Orquestração, buscas, docs leves, QA simples. Mais rápido e barato.</div>
+      </div>
+      <div class="model-row" style="margin-top:10px">
+        <div class="model-label sonnet">Sonnet</div>
+        <div class="model-desc"><strong style="color:#f1f5f9">Cláudio, Camilo, Renan, Gema, Lia, Taisa, Bernardo, Otávio</strong><br>Implementação, reviews, planejamento.</div>
+      </div>
+    </div>
+
+    <div class="footer-box">
+      <h4>Isolamento com Worktrees</h4>
+      <span class="worktree-icon">🌿</span>
+      <p class="worktree-desc">Use worktrees para evitar conflitos de arquivos quando <strong style="color:#f1f5f9">Camilo</strong> e <strong style="color:#f1f5f9">Renan</strong> trabalham em paralelo no mesmo repositório. Cada agente opera na sua branch isolada.</p>
+    </div>
+
+    <div class="footer-box">
+      <h4>Regras de Ouro</h4>
+      <div class="rule-item">Task pequena: SEMPRE passe pelo Marcelo</div>
+      <div class="rule-item">Trabalho paralelo real: use AGENT TEAMS</div>
+      <div class="rule-item">TODOS chamam Marcelo antes de Grep/Glob</div>
+      <div class="rule-item">QA (Gema) e UX (Lia) são obrigatórios</div>
+      <div class="rule-item">Entregas incrementais > grandes saltos</div>
+      <div class="rule-item">Contexto limpo = respostas melhores e baratas</div>
+    </div>
+
+    <div class="footer-box">
+      <h4>Ciclo Contínuo</h4>
+      <div class="cycle-flow">
+        <div class="cycle-step">Planejar</div>
+        <div class="cycle-arrow">→</div>
+        <div class="cycle-step">Implementar</div>
+        <div class="cycle-arrow">→</div>
+        <div class="cycle-step">Verificar</div>
+        <div class="cycle-arrow">→</div>
+        <div class="cycle-step">Revisar</div>
+        <div class="cycle-arrow" style="color:#6366f1">↺</div>
+      </div>
+      <p class="cycle-desc">Cada entrega gera feedback.<br>Cada feedback melhora o próximo ciclo.</p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

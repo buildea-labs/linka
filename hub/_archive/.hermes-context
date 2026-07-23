@@ -1,0 +1,77 @@
+# Hermes Context File for Linka
+
+## Project Roots
+
+- **Android:** `linkaAndroidKotlin/`
+- **PWA:** `linkaSpeedtestPwa/`
+- **Shared:** `CLAUDE.md` (workspace rules, agent definitions, skills)
+- **Memories:** `~/.hermes/memories/` (MEMORY.md = project context, USER.md = squad preferences)
+
+## Automatic File Inclusions
+
+When Hermes starts in this directory, it will automatically load:
+
+```yaml
+context:
+  files:
+    - CLAUDE.md                           # Workspace rules, fluxo oficial, WIP system
+    - linkaAndroidKotlin/docs_ai/ANDROID_FUNCIONAL.md    # Feature overview
+    - linkaAndroidKotlin/docs_ai/ANDROID_TECNICO.md      # Architecture
+    - CHANGELOG.md                        # Release notes
+```
+
+## Key Skills (Local)
+
+Located in `~/.hermes/skills/linka/`:
+
+- `wifi-diagnostic/SKILL.md` — WiFi signal analysis, RSSI thresholds, band recommendations
+- `release-checklist/SKILL.md` — Pre-release QA gate, versioning, changelog
+- *(More to come as Hermes learns patterns)*
+
+## Memory Loaded Automatically
+
+- **MEMORY.md:** Project architecture, modules, constraints, release workflow, known quirks
+- **USER.md:** Squad preferences, communication style, what works/doesn't work, integration with Hermes
+
+## Tools & Commands
+
+```bash
+# Start Hermes CLI in this directory
+hermes chat
+
+# List available skills (should show linka-* skills)
+hermes skills list
+
+# Show memory state
+hermes memory status
+
+# Create new skill
+/linka-<feature> <description>   # Hermes will create ~/
+
+# Check project context
+/codebase-map <area>             # Understanding module structure
+/impact-map <change>             # Before implementing
+```
+
+## Integration Points
+
+1. **Git Workflow:** Hermes observes commit messages and PR reviews → learns patterns
+2. **Task System:** Hermes can read `.claude/tasks/` to understand WIP and priorities
+3. **Skill Evolution:** After each completed task, Hermes auto-creates skills for reuse
+4. **Delegation:** Hermes can spawn subagents for Android + PWA parallel work
+
+## Personality
+
+Hermes in this project should:
+- **Know:** WiFi/4G/FTTH thresholds (ANATEL), Brazilian ISP quirks, team structure
+- **Prefer:** Small, scoped tasks over vague ones; skills over manual workflows
+- **Remember:** Decisions logged in decision-log (not asking again)
+- **Automate:** Release checks, changelog templating, tests
+- **Delegate:** To Camilo (Android), Renan (PWA), Gema (QA), etc.
+
+See `.hermes/memories/USER.md` for full preferences.
+
+---
+
+Generated: 2026-05-22
+Next step: Run `hermes chat` and test `/linka-wifi-diagnostic --help`
