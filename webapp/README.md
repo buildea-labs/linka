@@ -6,9 +6,7 @@ PWA de diagnóstico de conexão para navegador, criada para medir velocidade, in
 > testes próprios — não compartilha nada com a raiz do repo). Era o repo `linka-webapp`.
 >
 > CI conectado em `../.github/workflows/webapp-ci.yml` (lint/test/build, dispara só com mudanças
-> em `webapp/**`). Deploy automático (Cloudflare Pages) ainda não conectado — o workflow original
-> apontava por engano pro projeto Pages do speedtest; precisa do nome real do projeto do webapp
-> antes de religar. Ver `docs/release/CI-CD.md`.
+> em `webapp/**`). Sem deploy automático — nunca chegou a ir pro ar; ver `docs/release/CI-CD.md`.
 
 ## Escopo
 
