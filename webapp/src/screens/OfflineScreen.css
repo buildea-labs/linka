@@ -1,0 +1,48 @@
+.lk-offline {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: var(--bg);
+}
+
+.lk-offline__card {
+  width: min(480px, 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-deep);
+  padding: 18px 16px;
+}
+
+.lk-offline__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
+  background: var(--surface-2);
+}
+
+.lk-offline__title {
+  margin: 12px 0 6px;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.lk-offline__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.lk-offline__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}

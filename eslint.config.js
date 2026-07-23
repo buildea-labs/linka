@@ -6,7 +6,10 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'android/app/build', 'builds', '_android-toolchain']),
+  // webapp/ é o ex-repo linka-webapp, consolidado aqui em 2026-07-23 — app
+  // standalone com seu próprio tsconfig/eslint. Ignorado aqui pra não colidir
+  // com o parser do root (dois tsconfigRootDir candidatos = erro de parsing).
+  globalIgnores(['dist', 'android/app/build', 'builds', '_android-toolchain', 'webapp']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

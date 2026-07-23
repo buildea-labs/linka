@@ -1,0 +1,30 @@
+import type { LocalWifiRawInfo, WifiDiagnosticResult } from './types';
+
+export function getUnavailableLocalWifiRawInfo(
+  platform: LocalWifiRawInfo['platform'] = 'web',
+  overrides?: Partial<Pick<LocalWifiRawInfo, 'permissionStatus'>>,
+): LocalWifiRawInfo {
+  return {
+    available: false,
+    permissionStatus: overrides?.permissionStatus ?? 'unknown',
+    platform,
+  };
+}
+
+export function getUnavailableWifiDiagnosticResult(
+  raw?: Partial<Pick<LocalWifiRawInfo, 'permissionStatus' | 'platform'>>,
+): WifiDiagnosticResult {
+  return {
+    available: false,
+    quality: 'unknown',
+    permissionStatus: raw?.permissionStatus,
+    platform: raw?.platform,
+    title: 'Diagnóstico Wi-Fi indisponível',
+    explanation: 'Não foi possível obter dados do Wi-Fi neste aparelho.',
+    primaryAction: 'Verifique permissões do app ou use o SpeedTest normalmente.',
+    limitations: [
+      'Este recurso não está disponível no PWA.',
+      'Algumas informações dependem de permissões do sistema.',
+    ],
+  };
+}
