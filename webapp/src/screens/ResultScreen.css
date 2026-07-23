@@ -1,0 +1,1197 @@
+.lk-result {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: transparent;
+}
+
+/* Bloco 5 — TopBar System (2026-05): header inline removido; o componente
+   <TopBar> assume o slot superior em position: absolute. O scroll content
+   recebe padding-top zero porque o <PageHeader> "Último teste" assume o
+   topo e já compensa a altura do TopBar internamente.
+
+   Frente B (Large Title, 2026-05): antes existia um sentinel invisível
+   1×1 no topo (.lk-result__sentinel). Substituído pelo <PageHeader>, que
+   agora é também o sentinel do `useScrollHeader` — mesmo padrão das
+   outras telas (Explore, History, Diagnostic, etc.). */
+
+.lk-result__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 32px;
+}
+
+.lk-result__scroll > .lk-page-header {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* ── Banner de contexto (pacote premium 2026-05) ─────────────────────────
+   Linha discreta entre Large Title e bloco PRIMARY: server · loc · isp ·
+   tempo + verdict chip. Tipografia menor que o resto da tela — banner é
+   "metadado", não conteúdo. Flex em linha única que faz wrap em viewports
+   estreitas se a string ficar gigante. */
+
+.lk-result__context-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0 12px;
+}
+
+/* `.lk-result__context-bar--verdict-only` removido no refactor 2026-05.
+   A variante existia para alinhar o verdict-chip à direita quando o
+   banner não tinha peças de contexto. Sem chip flutuante (verdict virou
+   ribbon do card unificado), o banner inteiro some quando não há peças. */
+
+.lk-result__context-bar-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-2);
+  min-width: 0;
+}
+
+.lk-result__context-bar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.lk-result__context-bar-sep {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+@media (min-width: 600px) {
+  .lk-result__context-bar-meta {
+    font-size: 12px;
+  }
+}
+
+/* Verdict chip (pacote premium 2026-05) — REMOVIDO no refactor 2026-05.
+   O "carimbo" qualitativo virou ribbon colorido de 3px no topo do
+   `.lk-result__test-card` (ver mais abaixo). Texto continua acessível
+   via `aria-label` + `<span class="sr-only">` no card unificado. */
+
+/* Utility sr-only — usado pelo `.lk-result__test-card` para expor o
+   verdict (ex.: "Boa", "Lenta") a tecnologias assistivas sem ocupar
+   espaço visual. Padrão clássico (clip + width 1px). Mantido local pois
+   nenhum CSS global do projeto define esta utility ainda. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  white-space: nowrap;
+}
+
+/* ── Card unificado de teste (refactor 2026-05) ─────────────────────────
+   Container que envolve PRIMARY + SECONDARY + USE CASES + WI-FI numa
+   peça visual única. Ribbon de 3px no topo (border-top) colore segundo
+   `--ribbon-color` (custom property setada inline a partir de
+   `qualityRibbonColor(interpreted.quality)`). Quando `--ribbon-color`
+   não foi setada, cai pra `var(--border)` (ribbon "neutro" — não
+   acontece no fluxo normal mas é fallback seguro). */
+.lk-result__test-card {
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--ribbon-color, var(--border));
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.lk-result__diag-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px 10px;
+}
+
+.lk-result__diag-summary-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--color-good-bg);
+  border: 1px solid var(--color-good-border);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.lk-result__diag-summary-copy {
+  min-width: 0;
+}
+
+.lk-result__diag-summary-title {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text);
+}
+
+.lk-result__diag-summary-text {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.lk-result__diag-tags {
+  padding: 0 16px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lk-result__diag-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+  background: var(--color-good-bg);
+  border: 1px solid var(--color-good-border);
+}
+
+/* ── Bloco PRIMARY — Download e Upload em fonte enorme ─────────────────
+   Hierarquia visual nova (2026-05): as duas métricas principais (banda)
+   ficam com peso máximo. Sem badge de grade por métrica — as grades
+   migraram para os use cases. */
+
+.lk-result__primary-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 14px 16px;
+  /* Refactor 2026-05 (card unificado): este bloco vive dentro de
+     `.lk-result__test-card`. Background/border/radius/margin saíram para
+     o container externo. Como é o PRIMEIRO filho do card, NÃO ganha
+     hairline `border-top` (ribbon do card já cumpre o papel de "topo"). */
+}
+
+.lk-result__primary-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lk-result__primary-cell-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.lk-result__primary-cell-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
+}
+
+.lk-result__primary-cell-unit {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+/* ── Plano vs entregue (pacote premium 2026-05) ──────────────────────────
+   Substitui a unit-line quando o usuário cadastrou velocidade contratada.
+   Mostra `/ Y Mbps · Z%` em fonte menor logo abaixo do hero number. O
+   percentual fica em peso 600 / cor `--text-2` (lê primeiro o número
+   absoluto, depois o ratio). Sem cap em 100% — se a entrega ultrapassa
+   o contratado (ex.: rajada > plano), exibe normalmente (`102%`). */
+.lk-result__primary-cell-plan {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-3);
+}
+
+.lk-result__primary-cell-plan-frac {
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.lk-result__primary-cell-plan-sep {
+  color: var(--text-3);
+}
+
+.lk-result__primary-cell-plan-pct {
+  font-weight: 600;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 600px) {
+  .lk-result__primary-cell-plan {
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 600px) {
+  .lk-result__primary-cell-value {
+    font-size: 56px;
+  }
+}
+
+/* ── Bloco SECONDARY — Resposta, Oscilação, Falhas ─────────────────────
+   Reduzido (2026-05): bloco secundário passou a parecer "info de rodapé"
+   do primary (Download/Upload). Menor peso, sem fundo elevado, fontes
+   mais discretas.
+
+   Re-ajuste 2026-05 (frente A): valores ainda estavam grandes demais
+   (18-20px) frente à linha de use cases (chip 8.5px, label 9px). O bloco
+   passa agora a ter a MESMA proporção visual da linha de use cases:
+   value 14-15px peso 500, label 9-10px peso 600 uppercase letter-spacing
+   0.08em (idêntico ao label dos use cases), unit 10px. Vira info de
+   rodapé compacta — não compete com primary, casa com use-row. */
+
+.lk-result__secondary-block {
+  display: grid;
+  /* DNS feature (2026-05, Fase A): grid passou de 3 para 4 colunas com a
+     adição da cell "DNS". Em mobile 375px isso entrega ~80px por cell
+     (descontando padding/gap), suficiente para "<NN ms>" — ainda assim,
+     o value font foi reduzido de 14→13px e a label é encurtada para
+     compensar o aperto. Em ≥600px o value volta a 15px (regra abaixo). */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 10px 16px 14px;
+  /* Refactor 2026-05 (card unificado): bg/border/radius/margin saíram —
+     este bloco vive dentro de `.lk-result__test-card`. Hairline
+     `border-top` separa visualmente da seção PRIMARY acima. */
+  border-top: 1px solid var(--border-subtle);
+}
+
+.lk-result__secondary-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Variante clicável (cell DNS, atalho 2026-05): mantém o layout idêntico
+   às outras cells — só sinaliza interatividade via cursor + leve
+   destaque do label no hover/focus. Sem box-shadow (regra do projeto).
+   A11y 2026-05: virou `<button>` real; reset de aparência default para
+   casar com as demais cells (`--btn`). */
+.lk-result__secondary-cell--clickable {
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background var(--t-fast);
+}
+
+.lk-result__secondary-cell--btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.lk-result__secondary-cell--clickable:hover .lk-result__secondary-cell-label,
+.lk-result__secondary-cell--clickable:focus-visible .lk-result__secondary-cell-label {
+  color: var(--accent);
+}
+
+.lk-result__secondary-cell--clickable:focus-visible {
+  background: var(--accent-tint);
+}
+
+.lk-result__secondary-cell-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.lk-result__secondary-cell-value {
+  font-family: var(--font-display);
+  font-weight: 500;
+  /* Aumentado de 13px para 14px para melhor legibilidade no mobile. */
+  font-size: 14px;
+  line-height: 1.1;
+  letter-spacing: -0.005em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.lk-result__secondary-cell-unit {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+  margin-left: 2px;
+}
+
+/* Tag "estimado" (2026-05) — sub-label discreto na cell de Falhas
+   quando packet loss não foi medido nativamente. Cor `--text-3` para
+   ficar perceptível sem competir com o valor; tamanho 9px, sem
+   uppercase (a label-mãe já é uppercase). */
+.lk-result__secondary-cell-tag {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: lowercase;
+  letter-spacing: 0;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+@media (min-width: 600px) {
+  .lk-result__secondary-cell-value {
+    font-size: 16px;
+  }
+}
+
+/* ── Grade circle (alinhamento Kotlin: ResultadoVelocidadeScreen) ───── */
+
+.lk-result__grade-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px 16px;
+  gap: 10px;
+}
+
+.lk-result__grade-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lk-result__grade-letter {
+  font-family: var(--font-display);
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.lk-result__grade-verdict {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin: 0;
+}
+
+/* ── Use cases list (alinhamento Kotlin) ─────────────────────────────── */
+
+.lk-result__use-list {
+  padding: 14px 16px 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.lk-result__use-header {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin: 0 0 8px;
+}
+
+.lk-result__use-focus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.lk-result__use-focus-chip {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.lk-result__use-focus-chip.is-active {
+  border-color: var(--accent-border);
+  background: var(--accent-tint);
+  color: var(--text);
+}
+
+.lk-result__use-focus-summary {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.lk-result__use-divider {
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+.lk-result__use-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.lk-result__use-icon-wrap {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lk-result__use-lbl {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+
+.lk-result__use-reason {
+  display: block;
+  margin-top: 2px;
+  max-width: 210px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
+.lk-result__use-badge {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* W5-B — Estado positivo nos use cases (check verde + "Adequada") */
+.lk-result__use-ok {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* W5-B — Nota sobre jitter ao final da seção de uso */
+.lk-result__use-jitter-note {
+  margin: 8px 0 4px;
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.4;
+  font-style: italic;
+}
+
+.lk-result__context-insight {
+  margin: 2px 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.lk-result__context-insight-kicker {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+.lk-result__context-insight-line {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.lk-result__context-insight-line + .lk-result__context-insight-line {
+  margin-top: 4px;
+}
+
+/* W5-A — Card RQUAL Anatel */
+.lk-result__rqual {
+  margin: 0 16px 8px;
+  border-radius: 12px;
+  border: 1px solid;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lk-result__rqual-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lk-result__rqual-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lk-result__rqual-kicker {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin: 0;
+}
+
+.lk-result__rqual-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lk-result__rqual-status-label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lk-result__rqual-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.lk-result__rqual-breakdown-sep {
+  color: var(--text-3);
+}
+
+.lk-result__rqual-conclusion {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* ── Confianca da medicao (issue #12, 2026-05) ─────────────────────── */
+.lk-result__confidence {
+  margin: 0 16px 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+}
+
+.lk-result__confidence--high {
+  border-color: var(--color-good-border);
+  background: var(--color-good-bg);
+}
+
+.lk-result__confidence--medium {
+  border-color: var(--color-warn-border);
+  background: var(--color-warn-bg);
+}
+
+.lk-result__confidence--low {
+  border-color: var(--color-bad-border);
+  background: var(--color-bad-bg);
+}
+
+.lk-result__confidence-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.lk-result__confidence-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+.lk-result__confidence-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.lk-result__confidence-reason {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.lk-result__confidence-next {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.lk-result__next-test {
+  margin: 0 16px 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+}
+
+.lk-result__next-test-kicker {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+.lk-result__next-test-text {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.lk-result__next-test-btn {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Secondary details ───────────────────────────── */
+
+.lk-result__details {
+  margin-bottom: 14px;
+}
+
+/* ── Advanced section ────────────────────────────── */
+
+.lk-result__advanced {
+  margin-bottom: 20px;
+}
+
+.lk-result__advanced-label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+
+.lk-result__dns-disclaimer {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.4;
+}
+
+/* ── Mais detalhes (refator drag-to-resize 2026-05) ──────────────────────
+   Section que agrupa as 3 rows clicáveis (Avançado / Modo Gamer / DNS).
+   Cada row abre um bottom sheet dedicado (AdvancedSheet, GamerSheet,
+   DNSGuideSheet). O conteúdo (que antes era inline em accordions) vive
+   nas sheets — aqui ficam só o kicker da section e a margem.
+
+   Os estilos antigos dos accordion bodies (.lk-result__advanced-*,
+   .lk-result__gamer-*, .lk-result__dns-bench-*, .lk-result__accordion-empty)
+   foram removidos junto com os componentes correspondentes — o conteúdo
+   migrou pra `features/result-detail/` e `features/dns/`. */
+
+.lk-result__more {
+  margin-bottom: 20px;
+}
+
+.lk-result__more-label {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+/* ── Tools list (atalho residual para Explorar) ───────────────────────── */
+
+.lk-result__tools {
+  margin-bottom: 20px;
+}
+
+.lk-result__tools-label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+/* ── IOSList trailing values (advanced / DNS) ────── */
+
+.lk-result__metric {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.lk-result__metric-sub {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.lk-result__metric-sub--truncate {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ── Footer ──────────────────────────────────────── */
+
+.lk-result__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.lk-result__retry {
+  font-family: var(--font-display);
+  width: 100%;
+  height: 48px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius);
+}
+
+.lk-result__footer-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+}
+
+.lk-result__share-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  padding: 12px;
+}
+
+.lk-result__share-card--technical {
+  background: var(--surface-deep);
+}
+
+.lk-result__share-card-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.lk-result__share-card-sub {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-3);
+}
+
+.lk-result__share-card-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.lk-result__share-card-check input {
+  accent-color: var(--accent);
+}
+
+/* ── Combined Diagnosis ─────────────────────────────────────────────── */
+
+.lk-result__combined {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-deep);
+  padding: 14px;
+  margin-bottom: 14px;
+  /* Glow controlado por `--diag-glow-color` (set inline a partir da
+     severidade agregada via `aggregateDiagnosisSeverity`). Healthy → verde,
+     warn → amarelo, fail → vermelho. Quando a var não foi setada, fallback
+     `transparent` deixa o glow invisível (estado neutro de fallback). A
+     animação `lk-result-diag-glow` (mais abaixo) faz o pulse em volta
+     dessa mesma cor — em runtimes com reduced-motion, o glow vira estático
+     mas mantém a cor. Aumentado de 24px para 32px para melhor destaque. */
+  box-shadow: 0 0 32px var(--diag-glow-color, transparent);
+}
+
+.lk-result__combined-kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+
+.lk-result__combined-title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.lk-result__combined-action {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-border);
+}
+
+.lk-result__combined-action span {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lk-result__combined-action strong {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* DNS feature (2026-05, Fase B): variante secundária para a recomendação
+   inteligente de troca de DNS. Empilhada abaixo do primaryAction com
+   margem; mesmo padrão visual mas levemente mais discreta (sem
+   reaproveitar o tint principal — usa um neutro). */
+.lk-result__combined-action--secondary {
+  margin-top: 8px;
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.lk-result__combined-action--secondary span {
+  color: var(--text-3);
+}
+
+/* ── Diagnóstico — estado HEALTHY (refator 2026-05) ──────────────────────
+   Renderizado quando `combined.cause === 'healthy'` E não há itens warn/
+   fail por métrica. Layout único centralizado: ícone check verde + título
+   grande "Tudo certo com sua rede". Sem subcards, sem ação imperativa —
+   a ausência de próxima ação É a mensagem.
+
+   Refator 2026-05 (glow por severidade): box-shadow estático específico
+   foi removido. O glow agora é controlado por `--diag-glow-color` (var
+   inline setada no TSX com base na severidade agregada do diagnóstico).
+   A regra base `.lk-result__combined` aplica box-shadow + animation com
+   essa var; aqui só fica o layout/centralização e a borda verde
+   distintiva do estado saudável. O `border-color` permanece tingido para
+   reforço visual além do glow (warn/fail mantêm a borda neutra padrão). */
+.lk-result__combined--healthy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 28px 16px;
+  text-align: center;
+  border-color: var(--color-good-border);
+}
+
+.lk-result__combined-check-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Drop-shadow do ícone segue acoplado ao success-glow (este card só
+     renderiza no estado healthy, então a cor é fixa aqui — não usa
+     `--diag-glow-color` porque o ícone só existe nesse branch). */
+  filter: drop-shadow(0 0 12px var(--success-glow));
+}
+
+.lk-result__combined-healthy-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+/* Pulse do glow do card de Diagnóstico (refator 2026-05). Definido aqui
+   para ficar perto do estado healthy; a regra `@media` que ATIVA o pulse
+   está mais abaixo (após as declarações de `lk-fade-up` do stagger) para
+   garantir que o shorthand combinado vença na cascata sobre o fade-up
+   base. Healthy → verde, warn → amarelo, fail → vermelho — só a cor (via
+   `--diag-glow-color`) muda entre estados; o range (24→32px) e o tempo
+   (4s) são iguais. Em runtimes com reduced-motion, o pulse é desligado
+   pelo bloco `prefers-reduced-motion: reduce` mais abaixo, mas o glow
+   estático (box-shadow na regra base de `.lk-result__combined`)
+   permanece — degradação graciosa. */
+@keyframes lk-result-diag-glow {
+  0%, 100% { box-shadow: 0 0 32px var(--diag-glow-color, transparent); }
+  50%      { box-shadow: 0 0 40px var(--diag-glow-color, transparent); }
+}
+
+/* ── Diagnóstico — estado COM AÇÃO (refator 2026-05) ────────────────────
+   Lista compacta `[ícone] [problema] → [ação]`. Cada linha tem hairline
+   inferior (exceto a última) e um quadradinho colorido com o ícone do
+   problema. Tipografia menor que `.lk-result__combined-action` antigo —
+   é uma lista, não um destaque. */
+.lk-result__combined-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lk-result__combined-primary {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-tint);
+}
+
+.lk-result__combined-primary-kicker {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-soft);
+}
+
+.lk-result__combined-primary-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.lk-result__combined-primary-copy {
+  min-width: 0;
+}
+
+.lk-result__combined-primary-problem,
+.lk-result__combined-primary-action {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.lk-result__combined-primary-problem {
+  color: var(--text-2);
+}
+
+.lk-result__combined-primary-action {
+  margin-top: 2px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.lk-result__combined-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.lk-result__combined-item:first-child {
+  border-top: none;
+  padding-top: 6px;
+}
+
+.lk-result__combined-item-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lk-result__combined-item-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.lk-result__combined-item-problem {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lk-result__combined-item-arrow {
+  color: var(--text-3);
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.lk-result__combined-item-action {
+  color: var(--text-2);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.lk-result__combined-more {
+  all: unset;
+  cursor: pointer;
+  display: inline-block;
+  margin-top: 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+}
+
+.lk-result__combined-more:hover {
+  text-decoration: underline;
+}
+
+/* ── Stagger fade-in (pacote premium 2026-05, refeito 2026-05) ──────────
+   CSS-only. Cada bloco principal do scroll content entra com fade + leve
+   subida (8px → 0). Delays escalonados criam a percepção de "construção"
+   da tela em vez de surgir tudo de uma vez. `animation-fill-mode:
+   backwards` força o estado inicial a valer durante o delay (sem flash
+   da posição final). Easing `cubic-bezier(0.2, 0.7, 0.2, 1)` (saída
+   suave). Respeita `prefers-reduced-motion: reduce`.
+
+   Refactor 2026-05 (card unificado): os 4 blocos de medição
+   (primary/secondary/use-row/wifi) viraram seções internas de um único
+   `.lk-result__test-card`. Antes cada bloco animava com seu próprio
+   delay (120/180/240/300ms); agora o CARD INTEIRO anima como peça única
+   com delay 120ms, e o WifiSignalCard interno NÃO anima individualmente
+   (ele é parte do card e segue a animação do container). */
+
+@keyframes lk-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lk-result__scroll > .lk-page-header,
+.lk-result__context-bar,
+.lk-result__test-card,
+.lk-result__combined,
+.lk-result__more,
+.lk-result__tools,
+.lk-result__footer {
+  animation: lk-fade-up 320ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.lk-result__scroll > .lk-page-header { animation-delay:   0ms; }
+.lk-result__context-bar              { animation-delay:  60ms; }
+.lk-result__test-card                { animation-delay: 120ms; }
+.lk-result__combined                 { animation-delay: 240ms; }
+.lk-result__more                     { animation-delay: 300ms; }
+.lk-result__tools                    { animation-delay: 360ms; }
+.lk-result__footer                   { animation-delay: 360ms; }
+
+/* Override do `.lk-result__combined`: shorthand multi-valor combinando
+   o fade-up one-shot com o pulse infinito do glow (`lk-result-diag-glow`).
+   Precisa vir DEPOIS das declarações de `animation` acima para vencer a
+   cascata (mesma especificidade — só fonte de ordem decide). O delay do
+   fade-up está inline (240ms) porque o shorthand reseta os longhands.
+   Reduced-motion mata as duas animações pelo `!important` mais abaixo. */
+@media (prefers-reduced-motion: no-preference) {
+  .lk-result__combined {
+    animation:
+      lk-fade-up 320ms cubic-bezier(0.2, 0.7, 0.2, 1) 240ms backwards,
+      lk-result-diag-glow 4s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-result__scroll > .lk-page-header,
+  .lk-result__context-bar,
+  .lk-result__test-card,
+  .lk-result__combined,
+  .lk-result__more,
+  .lk-result__tools,
+  .lk-result__footer {
+    animation: none !important;
+  }
+}

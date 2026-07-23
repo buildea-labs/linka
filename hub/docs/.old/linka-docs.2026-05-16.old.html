@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linka Documentation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0D0D1A;
+      --bg-light: #1A1A1A;
+      --surface: #1A0B2E;
+      --surface-light: #2D2D38;
+      --card: #1E1130;
+      --text: #F3F4F6;
+      --text-2: #9CA3AF;
+      --border: #2A2A35;
+      --accent: #6C2BFF;
+      --accent-soft: #9B7FFF;
+      --success: #34D399;
+      --warning: #FBBF24;
+      --error: #FF4D4F;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      width: 280px;
+      height: 100vh;
+      background-color: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 24px 16px;
+      font-size: 14px;
+    }
+
+    .sidebar h2 {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin: 20px 0 12px 0;
+      letter-spacing: 0.8px;
+      font-weight: 600;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 8px 12px;
+      margin: 4px 0;
+      color: var(--text-2);
+      text-decoration: none;
+      border-radius: 6px;
+      transition: all 0.2s;
+      border-left: 2px solid transparent;
+    }
+
+    .sidebar a:hover {
+      background-color: var(--card);
+      color: var(--accent);
+      border-left-color: var(--accent);
+    }
+
+    .sidebar a.active {
+      color: var(--accent);
+      background-color: var(--card);
+      border-left-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 48px 64px;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .section > p:first-of-type {
+      color: var(--text-2);
+      margin-bottom: 32px;
+      font-size: 15px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin: 32px 0 16px 0;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 16px;
+      margin: 20px 0 12px 0;
+      color: var(--accent-soft);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      background-color: var(--card);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th {
+      background-color: var(--surface);
+      color: var(--accent);
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover {
+      background-color: var(--surface);
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      margin-right: 8px;
+      vertical-align: middle;
+      border: 1px solid var(--border);
+    }
+
+    ul, ol {
+      margin-left: 24px;
+      margin-bottom: 16px;
+    }
+
+    li {
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .color-row {
+      display: flex;
+      align-items: center;
+      margin: 12px 0;
+      padding: 12px;
+      background-color: var(--card);
+      border-radius: 6px;
+    }
+
+    .color-code {
+      font-family: 'Courier New', monospace;
+      color: var(--warning);
+      margin-left: auto;
+      font-size: 13px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .badge-android {
+      background-color: var(--surface);
+      color: var(--accent);
+    }
+
+    .badge-pwa {
+      background-color: var(--surface);
+      color: var(--success);
+    }
+
+    @media (max-width: 1024px) {
+      .main {
+        padding: 32px 32px;
+      }
+
+      .sidebar {
+        width: 200px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .main {
+        padding: 24px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="sidebar">
+      <h2>Visão Geral</h2>
+      <a href="#visao-geral" class="nav-link active">O que é Linka</a>
+
+      <h2>Android</h2>
+      <a href="#android-features" class="nav-link">Telas (14)</a>
+      <a href="#android-components" class="nav-link">Componentes (25)</a>
+
+      <h2>PWA</h2>
+      <a href="#pwa-features" class="nav-link">Telas (17)</a>
+      <a href="#pwa-components" class="nav-link">Componentes (27)</a>
+
+      <h2>Design</h2>
+      <a href="#design-system" class="nav-link">Tokens & Cores</a>
+      <a href="#tipografia" class="nav-link">Tipografia</a>
+      <a href="#espaçamento" class="nav-link">Espaçamento</a>
+
+      <h2>Técnico</h2>
+      <a href="#arquitetura-android" class="nav-link">Arquitetura Android</a>
+      <a href="#arquitetura-pwa" class="nav-link">Arquitetura PWA</a>
+      <a href="#monitoramento" class="nav-link">Monitoramento Passivo</a>
+      <a href="#diagnostico-ia" class="nav-link">Diagnóstico IA</a>
+    </nav>
+
+    <main class="main">
+      <!-- SEÇÃO 1: Visão Geral -->
+      <section id="visao-geral" class="section active">
+        <h1>Linka — Diagnóstico de Internet Doméstica</h1>
+        <p>App nativo Android + PWA para medir velocidade, Wi-Fi, DNS e diagnóstico assistido por IA.</p>
+
+        <h2>Versões Ativas</h2>
+        <table>
+          <tr>
+            <th>Plataforma</th>
+            <th>Versão</th>
+            <th>Status</th>
+          </tr>
+          <tr>
+            <td><span class="badge badge-android">Android</span></td>
+            <td>v0.6.3</td>
+            <td>✓ Ativo (16 módulos)</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-pwa">PWA</span></td>
+            <td>v1.0.0</td>
+            <td>✓ Ativo (React + Vite)</td>
+          </tr>
+        </table>
+
+        <h2>Stack Técnico</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 20px 0;">
+          <div style="background-color: var(--card); padding: 16px; border-radius: 8px;">
+            <h3>Android</h3>
+            <ul>
+              <li>Kotlin + Jetpack Compose</li>
+              <li>Material Design 3</li>
+              <li>MVVM + Coroutines</li>
+              <li>Room + WorkManager</li>
+            </ul>
+          </div>
+          <div style="background-color: var(--card); padding: 16px; border-radius: 8px;">
+            <h3>PWA</h3>
+            <ul>
+              <li>React 18 + TypeScript</li>
+              <li>Vite + Tailwind CSS</li>
+              <li>Cloudflare Pages</li>
+              <li>LocalStorage + IndexedDB</li>
+            </ul>
+          </div>
+        </div>
+
+        <h2>Funcionalidades Principais</h2>
+        <ul>
+          <li><strong>SpeedTest:</strong> Mede DL, UL, latência, jitter, perda de pacotes</li>
+          <li><strong>Wi-Fi Scan:</strong> Analisa redes, força sinal, canais</li>
+          <li><strong>DNS Benchmark:</strong> Testa resolvedores</li>
+          <li><strong>Diagnóstico IA (Orbit):</strong> Chat inteligente com recomendações</li>
+          <li><strong>Monitoramento Passivo (LinkaPulse):</strong> Testa a cada 30 min em background</li>
+          <li><strong>Histórico:</strong> Salva testes, exporta PDF</li>
+        </ul>
+      </section>
+
+      <!-- SEÇÃO 2: Telas Android -->
+      <section id="android-features" class="section">
+        <h1>Telas Android (14)</h1>
+        <p>Navegação em `:featureX` módulos + `:app` telas transversais.</p>
+
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Tela</th>
+            <th>Módulo</th>
+            <th>Propósito</th>
+          </tr>
+          <tr><td>1</td><td>Home</td><td>:featureHome</td><td>Visão geral status</td></tr>
+          <tr><td>2</td><td>SpeedTest</td><td>:featureSpeedtest</td><td>Execução teste</td></tr>
+          <tr><td>3</td><td>Resultado Velocidade</td><td>:featureSpeedtest</td><td>Exibição DL/UL/lat</td></tr>
+          <tr><td>4</td><td>Sinal Wi-Fi</td><td>:featureWifi</td><td>Análise redes</td></tr>
+          <tr><td>5</td><td>Dispositivos</td><td>:featureDevices</td><td>Scan rede</td></tr>
+          <tr><td>6</td><td>DNS</td><td>:featureDns</td><td>Benchmark resolvedores</td></tr>
+          <tr><td>7</td><td>Diagnóstico</td><td>:featureDiagnostico</td><td>Guia diagnóstico</td></tr>
+          <tr><td>8</td><td>Fibra</td><td>:featureFibra</td><td>Info fibra ótica</td></tr>
+          <tr><td>9</td><td>Histórico</td><td>:featureHistory</td><td>Lista testes passados</td></tr>
+          <tr><td>10</td><td>Ajustes</td><td>:featureSettings</td><td>Configurações app</td></tr>
+          <tr><td>11</td><td>Laudo</td><td>:app</td><td>Relatório técnico</td></tr>
+          <tr><td>12</td><td>Orbit (IA)</td><td>:featureDiagnostico</td><td>Chat com IA</td></tr>
+          <tr><td>13</td><td>LinkaPulse</td><td>:app</td><td>Monitoramento passivo</td></tr>
+          <tr><td>14</td><td>Monitoramento Passivo Config</td><td>:app</td><td>Setup background</td></tr>
+        </table>
+      </section>
+
+      <!-- SEÇÃO 3: Telas PWA -->
+      <section id="pwa-features" class="section">
+        <h1>Telas PWA (17)</h1>
+        <p>React Router v6, navegação via BottomNavBar (Home, History, Explore, Pulse).</p>
+
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Tela</th>
+            <th>Rota</th>
+            <th>Propósito</th>
+          </tr>
+          <tr><td>1</td><td>Start</td><td>/</td><td>Tela inicial, CTA speedtest</td></tr>
+          <tr><td>2</td><td>Running</td><td>/running</td><td>Speedtest tempo real</td></tr>
+          <tr><td>3</td><td>Result</td><td>/result</td><td>Exibição resultados</td></tr>
+          <tr><td>4</td><td>Home</td><td>/home</td><td>Dashboard estatísticas</td></tr>
+          <tr><td>5</td><td>History</td><td>/history</td><td>Histórico testes</td></tr>
+          <tr><td>6</td><td>Explore</td><td>/explore</td><td>Dados geográficos</td></tr>
+          <tr><td>7</td><td>Pulse</td><td>/pulse</td><td>Monitoramento contínuo</td></tr>
+          <tr><td>8</td><td>Before/After</td><td>/before-after</td><td>Comparação antes/depois</td></tr>
+          <tr><td>9</td><td>Comparison</td><td>/comparison</td><td>Múltiplos testes</td></tr>
+          <tr><td>10</td><td>Onboarding</td><td>/onboarding</td><td>Primeiro acesso</td></tr>
+          <tr><td>11</td><td>DNS Benchmark</td><td>/dns-benchmark</td><td>Teste DNS</td></tr>
+          <tr><td>12</td><td>DNS Guide</td><td>/dns-guide</td><td>Guia mudança DNS</td></tr>
+          <tr><td>13</td><td>Room Test</td><td>/room-test</td><td>Teste por ambiente</td></tr>
+          <tr><td>14</td><td>Gamer</td><td>/gamer</td><td>Otimizado gamers</td></tr>
+          <tr><td>15</td><td>Recommend</td><td>/recommend</td><td>Recomendações</td></tr>
+          <tr><td>16</td><td>Details</td><td>/details</td><td>Detalhes técnicos</td></tr>
+          <tr><td>17</td><td>Diagnostic</td><td>/diagnostic</td><td>Diagnóstico IA</td></tr>
+        </table>
+      </section>
+
+      <!-- SEÇÃO 4: Design System -->
+      <section id="design-system" class="section">
+        <h1>Design System — Tokens & Cores</h1>
+        <p>Paleta compartilhada Android ↔ PWA, com divergências intencionais por tema.</p>
+
+        <h2>Brand</h2>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #6C2BFF;"></span>
+          <span>Accent (Purple)</span>
+          <span class="color-code">#6C2BFF</span>
+        </div>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #2563EB;"></span>
+          <span>Accent Blue</span>
+          <span class="color-code">#2563EB</span>
+        </div>
+
+        <h2>Status</h2>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #22C55E;"></span>
+          <span>Sucesso</span>
+          <span class="color-code">#22C55E</span>
+        </div>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #F5A623;"></span>
+          <span>Aviso</span>
+          <span class="color-code">#F5A623</span>
+        </div>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #FF4D4F;"></span>
+          <span>Erro</span>
+          <span class="color-code">#FF4D4F</span>
+        </div>
+
+        <h2>SpeedTest Phases</h2>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #60A5FA;"></span>
+          <span>Latência</span>
+          <span class="color-code">#60A5FA</span>
+        </div>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #34D399;"></span>
+          <span>Download</span>
+          <span class="color-code">#34D399</span>
+        </div>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #FBBF24;"></span>
+          <span>Upload</span>
+          <span class="color-code">#FBBF24</span>
+        </div>
+
+        <h2>Orbit (Sempre Escuro)</h2>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #0D0D1A;"></span>
+          <span>Background</span>
+          <span class="color-code">#0D0D1A</span>
+        </div>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #1A0B2E;"></span>
+          <span>Surface</span>
+          <span class="color-code">#1A0B2E</span>
+        </div>
+        <div class="color-row">
+          <span class="swatch" style="background-color: #1E1130;"></span>
+          <span>Card</span>
+          <span class="color-code">#1E1130</span>
+        </div>
+
+        <h2>Superfícies — Tema Claro (Android)</h2>
+        <table>
+          <tr>
+            <th>Token</th>
+            <th>Valor</th>
+            <th>Uso</th>
+          </tr>
+          <tr>
+            <td>Bg Primário</td>
+            <td><span class="swatch" style="background-color: #FFFFFF;"></span> #FFFFFF</td>
+            <td>Fundo telas</td>
+          </tr>
+          <tr>
+            <td>Bg Secundário</td>
+            <td><span class="swatch" style="background-color: #F3F4F6;"></span> #F3F4F6</td>
+            <td>Superfícies elevadas</td>
+          </tr>
+          <tr>
+            <td>Texto Primário</td>
+            <td><span class="swatch" style="background-color: #0D0D1A;"></span> #0D0D1A</td>
+            <td>Títulos, corpo</td>
+          </tr>
+          <tr>
+            <td>Borda</td>
+            <td><span class="swatch" style="background-color: #E5E7EB;"></span> #E5E7EB</td>
+            <td>Divisores</td>
+          </tr>
+        </table>
+
+        <h2>Superfícies — Tema Escuro (Android)</h2>
+        <table>
+          <tr>
+            <th>Token</th>
+            <th>Valor</th>
+            <th>Uso</th>
+          </tr>
+          <tr>
+            <td>Bg Primário</td>
+            <td><span class="swatch" style="background-color: #000000;"></span> #000000</td>
+            <td>Fundo telas</td>
+          </tr>
+          <tr>
+            <td>Bg Secundário</td>
+            <td><span class="swatch" style="background-color: #1A1A1A;"></span> #1A1A1A</td>
+            <td>Superfícies elevadas</td>
+          </tr>
+          <tr>
+            <td>Texto Primário</td>
+            <td><span class="swatch" style="background-color: #F3F4F6;"></span> #F3F4F6</td>
+            <td>Títulos, corpo</td>
+          </tr>
+          <tr>
+            <td>Borda</td>
+            <td><span class="swatch" style="background-color: #2A2A2A;"></span> #2A2A2A</td>
+            <td>Divisores</td>
+          </tr>
+        </table>
+      </section>
+
+      <!-- SEÇÃO 5: Tipografia -->
+      <section id="tipografia" class="section">
+        <h1>Tipografia</h1>
+        <p>Material Design 3 (Android) + Geist (PWA) para corpo e display.</p>
+
+        <h2>Escala Android (Material Design 3)</h2>
+        <table>
+          <tr>
+            <th>Estilo</th>
+            <th>Tamanho</th>
+            <th>Peso</th>
+            <th>Uso</th>
+          </tr>
+          <tr><td>Display Large</td><td>34 sp</td><td>Bold</td><td>Hero text</td></tr>
+          <tr><td>Headline Large</td><td>24 sp</td><td>SemiBold</td><td>Titles principais</td></tr>
+          <tr><td>Body Large</td><td>16 sp</td><td>Normal</td><td>Texto principal</td></tr>
+          <tr><td>Body Medium</td><td>14 sp</td><td>Normal</td><td>Corpo padrão</td></tr>
+          <tr><td>Label Medium</td><td>12 sp</td><td>Normal</td><td>Hints, captions</td></tr>
+        </table>
+
+        <h2>Componentes Animação</h2>
+        <ul>
+          <li><strong>TypewriterText:</strong> Digita caractere-por-caractere (respostas IA)</li>
+          <li><strong>RotatingMessageText:</strong> Rotaciona entre mensagens com fade</li>
+        </ul>
+      </section>
+
+      <!-- SEÇÃO 6: Espaçamento -->
+      <section id="espaçamento" class="section">
+        <h1>Espaçamento & Raios</h1>
+        <p>Grid 8dp (Android) / 4px (PWA) — valores alinhados.</p>
+
+        <h2>Tokens Espaçamento</h2>
+        <table>
+          <tr>
+            <th>Token</th>
+            <th>Android</th>
+            <th>PWA</th>
+            <th>Uso</th>
+          </tr>
+          <tr><td>xs</td><td>4 dp</td><td>4 px</td><td>Ajustes finos</td></tr>
+          <tr><td>sm</td><td>8 dp</td><td>8 px</td><td>Unidade fundamental</td></tr>
+          <tr><td>md</td><td>12 dp</td><td>12 px</td><td>Padding interno</td></tr>
+          <tr><td>lg</td><td>16 dp</td><td>16 px</td><td>Padding telas</td></tr>
+          <tr><td>xl</td><td>24 dp</td><td>24 px</td><td>Divisões maiores</td></tr>
+          <tr><td>xxl</td><td>32 dp</td><td>32 px</td><td>Grandes seções</td></tr>
+        </table>
+
+        <h2>Raios</h2>
+        <table>
+          <tr>
+            <th>Contexto</th>
+            <th>Android</th>
+            <th>PWA</th>
+          </tr>
+          <tr><td>Card</td><td>16 dp</td><td>16 px</td></tr>
+          <tr><td>Button</td><td>12 dp</td><td>12 px</td></tr>
+          <tr><td>Input</td><td>12 dp</td><td>12 px</td></tr>
+        </table>
+      </section>
+
+      <!-- SEÇÃO 7: Componentes Android -->
+      <section id="android-components" class="section">
+        <h1>Componentes Android (25)</h1>
+        <p>Agrupados por domínio funcional.</p>
+
+        <h3>Orbit — Chat IA (10)</h3>
+        <ul>
+          <li>OrbitSymbol, OrbitTopBar, OrbitInputArea</li>
+          <li>OrbitUserMessageBubble, OrbitAiMessageBubble</li>
+          <li>OrbitTechnicalResultBubble, OrbitThinkingBubble</li>
+          <li>OrbitWelcomeState, OrbitActionsCard, OrbitInlineQuestion</li>
+        </ul>
+
+        <h3>SpeedTest & Pulse (6)</h3>
+        <ul>
+          <li>GaugeCircular, MiniGrafico, PulseResultCard</li>
+          <li>SilentSpeedtestIndicator, LinkaPulseSymbol, LinkaPulseIcon</li>
+        </ul>
+
+        <h3>Visual & Animação (3)</h3>
+        <ul>
+          <li>AppBorderGlowEffect, TypewriterText, RotatingMessageText</li>
+        </ul>
+
+        <h3>Layout & Utilitários (5+)</h3>
+        <ul>
+          <li>LinkaIaHeader, AiModelFooter, DiagnosisChipsRow</li>
+          <li>ContextualQuestionCard, SheetDragHandle, WifiChannelGuide</li>
+        </ul>
+      </section>
+
+      <!-- SEÇÃO 8: Componentes PWA -->
+      <section id="pwa-components" class="section">
+        <h1>Componentes PWA (27)</h1>
+        <p>React Functional Components, TypeScript tipados.</p>
+
+        <h3>Navegação (5)</h3>
+        <ul>
+          <li>BottomNavBar, TopBar, BackButton, PageHeader, HamburgerMenu</li>
+        </ul>
+
+        <h3>Dados & Gráficos (4)</h3>
+        <ul>
+          <li>Gauge, LiveChart, MiniGrafico, PathRow</li>
+        </ul>
+
+        <h3>Sheets & Modais (3)</h3>
+        <ul>
+          <li>BottomSheet, DraggableSheet, InfoTooltip</li>
+        </ul>
+
+        <h3>Branding & Efeitos (3)</h3>
+        <ul>
+          <li>LinkaPulseSymbol, AppBorderGlow, RotatingMessage</li>
+        </ul>
+
+        <h3>Estado & Feedback (5)</h3>
+        <ul>
+          <li>Skeleton, PullToRefreshIndicator, PwaUpdatePrompt, Chip, Accordion</li>
+        </ul>
+
+        <h3>IA & Diagnóstico (3)</h3>
+        <ul>
+          <li>ContextualQuestion, DiagnosisChips, PulseResultCard</li>
+        </ul>
+
+        <h3>Listas & Ícones (3+)</h3>
+        <ul>
+          <li>IOSList, icons.tsx (25+ SVG icons), IconButton</li>
+        </ul>
+      </section>
+
+      <!-- SEÇÃO 9: Arquitetura Android -->
+      <section id="arquitetura-android" class="section">
+        <h1>Arquitetura Android (16 módulos)</h1>
+        <p>Modular Gradle, MVVM + Coroutines, Material Design 3.</p>
+
+        <h2>Core Modules</h2>
+        <ul>
+          <li><strong>:coreNetwork</strong> — HTTP, Cloudflare API, interceptors</li>
+          <li><strong>:coreDatabase</strong> — Room, DAOs, migrations</li>
+          <li><strong>:coreDatastore</strong> — Preferences DataStore</li>
+          <li><strong>:corePermissions</strong> — Gating, status</li>
+          <li><strong>:coreTelephony</strong> — Info operadora, conectividade</li>
+        </ul>
+
+        <h2>Feature Modules</h2>
+        <ul>
+          <li><strong>:featureHome</strong> — Dashboard inicial</li>
+          <li><strong>:featureSpeedtest</strong> — Medição velocidade</li>
+          <li><strong>:featureWifi</strong> — Scan redes Wi-Fi</li>
+          <li><strong>:featureDevices</strong> — Discovery rede</li>
+          <li><strong>:featureDns</strong> — Benchmark DNS</li>
+          <li><strong>:featureDiagnostico</strong> — Diagnóstico + Orbit IA</li>
+          <li><strong>:featureFibra</strong> — Info fibra</li>
+          <li><strong>:featureHistory</strong> — Histórico, gráficos, export</li>
+          <li><strong>:featureSettings</strong> — Preferências app</li>
+        </ul>
+
+        <h2>App Module</h2>
+        <ul>
+          <li><strong>:app</strong> — NavGraph, Shell, transversal screens</li>
+        </ul>
+      </section>
+
+      <!-- SEÇÃO 10: Arquitetura PWA -->
+      <section id="arquitetura-pwa" class="section">
+        <h1>Arquitetura PWA</h1>
+        <p>React 18 + TypeScript, Vite build, Cloudflare Pages hosting.</p>
+
+        <h2>Estrutura Pastas</h2>
+        <ul>
+          <li><strong>src/</strong>
+            <ul>
+              <li><strong>screens/</strong> — React components (páginas)</li>
+              <li><strong>components/</strong> — Reusable UI components</li>
+              <li><strong>hooks/</strong> — Custom hooks (speedtest, storage, etc)</li>
+              <li><strong>utils/</strong> — Helpers (classifier, validators, etc)</li>
+              <li><strong>styles/</strong> — Global CSS, tokens</li>
+              <li><strong>App.tsx</strong> — Routes, providers</li>
+            </ul>
+          </li>
+          <li><strong>public/</strong> — Static assets, manifest, icons</li>
+          <li><strong>docs/</strong> — Documentação técnica</li>
+        </ul>
+
+        <h2>Stack Técnico</h2>
+        <table>
+          <tr>
+            <th>Ferramenta</th>
+            <th>Versão</th>
+            <th>Uso</th>
+          </tr>
+          <tr><td>React</td><td>18+</td><td>UI framework</td></tr>
+          <tr><td>TypeScript</td><td>5+</td><td>Type safety</td></tr>
+          <tr><td>Vite</td><td>5+</td><td>Build tool</td></tr>
+          <tr><td>Tailwind CSS</td><td>3+</td><td>Styling</td></tr>
+          <tr><td>React Router</td><td>6+</td><td>Navigation</td></tr>
+          <tr><td>Vitest</td><td>Latest</td><td>Unit tests</td></tr>
+          <tr><td>Cloudflare Pages</td><td>—</td><td>Hosting</td></tr>
+        </table>
+
+        <h2>Deploy</h2>
+        <p>GitHub Actions → Cloudflare Pages (CI/CD automático em cada push).</p>
+        <p>PWA offline-ready com `vite-plugin-pwa`.</p>
+      </section>
+
+      <!-- SEÇÃO 11: Monitoramento Passivo -->
+      <section id="monitoramento" class="section">
+        <h1>Monitoramento Passivo — LinkaPulse v0.6.3</h1>
+        <p>Background speedtest a cada 30 minutos, alertas inteligentes.</p>
+
+        <h2>Scheduling</h2>
+        <ul>
+          <li><strong>Framework:</strong> WorkManager (Android Jetpack)</li>
+          <li><strong>Período:</strong> 30 minutos</li>
+          <li><strong>Constraints:</strong> Rede conectada, bateria não baixa</li>
+          <li><strong>Policy:</strong> Única execução (KEEP evita duplicatas)</li>
+        </ul>
+
+        <h2>3 Fases de Execução</h2>
+        <table>
+          <tr>
+            <th>Fase</th>
+            <th>O que faz</th>
+            <th>Tempo</th>
+          </tr>
+          <tr>
+            <td>Collecting</td>
+            <td>Speedtest silencioso + snapshot Wi-Fi</td>
+            <td>30–60 seg</td>
+          </tr>
+          <tr>
+            <td>Thinking</td>
+            <td>Diagnóstico local (engines)</td>
+            <td>5–10 seg</td>
+          </tr>
+          <tr>
+            <td>Analyzing</td>
+            <td>Chamada IA para análise estruturada</td>
+            <td>3–8 seg</td>
+          </tr>
+        </table>
+
+        <h2>Tipos de Alerta (4)</h2>
+        <ul>
+          <li><strong>Velocidade Baixa:</strong> DL < 25 Mbps → Warn</li>
+          <li><strong>Latência Alta:</strong> > 80 ms → Warn</li>
+          <li><strong>Instabilidade:</strong> Jitter > 50 ms OU Perda > 2% → Fail</li>
+          <li><strong>Wi-Fi Fraco:</strong> RSSI < -70 dBm → Warn</li>
+        </ul>
+
+        <h2>Proteções</h2>
+        <ul>
+          <li><strong>Cooldown:</strong> 2 horas entre alertas iguais</li>
+          <li><strong>Teto:</strong> Máx 3 alertas por dia</li>
+          <li><strong>Storage:</strong> LocalDB (Room) em tabela AlerteLinkaPulse</li>
+        </ul>
+
+        <h2>Permissões</h2>
+        <ul>
+          <li>ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE, INTERNET</li>
+          <li>SCHEDULE_EXACT_ALARM (para triggers precisos)</li>
+          <li>POST_NOTIFICATIONS (mostrar alertas)</li>
+        </ul>
+
+        <h2>Testes (14 casos JUnit 4)</h2>
+        <p>Cobertura: transições de fase, cooldown, teto, severidades, IA gateway, rotação mensagens, DB save.</p>
+      </section>
+
+      <!-- SEÇÃO 12: Diagnóstico IA -->
+      <section id="diagnostico-ia" class="section">
+        <h1>Diagnóstico IA — Orbit</h1>
+        <p>Chat inteligente com recomendações baseadas em métricas de rede.</p>
+
+        <h2>Fluxo Básico</h2>
+        <ol>
+          <li>Usuário faz pergunta no chat Orbit</li>
+          <li>Sistema coleta contexto (métricas, rede, histórico)</li>
+          <li>Chamada IA para análise estruturada</li>
+          <li>Resposta formatada como bolhas de chat</li>
+          <li>Ações sugeridas (e.g., mudar DNS, reiniciar roteador)</li>
+        </ol>
+
+        <h2>Gateway</h2>
+        <p><strong>URL:</strong> <code style="color: var(--warning);">https://linka-ai-diagnosis-worker.giammattey-luiz.workers.dev</code></p>
+        <p>Cloudflare Worker endpoint — processa diagnóstico sem backend complexo.</p>
+
+        <h2>Contexto Enviado</h2>
+        <ul>
+          <li>Velocidade (DL, UL, latência, jitter)</li>
+          <li>Wi-Fi (SSID, força sinal, frequência)</li>
+          <li>Histórico últimos testes (7 dias)</li>
+          <li>Pergunta do usuário + thread chat</li>
+        </ul>
+
+        <h2>Componentes Android (Orbit)</h2>
+        <ul>
+          <li>OrbitScreen — Container principal</li>
+          <li>OrbitInputArea — Input + send button</li>
+          <li>OrbitUserMessageBubble — Mensagens usuário</li>
+          <li>OrbitAiMessageBubble — Respostas IA</li>
+          <li>OrbitThinkingBubble — "IA pensando"</li>
+          <li>OrbitWelcomeState — Tela inicial vazia</li>
+        </ul>
+
+        <h2>Componentes PWA (Diagnostic)</h2>
+        <ul>
+          <li>DiagnosticScreen — Container</li>
+          <li>ContextualQuestion — Pergunta inline rápida</li>
+          <li>DiagnosisChips — Tags recomendações</li>
+        </ul>
+
+        <h2>Animações</h2>
+        <ul>
+          <li><strong>TypewriterText:</strong> Respostas IA digitam caractere-a-caractere</li>
+          <li><strong>RotatingMessage:</strong> Dicas rotacionam enquanto "pensa"</li>
+        </ul>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // Navegação sidebar
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        // Remove active de todos
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+
+        // Adiciona active ao clicado
+        link.classList.add('active');
+        const targetId = link.getAttribute('href').slice(1);
+        document.getElementById(targetId).classList.add('active');
+
+        // Scroll pro topo
+        document.querySelector('.main').scrollTo(0, 0);
+      });
+    });
+  </script>
+</body>
+</html>

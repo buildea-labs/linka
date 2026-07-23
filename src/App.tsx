@@ -105,6 +105,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>(() => previousRecord() ? 'result' : 'home');
   const [previous, setPrevious] = useState<TestRecord | null>(null);
   const [lastRecord, setLastRecord] = useState<TestRecord | null>(() => previousRecord());
+  const [resultWifiContext, setResultWifiContext] = useState<WifiContext | null>(null);
   const [historyInitialId, setHistoryInitialId] = useState<string | undefined>(undefined);
   const [testMode, setTestMode] = useState<'fast' | 'complete'>(() => {
     try {
@@ -242,15 +243,14 @@ export default function App() {
       setPrevious(prev);
       const wifiCtxNormal = pendingWifiContextRef.current;
       pendingWifiContextRef.current = null;
-      const resultToRecord = wifiCtxNormal
-        ? { ...test.result!, wifiContext: wifiCtxNormal }
-        : test.result!;
-      const newRecord = appendRecord(resultToRecord, {
+      if (wifiCtxNormal) setResultWifiContext(wifiCtxNormal);
+      const newRecord = appendRecord(test.result!, {
         serverName: deviceInfo.server!.name,
         isp: deviceInfo.server!.isp,
         deviceType: deviceInfo.device!.deviceType,
         connectionType: deviceInfo.device!.connectionType,
         testMode,
+        wifiContext: wifiCtxNormal ?? undefined,
       });
       setLastRecord(newRecord);
       goTo('result');
@@ -276,6 +276,7 @@ export default function App() {
     setTestMode(mode);
     updateSettings({ defaultMode: mode });
     recordedRef.current = false;
+    setResultWifiContext(null);
     goTo('running');
     test.start(effectiveConnection, mode);
   }, [test, effectiveConnection, goTo, updateSettings]);
@@ -289,6 +290,7 @@ export default function App() {
   const handleRetry = useCallback(() => {
     test.reset();
     recordedRef.current = false;
+    setResultWifiContext(null);
     goTo('running');
     test.start(effectiveConnection, testMode);
   }, [test, effectiveConnection, testMode, goTo]);
@@ -390,7 +392,9 @@ export default function App() {
         );
       }
       case 'result': {
-        const resultToShow = test.result ?? (lastRecord ? recordToResult(lastRecord) : null);
+        const resultToShow = test.result
+          ? (resultWifiContext ? { ...test.result, wifiContext: resultWifiContext } : test.result)
+          : (lastRecord ? recordToResult(lastRecord) : null);
         const serverForResult: typeof deviceInfo.server = test.result
           ? deviceInfo.server
           : lastRecord
@@ -485,7 +489,7 @@ export default function App() {
     screen, theme, onToggleTheme, isOnline,
     test.phase, test.instantMbps, test.result, test.live, test.overallProgress,
     deviceInfo,
-    previous, lastRecord, historyInitialId,
+    previous, lastRecord, historyInitialId, resultWifiContext,
     handleStart, handleCancel, handleRetry, handleShowHistory, handleNavTab,
     handleOpenOrbit, handleShowSinal, handleOpenAjustes, handleShowFibra,
     pulse,

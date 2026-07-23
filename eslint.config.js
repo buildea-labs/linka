@@ -10,6 +10,9 @@ import { fileURLToPath } from 'node:url'
 const rootDir = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig([
+  // webapp/ é o ex-repo linka-webapp, consolidado aqui em 2026-07-23 — app
+  // standalone com seu próprio tsconfig/eslint. Ignorado aqui pra não colidir
+  // com o parser do root (dois tsconfigRootDir candidatos = erro de parsing).
   globalIgnores([
     'dist',
     'android/app/build',
@@ -17,6 +20,7 @@ export default defineConfig([
     'builds',
     '_android-toolchain',
     '.claude',
+    'webapp',
   ]),
   {
     files: ['**/*.{ts,tsx}'],
@@ -35,6 +39,9 @@ export default defineConfig([
     rules: {
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/refs': 'off',
+      // Convenção do projeto: prefixo `_` marca destructuring intencionalmente
+      // não usado (ex.: props de interface compartilhada que a tela ignora).
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },
 ])

@@ -1,0 +1,240 @@
+/* AiScreen — Análise de Conexão — tokens do design system, sem hexcodes */
+
+.ai-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 16px 0 8px;
+}
+
+/* Estado vazio */
+.ai-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 24px;
+  gap: 12px;
+}
+
+.ai-empty__icon {
+  opacity: 0.4;
+}
+
+.ai-empty__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.ai-empty__body {
+  font-size: 14px;
+  color: var(--text-2);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 280px;
+}
+
+.ai-empty__btn {
+  margin-top: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent, var(--bg));
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.ai-empty__btn:active {
+  opacity: 0.75;
+}
+
+/* Grid de métricas */
+.ai-metrics {
+  margin-bottom: 8px;
+}
+
+.ai-metrics__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ai-metric-cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-metric-cell--success .ai-metric-cell__value { color: var(--success, var(--accent)); }
+.ai-metric-cell--warn    .ai-metric-cell__value { color: var(--warn, var(--text)); }
+.ai-metric-cell--info    .ai-metric-cell__value { color: var(--info, var(--accent)); }
+.ai-metric-cell--error   .ai-metric-cell__value { color: var(--error); }
+
+.ai-metric-cell__label {
+  font-size: 11px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.ai-metric-cell__value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+/* Barra de estabilidade */
+.ai-stability {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-stability__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ai-stability__label {
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.ai-stability__score {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ai-stability__score--success { color: var(--success, var(--accent)); }
+.ai-stability__score--warn    { color: var(--warn, var(--text)); }
+.ai-stability__score--error   { color: var(--error); }
+
+.ai-stability__track {
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ai-stability__bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.ai-stability__bar--success { background: var(--success, var(--accent)); }
+.ai-stability__bar--warn    { background: var(--warn, var(--accent)); }
+.ai-stability__bar--error   { background: var(--error); }
+
+.ai-stability__desc {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* Horários */
+.ai-hours {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.ai-hours__best,
+.ai-hours__worst {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Cards de insight */
+.ai-insights {
+  margin-bottom: 8px;
+}
+
+.ai-insight-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 8px;
+}
+
+.ai-insight-card--critical {
+  border-color: var(--error);
+  background: var(--error-tint, var(--surface));
+}
+
+.ai-insight-card--warning {
+  border-color: var(--warn, var(--border));
+  background: var(--warn-tint, var(--surface));
+}
+
+.ai-insight-card__icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ai-insight-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ai-insight-card__title {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.ai-insight-card__desc {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Sem problemas */
+.ai-no-issues {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+/* Disclaimer */
+.ai-disclaimer {
+  font-size: 11px;
+  color: var(--text-3);
+  text-align: center;
+  padding: 8px 0 16px;
+  line-height: 1.5;
+}

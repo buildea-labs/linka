@@ -18,8 +18,10 @@ name: CI
 on:
   push:
     branches: ['**']
+    paths-ignore: ['webapp/**']
   pull_request:
     branches: ['main']
+    paths-ignore: ['webapp/**']
 
 concurrency:
   # Cancela runs anteriores do mesmo branch quando um novo push chega.

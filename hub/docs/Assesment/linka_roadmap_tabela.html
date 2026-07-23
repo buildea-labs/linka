@@ -1,0 +1,345 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-size: 14px; }
+.wrap { padding: 1rem 0; }
+.section { margin-bottom: 2rem; }
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--border-radius-md);
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+.sh-now  { background: #EAF3DE; color: #3B6D11; border-left: 3px solid #639922; }
+.sh-fix  { background: #FAEEDA; color: #854F0B; border-left: 3px solid #BA7517; }
+.sh-cut  { background: #FCEBEB; color: #A32D2D; border-left: 3px solid #E24B4A; }
+@media (prefers-color-scheme: dark) {
+  .sh-now  { background: #27500A; color: #C0DD97; border-left-color: #97C459; }
+  .sh-fix  { background: #633806; color: #FAC775; border-left-color: #EF9F27; }
+  .sh-cut  { background: #501313; color: #F7C1C1; border-left-color: #E24B4A; }
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  padding: 6px 10px;
+  border-bottom: 0.5px solid var(--color-border-secondary);
+  white-space: nowrap;
+}
+tbody tr { border-bottom: 0.5px solid var(--color-border-tertiary); }
+tbody tr:last-child { border-bottom: none; }
+tbody td { padding: 9px 10px; color: var(--color-text-primary); vertical-align: top; line-height: 1.5; }
+.plat { display: flex; gap: 4px; flex-wrap: wrap; }
+.tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.tag-a  { background: #EAF3DE; color: #3B6D11; }
+.tag-p  { background: #E6F1FB; color: #185FA5; }
+.tag-b  { background: #EEEDFE; color: #534AB7; }
+.tag-ap { background: #E1F5EE; color: #0F6E56; }
+@media (prefers-color-scheme: dark) {
+  .tag-a  { background: #27500A; color: #C0DD97; }
+  .tag-p  { background: #0C447C; color: #B5D4F4; }
+  .tag-b  { background: #3C3489; color: #CECBF6; }
+  .tag-ap { background: #085041; color: #9FE1CB; }
+}
+.imp {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.imp-alto   { background: #EAF3DE; color: #3B6D11; }
+.imp-med    { background: #FAEEDA; color: #854F0B; }
+.imp-baixo  { background: #F1EFE8; color: #5F5E5A; }
+@media (prefers-color-scheme: dark) {
+  .imp-alto  { background: #27500A; color: #C0DD97; }
+  .imp-med   { background: #633806; color: #FAC775; }
+  .imp-baixo { background: #444441; color: #D3D1C7; }
+}
+.note { font-size: 12px; color: var(--color-text-secondary); margin-top: 3px; }
+.feat { font-weight: 500; color: var(--color-text-primary); }
+td:first-child { width: 30%; }
+td:nth-child(2) { width: 10%; }
+td:nth-child(3) { width: 40%; }
+td:last-child { width: 20%; }
+</style>
+
+<div class="wrap">
+
+<div class="section">
+  <div class="section-header sh-now">
+    <i class="ti ti-bolt" aria-hidden="true"></i>
+    IMPLEMENTAR AGORA — gaps críticos que definem o diferencial Linka
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Funcionalidade</th>
+        <th>Impacto</th>
+        <th>Por que agora</th>
+        <th>Plataforma</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="feat">Aviso de consumo de dados antes do teste</div>
+          <div class="note">Ex.: "Este teste vai usar ~150 MB. Continuar em dados móveis?"</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>Reclamação #1 no mercado. Speedtest e Fast.com consomem 500 MB sem aviso. Usuários BR com plano controle/pré-pago são especialmente sensíveis. Custo de implementação: baixíssimo.</td>
+        <td><div class="plat"><span class="tag tag-ap">Android</span><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Comparação contra plano contratado (Anatel-aware)</div>
+          <div class="note">Usuário informa velocidade contratada; app calcula % entregue vs. limites RQUAL (40% instantâneo / 80% médio)</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>Nenhum concorrente faz isso bem. Brasil Banda Larga faz mas é desacreditado. Argumento jurídico real (rescisão sem multa). Caso de uso emocional mais forte do mercado: "provar que a operadora está te enganando".</td>
+        <td><div class="plat"><span class="tag tag-ap">Android</span><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Detecção de CGNAT com explicação didática</div>
+          <div class="note">FibraScreen já detecta CGNAT, mas a explicação é técnica. Transformar em linguagem natural com impactos práticos e solução</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>Endemia brasileira. Câmeras que param, jogos que caem, VPNs que não funcionam — usuário não sabe por quê. A FibraScreen já detecta; é só melhorar a camada de apresentação. Custo: muito baixo.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Onboarding Android</div>
+          <div class="note">Equivalente ao carousel do PWA. 3 cards: "O que o Linka faz", "Privacidade", "Como interpretar os resultados"</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>PWA tem onboarding, Android não. Público-alvo é leigo — sem contexto inicial, o app parece técnico e intimidador. Primeira impressão determina D1 retention. Ausência documentada como gap.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Declaração de privacidade visível no app</div>
+          <div class="note">Tela ou card de configurações com: o que coleta, o que não coleta, sem venda de dados — em linguagem coloquial (1 página)</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>Diferencial competitivo real: Speedtest tem 47 SDKs de terceiros e tracking cross-app. Reviews da categoria celebram apps "sem ads, sem coleta". Posicionar privacidade como feature de marketing, não só compliance.</td>
+        <td><div class="plat"><span class="tag tag-ap">Android</span><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Controles granulares do LinkaPulse</div>
+          <div class="note">"Só rodar testes completos no Wi-Fi", "não rodar com bateria < 20%", "máximo X testes/dia", consumo estimado exibido</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>Bateria e dados são as 2 principais reclamações de apps de monitoramento (Fing, nPerf, WiFi Monitor). WorkManager já respeita Doze; falta expor controles ao usuário e comunicar o custo real em KB/dia.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Laudo PDF posicionado como "prova Anatel"</div>
+          <div class="note">Renomear e reposicionar o laudo existente como documento para apresentar ao provedor / Procon / para rescisão sem multa</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>LaudoScreen já existe no Android e PWA. Só falta o posicionamento correto: incluir no PDF a velocidade contratada declarada, os limites RQUAL, e texto explicativo sobre os direitos do consumidor. Custo: baixo.</td>
+        <td><div class="plat"><span class="tag tag-ap">Android</span><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Detecção de banda Wi-Fi com alerta de band steering</div>
+          <div class="note">Avisar quando o dispositivo está em 2.4 GHz mas 5 GHz disponível, especialmente quando SSID é único (band steering)</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>WifiScreen já lê banda e RSSI. A situação "está no 2.4 GHz sem saber, enquanto o 5 GHz está disponível" é extremamente comum no parque BR. Recomendação prática imediata que encanta o usuário leigo.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-header sh-fix">
+    <i class="ti ti-tool" aria-hidden="true"></i>
+    MELHORAR — já existe, mas está fraco, incompleto ou mal posicionado
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Funcionalidade</th>
+        <th>Impacto</th>
+        <th>O que melhorar</th>
+        <th>Plataforma</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="feat">Diagnóstico IA — tom e confiança</div>
+          <div class="note">Orbit / Rules Engine</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>O laudo precisa indicar nível de confiança ("alta/média/baixa certeza") e usar linguagem conservadora em diagnósticos inconclusivos. "Padrão sugere problema no enlace" em vez de "seu modem está com defeito". Protege contra reviews 1★ de diagnóstico errado.</td>
+        <td><div class="plat"><span class="tag tag-ap">Android</span><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Interpretação de métricas para o leigo</div>
+          <div class="note">ResultScreen / ResultadoVelocidade</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>Exibir "47 ms" não basta. Adicionar referencial: "47ms — bom para videochamada, ótimo para jogos online". Contexto por caso de uso (streaming, gaming, videoconferência, download) é a feature mais pedida em toda a categoria e o gap mais óbvio do Speedtest.</td>
+        <td><div class="plat"><span class="tag tag-ap">Android</span><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Tela de fibra ótica — acesso manual</div>
+          <div class="note">FibraScreen — configuração de host/usuário/senha</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>Configuração manual de IP, usuário e senha é barreira enorme para o usuário leigo. Melhorar com: tentativa automática dos padrões Nokia (192.168.1.1 / user: user), fallback com guia visual de "onde encontrar no modem", e indicação clara quando o modem não é suportado.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Histórico — visualização e utilidade</div>
+          <div class="note">HistoryScreen Android + PWA</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>PWA perde histórico ao limpar o browser (localStorage) — fragilidade crítica para um app que se posiciona como "prova contra o provedor". Android usa Room (correto). Melhorar com: gráfico de tendência mais visível, comparação mês a mês, destaque automático de períodos com queda.</td>
+        <td><div class="plat"><span class="tag tag-ap">Android</span><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Identificação de dispositivos na rede</div>
+          <div class="note">DevicesScreen Android</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>Melhorar identificação por MAC OUI (fingerprint de fabricante) para reduzir "dispositivo genérico" que frustra usuários do Fing. Adicionar contexto: "6 dispositivos conectados — acima do normal para sua banda contratada" é mais útil que lista crua.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Wi-Fi — recomendação de canal em português</div>
+          <div class="note">WifiScreen Android</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>Scan de redes vizinhas já existe. Falta transformar em recomendação acionável: "Canal 6 está lotado com 8 redes vizinhas — mude para o canal 11 no seu roteador". ORB-203 (PHY Rate) e ORB-204 (MIMO) quando desbloqueados enriquecem ainda mais.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">LinkaPulse — comunicação do que está monitorando</div>
+          <div class="note">LinkaPulseScreen / PassiveMonitoringScreen</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>Usuário não sabe o custo real em bateria/dados. Exibir: "Última verificação há 28min — usou ~4KB". Diferenciar visualmente monitoramento leve (ping) de teste completo (DL/UL). Isso transforma a feature de "opção obscura" em vantagem percebida.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Orbit/Chat — guardrails de alucinação</div>
+          <div class="note">OrbitScreen Android</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>Conversação aberta com Claude via dados de rede tem risco real de diagnósticos incorretos. Implementar: prompt com instruções conservadoras explícitas, disclaimer na UI ("baseado nos dados medidos agora"), cache de diagnósticos comuns para reduzir chamadas API e custo.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Prova Real (3×) — trazer para Android</div>
+          <div class="note">Existente no PWA, ausente no Android</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>Feature PWA de 3 testes consecutivos + média é exatamente o que o usuário precisa como evidência contra a operadora. É a resposta natural para "um único teste pode variar". Android deveria ter paridade aqui — é feature de alto valor percebido com baixo custo de implementação.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Bufferbloat — detecção com explicação coloquial</div>
+          <div class="note">Dado já existe implicitamente em jitter/latência loaded vs. unloaded</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>Fast.com mede mas não explica. Gap claro. "Sua internet trava quando alguém faz download? Pode ser bufferbloat. Ative o QoS no roteador." Implementável como regra do Rules Engine baseada em delta latência loaded/unloaded.</td>
+        <td><div class="plat"><span class="tag tag-ap">Android</span><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-header sh-cut">
+    <i class="ti ti-trash" aria-hidden="true"></i>
+    RETIRAR / SIMPLIFICAR — custo de manutenção alto, benefício baixo ou risco para o leigo
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Funcionalidade</th>
+        <th>Risco</th>
+        <th>Por que retirar</th>
+        <th>Plataforma</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="feat">Modo Gamer (PWA)</div>
+          <div class="note">Classifica resultado por categoria de jogo</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>Nicho dentro de nicho. Gamers avançados já usam ferramentas específicas (PingPlotter, WTFast). Leigo se confunde com classificações por jogo. O diagnóstico IA já cobre o caso de uso com mais profundidade. Retirar ou transformar em opção oculta em "avançado".</td>
+        <td><div class="plat"><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Configuração manual do modem (host, usuário, senha)</div>
+          <div class="note">AjustesScreen — campos IP/credenciais Nokia</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>Barreira enorme para o leigo e vetor de bugs. Manter a feature, mas esconder em "configurações avançadas" atrás de "configurar manualmente" — o fluxo padrão deve ser tentativa automática. Nenhum app de sucesso exige que o usuário saiba o IP do próprio modem.</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Terminologia técnica exposta ao leigo</div>
+          <div class="note">RTT, dBm, DoH, jitter, perda de pacotes — expostos sem contexto</div>
+        </td>
+        <td><span class="imp imp-alto">Alto</span></td>
+        <td>Não é uma feature, é uma decisão de linguagem. Toda tela voltada ao leigo deve usar termos coloquiais como label primário ("Atraso" em vez de "Latência RTT"; "Sinal do Wi-Fi: fraco/bom/ótimo" em vez de "-72 dBm"). Técnicos devem ser secundários (colapsáveis ou em tooltip). Afasta o público-alvo.</td>
+        <td><div class="plat"><span class="tag tag-ap">Android</span><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">PWA — telas duplicadas sem paridade real</div>
+          <div class="note">Telas de Wi-Fi / Dispositivos no PWA que mostram "indisponível no browser"</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>Telas que existem no PWA mas entregam mensagem de "recurso indisponível" confundem o usuário e aumentam percepção de app incompleto. Ou entregam valor real (via Capacitor) ou somem da navegação PWA. Escolher um caminho e eliminar o estado intermediário.</td>
+        <td><div class="plat"><span class="tag tag-p">PWA</span></div></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="feat">Orbit como chat aberto sem contexto de rede</div>
+          <div class="note">OrbitScreen — conversação livre com Claude</div>
+        </td>
+        <td><span class="imp imp-med">Médio</span></td>
+        <td>Chat aberto gera custo de API sem retorno claro e aumenta risco de alucinações fora do domínio. Restringir o escopo do Orbit ao contexto do diagnóstico atual (dados do último teste visíveis no prompt de sistema). Fora desse contexto, redirecionar com "Faça um teste primeiro para eu analisar sua conexão".</td>
+        <td><div class="plat"><span class="tag tag-a">Android</span></div></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</div>

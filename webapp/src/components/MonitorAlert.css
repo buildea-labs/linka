@@ -1,0 +1,71 @@
+/* MonitorAlert — tokens do design system, sem hexcodes */
+
+.monitor-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin: 8px 16px;
+  font-size: 13px;
+  line-height: 1.4;
+  animation: monitor-alert-in 0.25s ease;
+}
+
+@keyframes monitor-alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.monitor-alert--warn {
+  background: var(--warn-tint, var(--accent-tint));
+  border-color: var(--warn, var(--accent));
+  color: var(--warn, var(--text));
+}
+
+.monitor-alert--error {
+  background: var(--error-tint, var(--accent-tint));
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.monitor-alert__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.monitor-alert__message {
+  flex: 1;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.monitor-alert__latency {
+  color: var(--text-2);
+  font-weight: 400;
+}
+
+.monitor-alert__dismiss {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.monitor-alert__dismiss:hover {
+  opacity: 1;
+}
