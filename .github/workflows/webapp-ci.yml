@@ -1,0 +1,60 @@
+# CI — webapp/ (ex-repo linka-webapp, consolidado em 2026-07-23)
+#
+# Só dispara quando algo em webapp/ muda (`paths`) — app standalone, com seu
+# próprio lint/testes/build, isolado do CI da raiz (linka-speedtest).
+#
+# Etapas: npm ci → lint (opcional) → test → build, tudo com
+# `working-directory: webapp`.
+
+name: CI (webapp)
+
+on:
+  push:
+    branches: ['**']
+    paths: ['webapp/**']
+  pull_request:
+    branches: ['main']
+    paths: ['webapp/**']
+
+concurrency:
+  group: ci-webapp-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, test e build (webapp)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: webapp
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: webapp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webapp-dist
+          path: webapp/dist/
+          retention-days: 7

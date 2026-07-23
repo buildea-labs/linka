@@ -2,13 +2,13 @@
 
 PWA de diagnóstico de conexão para navegador, criada para medir velocidade, interpretar a qualidade da rede e apresentar resultados de forma clara ao usuário final.
 
-> Consolidado em 2026-07-23 dentro do repo `linka-speedtest`, como subpasta standalone (build,
-> testes e deploy próprios — não compartilha nada com a raiz do repo). Era o repo `linka-webapp`.
+> Consolidado em 2026-07-23 dentro do repo `linka-speedtest`, como subpasta standalone (build e
+> testes próprios — não compartilha nada com a raiz do repo). Era o repo `linka-webapp`.
 >
-> **Pendência conhecida:** os workflows em `.github/workflows/` desta pasta (`ci.yml`,
-> `release.yml`) não executam mais — o GitHub só roda workflows definidos em `.github/workflows/`
-> na raiz do repositório, não em subpastas. Precisa decidir se viram jobs no CI da raiz
-> (com `paths: ['webapp/**']`) ou se o build/deploy passa a ser manual.
+> CI conectado em `../.github/workflows/webapp-ci.yml` (lint/test/build, dispara só com mudanças
+> em `webapp/**`). Deploy automático (Cloudflare Pages) ainda não conectado — o workflow original
+> apontava por engano pro projeto Pages do speedtest; precisa do nome real do projeto do webapp
+> antes de religar. Ver `docs/release/CI-CD.md`.
 
 ## Escopo
 
