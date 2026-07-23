@@ -105,6 +105,11 @@ Build output directory: dist
 
 Projeto funcional em manutenção. Pendências técnicas e regras detalhadas devem permanecer em `docs/`, evitando transformar o README em um documento gigante e difícil de manter.
 
+`webapp/` (ex-repo `linka-webapp`) foi consolidado aqui em 2026-07-23 — é um app PWA irmão,
+com build/deploy/testes próprios e isolado do lint e da suíte de testes da raiz. Pendência
+conhecida: os workflows de `webapp/.github/workflows/` não rodam mais (GitHub só lê
+`.github/workflows/` da raiz do repo) — ver `webapp/README.md`.
+
 ## Licença
 
-Ainda não definida.
+MIT — ver `LICENSE`.

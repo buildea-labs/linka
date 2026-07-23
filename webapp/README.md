@@ -2,6 +2,14 @@
 
 PWA de diagnóstico de conexão para navegador, criada para medir velocidade, interpretar a qualidade da rede e apresentar resultados de forma clara ao usuário final.
 
+> Consolidado em 2026-07-23 dentro do repo `linka-speedtest`, como subpasta standalone (build,
+> testes e deploy próprios — não compartilha nada com a raiz do repo). Era o repo `linka-webapp`.
+>
+> **Pendência conhecida:** os workflows em `.github/workflows/` desta pasta (`ci.yml`,
+> `release.yml`) não executam mais — o GitHub só roda workflows definidos em `.github/workflows/`
+> na raiz do repositório, não em subpastas. Precisa decidir se viram jobs no CI da raiz
+> (com `paths: ['webapp/**']`) ou se o build/deploy passa a ser manual.
+
 ## Escopo
 
 Este repositório contém apenas a aplicação web/PWA. Código Android, APK, Gradle, keystore, Capacitor e integrações nativas pertencem a outros projetos.
