@@ -2,6 +2,13 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { SpeedTestResult } from '../types';
 import { buildShareText, shareResultText } from '../utils/share';
 
+// `navigator` só existe globalmente a partir do Node 21+ (o environment de
+// teste é 'node', sem jsdom). CI roda Node 20 — sem o stub, todo teste que
+// mexe em `navigator.share`/`navigator.clipboard` derruba com ReferenceError.
+if (typeof navigator === 'undefined') {
+  (globalThis as { navigator?: object }).navigator = {};
+}
+
 const baseResult: SpeedTestResult = {
   dl: 87.3,
   ul: 32.1,
