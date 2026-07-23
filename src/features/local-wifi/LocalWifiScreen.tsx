@@ -50,11 +50,12 @@ function connectionTypeLabel(type: string | undefined): string {
 
 interface Props {
   onBack: () => void;
+  onOpenDevices?: () => void;
 }
 
 type Tab = 'wifi' | 'celulas';
 
-export function LocalWifiScreen({ onBack }: Props) {
+export function LocalWifiScreen({ onBack, onOpenDevices }: Props) {
   const { localWifiDiagnostics } = getCapabilities();
   const { loading, result, error, run } = useLocalWifi();
   const [activeTab, setActiveTab] = useState<Tab>('wifi');
@@ -99,10 +100,19 @@ export function LocalWifiScreen({ onBack }: Props) {
           </button>
         </div>
 
+        {onOpenDevices && (
+          <div className="lk-local-wifi__card">
+            <button className="btn-outline" type="button" onClick={onOpenDevices}>
+              Ver dispositivos da rede
+            </button>
+          </div>
+        )}
+
         {activeTab === 'wifi' && (
           <div className="lk-local-wifi__card">
             {!localWifiDiagnostics ? (
               <div className="lk-local-wifi__browser-fallback">
+                <span className="lk-local-wifi__limitation-badge">LIMITAÇÃO WEB</span>
                 <span className="material-symbols-rounded lk-local-wifi__fallback-icon">wifi_find</span>
                 <p className="lk-local-wifi__text lk-local-wifi__text--primary">
                   Análise de sinal Wi-Fi indisponível no navegador
@@ -207,6 +217,7 @@ export function LocalWifiScreen({ onBack }: Props) {
         {activeTab === 'celulas' && (
           <div className="lk-local-wifi__card">
             <div className="lk-local-wifi__browser-fallback">
+              <span className="lk-local-wifi__limitation-badge">LIMITAÇÃO WEB</span>
               <span className="material-symbols-rounded lk-local-wifi__fallback-icon">cell_tower</span>
               <p className="lk-local-wifi__text lk-local-wifi__text--primary">
                 Dados de sinal celular limitados no navegador

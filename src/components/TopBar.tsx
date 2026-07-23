@@ -16,7 +16,7 @@ interface Props {
   onBack?: () => void;
   /** Ações à direita, renderizadas como `IconButton` em sequência horizontal. */
   rightActions?: TopBarAction[];
-  /** Slot livre à esquerda (usado quando o lugar do back é um logo, ex.: StartScreen). */
+  /** Slot livre à esquerda (usado quando o lugar do back é um logo). */
   leftSlot?: ReactNode;
   /** Slot livre à direita — alternativa a `rightActions` quando o conteúdo
    *  não cabe no formato {icon, onClick, ariaLabel} (ex.: HamburgerMenu). */

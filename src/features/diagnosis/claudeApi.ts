@@ -120,10 +120,10 @@ async function callClaudeApi(prompt: string): Promise<string> {
     clearTimeout(timeoutId);
 
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error(`Claude API timeout (${API_TIMEOUT_MS}ms)`);
+      throw new Error(`Claude API timeout (${API_TIMEOUT_MS}ms)`, { cause: error });
     }
 
-    throw error;
+    throw new Error('Falha ao chamar Claude API', { cause: error });
   }
 }
 

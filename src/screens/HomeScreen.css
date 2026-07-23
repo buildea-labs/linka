@@ -48,7 +48,7 @@
   padding: calc(var(--safe-top) + 64px) 16px 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
   /* extra bottom pad because BottomNavBar covers ~60px + safe area */
   padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
 }
@@ -142,12 +142,14 @@
 }
 
 .lk-home__medicoes-title {
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 600;
   color: var(--text-2);
 }
 
 .lk-home__medicoes-link {
+  font-family: var(--font-body);
   font-size: 13px;
   font-weight: 500;
   color: var(--accent);
@@ -155,7 +157,6 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  font-family: var(--font-body);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -183,6 +184,7 @@
 }
 
 .lk-home__hero-label {
+  font-family: var(--font-body);
   font-size: 11px;
   color: var(--text-3);
   font-weight: 500;
@@ -202,9 +204,9 @@
 
 .lk-home__central-btn {
   width: 100%;
-  height: 52px;
-  font-size: 16px;
-  font-weight: 700;
+  height: 48px;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: -0.01em;
   margin-top: 4px;
 }
@@ -467,7 +469,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-blue, #60a5fa));
+  background: var(--accent);
   color: #fff;
   font-family: var(--font-display);
   font-weight: 700;
@@ -580,6 +582,7 @@
 }
 
 .lk-home__hero-label-sm {
+  font-family: var(--font-body);
   font-size: 12px;
   color: var(--text-3);
 }
@@ -641,6 +644,7 @@ div.lk-home__signal-card {
 }
 
 .lk-home__signal-name {
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
@@ -650,6 +654,7 @@ div.lk-home__signal-card {
 }
 
 .lk-home__signal-sub {
+  font-family: var(--font-body);
   font-size: 12px;
   color: var(--text-3);
 }

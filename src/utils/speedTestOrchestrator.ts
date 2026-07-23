@@ -290,7 +290,6 @@ export async function runSpeedTestV2(
     // permite à UI sinalizar "Resultado parcial — upload não pôde ser medido"
     // sem propagar erro fatal.
     ulFailed = true;
-    ulResult = null;
   }
   if (!ulFailed) {
     ulPingCtrl.abort();

@@ -419,7 +419,7 @@ export function HomeScreen({
         scrolled={scrolled}
         opacity={topBarOpacity}
         showTitle
-        title="Home"
+        title="Início"
         leftSlot={
           <button
             className="lk-home__avatar"
@@ -581,7 +581,7 @@ export function HomeScreen({
             onClick={onNavigateToSpeedTest}
             type="button"
           >
-            Central de Medição
+            Medir velocidade
           </button>
         </section>
 
@@ -602,11 +602,11 @@ export function HomeScreen({
         {onOpenOrbit && (
           <button className="card lk-home__shortcut-row" type="button" onClick={onOpenOrbit}>
             <div className="lk-home__shortcut-row-icon">
-              <Icon name="bulb" size={18} color="var(--accent)" />
+              <Icon name="network" size={18} color="var(--accent)" />
             </div>
             <div className="lk-home__shortcut-row-text">
-              <span className="lk-home__shortcut-row-title">Diagnóstico Inteligente</span>
-              <span className="lk-home__shortcut-row-sub">Realize o diagnóstico da sua rede com IA</span>
+              <span className="lk-home__shortcut-row-title">Diagnóstico</span>
+              <span className="lk-home__shortcut-row-sub">Análise inteligente da rede</span>
             </div>
             <Icon name="chevron" size={18} color="var(--text-3)" />
           </button>

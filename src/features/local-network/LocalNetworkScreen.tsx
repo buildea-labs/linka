@@ -111,6 +111,7 @@ export function LocalNetworkScreen({ onBack }: Props) {
         {/* ── Browser fallback ───────────────────────────────────────── */}
         {!localNetworkDiscovery && (
           <div className="lk-local-network__empty">
+            <span className="lk-local-network__limitation-badge">LIMITAÇÃO WEB</span>
             <span className="material-symbols-rounded lk-local-network__empty-icon">devices_other</span>
             <p className="lk-local-network__empty-title">Ver dispositivos da rede</p>
             <p className="lk-local-network__empty-desc">
@@ -267,6 +268,7 @@ export function LocalNetworkScreen({ onBack }: Props) {
                   onKeyDown={(e) => { if (e.key === 'Enter') saveAndClose(); }}
                 />
               </label>
+              <p className="lk-nickname-sheet__hint">Use nomes curtos e claros para facilitar identificar seus dispositivos.</p>
               <div className="lk-nickname-sheet__meta">
                 <span>{kindLabel(editingDevice.kind)}</span>
                 <span className={`lk-local-network__confidence lk-local-network__confidence--${editingDevice.confidence}`}>

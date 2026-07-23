@@ -101,12 +101,15 @@ function getUseCaseStatus(
 }
 
 function getRecommendations(
-  _result: SpeedTestResult,
-  _profile: ConnectionProfile,
-  _flags: InterpretedResult['flags'],
-  _useCases: UseCaseVerdict[],
-  _history: TestRecord[] = [],
+  result: SpeedTestResult,
+  profile: ConnectionProfile,
+  flags: InterpretedResult['flags'],
+  useCases: UseCaseVerdict[],
 ): InterpretedResult['recommendations'] {
+  void result;
+  void profile;
+  void flags;
+  void useCases;
   return [];
 }
 
@@ -164,6 +167,7 @@ export function interpretSpeedTestResult(
   profile: ConnectionProfile,
   history: TestRecord[] = [],
 ): InterpretedResult {
+  void history;
   // Ensure profile is valid before proceeding
   if (!profile || !(profile in profiles)) {
     console.error(`Invalid or missing profile: ${profile}`);
@@ -183,7 +187,7 @@ export function interpretSpeedTestResult(
   const useCases: UseCaseId[] = ['gaming', 'streaming_4k', 'home_office', 'video_call'];
   const useCaseVerdicts = useCases.map((id) => getUseCaseStatus(result, id));
 
-  const recommendations = getRecommendations(result, profile, flags, useCaseVerdicts, history);
+  const recommendations = getRecommendations(result, profile, flags, useCaseVerdicts);
 
   // Construct copyKeys using resolveCopy for dynamic text generation
   const copyKeys = {

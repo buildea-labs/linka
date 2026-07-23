@@ -116,26 +116,26 @@ function PermissionsArt() {
 const CARDS = [
   {
     art: <GaugeArt />,
-    title: 'Mede sua internet com precisão',
-    sub: 'Download, upload, latência e oscilação em poucos segundos.',
-  },
-  {
-    art: <UseCasesArt />,
-    title: 'Descubra se serve pra Jogos, 4K, Trabalho',
-    sub: 'A linka traduz os números em respostas práticas para o seu dia a dia.',
+    title: 'Sua internet explicada em português',
+    sub: 'Não só os números: a linka analisa sua conexão e te diz o que está acontecendo.',
   },
   {
     art: <PermissionsArt />,
-    title: 'Permissões necessárias',
-    sub: null,
+    title: 'Seus dados ficam no seu dispositivo',
+    sub: 'Medimos sua rede sem rastrear você. O diagnóstico permanece local no aparelho.',
+  },
+  {
+    art: <UseCasesArt />,
+    title: 'Resultado sempre explicado',
+    sub: 'Verde: tudo certo. Amarelo: atenção. Vermelho: problema detectado com próxima ação.',
     bullets: [
       {
-        label: 'Localização',
-        body: 'necessária pra ver detalhes do seu Wi-Fi (banda, canal, sinal). Android exige isso por privacidade.',
+        label: 'Streaming e vídeo',
+        body: 'entenda rapidamente se a rede está estável para uso contínuo.',
       },
       {
-        label: 'Notificações',
-        body: 'opcional, pra avisar se sua conexão piorar.',
+        label: 'Jogos e trabalho',
+        body: 'latência e oscilação traduzidas para decisão prática no dia a dia.',
       },
     ],
   },
@@ -199,9 +199,11 @@ export function OnboardingScreen({ onComplete }: Props) {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <button className="lk-onb__skip" onClick={skip} type="button">
-        Pular
-      </button>
+      {!isLast && (
+        <button className="lk-onb__skip" onClick={skip} type="button">
+          Pular
+        </button>
+      )}
 
       <div className="lk-onb__viewport">
         <div
@@ -246,7 +248,7 @@ export function OnboardingScreen({ onComplete }: Props) {
         </div>
 
         <button className="lk-onb__cta" onClick={advance} type="button">
-          {isLast ? 'Começar' : 'Avançar'}
+          {isLast ? 'Começar' : 'Próximo'}
         </button>
       </div>
     </div>

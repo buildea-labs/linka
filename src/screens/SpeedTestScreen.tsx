@@ -8,7 +8,6 @@ import './SpeedTestScreen.css';
 
 interface Props {
   theme: 'dark' | 'light';
-  onToggleTheme: () => void;
   onStart: (mode: 'fast' | 'complete') => void;
   onOpenDiagnostico: () => void;
   lastRecord: TestRecord | null;
@@ -33,7 +32,6 @@ const MODE_DESC: Record<ModeOption, string> = {
 };
 
 export function SpeedTestScreen({
-  onToggleTheme: _onToggleTheme,
   onStart,
   onOpenDiagnostico,
   lastRecord,
@@ -59,7 +57,7 @@ export function SpeedTestScreen({
   return (
     <div className="st-screen">
       <TopBar
-        title="Velocidade"
+        title="Central de testes"
         showTitle={true}
         scrolled={scrolled}
         opacity={topBarOpacity}
@@ -364,7 +362,7 @@ function CardBufferbloat({ severity, onOpenSheet }: {
 function ExploreToolsRow({ onClick }: { onClick: () => void }) {
   return (
     <button className="st-card st-card--row st-card--btn" onClick={onClick} type="button" aria-label="Explorar ferramentas">
-      <span className="st-card__row-icon" aria-hidden="true"><SettingsIcon /></span>
+      <span className="st-card__row-icon" aria-hidden="true"><SpeedIcon /></span>
       <span className="st-card__label" style={{ flex: 1 }}>Explorar ferramentas</span>
       <ChevronIcon />
     </button>
@@ -539,11 +537,13 @@ function ErrorCircleIcon() {
   );
 }
 
-function SettingsIcon() {
+function SpeedIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M8.5 14.5l7-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="9" cy="15" r="1.4" fill="currentColor" />
+      <circle cx="15.5" cy="8.5" r="1.4" fill="currentColor" />
     </svg>
   );
 }

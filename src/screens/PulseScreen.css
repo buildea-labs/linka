@@ -64,8 +64,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 20px 24px;
-  gap: 16px;
+  padding: 16px 20px 24px;
+  gap: 12px;
 }
 
 .orbit-screen__welcome-symbol {
@@ -74,7 +74,7 @@
 
 .orbit-screen__welcome-title {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--orbit-text, #F3F4F6);
   margin: 0;
@@ -82,7 +82,7 @@
 }
 
 .orbit-screen__welcome-sub {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--orbit-text-2, #9CA3AF);
   margin: 0;
   text-align: center;
@@ -92,15 +92,15 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .orbit-screen__welcome-card {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: 12px;
+  padding: 12px 14px;
   background: var(--orbit-card, #1E1130);
   border: 1px solid var(--orbit-border, rgba(108,43,255,0.18));
   border-radius: var(--radius-card, 16px);
@@ -130,13 +130,13 @@
 }
 
 .orbit-screen__welcome-card-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--orbit-text, #F3F4F6);
 }
 
 .orbit-screen__welcome-card-sub {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--orbit-text-2, #9CA3AF);
 }
 
@@ -170,8 +170,8 @@
   overscroll-behavior-y: contain;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 12px 16px 0;
+  gap: 12px;
+  padding: 10px 16px 0;
 }
 
 .orbit-screen__chat-pad {
@@ -184,8 +184,8 @@
 .orbit-screen__ai-bubble {
   background: var(--orbit-card, #1E1130);
   border: 1px solid var(--orbit-border, rgba(108,43,255,0.18));
-  border-radius: 4px 16px 16px 16px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 12px;
   max-width: 94%;
   align-self: flex-start;
   animation: orbitBubbleIn 280ms cubic-bezier(0.32,0.72,0,1) both;
@@ -204,7 +204,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .orbit-screen__ai-symbol {
@@ -218,11 +218,11 @@
 }
 
 .orbit-screen__ai-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--orbit-accent, #6C2BFF);
   letter-spacing: 0.5px;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .orbit-screen__ai-fallback {
@@ -234,9 +234,9 @@
 }
 
 .orbit-screen__ai-text {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--orbit-text, #F3F4F6);
-  line-height: 1.6;
+  line-height: 1.5;
   margin: 0;
   white-space: pre-line;
 }
@@ -287,8 +287,8 @@
 .orbit-screen__thinking-bubble {
   background: var(--orbit-card, #1E1130);
   border: 1px solid var(--orbit-border, rgba(108,43,255,0.18));
-  border-radius: 4px 16px 16px 16px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -405,7 +405,7 @@
 .orbit-screen__input-area {
   flex-shrink: 0;
   background: linear-gradient(0deg, var(--orbit-bg, #0D0D1A) 80%, transparent 100%);
-  padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -414,8 +414,8 @@
 
 .orbit-screen__chips-label,
 .orbit-screen__chips-section-label {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--orbit-text-2, #9CA3AF);
   margin: 0;
 }
@@ -423,13 +423,13 @@
 .orbit-screen__feedback-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .orbit-screen__chip {
-  padding: 7px 14px;
+  padding: 8px 12px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   font-family: var(--font-body);
   cursor: pointer;
@@ -452,11 +452,11 @@
 /* ── Buttons ──────────────────────────────────────────────────────── */
 
 .orbit-screen__btn-primary {
-  padding: 12px 32px;
+  padding: 12px 20px;
   border-radius: var(--radius-button, 12px);
   background: var(--orbit-accent, #6C2BFF);
   color: #fff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   font-family: var(--font-body);
   cursor: pointer;
@@ -466,12 +466,12 @@
 .orbit-screen__btn-primary:active { opacity: 0.8; }
 
 .orbit-screen__btn-secondary {
-  padding: 10px 24px;
+  padding: 10px 16px;
   border-radius: var(--radius-button, 12px);
   border: 1px solid var(--orbit-border, rgba(108,43,255,0.18));
   background: transparent;
   color: var(--orbit-text-2, #9CA3AF);
-  font-size: 13px;
+  font-size: 12px;
   font-family: var(--font-body);
   cursor: pointer;
   transition: background 150ms ease;

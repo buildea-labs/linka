@@ -57,8 +57,14 @@ function clampedNumber(
 
 function sanitizeString(v: string | null, maxLen = 64): string | undefined {
   if (!v) return undefined;
-  // Remove caracteres de controle e limita o comprimento
-  const s = v.replace(/[\x00-\x1F\x7F]/g, '').slice(0, maxLen).trim();
+  // Remove caracteres de controle e limita o comprimento.
+  const sanitized = [...v]
+    .filter((ch) => {
+      const code = ch.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join('');
+  const s = sanitized.slice(0, maxLen).trim();
   return s || undefined;
 }
 

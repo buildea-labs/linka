@@ -9,7 +9,7 @@ import { useScrollHeader } from '../hooks/useScrollHeader';
 import { generateShareCard } from '../utils/shareCard';
 import { buildShareText, shareResultText } from '../utils/share';
 import type { Quality, ServerInfo, SpeedTestResult, TestRecord } from '../types';
-import { interpretSpeedTestResult, resolveCopy, useCaseGrade, type UseCaseGrade } from '../core';
+import { interpretSpeedTestResult, resolveCopy, useCaseGrade as computeUseCaseGrade, type UseCaseGrade } from '../core';
 import { useDiagnosisItems } from '../features/diagnosis';
 import { InfoTooltip } from '../components/InfoTooltip';
 import type { UseCaseId } from '../core';
@@ -498,9 +498,9 @@ export function ResultScreen({
   }, [handleShareImage]);
 
   // Bloco 5 — TopBar System (2026-05): scroll listener para alternar
-  // glass effect + título "Último teste" no TopBar quando o usuário rola.
+  // glass effect + título "Resultado do teste" no TopBar quando o usuário rola.
   // Padronização Large Title (2026-05, frente B): o sentinel agora é o
-  // próprio <PageHeader> "Último teste" no topo do scroll content — mesmo
+  // próprio <PageHeader> "Resultado do teste" no topo do scroll content — mesmo
   // padrão de Explore/History/Diagnostic. Substitui o div invisível que
   // existia no slot anterior.
   const { scrolled, topBarOpacity, scrollContainerRef, sentinelRef } = useScrollHeader();
@@ -522,7 +522,7 @@ export function ResultScreen({
         onBack={onBack}
         scrolled={scrolled}
         opacity={topBarOpacity}
-        title="Último teste"
+        title="Resultado do teste"
         showTitle={scrolled}
         useHaptics={useHaptics ?? false}
         rightActions={[{
@@ -546,11 +546,11 @@ export function ResultScreen({
       />
 
       <div className="lk-result__scroll" ref={scrollContainerRef}>
-        {/* Large Title pattern (2026-05, frente B): título grande "Último
+        {/* Large Title pattern (2026-05, frente B): título grande "Resultado do
             teste" no início do scroll, idêntico a Explore/History/
             Diagnostic. Funciona como sentinel do `useScrollHeader` — ao
             sair da viewport, TopBar ganha glass + título pequeno. */}
-        <PageHeader ref={sentinelRef} size="md" title="Último teste" />
+        <PageHeader ref={sentinelRef} size="md" title="Resultado do teste" />
 
         {/* ── Banner de contexto (pacote premium 2026-05, refeito 2026-05) ─
             Linha única discreta logo após o Large Title: server · loc ·
@@ -957,7 +957,7 @@ export function ResultScreen({
             <p className="lk-result__use-header">EXPERIÊNCIA DE USO</p>
             <div className="lk-result__use-divider" />
             {interpreted.useCases.map(({ id, status, blockingFactors }) => {
-              const grade = useCaseGrade({ id, status, blockingFactors }, result, profile);
+              const grade = computeUseCaseGrade({ id, status, blockingFactors }, result, profile);
               const isPositive = grade === 'A' || grade === 'B';
               const gStyle = gradeStyle(grade);
               return (

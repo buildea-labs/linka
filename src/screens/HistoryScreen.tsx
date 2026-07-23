@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Icon, ConnectionIcon, IconPdf } from '../components/icons';
 import { TopBar } from '../components/TopBar';
+import { PageHeader } from '../components/PageHeader';
 import { PullToRefreshIndicator } from '../components/PullToRefreshIndicator';
 import { useScrollHeader } from '../hooks/useScrollHeader';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
@@ -309,7 +310,7 @@ export function HistoryScreen({ theme, unit = 'mbps', initialSelectedId, onBack,
       />
 
       <main className="lk-history__scroll" ref={setScrollContainer}>
-        <div ref={sentinelRef} aria-hidden="true" className="lk-history__sentinel" />
+        <PageHeader ref={sentinelRef} size="md" title="Histórico" />
 
         {items.length === 0 ? (
           <EmptyHistorico />

@@ -36,6 +36,13 @@ O projeto é uma Progressive Web App standalone de medição de velocidade de in
 
 Trate a documentação como fonte da verdade. Se algo não estiver no código nem na documentação, não invente: registre como pendência.
 
+### Modo de execucao Codex-only
+
+- O runtime operacional do PWA e Codex-only.
+- Codex executa ponta a ponta; agentes da pasta `.claude/agents` sao papeis de referencia, nao orquestracao obrigatoria.
+- Skills da `.claude/skills` continuam como fonte de regra tecnica para PWA.
+- Escopo default: apenas `linkaSpeedtestPwa/`.
+
 ---
 
 ## 2. Antes de qualquer edição

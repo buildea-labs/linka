@@ -21,13 +21,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 24px 0 8px;
+  margin: 32px 0 10px;
 }
 
 .st-circle {
   position: relative;
-  width: 210px;
-  height: 210px;
+  width: 230px;
+  height: 230px;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
@@ -72,8 +72,8 @@
 }
 
 .st-circle__label {
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 30px;
+  font-weight: 600;
   color: #fff;
   font-family: var(--font-display);
 }
@@ -115,8 +115,8 @@
   display: flex;
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   border-radius: 999px;
-  padding: 2px;
-  margin: 20px 0 12px;
+  padding: 3px;
+  margin: 24px 0 12px;
 }
 
 .st-mode-btn {
@@ -124,7 +124,7 @@
   border: none;
   background: transparent;
   border-radius: 999px;
-  padding: 12px 4px;
+  padding: 10px 4px;
   font-size: 14px;
   font-weight: 600;
   color: var(--accent);
@@ -156,10 +156,11 @@
 
 /* ── Descrição do modo ── */
 .st-mode-desc {
-  font-size: 13px;
+  font-family: var(--font-body);
+  font-size: 14px;
   color: var(--text-2);
   text-align: center;
-  margin: 0 24px 24px;
+  margin: 0 24px 20px;
   line-height: 1.5;
 }
 
@@ -168,7 +169,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  padding: 16px;
+  padding: 14px 16px;
   margin-bottom: 12px;
   display: flex;
   flex-direction: column;
@@ -213,12 +214,14 @@
 }
 
 .st-card__title {
-  font-size: 14px;
+  font-family: var(--font-body);
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-2);
 }
 
 .st-card__label {
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--text-2);
 }
@@ -227,7 +230,7 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--accent);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   white-space: nowrap;
 }
 
@@ -394,18 +397,20 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 12px 16px;
 }
 
 .st-status-icon { color: var(--text-2); flex-shrink: 0; }
 
 .st-status-label {
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--text);
   flex: 1;
 }
 
 .st-status-value {
+  font-family: var(--font-body);
   font-size: 13px;
   font-weight: 500;
   color: var(--text-2);

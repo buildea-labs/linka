@@ -1,6 +1,6 @@
 import './BottomNavBar.css';
 
-export type NavTab = 'home' | 'velocidade' | 'diagnostico' | 'dispositivos' | 'ajustes';
+export type NavTab = 'home' | 'velocidade' | 'sinal' | 'historico' | 'ajustes';
 
 interface Props {
   active: NavTab;
@@ -25,17 +25,17 @@ export function BottomNavBar({ active, onNavigate }: Props) {
         onNavigate={onNavigate}
       />
       <NavItem
-        tab="diagnostico"
-        active={active === 'diagnostico'}
-        label="Diagnóstico"
-        icon={<DiagnosticoIcon />}
+        tab="sinal"
+        active={active === 'sinal'}
+        label="Sinal"
+        icon={<SinalIcon />}
         onNavigate={onNavigate}
       />
       <NavItem
-        tab="dispositivos"
-        active={active === 'dispositivos'}
-        label="Dispositivos"
-        icon={<DispositivosIcon />}
+        tab="historico"
+        active={active === 'historico'}
+        label="Histórico"
+        icon={<HistoricoIcon />}
         onNavigate={onNavigate}
       />
       <NavItem
@@ -114,28 +114,22 @@ function VelocidadeIcon() {
   );
 }
 
-function DiagnosticoIcon() {
+function SinalIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
-      <ellipse cx="12" cy="12" rx="9" ry="4" stroke="currentColor" strokeWidth="1.5" opacity="0.7" />
-      <ellipse cx="12" cy="12" rx="9" ry="4" stroke="currentColor" strokeWidth="1.5" opacity="0.5"
-        transform="rotate(60 12 12)" />
-      <ellipse cx="12" cy="12" rx="9" ry="4" stroke="currentColor" strokeWidth="1.5" opacity="0.5"
-        transform="rotate(120 12 12)" />
+      <path d="M4 9a12 12 0 0 1 16 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M7 12a8 8 0 0 1 10 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M10 15a4 4 0 0 1 4 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="12" cy="18" r="1.5" fill="currentColor" />
     </svg>
   );
 }
 
-function DispositivosIcon() {
+function HistoricoIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-      {/* Monitor */}
-      <rect x="2" y="3" width="13" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M8 12v2M5 14h6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      {/* Celular */}
-      <rect x="17" y="6" width="5" height="8" rx="1" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="19.5" cy="13" r="0.5" fill="currentColor" />
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M12 8v4l3 2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import './InfoTooltip.css';
 
@@ -30,6 +30,7 @@ interface Props {
 export function InfoTooltip({ label, ariaLabel = typeof label === 'string' ? `Informação: ${label}` : 'Informação' }: Props) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<'below' | 'above'>('below');
+  const id = useId();
   const containerRef = useRef<HTMLSpanElement>(null);
   const tooltipRef = useRef<HTMLSpanElement>(null);
 
@@ -64,8 +65,6 @@ export function InfoTooltip({ label, ariaLabel = typeof label === 'string' ? `In
     const wouldOverflowBottom = trigger.bottom + tooltip.height + 12 > viewportH;
     setPosition(wouldOverflowBottom ? 'above' : 'below');
   }, [open]);
-
-  const id = `lk-tip-${Math.random().toString(36).slice(2, 8)}`;
 
   return (
     <span className="lk-info-tooltip" ref={containerRef}>

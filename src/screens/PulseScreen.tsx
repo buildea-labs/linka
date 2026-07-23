@@ -17,7 +17,6 @@ interface Props {
   onIniciar: () => void;
   onSelecionarChip: (chip: OpcaoResposta) => void;
   onResponderPergunta: (opcao: OpcaoResposta) => void;
-  onVoltar: () => void;
 }
 
 const FEEDBACK_CHIPS: OpcaoResposta[] = [
@@ -57,7 +56,6 @@ export function PulseScreen({
   onIniciar,
   onSelecionarChip,
   onResponderPergunta,
-  onVoltar: _onVoltar,
 }: Props) {
   const symbolState = phaseToSymbolState(phase, session?.diagnosticSeverity);
   const active = isLoading(phase);
@@ -79,7 +77,7 @@ export function PulseScreen({
       {/* TopBar */}
       <TopBar
         showTitle
-        title="Diagnóstico"
+        title="Diagnóstico IA"
         scrolled={false}
         rightSlot={<LinkaPulseSymbol state={symbolState} size={28} />}
       />
@@ -90,7 +88,7 @@ export function PulseScreen({
           <div className="orbit-screen__welcome-symbol">
             <LinkaPulseSymbol state="idle" size={90} />
           </div>
-          <p className="orbit-screen__welcome-title">Diagnóstico Inteligente</p>
+          <p className="orbit-screen__welcome-title">Diagnóstico IA</p>
           <p className="orbit-screen__welcome-sub">O que está incomodando?</p>
           <div className="orbit-screen__welcome-cards">
             {WELCOME_CARDS.map((card) => (
@@ -241,7 +239,7 @@ function AiBubble({ analysis, isLast }: AiBubbleProps) {
             <ellipse cx="12" cy="12" rx="9" ry="4" stroke="var(--orbit-accent)" strokeWidth="1.5" opacity="0.7" />
           </svg>
         </div>
-        <span className="orbit-screen__ai-label">Orbit IA</span>
+        <span className="orbit-screen__ai-label">Diagnóstico IA</span>
         {analysis.isFallback && (
           <span className="orbit-screen__ai-fallback">offline</span>
         )}

@@ -145,11 +145,12 @@
 .lk-local-network__section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 6px;
 }
 
 .lk-local-network__section-header {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.8px;
@@ -178,7 +179,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 0;
+  padding: 14px 0;
   border-bottom: 1px solid var(--hairline);
   cursor: pointer;
   transition: opacity var(--t-fast);
@@ -208,7 +209,9 @@
 }
 
 .lk-local-network__device-name {
-  font-size: 15px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text);
   display: flex;
   align-items: center;
@@ -217,8 +220,9 @@
 }
 
 .lk-local-network__device-sub {
+  font-family: var(--font-body);
   font-size: 12px;
-  color: var(--text-3);
+  color: var(--text-2);
   margin-top: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -233,7 +237,7 @@
 }
 
 .lk-local-network__device-ip {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 12px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
@@ -300,7 +304,7 @@
   padding: 11px 24px;
   font-size: 14px;
   font-weight: 600;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   color: var(--accent);
   cursor: pointer;
   transition: opacity 0.15s;
@@ -375,8 +379,9 @@
 
 .lk-nickname-sheet__header h3 {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -401,10 +406,18 @@
 }
 
 .lk-nickname-sheet__desc {
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--text-2);
   line-height: 1.5;
   margin: 0;
+}
+
+.lk-nickname-sheet__hint {
+  margin: -6px 0 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .lk-nickname-sheet__device-info {
@@ -462,6 +475,7 @@
 .lk-nickname-sheet__meta {
   display: flex;
   gap: 10px;
+  font-family: var(--font-body);
   font-size: 12px;
   color: var(--text-3);
   flex-wrap: wrap;
@@ -503,4 +517,18 @@
 
 .lk-nickname-sheet__btn-clear:active {
   background: rgba(255, 77, 79, 0.08);
+}
+
+.lk-local-network__limitation-badge {
+  align-self: flex-start;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--warn);
+  background: var(--warn-tint);
+  border: 1px solid var(--color-warn-border);
+  border-radius: 999px;
+  padding: 3px 8px;
 }

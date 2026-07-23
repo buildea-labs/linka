@@ -60,6 +60,7 @@ export function FibraScreen({ onBack }: Props) {
 
         {/* ── Browser limitation hero ──────────────────────────────── */}
         <div className="lk-fibra__browser-notice">
+          <span className="lk-fibra__limitation-badge">LIMITAÇÃO WEB</span>
           <span className="material-symbols-rounded lk-fibra__notice-icon">router</span>
           <div className="lk-fibra__notice-text">
             <p className="lk-fibra__notice-title">Acesso ao modem limitado no navegador</p>

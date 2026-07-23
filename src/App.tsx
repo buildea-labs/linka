@@ -20,8 +20,6 @@ import {
   parseWifiCallback,
   savePendingWifiContext,
   consumePendingWifiContext,
-  runWifiShortcut,
-  generateSessionId,
 } from './features/ios-wifi-context/wifiShortcut';
 import type { TestRecord, WifiContext } from './types';
 
@@ -45,7 +43,7 @@ const OnboardingScreen = lazy(() =>
 );
 
 // Telas com nome alinhado ao Kotlin. Rotas de abas principais:
-//   home | velocidade | orbit | dispositivos | ajustes
+//   home | velocidade | sinal | historico | ajustes
 // Rotas de sub-telas (empilhadas):
 //   running | result | historico | sinal
 type Screen =
@@ -65,10 +63,10 @@ type Screen =
 const TAB_MAP: Partial<Record<Screen, NavTab>> = {
   home:         'home',
   velocidade:   'velocidade',
-  historico:    'home',
-  orbit:        'diagnostico',
-  sinal:        'home',
-  dispositivos: 'dispositivos',
+  historico:    'historico',
+  orbit:        'home',
+  sinal:        'sinal',
+  dispositivos: 'sinal',
   fibra:        'ajustes',
   ajustes:      'ajustes',
 };
@@ -204,8 +202,8 @@ export default function App() {
   const handleNavTab = useCallback((tab: NavTab) => {
     const target: Screen = tab === 'home' ? 'home'
       : tab === 'velocidade' ? 'velocidade'
-      : tab === 'diagnostico' ? 'orbit'
-      : tab === 'dispositivos' ? 'dispositivos'
+      : tab === 'sinal' ? 'sinal'
+      : tab === 'historico' ? 'historico'
       : 'ajustes';
     backStackRef.current = [];
     forwardStackRef.current = [];
@@ -244,8 +242,10 @@ export default function App() {
       setPrevious(prev);
       const wifiCtxNormal = pendingWifiContextRef.current;
       pendingWifiContextRef.current = null;
-      if (wifiCtxNormal) test.result!.wifiContext = wifiCtxNormal;
-      const newRecord = appendRecord(test.result!, {
+      const resultToRecord = wifiCtxNormal
+        ? { ...test.result!, wifiContext: wifiCtxNormal }
+        : test.result!;
+      const newRecord = appendRecord(resultToRecord, {
         serverName: deviceInfo.server!.name,
         isp: deviceInfo.server!.isp,
         deviceType: deviceInfo.device!.deviceType,
@@ -266,7 +266,7 @@ export default function App() {
 
     const timer = setTimeout(proceed, remaining);
     return () => clearTimeout(timer);
-  }, [test, test.phase, test.result, deviceInfo.device, deviceInfo.server, goTo, testMode]);
+  }, [test.phase, test.result, deviceInfo.device, deviceInfo.server, goTo, testMode]);
 
   const effectiveConnection = settings.connectionOverride !== 'auto'
     ? settings.connectionOverride
@@ -310,11 +310,6 @@ export default function App() {
   }, []);
 
   const pulse = usePulseDiagnosis(deviceInfo.device?.connectionType ?? 'unknown');
-
-  const handleOpenWifiShortcut = useCallback(() => {
-    const sessionId = generateSessionId();
-    runWifiShortcut(sessionId);
-  }, []);
 
   const handleOnboardingComplete = useCallback(() => {
     try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch { /* ignore */ }
@@ -367,7 +362,6 @@ export default function App() {
         return (
           <SpeedTestScreen
             theme={theme}
-            onToggleTheme={onToggleTheme}
             onStart={handleStart}
             onOpenDiagnostico={handleOpenOrbit}
             lastRecord={lastRecord}
@@ -432,14 +426,13 @@ export default function App() {
             onToggleTheme={onToggleTheme}
             settings={settings}
             onUpdateSettings={updateSettings}
-            onBack={goBack}
             onShowHistory={handleShowHistory}
             onResetOnboarding={handleResetOnboarding}
             onShowFibra={handleShowFibra}
           />
         );
       case 'sinal':
-        return <LocalWifiScreen onBack={goBack} />;
+        return <LocalWifiScreen onBack={goBack} onOpenDevices={() => goTo('dispositivos')} />;
       case 'dispositivos':
         return <LocalNetworkScreen onBack={goBack} />;
       case 'fibra':
@@ -454,7 +447,6 @@ export default function App() {
             onIniciar={pulse.iniciar}
             onSelecionarChip={pulse.selecionarChip}
             onResponderPergunta={pulse.responderPergunta}
-            onVoltar={goBack}
           />
         );
       case 'historico':
@@ -491,16 +483,15 @@ export default function App() {
     }
   }, [
     screen, theme, onToggleTheme, isOnline,
-    test.phase, test.instantMbps, test.result,
+    test.phase, test.instantMbps, test.result, test.live, test.overallProgress,
     deviceInfo,
     previous, lastRecord, historyInitialId,
     handleStart, handleCancel, handleRetry, handleShowHistory, handleNavTab,
     handleOpenOrbit, handleShowSinal, handleOpenAjustes, handleShowFibra,
-    handleOpenWifiShortcut,
     pulse,
     handleAppRefresh, handleResetOnboarding,
-    goBack, goToReturnTarget,
-    capabilities.localWifiDiagnostics, capabilities.localNetworkDiscovery,
+    goBack, goTo, goToReturnTarget,
+    capabilities.localWifiDiagnostics,
     settings, updateSettings, testMode,
   ]);
 

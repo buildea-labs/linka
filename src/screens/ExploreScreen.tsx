@@ -15,7 +15,6 @@ interface Props {
   onToggleTheme: () => void;
   settings: Settings;
   onUpdateSettings: (patch: Partial<Settings>) => void;
-  onBack: () => void;
   onShowHistory?: () => void;
   onResetOnboarding?: () => void;
   onShowFibra?: () => void;
@@ -62,7 +61,6 @@ export function ExploreScreen({
   onToggleTheme,
   settings,
   onUpdateSettings,
-  onBack: _onBack,
   onShowHistory,
   onResetOnboarding,
   onShowFibra,

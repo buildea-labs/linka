@@ -184,7 +184,7 @@ export function RunningScreen({
       {/* Bloco 5 — TopBar System (2026-05): título "Medindo…" sempre visível
           (showTitle permanente). Sem back — não dá para abandonar mid-test
           pelo header; usuário usa o botão "Cancelar" no rodapé. */}
-      <TopBar title="Medindo…" showTitle scrolled={false} />
+      <TopBar title="Central de testes" showTitle scrolled={false} />
       {serverLine && (
         <p className="lk-running__server-line" title={serverLine}>
           {serverLine}
