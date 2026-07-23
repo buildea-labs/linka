@@ -57,7 +57,8 @@ function clampedNumber(
 
 function sanitizeString(v: string | null, maxLen = 64): string | undefined {
   if (!v) return undefined;
-  // Remove caracteres de controle e limita o comprimento
+  // Remove caracteres de controle e limita o comprimento (intencional).
+  // eslint-disable-next-line no-control-regex
   const s = v.replace(/[\x00-\x1F\x7F]/g, '').slice(0, maxLen).trim();
   return s || undefined;
 }

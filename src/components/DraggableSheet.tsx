@@ -90,6 +90,10 @@ export function DraggableSheet({
   // a altura efetiva vem do snap. Quando set, sobrescreve o snap pra
   // animar o usuário arrastando.
   const [dragHeightVh, setDragHeightVh] = useState<number | null>(null);
+  // Espelha `startYRef.current != null` em estado real — a transition
+  // inline (linhas 219/226) precisa reagir a essa mudança durante o
+  // render, e ler `.current` de um ref nesse ponto não é seguro.
+  const [isDragging, setIsDragging] = useState(false);
 
   const startYRef = useRef<number | null>(null);
   const startHeightVhRef = useRef<number>(0);
@@ -102,6 +106,8 @@ export function DraggableSheet({
   // último snap (que pode ser `expanded`, surpreendendo o usuário).
   useEffect(() => {
     if (open) {
+      // Reset do snap ao reabrir — sincroniza estado local com a mudança de prop.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSnap(initialSnap);
       setDragHeightVh(null);
     }
@@ -126,7 +132,6 @@ export function DraggableSheet({
   if (!open) return null;
 
   const currentHeightVh = dragHeightVh ?? SNAP_VH[snap];
-  const isDragging = startYRef.current != null;
 
   const handlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -136,6 +141,7 @@ export function DraggableSheet({
     startHeightVhRef.current = currentHeightVh;
     lastSampleRef.current = { y: e.clientY, t: performance.now() };
     velocityRef.current = 0;
+    setIsDragging(true);
     // Trava o estado em `dragHeightVh` para o transition desligar agora
     // (a regra inline já considera `isDragging`, mas só recalcula a
     // próxima render — setando aqui garantimos o lift instantâneo).
@@ -185,6 +191,7 @@ export function DraggableSheet({
 
     startYRef.current = null;
     lastSampleRef.current = null;
+    setIsDragging(false);
 
     // 1. Fast swipe down → fecha.
     if (vel > VELOCITY_THRESHOLD) {
