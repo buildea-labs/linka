@@ -1,0 +1,45 @@
+.lk-gauge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lk-gauge__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.lk-gauge__phase {
+  /* Auditoria 2026-05: era `var(--font-mono)`. "DOWNLOAD"/"UPLOAD" é
+     LABEL de seção, não valor tabular — mono ficava destoando do resto
+     do app (todos os labels uppercase do projeto usam display). Mantém
+     letter-spacing e weight para preservar a leitura "técnica". */
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.lk-gauge__num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 80px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.lk-gauge__unit {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 4px;
+  letter-spacing: 0.04em;
+}
