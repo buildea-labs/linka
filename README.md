@@ -44,6 +44,8 @@ src/screens/      Telas principais
 src/types/        Tipagens globais
 src/utils/        Speedtest, diagnóstico, histórico e exportação
 docs/             Documentação técnica e funcional
+webapp/           Ex-repo linka-webapp, consolidado aqui em 2026-07-23 — app
+                  próprio (build/deploy independentes), ver webapp/README.md
 ```
 
 ## Desenvolvimento
