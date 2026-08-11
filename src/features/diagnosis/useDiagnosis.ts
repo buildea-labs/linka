@@ -15,13 +15,13 @@ import { useEffect, useState } from 'react';
 import type { DiagnosisRecommendation, ContractPlanInfo } from './types';
 import type { ConnectionType, SpeedTestResult as AppSpeedTestResult } from '../../types';
 import { speedTestResultToEngineInput } from './diagnosisAdapter';
-import { combinedDiagnosis } from './claudeApi';
+import { combinedDiagnosis } from './geminiApi';
 
 export interface UseDiagnosisResult {
   data: DiagnosisRecommendation | null;
   loading: boolean;
   error: string | null;
-  source: 'rules-engine' | 'claude-api' | 'fallback' | null;
+  source: 'rules-engine' | 'gemini-api' | 'fallback' | null;
 }
 
 /**

@@ -1,0 +1,88 @@
+<!-- @dsCard group="Guidelines" viewport="1180x820" name="Modo claro e escuro" subtitle="Dois temas, mesmos nomes semânticos — com auditoria de contraste WCAG AA ao vivo" -->
+<html><head><link rel="stylesheet" href="../styles.css"><script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script><script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script><script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script><script src="../_ds_bundle.js"></script></head>
+<body data-theme="light" style="margin:0;background:oklch(93% 0.004 262);padding:28px;font-family:var(--font-body);color:var(--text-primary)">
+<div id="root"></div>
+<script type="text/babel">
+const { Eyebrow, Button, ValueCard, StatDisplay, StatusLabel, AdSlot } = window.LinkaDesignSystem_60151f;
+
+function Panel({ theme, label }) {
+  return (
+    <div data-theme={theme} style={{flex:1,background:'var(--surface-page)',color:'var(--text-primary)',borderRadius:20,overflow:'hidden',border:'.5px solid var(--border-default)'}}>
+      <div style={{padding:'18px 20px 10px'}}><Eyebrow>{label}</Eyebrow></div>
+      <div style={{padding:'0 20px 20px',display:'flex',flexDirection:'column',gap:16}}>
+        <div style={{display:'flex',gap:26,alignItems:'baseline',transform:'scale(.62)',transformOrigin:'left top',height:74}}>
+          <StatDisplay label="Download" value="184,3" unit="Mbps" accent />
+          <StatDisplay label="Upload" value="41,2" unit="Mbps" />
+        </div>
+        <p style={{fontFamily:'var(--font-display)',fontSize:20,fontWeight:700,margin:0}}>Sua conexão está pronta.</p>
+        <ValueCard label="Privacidade">Nenhum resultado é vinculado a conta ou identidade.</ValueCard>
+        <div style={{display:'flex',gap:20,alignItems:'center'}}>
+          <Button variant="subtle">Ver detalhes</Button>
+          <Button variant="filled">Testar novamente</Button>
+          <StatusLabel align="start">Disponível agora</StatusLabel>
+        </div>
+        <AdSlot format="banner" />
+      </div>
+    </div>
+  );
+}
+ReactDOM.render(
+  <div style={{display:'flex',flexDirection:'column',gap:20}}>
+    <div style={{display:'flex',gap:20,alignItems:'stretch'}}>
+      <Panel theme="light" label="Claro · página #FCFCFD" />
+      <Panel theme="dark" label="Escuro · página #000000" />
+    </div>
+    <div id="audit"></div>
+  </div>, document.getElementById('root'));
+
+// —— auditoria de contraste ao vivo ——
+const PAIRS = [
+  ['Texto principal', '--text-primary', '--surface-page', 4.5],
+  ['Texto secundário', '--text-secondary', '--surface-page', 4.5],
+  ['Texto secundário no card', '--text-secondary', '--surface-card', 4.5],
+  ['Laranja como texto', '--brand-accent-warm-ink', '--surface-card', 4.5],
+  ['Texto sobre acento', '--text-on-accent', '--brand-accent', 4.5],
+  ['Laranja como gráfico', '--brand-accent-warm', '--surface-page', 3],
+  ['Borda de controle', '--border-strong', '--surface-page', 3],
+];
+function lum(c){const [r,g,b]=c.map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*r+.7152*g+.0722*b}
+// getComputedStyle devolve oklch() literal em alguns motores — converter à mão.
+function oklchToRgb(L,C,H){const h=H*Math.PI/180,a=C*Math.cos(h),bb=C*Math.sin(h);
+  const l=(L+.3963377774*a+.2158037573*bb)**3,m=(L-.1055613458*a-.0638541728*bb)**3,s=(L-.0894841775*a-1.2914855480*bb)**3;
+  const lin=[4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.7076147010*s];
+  return lin.map(v=>{v=v<=.0031308?12.92*v:1.055*Math.pow(Math.max(v,0),1/2.4)-.055;return Math.round(Math.min(1,Math.max(0,v))*255)});}
+function parse(str){
+  const ok=str.match(/oklch\(([^)]+)\)/i);
+  if(ok){const [L,C,H]=ok[1].split('/')[0].trim().split(/\s+/).map(v=>parseFloat(v)*(v.includes('%')?0.01:1));return oklchToRgb(L,C||0,H||0);}
+  return str.match(/[\d.]+/g).slice(0,3).map(Number);
+}
+function rgb(el,prop){const p=document.createElement('span');p.style.color=`var(${prop})`;el.appendChild(p);const c=parse(getComputedStyle(p).color);p.remove();return c}
+function ratio(a,b){const [x,y]=[lum(a),lum(b)].sort((m,n)=>n-m);return (x+.05)/(y+.05)}
+requestAnimationFrame(()=>{
+  const probes = {};
+  ['light','dark'].forEach(t=>{const d=document.createElement('div');d.dataset.theme=t;d.style.cssText='position:absolute;left:-9999px;top:0';document.body.appendChild(d);probes[t]=d});
+  const rows = PAIRS.map(([name,fg,bg,min])=>{
+    const cells = ['light','dark'].map(t=>{
+      const r = ratio(rgb(probes[t],fg), rgb(probes[t],bg));
+      return {r, ok: r >= min, min};
+    });
+    return `<tr>
+      <td style="padding:9px 14px 9px 0">${name}</td>
+      <td style="padding:9px 14px 9px 0;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">${fg} / ${bg}</td>
+      <td style="padding:9px 14px 9px 0;font-family:var(--font-mono);font-size:12px">mín ${min}:1</td>
+      ${cells.map(c=>`<td style="padding:9px 14px 9px 0;font-family:var(--font-mono);font-size:12px;font-variant-numeric:tabular-nums"><span style="display:inline-flex;align-items:center;gap:7px"><span aria-hidden="true" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${c.ok?'var(--brand-accent-warm)':'transparent'};border:2px solid ${c.ok?'var(--brand-accent-warm)':'var(--text-primary)'}"></span>${c.r.toFixed(2)}:1 <span style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-secondary)">${c.ok?'passa':'reprova'}</span></span></td>`).join('')}
+    </tr>`;
+  }).join('');
+  document.getElementById('audit').innerHTML = `
+    <div style="background:var(--surface-card);border:.5px solid var(--border-default);border-radius:20px;padding:20px 22px">
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:12px">Auditoria de contraste · WCAG 2.2 AA · medida ao vivo nos dois temas</div>
+      <table style="border-collapse:collapse;font-size:13px;width:100%">
+        <thead><tr style="text-align:left;color:var(--text-secondary);font-size:11px;letter-spacing:.06em;text-transform:uppercase">
+          <th style="padding:0 14px 8px 0;font-weight:600">Par</th><th style="padding:0 14px 8px 0;font-weight:600">Tokens</th><th style="padding:0 14px 8px 0;font-weight:600">Exigido</th><th style="padding:0 14px 8px 0;font-weight:600">Claro</th><th style="padding:0 14px 8px 0;font-weight:600">Escuro</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+});
+</script>
+</body></html>

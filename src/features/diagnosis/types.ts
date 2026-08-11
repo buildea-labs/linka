@@ -105,7 +105,7 @@ export interface DiagnosisRecommendation {
 
   // Metadata
   confidence: number;               // 0-1 (nível de confiança)
-  source: 'rules-engine' | 'claude-api' | 'fallback'; // qual motor gerou
+  source: 'rules-engine' | 'gemini-api' | 'fallback'; // qual motor gerou
   processingTimeMs: number;         // tempo de processamento
 }
 

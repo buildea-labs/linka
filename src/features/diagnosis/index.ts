@@ -3,7 +3,7 @@
  */
 
 export { rulesEngine } from './rulesEngine';
-export { claudeDiagnosis, combinedDiagnosis } from './claudeApi';
+export { geminiDiagnosis, combinedDiagnosis } from './geminiApi';
 export { useDiagnosis } from './useDiagnosis';
 export { useDiagnosisItems } from './useDiagnosisItems';
 export { diagnosisRecommendationToItems, speedTestResultToEngineInput } from './diagnosisAdapter';

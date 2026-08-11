@@ -1,602 +1,177 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { DeviceInfo, ServerInfo, TestRecord, BufferbloatSeverity } from '../types';
-import type { Settings } from '../hooks/useSettings';
-import { TopBar } from '../components/TopBar';
-import { formatMbps } from '../utils/format';
-import { useScrollHeader } from '../hooks/useScrollHeader';
-import './SpeedTestScreen.css';
+// @ts-nocheck
+import React, { useState, useEffect, useRef } from 'react';
+import { MetricRing } from '../ui/components/speedtest/MetricRing';
+import { PhaseDots } from '../ui/components/speedtest/PhaseDots';
+import { StatDisplay } from '../ui/components/speedtest/StatDisplay';
+import { DetailsDisclosure } from '../ui/components/speedtest/DetailsDisclosure';
+import { Button } from '../ui/components/core/Button';
+import { Card } from '../ui/components/core/Card';
+import { useSpeedTest } from '../hooks/useSpeedTest';
+import { generateResultSentence } from '../features/LkResultIA';
 
-interface Props {
-  theme: 'dark' | 'light';
-  onStart: (mode: 'fast' | 'complete') => void;
-  onOpenDiagnostico: () => void;
-  lastRecord: TestRecord | null;
-  device: DeviceInfo | null;
-  server: ServerInfo | null;
-  settings: Settings;
-  onUpdateSettings: (patch: Partial<Settings>) => void;
-}
+const EASE = 'var(--ease-spring, cubic-bezier(0.32,0.72,0,1))';
 
-type ModeOption = 'fast' | 'complete' | 'triplo';
+export function SpeedTestScreen() {
+  const { phase: enginePhase, instantMbps, overallProgress, result: engineResult, error, start, reset } = useSpeedTest();
+  
+  const [screen, setScreen] = useState('measuring');
+  const [leaving, setLeaving] = useState(false);
+  const [doneMessage, setDoneMessage] = useState('Consolidando...');
+  const [aiSentence, setAiSentence] = useState('Sua conexão está pronta.');
 
-const MODE_LABELS: Record<ModeOption, string> = {
-  fast: 'Rápido',
-  complete: 'Completo',
-  triplo: 'Triplo',
-};
+  // Iniciar automaticamente
+  useEffect(() => {
+    start();
+  }, [start]);
 
-const MODE_DESC: Record<ModeOption, string> = {
-  fast: 'Download e upload · cerca de 15s',
-  complete: 'Download, upload, bufferbloat e DNS · cerca de 60s',
-  triplo: '3 medições com intervalo de 10s · média calculada ao final',
-};
+  // Transição de tela quando finaliza
+  useEffect(() => {
+    let isMounted = true;
+    if (enginePhase === 'done' && screen === 'measuring') {
+      const phrases = [
+        'Consolidando dados...',
+        'Analisando latência...',
+        'Quase pronto...',
+        'Avaliando rede...',
+        'Calculando...',
+      ];
+      setDoneMessage(phrases[Math.floor(Math.random() * phrases.length)]);
+      
+      if (engineResult) {
+        generateResultSentence(engineResult).then(sentence => {
+          if (isMounted) setAiSentence(sentence);
+        });
+      }
+      
+      const tidLeave = setTimeout(() => setLeaving(true), 1500);
+      const tidScreen = setTimeout(() => {
+        setScreen('result');
+        setLeaving(false);
+      }, 1500 + 420);
+      return () => {
+        isMounted = false;
+        clearTimeout(tidLeave); clearTimeout(tidScreen);
+      };
+    }
+    return () => { isMounted = false; };
+  }, [enginePhase, screen, engineResult]);
 
-export function SpeedTestScreen({
-  onStart,
-  onOpenDiagnostico,
-  lastRecord,
-  device,
-  server,
-  settings,
-  onUpdateSettings,
-}: Props) {
-  const { scrolled, topBarOpacity, scrollContainerRef, sentinelRef } = useScrollHeader();
-  const [mode, setMode] = useState<ModeOption>(settings.defaultMode ?? 'complete');
-  const [showToolsSheet, setShowToolsSheet] = useState(false);
-  const [showAnatelSheet, setShowAnatelSheet] = useState(false);
-  const [showBufferbloatSheet, setShowBufferbloatSheet] = useState(false);
-
-  const handleStart = useCallback(() => {
-    const effectiveMode = mode === 'triplo' ? 'complete' : mode;
-    onUpdateSettings({ defaultMode: effectiveMode });
-    onStart(effectiveMode);
-  }, [mode, onStart, onUpdateSettings]);
-
-  const connectionType = device?.connectionType ?? lastRecord?.connectionType ?? 'unknown';
-
-  return (
-    <div className="st-screen">
-      <TopBar
-        title="Central de testes"
-        showTitle={true}
-        scrolled={scrolled}
-        opacity={topBarOpacity}
-      />
-
-      <div ref={scrollContainerRef} className="st-scroll">
-        <div ref={sentinelRef} style={{ height: 1 }} />
-
-        {/* ── Círculo principal ── */}
-        <div className="st-circle-wrapper">
-          {lastRecord ? (
-            <DoneCircle onRepeat={handleStart} />
-          ) : (
-            <IdleCircle onStart={handleStart} />
-          )}
-        </div>
-
-        {/* ── Seletor de modo ── */}
-        <ModeSelector mode={mode} onSelect={setMode} />
-
-        <p className="st-mode-desc">{MODE_DESC[mode]}</p>
-
-        {/* ── Resultados (só aparecem após a primeira medição) ── */}
-        {lastRecord && (
-          <>
-            <LastResultCard record={lastRecord} unit={settings.unit} />
-            <CardContextoUso record={lastRecord} />
-            {settings.contractedDown && (connectionType === 'wifi' || connectionType === 'cable') && (
-              <CardAnatel
-                downloadMbps={lastRecord.dl}
-                contractedDown={settings.contractedDown}
-                onOpenSheet={() => setShowAnatelSheet(true)}
-              />
-            )}
-            <CardBufferbloat
-              severity={lastRecord.bufferbloatSeverity}
-              onOpenSheet={() => setShowBufferbloatSheet(true)}
-            />
-          </>
-        )}
-
-        {/* ── Ferramentas ── */}
-        <ExploreToolsRow onClick={() => setShowToolsSheet(true)} />
-
-        {/* ── Status de conexão ── */}
-        <StatusCard device={device} server={server} />
-
-        <div className="st-bottom-spacer" />
-      </div>
-
-      {/* ── Bottom sheets ── */}
-      {showToolsSheet && (
-        <ToolsSheet
-          onClose={() => setShowToolsSheet(false)}
-          onOpenDiagnostico={() => { setShowToolsSheet(false); onOpenDiagnostico(); }}
-        />
-      )}
-      {showAnatelSheet && <AnatelSheet onClose={() => setShowAnatelSheet(false)} />}
-      {showBufferbloatSheet && <BufferbloatSheet onClose={() => setShowBufferbloatSheet(false)} />}
-    </div>
-  );
-}
-
-/* ── Círculo idle (pulse animado) ────────────────────────────────────────── */
-
-function IdleCircle({ onStart }: { onStart: () => void }) {
-  return (
-    <button
-      className="st-circle st-circle--idle"
-      onClick={onStart}
-      aria-label="Iniciar teste de velocidade"
-      type="button"
-    >
-      <span className="st-circle__glow" aria-hidden="true" />
-      <span className="st-circle__face">
-        <span className="st-circle__label">Iniciar</span>
-      </span>
-    </button>
-  );
-}
-
-/* ── Círculo concluído ───────────────────────────────────────────────────── */
-
-function DoneCircle({ onRepeat }: { onRepeat: () => void }) {
-  return (
-    <button
-      className="st-circle st-circle--done"
-      onClick={onRepeat}
-      aria-label="Repetir teste de velocidade"
-      type="button"
-    >
-      <span className="st-circle__check" aria-hidden="true">✓</span>
-      <span className="st-circle__repeat">Repetir</span>
-    </button>
-  );
-}
-
-/* ── Seletor de modo ─────────────────────────────────────────────────────── */
-
-function ModeSelector({ mode, onSelect }: { mode: ModeOption; onSelect: (m: ModeOption) => void }) {
-  const modes: ModeOption[] = ['fast', 'complete', 'triplo'];
-  return (
-    <div className="st-mode-selector" role="group" aria-label="Modo de teste">
-      {modes.map((m) => {
-        const active = mode === m;
-        const disabled = m === 'triplo';
-        return (
-          <button
-            key={m}
-            type="button"
-            className={`st-mode-btn${active ? ' st-mode-btn--active' : ''}${disabled ? ' st-mode-btn--disabled' : ''}`}
-            onClick={() => !disabled && onSelect(m)}
-            aria-pressed={active}
-            disabled={disabled}
-            title={disabled ? 'Em breve' : undefined}
-          >
-            {MODE_LABELS[m]}
-            {disabled && <span className="st-mode-soon">Em breve</span>}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ── Card: último resultado ──────────────────────────────────────────────── */
-
-function LastResultCard({ record, unit }: { record: TestRecord; unit: 'mbps' | 'gbps' }) {
-  return (
-    <div className="st-card st-card--row">
-      <span className="st-card__label">Último resultado</span>
-      <span className="st-card__value--accent">
-        ↓ {formatMbps(record.dl, unit)} · ↑ {formatMbps(record.ul, unit)}
-      </span>
-    </div>
-  );
-}
-
-/* ── Card: O que você consegue fazer ────────────────────────────────────── */
-
-function CardContextoUso({ record }: { record: TestRecord }) {
-  const { dl, ul, latency, jitter } = record;
-
-  const usos = [
-    {
-      nome: 'Videochamada',
-      ok: dl >= 10 && ul >= 3 && latency <= 80 && jitter <= 30,
-      falha: 'Pode ter travamentos ou queda de qualidade',
-    },
-    {
-      nome: 'Streaming HD',
-      ok: dl >= 25,
-      falha: 'Buffering provável em qualidade alta',
-    },
-    {
-      nome: 'Jogos online',
-      ok: latency <= 50 && jitter <= 20,
-      falha: 'Latência ou jitter podem causar lag',
-    },
-    {
-      nome: 'Home-office',
-      ok: dl >= 5 && ul >= 5,
-      falha: 'Upload insuficiente para ferramentas colaborativas',
-    },
-  ];
-
-  return (
-    <div className="st-card">
-      <div className="st-card__header">
-        <span className="st-card__title">O que você consegue fazer</span>
-        <InfoIcon />
-      </div>
-      <div className="st-divider" />
-      {usos.map((uso, i) => (
-        <div key={uso.nome}>
-          <div className="st-uso-row">
-            <span className={`st-uso-icon ${uso.ok ? 'st-uso-icon--ok' : 'st-uso-icon--fail'}`} aria-hidden="true">
-              {uso.ok ? <CheckCircleIcon /> : <ErrorCircleIcon />}
-            </span>
-            <div className="st-uso-text">
-              <span className="st-uso-nome">{uso.nome}</span>
-              {uso.ok
-                ? <span className="st-uso-ok">Velocidade adequada para este uso</span>
-                : <span className="st-uso-fail">{uso.falha}</span>
-              }
-            </div>
-          </div>
-          {i < usos.length - 1 && <div className="st-divider" />}
-        </div>
-      ))}
-      <div className="st-divider" />
-      <p className="st-card__footnote">
-        Jitter é a variação da latência — valores altos causam lag em jogos e travamentos em videochamadas.
-      </p>
-    </div>
-  );
-}
-
-/* ── Card: Velocidade vs. contrato (ANATEL) ─────────────────────────────── */
-
-function CardAnatel({ downloadMbps, contractedDown, onOpenSheet }: {
-  downloadMbps: number;
-  contractedDown: number;
-  onOpenSheet: () => void;
-}) {
-  const pct = (downloadMbps / contractedDown) * 100;
-  const passaMinimo = pct >= 40;
-  const passaNormal = pct >= 80;
-
-  const badge = passaNormal ? { text: 'Aprovado', cls: 'success' }
-    : passaMinimo ? { text: 'Parcial', cls: 'warn' }
-    : { text: 'Abaixo do mínimo', cls: 'error' };
-
-  const conclusao = passaNormal
-    ? 'Sua internet está dentro do esperado pelo contrato.'
-    : passaMinimo
-    ? 'Velocidade acima do mínimo, mas abaixo do normal. Pode ser variação pontual — faça mais testes para confirmar.'
-    : 'Se isso se repetir, você tem direito de reclamar com sua operadora.';
-
-  return (
-    <div className="st-card">
-      <div className="st-card__header">
-        <span className="st-card__title">Velocidade vs. contrato</span>
-        <button className="st-icon-btn" onClick={onOpenSheet} aria-label="Mais informações sobre a regra ANATEL" type="button">
-          <InfoIcon />
-        </button>
-      </div>
-      <span className={`st-badge st-badge--${badge.cls}`}>{badge.text}</span>
-      <div className="st-anatel-criterio">
-        <CriterioIcon ok={passaMinimo} />
-        <span className="st-anatel-label">Mínimo garantido (40%)</span>
-      </div>
-      <div className="st-anatel-criterio">
-        <CriterioIcon ok={passaNormal} />
-        <span className="st-anatel-label">Velocidade normal (80%)</span>
-      </div>
-      <p className="st-card__body">{conclusao}</p>
-      <div className="st-divider" />
-      <p className="st-card__footnote">Ato 7869/2022 · ANATEL</p>
-    </div>
-  );
-}
-
-/* ── Card: Bufferbloat ───────────────────────────────────────────────────── */
-
-function CardBufferbloat({ severity, onOpenSheet }: {
-  severity?: BufferbloatSeverity;
-  onOpenSheet: () => void;
-}) {
-  if (!severity) return null;
-
-  if (severity === 'low') {
-    return (
-      <div className="st-card st-card--success">
-        <div className="st-card__row-start">
-          <span className="st-uso-icon--ok"><CheckCircleIcon /></span>
-          <div>
-            <p className="st-card__title">Sem bufferbloat detectado</p>
-            <p className="st-card__body">Sua rede não apresenta atraso extra sob carga. Jogos e videochamadas devem funcionar bem.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const cfg: Record<Exclude<BufferbloatSeverity, 'low'>, { badge: string; cls: string; text: string }> = {
-    moderate: {
-      badge: 'Moderado',
-      cls: 'warn',
-      text: 'Em uso intenso — muitos downloads ou chamadas simultâneas — pode sentir travamentos e aumento de latência.',
-    },
-    high: {
-      badge: 'Severo',
-      cls: 'error',
-      text: 'Atraso alto mesmo com boa velocidade. Chamadas de vídeo e jogos online serão afetados durante qualquer uso da rede.',
-    },
-    critical: {
-      badge: 'Crítico',
-      cls: 'error',
-      text: 'Atraso crítico detectado. A rede está sobrecarregada e qualquer uso simultâneo causará degradação severa.',
-    },
+  const handleRetest = () => {
+    reset();
+    setScreen('measuring');
+    setLeaving(false);
+    start();
   };
 
-  const { badge, cls, text } = cfg[severity] ?? cfg.high;
+  const connecting = enginePhase === 'idle' || enginePhase === 'latency';
+  const isDone = enginePhase === 'done';
+  const isMeasuring = screen === 'measuring';
+  const isResult = screen === 'result';
 
-  return (
-    <div className="st-card">
-      <div className="st-card__header">
-        <span className="st-card__title">Atraso extra na conexão</span>
-        <button className="st-icon-btn" onClick={onOpenSheet} aria-label="O que é bufferbloat" type="button">
-          <InfoIcon />
-        </button>
-      </div>
-      <span className={`st-badge st-badge--${cls}`}>{badge}</span>
-      <p className="st-card__body">{text}</p>
-    </div>
+  const displayValue = instantMbps !== null 
+      ? instantMbps.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+      : (connecting ? 'Preparando' : '0,0');
+
+  const phaseLabel = connecting
+    ? 'Conectando ao servidor mais próximo…'
+    : enginePhase === 'download'
+    ? 'Medindo velocidade de download…'
+    : enginePhase === 'upload'
+    ? 'Medindo velocidade de upload…'
+    : 'Finalizando…';
+
+  const phasesList = [
+    { key: 'download', label: 'Download' },
+    { key: 'upload', label: 'Upload' }
+  ];
+
+  const enter = (delay: number) => ({
+    animation: `linkaRise .85s ${EASE} both`,
+    animationDelay: `${delay}ms`
+  });
+
+  const Retry = (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
+      style={{ width: 14, height: 14, marginLeft: 6 }}>
+      <path d="M3 12a9 9 0 1 1 3 6.7" />
+      <path d="M3 21v-6h6" />
+    </svg>
   );
-}
-
-/* ── Linha: Explorar ferramentas ─────────────────────────────────────────── */
-
-function ExploreToolsRow({ onClick }: { onClick: () => void }) {
-  return (
-    <button className="st-card st-card--row st-card--btn" onClick={onClick} type="button" aria-label="Explorar ferramentas">
-      <span className="st-card__row-icon" aria-hidden="true"><SpeedIcon /></span>
-      <span className="st-card__label" style={{ flex: 1 }}>Explorar ferramentas</span>
-      <ChevronIcon />
-    </button>
-  );
-}
-
-/* ── Card: Status de conexão ─────────────────────────────────────────────── */
-
-function StatusCard({ device, server }: { device: DeviceInfo | null; server: ServerInfo | null }) {
-  const type = device?.connectionType ?? 'unknown';
-  const connected = device !== null;
 
   return (
-    <div className="st-card st-card--status">
-      <div className="st-status-row">
-        <span className="st-status-icon" aria-hidden="true">
-          {type === 'wifi' ? <WifiIcon /> : type === 'cable' ? <EthernetIcon /> : type === 'mobile' ? <SignalIcon /> : <WifiOffIcon />}
-        </span>
-        <span className="st-status-label">
-          {type === 'wifi' ? 'Wi-Fi' : type === 'cable' ? 'Cabo' : type === 'mobile' ? 'Dados móveis' : 'Sem conexão'}
-        </span>
-        <span className={`st-status-value ${connected ? 'st-status-value--ok' : 'st-status-value--fail'}`}>
-          {connected ? 'Conectado' : 'Desconectado'}
-        </span>
-      </div>
-      {server && (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '56px 24px', textAlign: 'center' }}>
+      
+      {/* Global animations */}
+      <style>{`
+        @keyframes linkaRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+        @keyframes linkaFadeIn { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
+
+      {error && (
+        <div style={{ color: 'var(--brand-accent-warm)', marginBottom: 20 }}>
+          {error}
+        </div>
+      )}
+
+      {isMeasuring && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          opacity: leaving ? 0 : 1, transform: leaving ? 'translateY(-12px)' : 'none',
+          transition: `opacity .42s ${EASE}, transform .42s ${EASE}`,
+          animation: `linkaFadeIn .7s ${EASE} both`
+        }}>
+          {isDone ? (
+            <div style={{ width: 220, height: 220, display: 'grid', placeItems: 'center', margin: '0 auto', animation: 'linkaFadeIn 0.4s ease' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, letterSpacing: '-0.015em', margin: 0, color: 'var(--text-primary)' }}>
+                {doneMessage}
+              </p>
+            </div>
+          ) : (
+            <MetricRing 
+              connecting={connecting} 
+              value={displayValue} 
+              unit={connecting ? undefined : 'Mbps'} 
+              progress={overallProgress} 
+              style={{ position: 'static' }} 
+            />
+          )}
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-secondary)', margin: '20px 0 12px' }}>LkSpeedTestEngine</p>
+          <p style={{ fontSize: 15, color: 'var(--text-secondary)', minHeight: 20 }}>{phaseLabel}</p>
+          <PhaseDots phases={phasesList} activeKey={connecting ? '' : enginePhase} style={{ position: 'static' }} />
+        </div>
+      )}
+
+      {isResult && engineResult && (
         <>
-          <div className="st-divider" />
-          <div className="st-status-row">
-            <span className="st-status-icon" aria-hidden="true"><GlobeIcon /></span>
-            <span className="st-status-label">Servidor</span>
-            <span className="st-status-value">{server.colo && server.colo !== '—' ? `${server.name} · ${server.colo}` : server.name}</span>
+          <div style={{ display: 'flex', gap: 'clamp(28px,4vw,64px)', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', ...enter(0) }}>
+            <StatDisplay label="Download" value={engineResult.dl.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} unit="Mbps" accent={true} style={{ position: 'static' }} />
+            
+            {/* Linha Fina Separadora */}
+            <div style={{ width: 1, backgroundColor: 'var(--color-separator)', alignSelf: 'stretch', margin: '8px 0' }} />
+            
+            <StatDisplay label="Upload" value={engineResult.ul.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} unit="Mbps" style={{ position: 'static' }} />
+          </div>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, letterSpacing: '-0.015em', marginTop: 20, ...enter(150) }}>
+            {aiSentence}
+          </p>
+          
+          <div style={{ ...enter(280) }}>
+            <DetailsDisclosure defaultOpen={false} style={{ position: 'static' }}>
+              Ping <b>{Math.round(engineResult.latency)} ms</b> · Jitter <b>{Math.round(engineResult.jitter)} ms</b> · Pkt Loss <b>{engineResult.packetLoss?.available && engineResult.packetLoss.lossPercent != null ? `${engineResult.packetLoss.lossPercent.toFixed(1)}%` : 'N/A'}</b>
+            </DetailsDisclosure>
+          </div>
+
+          <div style={enter(410)}>
+            <Button onClick={handleRetest} style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center' }}>
+              Testar novamente{Retry}
+            </Button>
+          </div>
+
+          <div id="ad-container" style={{ marginTop: 40, width: '100%', maxWidth: 728, display: 'flex', justifyContent: 'center', ...enter(540) }}>
+            {/* O AdSense injetará o anúncio aqui. Se não houver, o contêiner colapsa e não mostra nada. */}
           </div>
         </>
       )}
     </div>
-  );
-}
-
-/* ── Bottom sheets ───────────────────────────────────────────────────────── */
-
-function ToolsSheet({ onClose, onOpenDiagnostico }: { onClose: () => void; onOpenDiagnostico: () => void }) {
-  return (
-    <Sheet onClose={onClose} title="Ferramentas">
-      <SheetRow
-        title="Diagnóstico Inteligente"
-        desc="Diagnóstico inteligente da conexão"
-        onClick={onOpenDiagnostico}
-        active
-      />
-      <SheetRow title="DNS Benchmark" desc="Mede a velocidade dos servidores DNS" soon />
-      <SheetRow title="Ping / Latência" desc="Testa o ping para servidores externos" soon />
-      <SheetRow title="Wi-Fi · Canais" desc="Análise de redes e congestionamento" soon />
-      <SheetRow title="Fibra Nokia" desc="Status do modem Nokia GPON" soon />
-    </Sheet>
-  );
-}
-
-function AnatelSheet({ onClose }: { onClose: () => void }) {
-  return (
-    <Sheet onClose={onClose} title="Velocidade vs. contrato">
-      <p className="st-sheet-body">
-        A ANATEL define dois limites de velocidade que sua operadora é obrigada a cumprir.
-      </p>
-      <p className="st-sheet-body">
-        O <strong>mínimo garantido</strong> é 40% da velocidade que você contratou — em qualquer momento do dia. Este teste mede exatamente isso.
-      </p>
-      <p className="st-sheet-body">
-        O limite de <strong>velocidade normal</strong> é 80% da velocidade contratada. Esse cálculo usa uma média de vários testes ao longo do tempo — não é possível confirmar esse critério com uma única medição.
-      </p>
-      <p className="st-card__footnote">Ato 7869/2022 · ANATEL</p>
-    </Sheet>
-  );
-}
-
-function BufferbloatSheet({ onClose }: { onClose: () => void }) {
-  return (
-    <Sheet onClose={onClose} title="Atraso extra na conexão">
-      <p className="st-sheet-body">
-        O bufferbloat acontece quando o roteador acumula pacotes em fila durante uso intenso, causando atraso extra nas comunicações em tempo real.
-      </p>
-      <p className="st-sheet-body">
-        Um bom roteador gerencia essa fila automaticamente (chamado de QoS ou Smart Queue Management).
-      </p>
-    </Sheet>
-  );
-}
-
-function Sheet({ onClose, title, children }: { onClose: () => void; title: string; children: React.ReactNode }) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
-
-  return (
-    <>
-      <div className="st-sheet-overlay" onClick={onClose} aria-hidden="true" />
-      <div className="st-sheet" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="st-sheet-handle" aria-hidden="true" />
-        <h2 className="st-sheet-title">{title}</h2>
-        {children}
-        <div className="st-sheet-safe" />
-      </div>
-    </>
-  );
-}
-
-function SheetRow({ title, desc, onClick, active, soon }: {
-  title: string;
-  desc: string;
-  onClick?: () => void;
-  active?: boolean;
-  soon?: boolean;
-}) {
-  return (
-    <>
-      <div className="st-divider" />
-      <button
-        className={`st-sheet-row ${active ? 'st-sheet-row--active' : ''}`}
-        onClick={onClick}
-        disabled={!active}
-        type="button"
-      >
-        <div className="st-sheet-row-text">
-          <span className="st-sheet-row-title">{title}</span>
-          <span className="st-sheet-row-desc">{desc}</span>
-        </div>
-        {soon && <span className="st-badge st-badge--neutral">Em breve</span>}
-        {active && <ChevronIcon />}
-      </button>
-    </>
-  );
-}
-
-/* ── Helpers ─────────────────────────────────────────────────────────────── */
-
-function CriterioIcon({ ok }: { ok: boolean }) {
-  return (
-    <span className={`st-criterio-icon ${ok ? 'st-criterio-icon--ok' : 'st-criterio-icon--fail'}`} aria-hidden="true">
-      {ok ? '✓' : '✕'}
-    </span>
-  );
-}
-
-/* ── Ícones SVG ──────────────────────────────────────────────────────────── */
-
-function InfoIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M12 8v1M12 11v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CheckCircleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M8 12l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ErrorCircleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M12 8v5M12 16v.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function SpeedIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M8.5 14.5l7-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <circle cx="9" cy="15" r="1.4" fill="currentColor" />
-      <circle cx="15.5" cy="8.5" r="1.4" fill="currentColor" />
-    </svg>
-  );
-}
-
-function ChevronIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ color: 'var(--text-3)' }}>
-      <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function WifiIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function EthernetIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="7" width="18" height="10" rx="2" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M7 7V5M10 7V5M14 7V5M17 7V5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function SignalIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M1 6l4 4 4-4 4 4 4-4 4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 10v8M9 14v4M13 12v6M17 10v8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function WifiOffIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function GlobeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M12 3a14.5 14.5 0 0 1 0 18M3 12h18" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M3.6 8h16.8M3.6 16h16.8" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
   );
 }

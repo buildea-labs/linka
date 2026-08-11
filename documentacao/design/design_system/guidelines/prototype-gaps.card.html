@@ -1,0 +1,34 @@
+<!-- @dsCard group="Guidelines" viewport="1100x780" name="Extraído do protótipo" subtitle="O que o protótipo usava e o sistema ainda não cobria — e o que ficou de fora" -->
+<html><head><link rel="stylesheet" href="../styles.css"></head>
+<body style="margin:0;background:var(--surface-page);padding:40px;font-family:var(--font-body);color:var(--text-primary)">
+<p style="font-family:var(--font-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 16px">Extraído do protótipo</p>
+<h1 style="font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-.02em;margin:0 0 12px;max-width:760px">O que as cinco telas repetiam à mão.</h1>
+<p style="font-size:15px;line-height:1.6;color:var(--text-secondary);margin:0 0 32px;max-width:760px">Levantamento feito lendo os arquivos do protótipo (web, iOS e iPad). Cada item abaixo aparecia duas ou mais vezes como estilo inline duplicado — agora é componente do sistema.</p>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16;max-width:1000px;gap:16px">
+  <div style="border:.5px solid var(--border-default);border-radius:20px;background:var(--surface-card);padding:20px">
+    <p style="font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 12px">Adicionado agora</p>
+    <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.85;color:var(--text-primary)">
+      <li><b>Eyebrow</b> — label mono maiúsculo (15+ cópias)</li>
+      <li><b>Icon</b> — chevron, retry, seta, menu, fechar (2px)</li>
+      <li><b>TextLink</b> — link mono com seta ("Abrir app →")</li>
+      <li><b>StatusLabel</b> — ponto de status + caption</li>
+      <li><b>SiteHeader</b> / <b>SiteFooter</b> — repetidos nas 5 páginas</li>
+      <li><b>PageHero</b> — eyebrow + h1 40px + lead 17px (4 páginas)</li>
+      <li><b>ValueCard</b> (6 cópias) · <b>StepItem</b> (3) · <b>ComparisonTable</b></li>
+      <li><b>LegalSection</b> — prosa de política e termos</li>
+      <li><b>AdSlot</b> — espaço de publicidade 728×90 / 320×50</li>
+    </ul>
+  </div>
+  <div style="border:.5px solid var(--border-default);border-radius:20px;background:var(--surface-card);padding:20px">
+    <p style="font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-accent-warm);margin:0 0 12px">Pendente — precisa de decisão</p>
+    <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.85;color:var(--text-primary)">
+      
+      <li><b>Superfícies iOS</b> — lista de ajustes, linha de lista, nav bar, bottom sheet, switch e segmented control vêm hoje do frame de protótipo, não do sistema.</li>
+      <li><b>Animações de entrada</b> — <code>linkaRise</code> / <code>linkaFadeIn</code> com atraso escalonado (0/150/280/410/540ms) estão coladas em cada tela; viram tokens de motion + utilitário.</li>
+      <li><b>StatDisplay responsivo</b> — telas móveis sobrescrevem o tamanho com CSS <code>!important</code>; falta uma prop <code>size</code>.</li>
+      <li><b>Divisor entre métricas</b> — no celular há um traço vertical entre download e upload que o componente não prevê.</li>
+      <li><b>Ilustrações de linha</b> — diagrama de rede e mockups de dispositivo (traço 2px, rótulos mono, pulso animado) não têm regra escrita.</li>
+    </ul>
+  </div>
+</div>
+</body></html>

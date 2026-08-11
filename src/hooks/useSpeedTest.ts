@@ -47,10 +47,8 @@ export function useSpeedTest() {
   const rafRef = useRef<number | null>(null);
   const lastPushRef = useRef<number>(0);
   const liveRef = useRef<LivePoint[]>([]);
-  const tickRef = useRef<(() => void) | null>(null);
-
   const tick = useCallback(() => {
-    rafRef.current = requestAnimationFrame(() => tickRef.current?.());
+    rafRef.current = requestAnimationFrame(tick);
     const target = targetMbpsRef.current;
     const rendered = renderedMbpsRef.current;
     if (target === 0 && rendered === 0) return;
@@ -60,12 +58,11 @@ export function useSpeedTest() {
   }, []);
 
   useEffect(() => {
-    tickRef.current = tick;
-  });
-
-  useEffect(() => {
     return () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
       if (ctrlRef.current) ctrlRef.current.abort();
     };
   }, []);
@@ -78,7 +75,9 @@ export function useSpeedTest() {
     renderedMbpsRef.current = 0;
     liveRef.current = [];
     lastPushRef.current = 0;
-    if (rafRef.current == null) rafRef.current = requestAnimationFrame(tick);
+    
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(tick);
 
     setState({
       phase: 'latency',

@@ -143,6 +143,8 @@ export async function runSpeedTestV2(
   // precise inspecioná-los, mas não são mais consumidos aqui.
   const profile = toConnectionProfile(connectionType);
   const isMobile = profile === 'mobile_broadband';
+  void isMobile;
+  void connectionType;
   const ulConfigFixed = mode === 'fast' ? UPLOAD_CONFIG_FAST : UPLOAD_CONFIG_COMPLETE;
   const pingCount = mode === 'fast' ? 15 : 25;
 
