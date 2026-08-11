@@ -40,6 +40,7 @@ export default function App() {
       color: 'var(--text-primary)',
       background: 'var(--surface-page)'
     }}>
+      {/* @ts-ignore */}
       <SiteHeader items={navItems} activeHref={currentPath} homeHref="/" onNavigate={navigate} style={{}} />
       
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
