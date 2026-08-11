@@ -1,5 +1,4 @@
-// @ts-nocheck
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MetricRing } from '../ui/components/speedtest/MetricRing';
 import { PhaseDots } from '../ui/components/speedtest/PhaseDots';
 import { StatDisplay } from '../ui/components/speedtest/StatDisplay';
@@ -111,31 +110,30 @@ export function SpeedTestScreen() {
               value={displayValue}
               unit={connecting ? undefined : 'Mbps'}
               progress={overallProgress}
-              style={{ position: 'static' }}
             />
           )}
           <p style={{ fontSize: 15, color: 'var(--text-secondary)', minHeight: 20, marginTop: 20 }}>{phaseLabel}</p>
-          <PhaseDots phases={phasesList} activeKey={connecting ? '' : enginePhase} style={{ position: 'static' }} />
+          <PhaseDots phases={phasesList} activeKey={connecting ? '' : enginePhase} />
         </div>
       )}
 
       {isResult && engineResult && (
         <>
           <div style={{ display: 'flex', gap: 'clamp(28px,4vw,64px)', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', ...enter(0) }}>
-            <StatDisplay label="Download" value={engineResult.dl.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} unit="Mbps" accent={true} style={{ position: 'static' }} />
+            <StatDisplay label="Download" value={engineResult.dl.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} unit="Mbps" accent={true} />
             <div style={{ width: 1, backgroundColor: 'var(--color-separator)', alignSelf: 'stretch', margin: '8px 0' }} />
-            <StatDisplay label="Upload" value={engineResult.ul.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} unit="Mbps" style={{ position: 'static' }} />
+            <StatDisplay label="Upload" value={engineResult.ul.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} unit="Mbps" />
           </div>
 
           <div style={{ marginTop: 24, ...enter(180) }}>
-            <DetailsDisclosure defaultOpen={false} style={{ position: 'static' }}>
+            <DetailsDisclosure defaultOpen={false}>
               Ping <b>{Math.round(engineResult.latency)} ms</b> · Jitter <b>{Math.round(engineResult.jitter)} ms</b>
             </DetailsDisclosure>
           </div>
 
           <div style={enter(320)}>
-            <Button onClick={handleRetest} style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center' }}>
-              Testar novamente{Retry}
+            <Button onClick={handleRetest} style={{ marginTop: 24, display: 'inline-flex', alignItems: 'center' }} icon={Retry}>
+              Testar novamente
             </Button>
           </div>
 

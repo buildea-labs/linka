@@ -136,7 +136,7 @@ export function DNSGuideSheet({ open, onClose, result, benchmark }: Props) {
 
   // Mantém em sync com o benchmark vindo do pai — quando termina lá, espelha aqui.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     if (benchmark) setInternalBench(benchmark);
   }, [benchmark]);
 
@@ -155,7 +155,7 @@ export function DNSGuideSheet({ open, onClose, result, benchmark }: Props) {
     startedRef.current = true;
 
     const seed = loadLastDnsResult();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     if (seed) setInternalBench(seed);
 
     // Reset do tracking incremental ao começar.

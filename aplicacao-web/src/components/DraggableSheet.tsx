@@ -107,7 +107,7 @@ export function DraggableSheet({
   useEffect(() => {
     if (open) {
       // Reset do snap ao reabrir — sincroniza estado local com a mudança de prop.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setSnap(initialSnap);
       setDragHeightVh(null);
     }

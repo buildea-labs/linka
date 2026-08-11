@@ -107,7 +107,7 @@ export function useCountUp(
     if (!hasRaf) {
       targetRef.current = safeTarget;
       // Sem RAF (SSR/teste) não há loop de animação pra aplicar o valor depois.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setValue(safeTarget);
       return;
     }

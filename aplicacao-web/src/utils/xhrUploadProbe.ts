@@ -19,7 +19,7 @@ function uploadBlob(bytes: number): Blob {
     crypto.getRandomValues(chunk);
     chunks.push(chunk);
   }
-  // @ts-ignore
+  // @ts-expect-error - Blob does accept Uint8Array chunks in some environments
   return new Blob(chunks);
 }
 

@@ -50,7 +50,7 @@ export function useDiagnosis(
   useEffect(() => {
     if (!testResult) {
       // Reset ao perder o resultado do teste — sincroniza com a prop.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setState({
         data: null,
         loading: false,
