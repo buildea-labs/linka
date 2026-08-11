@@ -33,14 +33,14 @@ export default function App() {
 
   return (
     <div style={{ 
-      minHeight: '100vh', 
+      minHeight: '100svh', 
       display: 'flex', 
       flexDirection: 'column', 
       fontFamily: 'var(--font-body)', 
       color: 'var(--text-primary)',
       background: 'var(--surface-page)'
     }}>
-      {/* @ts-ignore */}
+      {/* @ts-expect-error - missing strict props on SiteHeader */}
       <SiteHeader items={navItems} activeHref={currentPath} homeHref="/" onNavigate={navigate} style={{}} />
       
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -53,7 +53,7 @@ export default function App() {
         {currentPath === '/sobre' && <AboutScreen />}
       </main>
 
-      <SiteFooter style={{}} />
+      <SiteFooter isMainRoute={currentPath === '/'} style={{}} />
     </div>
   );
 }

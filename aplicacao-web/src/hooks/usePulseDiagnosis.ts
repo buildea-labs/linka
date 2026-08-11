@@ -48,7 +48,7 @@ export function usePulseDiagnosis(connectionType: ConnectionType = 'unknown') {
     if (speedTest.phase === 'done' && speedTest.result) {
       stopMessageRotation();
       // Transição de estado da máquina do pulse ao detectar o fim do speedtest.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setPhase('thinking');
       startMessageRotation('thinking');
       const result = speedTest.result;
@@ -73,7 +73,7 @@ export function usePulseDiagnosis(connectionType: ConnectionType = 'unknown') {
     if (!pendingAnalysis) return;
     const { result, trigger } = pendingAnalysis;
     // Consome o pending pra não reexecutar a análise em re-render.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setPendingAnalysis(null);
 
     const severity = severityFromResult(result);
