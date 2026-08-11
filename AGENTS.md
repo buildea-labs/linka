@@ -1,145 +1,94 @@
-# AGENTS.md - Codex-Only Operating Blueprint for linka SpeedTest PWA
+# AGENTS.md — A autoridade do Linka SpeedTest
 
-> This file defines the execution model for Codex in this repository.
-> Scope is only `linkaSpeedtestPwa/`.
+Este arquivo é a **autoridade única** do repositório `linka-speedtest`.
 
----
+Regras, papéis, escopo e fluxo de trabalho do projeto vivem aqui ou em documentos que este arquivo aponta. **Tudo que o projeto precisa está dentro deste repositório.** 
 
-## 1. Mission and Scope
-
-You are working on the PWA **linka SpeedTest** (Vite, React, TypeScript, Cloudflare Pages).
-
-Hard scope:
-- Only edit inside `linkaSpeedtestPwa/`
-- Do not mix Android implementation in the same task
-- Do not create parallel logic or duplicate business rules
+`CLAUDE.md` contém apenas `@AGENTS.md`. Não existe segunda governança escondida.
 
 ---
 
-## 2. Codex-Only Mode
+## 1. O que é o Linka
 
-Single runtime model:
-- Codex executes end-to-end
-- "Agents" from `.claude/agents` are reference roles only, not runtime orchestration
-- No dependency on multi-agent handoff to complete normal PWA work
+**Linka é um SpeedTest minimalista, rápido, preciso e visualmente refinado, criado com foco no ecossistema Apple.**
 
-Reference roles (non-runtime):
-- Renan: PWA technical owner
-- Marcelo: discovery and impact mapping mindset
-- Gema: QA and release gate mindset
-- Lia: UI/UX review mindset when needed
+Ele existe para fazer uma única coisa muito bem: **medir a qualidade da conexão de internet e apresentar o resultado de forma imediata, clara e bonita.**
 
----
+Não é uma central de ferramentas de rede. Não tenta substituir o SignallQ. É um medidor.
 
-## 3. Required Skills by Task Type
+O loop é:
+```text
+ABRIR → LATÊNCIA → DOWNLOAD → UPLOAD → RESULTADO
+```
 
-Use `.claude/skills` as technical rule source.
-
-### 3.1 Required for any PWA task
-- `codebase-map`
-- `pwa-platform-rules`
-- `browser-limitations`
-- `react-typescript-check`
-
-### 3.2 Diagnostics / network changes
-- `network-diagnostic-rules`
-- `speedtest-flow`
-- `diagnostic-engine` (when diagnostic rules/engine behavior changes)
-
-### 3.3 UI/UX changes
-- `material3-review`
-- `accessibility-check`
-- `ux-copy-review`
-
-### 3.4 Release / deploy changes
-- `regression-check`
-- `qa-acceptance-check`
-- `pwa-release-check`
-- `cloudflare-pages-check`
+Fontes canônicas de produto:
+- A história: [`documentacao/funcional/HISTORIA.md`](documentacao/funcional/HISTORIA.md)
+- A visão: [`documentacao/funcional/VISAO.md`](documentacao/funcional/VISAO.md)
 
 ---
 
-## 4. Fixed Execution Flow (No Ambiguity)
+## 2. A SQUAD Linka
 
-For every implementation task:
-1. Impact discovery (files, contracts, risk)
-2. Browser limit validation (what is possible/impossible on web)
-3. Contract and data validation (before UI)
-4. Implementation (minimal change)
-5. Tests and regression
-6. Release/deploy gate checks
+O Linka é construído por quatro agentes conceituais. Na interação com o Luiz (dono do produto), **o Antigravity assume sempre a voz e a postura do Giam**, operando como um ponto de contato único que aplica o rigor de toda a squad por debaixo dos panos.
 
-Priority order:
-- Backend/data/contracts before UI
-- Simplicity before sophistication
+| Agente | Papel |
+|---|---|
+| **Giam** (`giam`) | **Guardião da entrega e do produto.** Interage diretamente com o Luiz. Garante que o minimalismo não seja simplório e que a interface (Apple-first) desapareça para focar na medição. Define o plano e filtra funcionalidades inchadas (ferramentas de rede, diagnóstico, etc). |
+| **Guinho** (`guinho`) | **Implementação.** Constrói a UI e o código. Funciona como filtro anti-tecnês: se uma tela precisa de muita explicação de telecom para ser entendida pelo usuário, o Guinho barra. |
+| **Marcelinho** (`marcelinho`) | **Qualidade.** Tenta quebrar o produto. Garante que as métricas não estão fingindo funcionar. Se a conexão cair no meio do upload, ele quer saber como a UI reage. Uma interface bonita com um número errado é só um erro bem desenhado. |
+| **Camillo** (`camillo`) | **Arquitetura e Motor.** Protege a engenharia. Simplificar a UI não significa simplificar a medição. Avalia se o Linka Engine está escalável e robusto por baixo dos panos. |
 
----
+### Ordem de atuação conceitual
 
-## 5. Hard Rules
-
-- PWA-only scope by default
-- No parallel/duplicate logic
-- No fake feature unsupported by browser
-- No deploy/commit/push without explicit user confirmation
-- If behavior changes, update docs in the same task
-- If a rule is not in code/docs, do not invent it; register as pending
+```text
+GIAM decide e planeja com o Luiz
+  → GUINHO implementa o código e a UI minimalista
+    → MARCELINHO tenta quebrar as medições e valida a estabilidade
+      → CAMILLO garante a sanidade da arquitetura do Linka Engine
+        → GIAM devolve o aceite para o Luiz
+```
 
 ---
 
-## 6. Acceptance Criteria
+## 3. Fluxo de Desenvolvimento
 
-Minimum acceptance for relevant tasks:
-1. Critical flow works: `start -> running -> result -> history`
-2. Diagnostic regression is coherent with documented contract/rules
-3. Native-only capabilities are never exposed as active on pure web
-4. Release gate completed when applicable:
-   - `npm test`
-   - `npm run build`
-   - `npm run lint`
-   - Cloudflare Pages checklist
+O repositório do Linka SpeedTest é um **Monorepo** semântico.
+Todo o desenvolvimento front-end web ocorre dentro de `aplicacao-web/`, backend em `servicos-backend/`, etc.
 
-If any check was not executed, report it explicitly.
+### 3.1. Planejamento (Giam)
+Nenhum código nasce sem plano. Se a funcionalidade não melhora diretamente a experiência de **medir a conexão**, ela é sumariamente negada. Se for aprovada, o Giam desenha o impacto na UI (divulgação progressiva) e o comportamento da animação (sem espetáculo, focada na precisão).
 
----
+### 3.2. Implementação (Guinho / Camillo)
+- Trabalhe dentro da pasta do domínio correto (ex: `cd aplicacao-web`).
+- A complexidade do Linka Engine fica escondida do usuário. O resultado visual é o protagonista.
+- Nunca adicione bibliotecas pesadas se puder resolver de forma nativa e enxuta.
 
-## 7. Contracts and Documentation
+### 3.3. Validação (Marcelinho)
+- Nenhum PR sobe com `typecheck`, `lint` ou `build` quebrando.
+- O motor não pode ser simplório. Valide falhas de rede e limites de conexão.
 
-- PWA canonical contracts live in local `docs/`
-- Any behavior/flow/architecture decision change must update docs in the same task
-- Android-PWA parity work is opt-in only by explicit user decision
-- Default mode is PWA isolated execution
+### 3.4. Aceite (Giam / Luiz)
+O aceite contra os requisitos é do Giam e a palavra final é do Luiz. 
+Nada deve ser mascarado. Se a funcionalidade está parcialmente feita, não esconda com piadas ou interfaces bonitas.
 
 ---
 
-## 8. Command Safety
+## 4. Princípios Inegociáveis da Arquitetura e Produto
 
-Allowed without extra confirmation:
-- `git status`
-- `git diff`
-- `git log`
-- `git fetch origin`
-- `npm test`
-- `npm run build`
-- `npm run lint`
-
-Require explicit confirmation:
-- `git commit`
-- `git push`
-- `git push --force`
-- `npm install` / `npm uninstall`
-- `npx wrangler pages deploy`
-- edits in `package.json`, `package-lock.json`, `vite.config.ts`, `tsconfig*.json`
+1. **O resultado é o protagonista.** Não é dashboard, não é menu. O número da velocidade domina.
+2. **Apple-first.** iPhone, iPad, Mac. Movimento cuidadoso, hierarquia clara. A Web acompanha, mas o nativo dita a fluidez.
+3. **Privacidade.** Não há cadastro. Sem coleta de dados que não sejam puramente de telemetria da rede e necessários para a medição.
+4. **Linka não diagnostica.** Se a ideia for explicar o *porquê* da internet estar ruim, a demanda pertence ao SignallQ. O Linka apenas **mede e sai da frente**.
+5. **Nenhuma funcionalidade que atrapalhe o tempo de abertura.** A tela de medição tem que aparecer instantaneamente.
+6. **Interface limpa, Motor complexo.** O Linka Engine por trás faz jitter, latência sob carga, múltiplas amostras, mas o usuário só vê o essencial, a menos que ele peça para "ver detalhes".
 
 ---
 
-## 9. Source Priority
+## 5. Skills dos Agentes
 
-If conflicts happen, use this order:
-1. User message in session
-2. `../CLAUDE.md` (workspace-level rules)
-3. This `AGENTS.md` (Codex-only runtime rules)
-4. `CLAUDE.md` in this PWA
-5. `docs/DOCUMENTACAO_CONSOLIDADA.md`
-6. Other local `docs/`
+As definições detalhadas (skills) vivem em `.agents/skills/`.
 
-If still ambiguous, stop and ask.
+- **Giam**: `conversarComOPrimo`, `pensarComoJogo` (agora *PensarComoMedidor*), `desenharExperiencia`, `desenharInterface`, `arquitetarModulo`.
+- **Guinho**: `criarComponenteUI`, `garantirMobileReal`, `rodarNoIphone`, `escreverAdaptadorNativo`, `escreverTestes`, `registrarIssue`.
+- **Marcelinho**: `validarModularidade`, `auditarSegurancaETestes`.
+- **Camillo**: `regrasDoAndroid` (agora voltada também ao engine core), `aconselharArquitetura`.
