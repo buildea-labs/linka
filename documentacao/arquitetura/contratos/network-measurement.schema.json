@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:linka:network-measurement:v1",
+  "title": "Linka NetworkMeasurement v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "measuredAt", "outcome"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "format": "uuid" },
+    "measuredAt": { "type": "string", "format": "date-time" },
+    "outcome": { "type": "string", "enum": ["complete", "partial"] },
+    "downloadMbps": { "type": "number", "minimum": 0 },
+    "uploadMbps": { "type": "number", "minimum": 0 },
+    "latencyMs": { "type": "number", "minimum": 0 },
+    "jitterMs": { "type": "number", "minimum": 0 },
+    "packetLossPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+    "loadedLatencyMs": { "type": "number", "minimum": 0 },
+    "durationMs": { "type": "integer", "minimum": 0 },
+    "connectionKind": { "type": "string", "enum": ["wifi", "cellular", "ethernet", "other"] },
+    "networkIdentifier": { "type": "string" },
+    "serverIdentifier": { "type": "string" },
+    "engineVersion": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "outcome": { "const": "complete" } },
+        "required": ["outcome"]
+      },
+      "then": {
+        "required": ["downloadMbps", "uploadMbps", "latencyMs"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "outcome": { "const": "partial" } },
+        "required": ["outcome"]
+      },
+      "then": {
+        "anyOf": [
+          { "required": ["downloadMbps"] },
+          { "required": ["uploadMbps"] },
+          { "required": ["latencyMs"] },
+          { "required": ["jitterMs"] },
+          { "required": ["packetLossPercent"] },
+          { "required": ["loadedLatencyMs"] }
+        ]
+      }
+    }
+  ]
+}

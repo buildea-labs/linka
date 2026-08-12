@@ -2,13 +2,13 @@ import Foundation
 
 public struct AssistContext: Codable, Equatable, Sendable {
     public let question: String
-    public let currentMeasurement: MeasurementSnapshot
-    public let recentMeasurements: [MeasurementSnapshot]
+    public let currentMeasurement: NetworkMeasurement
+    public let recentMeasurements: [NetworkMeasurement]
 
     public init(
         question: String,
-        currentMeasurement: MeasurementSnapshot,
-        recentMeasurements: [MeasurementSnapshot] = []
+        currentMeasurement: NetworkMeasurement,
+        recentMeasurements: [NetworkMeasurement] = []
     ) {
         self.question = question
         self.currentMeasurement = currentMeasurement

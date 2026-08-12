@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "4a5f9b63-e4f4-4d90-904f-3e618fc92c32",
+  "measuredAt": "2026-08-12T11:20:00Z",
+  "outcome": "complete",
+  "downloadMbps": 512.4,
+  "uploadMbps": 104.8,
+  "latencyMs": 11.7,
+  "jitterMs": 1.9,
+  "connectionKind": "wifi",
+  "serverIdentifier": "cloudflare",
+  "engineVersion": "linka-engine-v1"
+}

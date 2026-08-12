@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "3d4980fa-9aad-442a-82ac-3c7bf3379adb",
+  "measuredAt": "2026-08-12T11:21:00Z",
+  "outcome": "partial",
+  "latencyMs": 18.2,
+  "connectionKind": "cellular",
+  "engineVersion": "linka-engine-v1"
+}

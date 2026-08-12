@@ -17,13 +17,13 @@ public struct MeasurementDelta: Codable, Equatable, Sendable {
 }
 
 public struct MeasurementComparison: Codable, Equatable, Sendable {
-    public let current: MeasurementSnapshot
-    public let baseline: MeasurementSnapshot
+    public let current: NetworkMeasurement
+    public let baseline: NetworkMeasurement
     public let delta: MeasurementDelta
 
     public init(
-        current: MeasurementSnapshot,
-        baseline: MeasurementSnapshot,
+        current: NetworkMeasurement,
+        baseline: NetworkMeasurement,
         delta: MeasurementDelta
     ) {
         self.current = current
@@ -34,8 +34,8 @@ public struct MeasurementComparison: Codable, Equatable, Sendable {
 
 public protocol InsightProviding: Sendable {
     func compare(
-        current: MeasurementSnapshot,
-        against baseline: MeasurementSnapshot
+        current: NetworkMeasurement,
+        against baseline: NetworkMeasurement
     ) async -> MeasurementComparison
 }
 
@@ -43,8 +43,8 @@ public struct BasicInsightProvider: InsightProviding {
     public init() {}
 
     public func compare(
-        current: MeasurementSnapshot,
-        against baseline: MeasurementSnapshot
+        current: NetworkMeasurement,
+        against baseline: NetworkMeasurement
     ) async -> MeasurementComparison {
         MeasurementComparison(
             current: current,
