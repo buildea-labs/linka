@@ -15,14 +15,16 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../NetworkCore"),
-        .package(path: "../MeasurementHistory")
+        .package(path: "../MeasurementHistory"),
+        .package(path: "../NetworkAssist")
     ],
     targets: [
         .target(
             name: "LinkaModules",
             dependencies: [
                 .product(name: "NetworkCore", package: "NetworkCore"),
-                .product(name: "MeasurementHistory", package: "MeasurementHistory")
+                .product(name: "MeasurementHistory", package: "MeasurementHistory"),
+                .product(name: "NetworkAssist", package: "NetworkAssist")
             ],
             path: "Sources"
         ),
