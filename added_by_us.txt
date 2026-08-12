@@ -1,0 +1,7 @@
+AU aplicacao-web-veloo/public/og-image.jpg
+AU aplicacao-web-veloo/src/utils/xhrUploadProbe.ts
+AU aplicacao-web/src/features/diagnosis/geminiApi.ts
+AU aplicacao-web/src/screens/AboutScreen.tsx
+AU aplicacao-web/src/screens/AppsScreen.tsx
+AU aplicacao-web/src/screens/MethodologyScreen.tsx
+AU aplicacao-web/src/screens/PrivacyScreen.tsx

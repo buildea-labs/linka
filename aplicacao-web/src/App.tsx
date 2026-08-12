@@ -6,9 +6,12 @@ import { AppsScreen } from './screens/AppsScreen';
 import { MethodologyScreen } from './screens/MethodologyScreen';
 import { PrivacyScreen } from './screens/PrivacyScreen';
 import { AboutScreen } from './screens/AboutScreen';
+import { SettingsSheet } from './features/settings/SettingsSheet';
+
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     const handlePopState = () => setCurrentPath(window.location.pathname);
@@ -41,7 +44,7 @@ export default function App() {
       background: 'var(--surface-page)'
     }}>
       {/* @ts-expect-error - missing strict props on SiteHeader */}
-      <SiteHeader items={navItems} activeHref={currentPath} homeHref="/" onNavigate={navigate} style={{}} />
+      <SiteHeader items={navItems} activeHref={currentPath} homeHref="/" onNavigate={navigate} onOpenSettings={() => setSettingsOpen(true)} style={{}} />
       
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: currentPath === '/' ? 'flex' : 'none', flex: 1, flexDirection: 'column' }}>
@@ -54,6 +57,8 @@ export default function App() {
       </main>
 
       <SiteFooter isMainRoute={currentPath === '/'} style={{}} />
+
+      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }
