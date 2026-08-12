@@ -7,12 +7,14 @@ on:
     paths:
       - 'aplicativo-ios/NetworkCore/**'
       - 'aplicativo-ios/MeasurementHistory/**'
+      - 'aplicativo-ios/NetworkInsights/**'
       - 'aplicativo-ios/LinkaModules/**'
       - '.github/workflows/swift-modules-ci.yml'
   pull_request:
     paths:
       - 'aplicativo-ios/NetworkCore/**'
       - 'aplicativo-ios/MeasurementHistory/**'
+      - 'aplicativo-ios/NetworkInsights/**'
       - 'aplicativo-ios/LinkaModules/**'
       - '.github/workflows/swift-modules-ci.yml'
 
@@ -35,6 +37,10 @@ jobs:
 
       - name: Test MeasurementHistory
         working-directory: aplicativo-ios/MeasurementHistory
+        run: swift test
+
+      - name: Test NetworkInsights
+        working-directory: aplicativo-ios/NetworkInsights
         run: swift test
 
       - name: Test LinkaModules compatibility
