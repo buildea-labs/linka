@@ -156,12 +156,13 @@ final class LinkaEntitlementsTests: XCTestCase {
             )
         )
 
-        XCTAssertTrue(await provider.hasAccess(to: .assist, at: now))
-        XCTAssertFalse(
-            await provider.hasAccess(
-                to: .assist,
-                at: now.addingTimeInterval(61)
-            )
+        let activeAccess = await provider.hasAccess(to: .assist, at: now)
+        let expiredAccess = await provider.hasAccess(
+            to: .assist,
+            at: now.addingTimeInterval(61)
         )
+
+        XCTAssertTrue(activeAccess)
+        XCTAssertFalse(expiredAccess)
     }
 }
