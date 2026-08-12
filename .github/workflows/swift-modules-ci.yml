@@ -1,0 +1,42 @@
+name: Swift Modules CI
+
+on:
+  push:
+    branches:
+      - 'feat/**'
+    paths:
+      - 'aplicativo-ios/NetworkCore/**'
+      - 'aplicativo-ios/MeasurementHistory/**'
+      - 'aplicativo-ios/LinkaModules/**'
+      - '.github/workflows/swift-modules-ci.yml'
+  pull_request:
+    paths:
+      - 'aplicativo-ios/NetworkCore/**'
+      - 'aplicativo-ios/MeasurementHistory/**'
+      - 'aplicativo-ios/LinkaModules/**'
+      - '.github/workflows/swift-modules-ci.yml'
+
+jobs:
+  swift-modules:
+    name: Swift package tests
+    runs-on: macos-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Test NetworkCore
+        working-directory: aplicativo-ios/NetworkCore
+        run: swift test
+
+      - name: Test MeasurementHistory
+        working-directory: aplicativo-ios/MeasurementHistory
+        run: swift test
+
+      - name: Test LinkaModules compatibility
+        working-directory: aplicativo-ios/LinkaModules
+        run: swift test
