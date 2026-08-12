@@ -9,6 +9,7 @@ on:
       - 'aplicativo-ios/MeasurementHistory/**'
       - 'aplicativo-ios/NetworkInsights/**'
       - 'aplicativo-ios/NetworkAssist/**'
+      - 'aplicativo-ios/LinkaEntitlements/**'
       - 'aplicativo-ios/LinkaModules/**'
       - '.github/workflows/swift-modules-ci.yml'
   pull_request:
@@ -17,6 +18,7 @@ on:
       - 'aplicativo-ios/MeasurementHistory/**'
       - 'aplicativo-ios/NetworkInsights/**'
       - 'aplicativo-ios/NetworkAssist/**'
+      - 'aplicativo-ios/LinkaEntitlements/**'
       - 'aplicativo-ios/LinkaModules/**'
       - '.github/workflows/swift-modules-ci.yml'
 
@@ -47,6 +49,10 @@ jobs:
 
       - name: Test NetworkAssist
         working-directory: aplicativo-ios/NetworkAssist
+        run: swift test
+
+      - name: Test LinkaEntitlements
+        working-directory: aplicativo-ios/LinkaEntitlements
         run: swift test
 
       - name: Test LinkaModules compatibility

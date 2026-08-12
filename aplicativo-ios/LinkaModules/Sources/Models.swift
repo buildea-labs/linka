@@ -1,19 +1,14 @@
 import Foundation
+import NetworkCore
+import LinkaEntitlements
 
 /// Compatibilidade temporária com a fundação inicial da branch.
 /// Código novo deve depender do contrato canônico `NetworkMeasurement`.
 @available(*, deprecated, renamed: "NetworkMeasurement")
 public typealias MeasurementSnapshot = NetworkMeasurement
 
-public enum LinkaTier: String, Codable, Sendable {
-    case free
-    case plus
-}
+/// Compatibilidade temporária. Código novo deve importar `LinkaEntitlements`.
+public typealias LinkaTier = LinkaPlan
 
-public enum LinkaCapability: String, Codable, CaseIterable, Hashable, Sendable {
-    case speedTest
-    case history
-    case insights
-    case assist
-    case appleIntegrations
-}
+/// Compatibilidade temporária. Código novo deve importar `LinkaEntitlements`.
+public typealias LinkaCapability = LinkaEntitlements.LinkaCapability

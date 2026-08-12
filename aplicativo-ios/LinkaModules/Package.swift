@@ -16,7 +16,8 @@ let package = Package(
     dependencies: [
         .package(path: "../NetworkCore"),
         .package(path: "../MeasurementHistory"),
-        .package(path: "../NetworkAssist")
+        .package(path: "../NetworkAssist"),
+        .package(path: "../LinkaEntitlements")
     ],
     targets: [
         .target(
@@ -24,7 +25,8 @@ let package = Package(
             dependencies: [
                 .product(name: "NetworkCore", package: "NetworkCore"),
                 .product(name: "MeasurementHistory", package: "MeasurementHistory"),
-                .product(name: "NetworkAssist", package: "NetworkAssist")
+                .product(name: "NetworkAssist", package: "NetworkAssist"),
+                .product(name: "LinkaEntitlements", package: "LinkaEntitlements")
             ],
             path: "Sources"
         ),

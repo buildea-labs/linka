@@ -1,17 +1,17 @@
 import Foundation
+import LinkaEntitlements
 
+/// Contrato legado preservado apenas para a fundação inicial de `LinkaModules`.
+/// Código novo deve depender de `LinkaEntitlementProviding`.
 public protocol EntitlementProviding: Sendable {
     func hasAccess(to capability: LinkaCapability) async -> Bool
 }
 
+/// Compatibilidade com a API inicial free/plus.
+/// A política canônica vive em `LinkaEntitlementPolicy`.
 public enum LinkaAccessPolicy {
     public static func capabilities(for tier: LinkaTier) -> Set<LinkaCapability> {
-        switch tier {
-        case .free:
-            return [.speedTest]
-        case .plus:
-            return Set(LinkaCapability.allCases)
-        }
+        LinkaEntitlementPolicy.capabilities(for: tier)
     }
 
     public static func hasAccess(
@@ -22,14 +22,23 @@ public enum LinkaAccessPolicy {
     }
 }
 
+/// Provider legado que traduz tier para um snapshot estático.
+/// Não representa StoreKit nem estado real de assinatura.
 public struct StaticEntitlementProvider: EntitlementProviding {
-    public let tier: LinkaTier
+    private let provider: StaticLinkaEntitlementProvider
 
     public init(tier: LinkaTier) {
-        self.tier = tier
+        let snapshot: LinkaEntitlementSnapshot
+        switch tier {
+        case .free:
+            snapshot = .free
+        case .plus:
+            snapshot = .plus(status: .active, source: .subscription)
+        }
+        self.provider = StaticLinkaEntitlementProvider(snapshot: snapshot)
     }
 
     public func hasAccess(to capability: LinkaCapability) async -> Bool {
-        LinkaAccessPolicy.hasAccess(to: capability, on: tier)
+        await provider.hasAccess(to: capability)
     }
 }
