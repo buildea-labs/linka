@@ -157,6 +157,7 @@ Motion deve transmitir estado e precisão, não chamar atenção para si.
 ## 7. Design e identidade
 
 O novo Design System em `documentacao/design/design_system/` substitui a governança visual antiga.
+- A pasta `documentacao/design/design_system/assets/icons/` é a ÚNICA fonte de verdade dos ícones. É expressamente proibido redesenhar o símbolo ou manter variantes visuais antigas concorrentes.
 
 Não use Material Design 3 como regra do novo Linka.
 

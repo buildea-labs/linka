@@ -1,74 +1,51 @@
 import SwiftUI
 
 struct MetricRing: View {
+    var connecting: Bool
     var progress: Double
-    var isTesting: Bool
-    var phase: SpeedTestUIPhase
-    var displaySpeed: Double
+    var value: String
+    var unit: String?
+    var size: CGFloat = 168
     
     var body: some View {
         ZStack {
-            // Background arc
+            // Background arc (full circle in the prototype)
             Circle()
-                .trim(from: 0, to: 0.75)
-                .stroke(Color.linkaSurface, style: StrokeStyle(lineWidth: 24, lineCap: .round))
-                .rotationEffect(Angle(degrees: 135))
+                .stroke(Color.borderDefault, lineWidth: 3)
+                .frame(width: size, height: size)
             
             // Progress arc
             Circle()
-                .trim(from: 0, to: CGFloat(min(progress * 0.75, 0.75)))
-                .stroke(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.linkaSecondary, Color.linkaPrimary]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    style: StrokeStyle(lineWidth: 24, lineCap: .round)
-                )
-                .rotationEffect(Angle(degrees: 135))
-                .animation(.linear(duration: 0.1), value: progress)
+                .trim(from: 0, to: CGFloat(min(max(progress, 0), 1)))
+                .stroke(Color.brandSurface, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .frame(width: size, height: size)
+                .animation(.linear(duration: 0.15), value: progress)
             
-            VStack(spacing: 8) {
-                Text(phaseText)
-                    .font(.linkaCaption)
-                    .foregroundColor(.linkaTextSecondary)
-                    .animation(.none, value: phaseText)
-                
-                if phase == .downloading || phase == .uploading || phase == .done {
-                    Text(String(format: "%.1f", displaySpeed))
-                        .font(.system(size: 64, weight: .bold, design: .rounded))
-                        .foregroundColor(.linkaText)
+            VStack(spacing: 4) {
+                if connecting {
+                    Text(value)
+                        .font(.bodyRegular)
+                        .foregroundColor(.textSecondary)
+                } else {
+                    Text(value)
+                        .font(Font.system(size: size > 200 ? 56 : 40, weight: .bold, design: .rounded))
+                        .foregroundColor(.textPrimary)
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
-                        .padding(.horizontal, 40)
+                        .tracking(-1)
                     
-                    Text("Mbps")
-                        .font(.linkaHeadline)
-                        .foregroundColor(.linkaTextSecondary)
-                } else if phase == .idle {
-                    Text("READY")
-                        .font(.linkaTitle)
-                        .foregroundColor(.linkaText)
-                } else if phase == .connecting {
-                    Text("Ping")
-                        .font(.linkaTitle)
-                        .foregroundColor(.linkaText)
+                    if let u = unit {
+                        Text(u)
+                            .font(.monoCaption)
+                            .foregroundColor(.textSecondary)
+                    }
                 }
             }
         }
-        .frame(width: 300, height: 300)
+        .frame(width: size, height: size)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(isTesting ? "Testando velocidade, \(phaseText)" : "Pronto para testar")
+        .accessibilityLabel(connecting ? value : "\(value) \(unit ?? "")")
         .accessibilityValue(String(format: "%.0f porcento", progress * 100))
-    }
-    
-    private var phaseText: String {
-        switch phase {
-        case .idle: return "Linka Speedtest"
-        case .connecting: return "Connecting..."
-        case .downloading: return "Download"
-        case .uploading: return "Upload"
-        case .done: return "Result"
-        }
     }
 }

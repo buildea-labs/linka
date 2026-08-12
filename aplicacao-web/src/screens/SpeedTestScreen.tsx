@@ -49,13 +49,6 @@ export function SpeedTestScreen() {
     ? instantMbps.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
     : connecting ? 'Preparando' : '0,0';
 
-  const phaseLabel = connecting
-    ? 'Preparando'
-    : enginePhase === 'download'
-      ? 'Download'
-      : enginePhase === 'upload'
-        ? 'Upload'
-        : 'Finalizando';
 
   const phasesList = [
     { key: 'download', label: 'Download' },
@@ -112,14 +105,13 @@ export function SpeedTestScreen() {
               progress={overallProgress}
             />
           )}
-          <p style={{ fontSize: 15, color: 'var(--text-secondary)', minHeight: 20, marginTop: 20 }}>{phaseLabel}</p>
           <PhaseDots phases={phasesList} activeKey={connecting ? '' : enginePhase} />
         </div>
       )}
 
       {isResult && engineResult && (
         <>
-          <div style={{ display: 'flex', gap: 'clamp(28px,4vw,64px)', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', ...enter(0) }}>
+          <div style={{ display: 'flex', gap: 'clamp(16px,4vw,64px)', justifyContent: 'center', alignItems: 'center', flexWrap: 'nowrap', width: '100%', ...enter(0) }}>
             <StatDisplay label="Download" value={engineResult.dl.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} unit="Mbps" accent={true} />
             <div style={{ width: 1, backgroundColor: 'var(--color-separator)', alignSelf: 'stretch', margin: '8px 0' }} />
             <StatDisplay label="Upload" value={engineResult.ul.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} unit="Mbps" />

@@ -2,46 +2,58 @@ import SwiftUI
 
 struct SettingsSheet: View {
     @Environment(\.dismiss) var dismiss
-    @State private var serverSelection = "Automatic (Cloudflare)"
-    @State private var hapticFeedback = true
+    @AppStorage("appAppearance") private var appAppearance: String = "system"
+    @State private var showPurchase = false
     
     var body: some View {
         NavigationStack {
-            Form {
-                Section(header: Text("TESTING PREFERENCES").font(.linkaCaption)) {
-                    Picker("Server", selection: $serverSelection) {
-                        Text("Automatic (Cloudflare)").tag("Automatic (Cloudflare)")
+            List {
+                Section(header: Text("Aparência").font(.monoCaption).foregroundColor(.textSecondary)) {
+                    Picker("Aparência", selection: $appAppearance) {
+                        Text("Claro").tag("light")
+                        Text("Escuro").tag("dark")
+                        Text("Sistema").tag("system")
                     }
-                    Toggle("Haptic Feedback", isOn: $hapticFeedback)
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color.surfaceCard)
                 }
-                .listRowBackground(Color.linkaSurface)
-                .foregroundColor(.linkaText)
                 
-                Section(header: Text("ABOUT").font(.linkaCaption)) {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundColor(.linkaTextSecondary)
+                Section(header: Text("Assinatura").font(.monoCaption).foregroundColor(.textSecondary)) {
+                    Button(action: {
+                        showPurchase = true
+                    }) {
+                        HStack {
+                            Text("Linka")
+                                .font(.bodyRegular)
+                                .foregroundColor(.textPrimary)
+                            Spacer()
+                            Text("Em breve")
+                                .font(.bodyRegular)
+                                .foregroundColor(.textSecondary)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.textSecondary)
+                        }
                     }
+                    .listRowBackground(Color.surfaceCard)
                 }
-                .listRowBackground(Color.linkaSurface)
-                .foregroundColor(.linkaText)
             }
             .scrollContentBackground(.hidden)
-            .background(Color.linkaBackground.ignoresSafeArea())
-            .navigationTitle("Settings")
+            .background(Color.surfacePage.ignoresSafeArea())
+            .navigationTitle("Ajustes")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color.linkaBackground, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(Color.surfacePage, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button("OK") {
                         dismiss()
                     }
-                    .foregroundColor(.linkaPrimary)
-                    .font(.linkaHeadline)
+                    .font(.bodyRegular.weight(.bold))
+                    .foregroundColor(.brandSurface)
                 }
+            }
+            .sheet(isPresented: $showPurchase) {
+                PurchaseSheet()
             }
         }
     }

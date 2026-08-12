@@ -2,111 +2,254 @@ import SwiftUI
 
 struct MainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
+    @State private var detailsOpen: Bool = false
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
+    @State private var showOnboarding: Bool = false
+    @State private var showSettings: Bool = false
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.linkaBackground
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 40) {
-                    Spacer()
-                    
-                    MetricRing(
-                        progress: viewModel.progress,
-                        isTesting: viewModel.isTesting,
-                        phase: viewModel.uiPhase,
-                        displaySpeed: viewModel.uiPhase == .uploading ? viewModel.uploadSpeed : viewModel.downloadSpeed
-                    )
-                    
-                    HStack(spacing: 24) {
-                        MetricItem(title: "Ping", value: viewModel.ping > 0 ? "\(viewModel.ping) ms" : "--", icon: "network", color: .linkaTextSecondary)
-                        MetricItem(title: "Download", value: viewModel.downloadSpeed > 0 ? String(format: "%.1f", viewModel.downloadSpeed) : "--", icon: "arrow.down.circle.fill", color: .linkaSecondary)
-                        MetricItem(title: "Upload", value: viewModel.uploadSpeed > 0 ? String(format: "%.1f", viewModel.uploadSpeed) : "--", icon: "arrow.up.circle.fill", color: .linkaPrimary)
-                    }
-                    .padding(.horizontal)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        if viewModel.isTesting {
-                            viewModel.stopTest()
-                        } else {
-                            viewModel.startTest()
+        ZStack {
+            Color.surfacePage.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                ZStack {
+                    HStack(alignment: .bottom, spacing: 2) {
+                        Text("l")
+                            .font(Font.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(.textPrimary)
+                        
+                        VStack(spacing: 0) {
+                            Circle()
+                                .fill(Color.brandAccentWarm)
+                                .frame(width: 6, height: 6)
+                                .padding(.bottom, 2)
+                            
+                            Rectangle()
+                                .fill(Color.textPrimary)
+                                .frame(width: 6, height: 10)
+                                .cornerRadius(2)
                         }
-                    }) {
-                        Text(viewModel.isTesting ? "STOP" : "GO")
-                            .font(.linkaTitle)
-                            .foregroundColor(.white)
-                            .frame(width: 120, height: 120)
-                            .background(
-                                Circle()
-                                    .fill(viewModel.isTesting ? Color.red : Color.linkaPrimary)
-                            )
+                        .padding(.bottom, 1)
+                        
+                        Text("nka")
+                            .font(Font.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(.textPrimary)
                     }
+                    .tracking(-0.5)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 16)
+                .padding(.top, 16)
+                
+                Spacer()
+                
+                if viewModel.uiPhase != .done {
+                    // Measuring UI
+                    VStack(spacing: 0) {
+                        MetricRing(
+                            connecting: viewModel.uiPhase == .connecting || viewModel.uiPhase == .idle,
+                            progress: viewModel.progress,
+                            value: ringValue,
+                            unit: (viewModel.uiPhase == .connecting || viewModel.uiPhase == .idle) ? nil : "Mbps",
+                            size: 160
+                        )
+                        
+                        Text("LINKA SPEEDTEST")
+                            .font(.monoEyebrow)
+                            .foregroundColor(.textSecondary)
+                            .tracking(1.0)
+                            .padding(.top, 24)
+                            .padding(.bottom, 12)
+                        
+                        Text(phaseLabel)
+                            .font(.bodyRegular)
+                            .foregroundColor(.textSecondary)
+                            .padding(.bottom, 14)
+                        
+                        PhaseDots(
+                            phases: [
+                                (key: "downloading", label: "Download"),
+                                (key: "uploading", label: "Upload")
+                            ],
+                            activeKey: activePhaseKey
+                        )
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
                     
-                    Spacer()
-                }
-            }
-            .navigationTitle("Linka")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color.linkaBackground, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { viewModel.showSettings = true }) {
-                        Image(systemName: "gear")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.linkaText)
+                } else {
+                    // Result UI
+                    VStack(spacing: 0) {
+                        HStack(spacing: 40) {
+                            StatDisplay(
+                                label: "Download",
+                                value: String(format: "%.1f", viewModel.downloadSpeed),
+                                unit: "Mbps",
+                                accent: true
+                            )
+                            
+                            Rectangle()
+                                .fill(Color.borderDefault)
+                                .frame(width: 1, height: 64)
+                            
+                            StatDisplay(
+                                label: "Upload",
+                                value: String(format: "%.1f", viewModel.uploadSpeed),
+                                unit: "Mbps"
+                            )
+                        }
+                        
+                        Text("Sua conexão está pronta.")
+                            .font(.displayTitle)
+                            .foregroundColor(.textPrimary)
+                            .padding(.top, 24)
+                        
+                        Button(action: {
+                            withAnimation(LinkaMotion.spring) {
+                                detailsOpen.toggle()
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Text("Ver detalhes")
+                                    .font(.bodySmall)
+                                
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .rotationEffect(.degrees(detailsOpen ? 180 : 0))
+                            }
+                            .foregroundColor(.textPrimary)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(Color.clear)
+                        }
+                        .padding(.top, 16)
+                        
+                        if detailsOpen {
+                            DetailsDisclosure(
+                                operatorName: "Wi-Fi",
+                                provider: "Linka Network Labs",
+                                duration: "7,4",
+                                ping: viewModel.ping
+                            )
+                            .padding(.top, 14)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                        
+                        Button(action: {
+                            detailsOpen = false
+                            viewModel.startTest()
+                        }) {
+                            HStack(spacing: 6) {
+                                Text("Testar novamente")
+                                    .font(.bodySmall)
+                                
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundColor(.textPrimary)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(Color.clear)
+                        }
+                        .padding(.top, 14)
+                        
+                        // Ad Slot
+                        VStack(spacing: 4) {
+                            Text("Publicidade")
+                                .font(.monoCaption)
+                                .foregroundColor(.textSecondary)
+                            
+                            Text("320×50")
+                                .font(.monoCaption)
+                                .foregroundColor(.textSecondary)
+                        }
+                        .frame(width: 320, height: 50)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(Color.borderDefault, style: StrokeStyle(lineWidth: 1, dash: [4]))
+                        )
+                        .padding(.top, 28)
                     }
-                    .accessibilityLabel("Configurações")
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
                 }
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { viewModel.showPurchase = true }) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.linkaAccent)
-                    }
-                    .accessibilityLabel("Linka Pro")
-                }
-            }
-            .sheet(isPresented: $viewModel.showSettings) {
-                SettingsSheet()
-            }
-            .sheet(isPresented: $viewModel.showPurchase) {
-                PurchaseSheet()
-            }
-            .sheet(isPresented: $viewModel.showOnboarding) {
-                OnboardingSheet(isPresented: $viewModel.showOnboarding)
-            }
-        }
-    }
-}
-
-struct MetricItem: View {
-    var title: String
-    var value: String
-    var icon: String
-    var color: Color
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.caption)
-                    .foregroundColor(color)
-                Text(title)
-                    .font(.linkaCaption)
-                    .foregroundColor(.linkaTextSecondary)
+                
+                Spacer()
             }
             
-            Text(value)
-                .font(.linkaHeadline)
-                .foregroundColor(.linkaText)
+            // Settings Glass Pill
+            if viewModel.uiPhase == .idle || viewModel.uiPhase == .connecting || viewModel.uiPhase == .done {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            showSettings = true
+                        }) {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.textPrimary)
+                                .frame(width: 40, height: 40)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+                        }
+                        .padding(.trailing, 16)
+                        .padding(.top, 54)
+                    }
+                    Spacer()
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(Color.linkaSurface)
-        .cornerRadius(16)
+        .onAppear {
+            if !hasSeenOnboarding {
+                showOnboarding = true
+            } else {
+                viewModel.startTest()
+            }
+        }
+        .onChange(of: showOnboarding) { newValue in
+            if !newValue && !hasSeenOnboarding {
+                hasSeenOnboarding = true
+                viewModel.startTest()
+            }
+        }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingSheet(isPresented: $showOnboarding)
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsSheet()
+        }
+        .animation(LinkaMotion.spring, value: viewModel.uiPhase)
+    }
+    
+    private var ringValue: String {
+        switch viewModel.uiPhase {
+        case .idle, .connecting:
+            return "Preparando"
+        case .downloading:
+            return String(format: "%.1f", viewModel.downloadSpeed)
+        case .uploading, .done:
+            return String(format: "%.1f", viewModel.uploadSpeed)
+        }
+    }
+    
+    private var phaseLabel: String {
+        switch viewModel.uiPhase {
+        case .idle, .connecting:
+            return "Conectando ao servidor mais próximo…"
+        case .downloading:
+            return "Medindo velocidade de download…"
+        case .uploading, .done:
+            return "Medindo velocidade de upload…"
+        }
+    }
+    
+    private var activePhaseKey: String {
+        switch viewModel.uiPhase {
+        case .idle, .connecting:
+            return ""
+        case .downloading:
+            return "downloading"
+        case .uploading, .done:
+            return "uploading"
+        }
     }
 }
