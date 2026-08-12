@@ -1,0 +1,20 @@
+name: LinkaApp
+options:
+  bundleIdPrefix: com.linka
+targets:
+  LinkaApp:
+    type: application
+    platform: [iOS, macOS]
+    deploymentTarget:
+      iOS: 16.0
+      macOS: 13.0
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    sources:
+      - path: LinkaApp/Sources
+    dependencies:
+      - package: LinkaEngine
+packages:
+  LinkaEngine:
+    path: LinkaEngine
