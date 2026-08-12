@@ -16,6 +16,9 @@ targets:
       - path: LinkaApp/Sources
     dependencies:
       - package: LinkaEngine
+      - package: LinkaModules
 packages:
   LinkaEngine:
     path: LinkaEngine
+  LinkaModules:
+    path: LinkaModules
