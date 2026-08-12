@@ -1,0 +1,3 @@
+module LinkaEngine {
+    header "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaEngine/.build/arm64-apple-macosx/debug/LinkaEngine.build/include/LinkaEngine-Swift.h"
+}
