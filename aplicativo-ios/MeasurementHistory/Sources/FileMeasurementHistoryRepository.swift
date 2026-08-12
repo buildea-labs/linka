@@ -80,7 +80,9 @@ public actor FileMeasurementHistoryRepository: MeasurementHistoryRepository {
         do {
             let data = try Data(contentsOf: fileURL)
             let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
+            // O store interno preserva a precisão de `Date` usando o formato
+            // Foundation nativo. O schema interoperável externo continua ISO-8601.
+            decoder.dateDecodingStrategy = .deferredToDate
             let document = try decoder.decode(StoreDocument.self, from: data)
 
             guard document.schemaVersion == Self.storeSchemaVersion else {
@@ -130,7 +132,10 @@ public actor FileMeasurementHistoryRepository: MeasurementHistoryRepository {
                 measurements: storedMeasurements
             )
             let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
+            // ISO-8601 do Foundation perde precisão subsegundo em round-trip.
+            // Como este documento é storage interno (não o contrato de troca),
+            // preservamos `Date` exatamente com o formato Foundation nativo.
+            encoder.dateEncodingStrategy = .deferredToDate
             encoder.outputFormatting = [.sortedKeys]
             let data = try encoder.encode(document)
             try data.write(to: fileURL, options: .atomic)
