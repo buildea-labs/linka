@@ -93,10 +93,9 @@ public actor FileMeasurementHistoryRepository: MeasurementHistoryRepository {
                 }
             }
 
-            storedMeasurements = MeasurementHistoryCollection.retained(
-                document.measurements,
-                policy: retentionPolicy
-            )
+            // Mantém o documento como foi carregado. A retenção é aplicada pela
+            // operação pública seguinte e, se remover algo, a poda é persistida.
+            storedMeasurements = document.measurements
             hasLoaded = true
         } catch let error as MeasurementHistoryError {
             throw error

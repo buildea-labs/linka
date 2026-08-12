@@ -11,8 +11,10 @@ final class MeasurementHistoryTests: XCTestCase {
         try await repository.save(makeMeasurement(id: id, download: 100))
         try await repository.save(makeMeasurement(id: id, download: 200))
 
-        XCTAssertEqual(try await repository.totalCount(), 1)
-        XCTAssertEqual(try await repository.measurement(id: id)?.downloadMbps, 200)
+        let count = try await repository.totalCount()
+        let stored = try await repository.measurement(id: id)
+        XCTAssertEqual(count, 1)
+        XCTAssertEqual(stored?.downloadMbps, 200)
     }
 
     func testQueryFiltersSortsAndPaginates() async throws {
@@ -80,7 +82,8 @@ final class MeasurementHistoryTests: XCTestCase {
             XCTFail("Expected invalidMeasurement")
         } catch let error as MeasurementHistoryError {
             guard case .invalidMeasurement(let violations) = error else {
-                return XCTFail("Unexpected history error: \(error)")
+                XCTFail("Unexpected history error: \(error)")
+                return
             }
             XCTAssertTrue(violations.contains("downloadMbps"))
         } catch {
@@ -112,8 +115,10 @@ final class MeasurementHistoryTests: XCTestCase {
         try await writer.delete(id: measurement.id)
 
         let reader = FileMeasurementHistoryRepository(fileURL: fileURL)
-        XCTAssertNil(try await reader.measurement(id: measurement.id))
-        XCTAssertEqual(try await reader.totalCount(), 0)
+        let restored = try await reader.measurement(id: measurement.id)
+        let count = try await reader.totalCount()
+        XCTAssertNil(restored)
+        XCTAssertEqual(count, 0)
     }
 
     func testCorruptedFileFailsClosed() async throws {
