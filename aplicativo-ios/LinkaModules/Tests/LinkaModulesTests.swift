@@ -18,21 +18,29 @@ final class LinkaModulesTests: XCTestCase {
         )
     }
 
-    func testHistoryReturnsNewestMeasurementsFirst() async throws {
+    func testHistoryCompatibilityUsesStandaloneRepository() async throws {
         let older = NetworkMeasurement(
             measuredAt: Date(timeIntervalSince1970: 100),
-            downloadMbps: 100
+            outcome: .complete,
+            downloadMbps: 100,
+            uploadMbps: 50,
+            latencyMs: 20
         )
         let newer = NetworkMeasurement(
             measuredAt: Date(timeIntervalSince1970: 200),
-            downloadMbps: 200
+            outcome: .complete,
+            downloadMbps: 200,
+            uploadMbps: 50,
+            latencyMs: 20
         )
         let store = InMemoryHistoryStore()
 
         try await store.save(older)
         try await store.save(newer)
 
-        let measurements = try await store.recent(limit: 2)
+        let measurements = try await store.measurements(
+            matching: .init(limit: 2)
+        )
         XCTAssertEqual(measurements.map(\.id), [newer.id, older.id])
     }
 
@@ -88,57 +96,8 @@ final class LinkaModulesTests: XCTestCase {
         XCTAssertTrue(NetworkMeasurementContract.isValid(complete))
     }
 
-    func testCompleteMeasurementRejectsMissingCoreMetric() {
-        let incomplete = NetworkMeasurement(
-            outcome: .complete,
-            downloadMbps: 500,
-            latencyMs: 12
-        )
-
-        XCTAssertFalse(NetworkMeasurementContract.isValid(incomplete))
-        XCTAssertTrue(NetworkMeasurementContract.violations(for: incomplete).contains("uploadMbps"))
-    }
-
     func testPartialMeasurementNeedsAtLeastOneMeasuredMetric() {
         XCTAssertFalse(NetworkMeasurementContract.isValid(NetworkMeasurement()))
         XCTAssertTrue(NetworkMeasurementContract.isValid(NetworkMeasurement(latencyMs: 18)))
-    }
-
-    func testContractRejectsInvalidMetricRanges() {
-        let invalid = NetworkMeasurement(
-            downloadMbps: -1,
-            packetLossPercent: 101
-        )
-
-        let violations = NetworkMeasurementContract.violations(for: invalid)
-        XCTAssertTrue(violations.contains("downloadMbps"))
-        XCTAssertTrue(violations.contains("packetLossPercent"))
-    }
-
-    func testCanonicalMeasurementRoundTripsAsISO8601JSON() throws {
-        let original = NetworkMeasurement(
-            id: UUID(uuidString: "4A5F9B63-E4F4-4D90-904F-3E618FC92C32")!,
-            measuredAt: Date(timeIntervalSince1970: 1_786_428_000),
-            outcome: .complete,
-            downloadMbps: 512.4,
-            uploadMbps: 104.8,
-            latencyMs: 11.7,
-            jitterMs: 1.9,
-            connectionKind: .wifi,
-            serverIdentifier: "cloudflare",
-            engineVersion: "linka-engine-v1"
-        )
-
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.sortedKeys]
-        let data = try encoder.encode(original)
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let decoded = try decoder.decode(NetworkMeasurement.self, from: data)
-
-        XCTAssertEqual(decoded, original)
-        XCTAssertEqual(decoded.schemaVersion, NetworkMeasurementContract.currentSchemaVersion)
     }
 }

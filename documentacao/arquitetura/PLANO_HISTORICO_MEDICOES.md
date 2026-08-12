@@ -1,102 +1,142 @@
-# Histórico de medições — inventário e plano
+# Histórico de medições — plano e implementação
 
-Status: Fases 0 e 1 implementadas na branch `feat/linka-plus-modules`.
+Status: módulo isolado implementado na branch `feat/linka-plus-modules`. Nenhuma integração com Web, SwiftUI ou SpeedTest foi criada.
 
-## Decisão
+## Arquitetura adotada
 
-O Histórico não cria um segundo motor de medição. `LinkaEngine` mede; um adapter futuro transforma uma execução aproveitável no contrato canônico `NetworkMeasurement`; o repositório de Histórico apenas persiste e consulta esse contrato.
+A fundação foi separada em pacotes neutros para permitir reuso futuro sem carregar identidade de produto:
 
 ```text
-LinkaEngine -> adapter -> NetworkMeasurement -> HistoryProviding -> storage
+NetworkCore
+    └── NetworkMeasurement
+
+MeasurementHistory
+    ├── MeasurementHistoryRepository
+    ├── InMemoryMeasurementHistoryRepository
+    ├── FileMeasurementHistoryRepository
+    ├── MeasurementQuery
+    └── HistoryRetentionPolicy
+
+LinkaModules
+    └── compatibilidade temporária com a fundação anterior
 ```
 
-O contrato contém fatos medidos e proveniência técnica mínima. Diagnóstico, opinião, plano/assinatura, UI, texto de IA, problema relatado e velocidade contratada ficam fora dele.
+`MeasurementHistory` depende somente de `NetworkCore` e `Foundation`.
 
-## Fase 0 — inventário de reuso no Linka
+Não existe nesta fase:
 
-| Código existente | Decisão | Motivo |
-| --- | --- | --- |
-| `LinkaEngine/Core/MeasurementState.swift` | Adaptar depois | Já expõe ping, jitter, download e upload durante a execução. É estado vivo, não registro persistível. |
-| `LinkaEngine/Core/SpeedTestCore.swift` | Reusar como fonte de medição, não alterar nesta fase | O fluxo assíncrono já produz as métricas principais. O jitter atual é simulado (`ping * 0.1`), portanto não deve ser tratado como métrica confiável de histórico até o motor medi-lo de verdade. |
-| `LinkaEngine/Core/LinkaEngine.swift` | Não usar para Histórico | É placeholder: usa timer e resultado fixo. Não representa medição real. |
-| `LinkaModules/MeasurementSnapshot` | Evoluir | Era o melhor embrião de contrato, mas não tinha versionamento, outcome, jitter, perda, latência sob carga nem duração. Foi substituído por `NetworkMeasurement`, mantendo alias temporário. |
-| `HistoryProviding` + `InMemoryHistoryStore` | Reusar na Fase 2 | A abstração e ordenação já servem como base. O store em memória é teste/fundação, não persistência de produto. |
-| `BasicInsightProvider` | Reusar depois do Histórico | A comparação determinística consome medições sem diagnosticar causa. Não faz parte da persistência. |
-| Linka Web | Adapter futuro | Deve mapear o resultado Web para o mesmo contrato, sem compartilhar implementação de storage com Apple. |
+```text
+SpeedTest -> History
+SwiftUI -> History
+Web -> History
+```
 
-Referências externas podem informar decisões arquiteturais, mas esta implementação não cria dependência de código, build ou runtime com outro produto.
+A integração será uma decisão posterior e deverá acontecer por adapter.
 
-## Dívidas identificadas
+## Fase 0 — inventário
 
-1. Existem hoje dois caminhos nominalmente de engine no iOS. `SpeedTestCore` executa requests reais; `LinkaEngine.swift` ainda é placeholder com números fixos. Um adapter de Histórico jamais deve aceitar o placeholder como fonte.
-2. `SpeedTestCore` simula jitter. O campo `jitterMs` do contrato é opcional até existir medição real.
-3. O contrato já comporta perda de pacotes e latência sob carga, mas esses campos são opcionais: sua presença no schema não significa que o iOS os mede hoje.
-4. `InMemoryHistoryStore` não sobrevive ao encerramento do app. Persistência real pertence à Fase 2.
+O Linka já tinha um embrião de histórico em `LinkaModules`: `MeasurementSnapshot`, `HistoryProviding` e `InMemoryHistoryStore`. Essa base foi aproveitada conceitualmente, sem criar uma segunda implementação concorrente.
+
+Também foram registradas duas dívidas do engine iOS, sem alterá-las:
+
+- `SpeedTestCore` ainda simula jitter;
+- `LinkaEngine.swift` ainda contém um caminho placeholder com resultado fixo.
+
+Como o módulo permanece desconectado do engine, essas dívidas não bloqueiam seu desenvolvimento isolado.
 
 ## Fase 1 — contrato canônico
 
-A fonte de verdade no Swift é `NetworkMeasurement`. O schema interoperável está em `documentacao/arquitetura/contratos/network-measurement.schema.json`.
+`NetworkMeasurement` foi movido para o pacote neutro `NetworkCore` e continua seguindo o schema interoperável v1 em `documentacao/arquitetura/contratos/network-measurement.schema.json`.
 
-### Regras v1
+Regras principais:
 
-- `schemaVersion` é `1`.
-- `id` identifica a medição; salvar novamente o mesmo id deve ser idempotente no repositório futuro.
-- `measuredAt` representa o instante da medição.
-- `complete` exige download, upload e latência.
-- `partial` exige ao menos uma métrica aproveitável.
-- métricas não podem ser negativas ou não finitas.
-- perda de pacotes fica entre 0 e 100 quando presente.
-- jitter, perda, latência sob carga, duração, tipo de conexão e proveniência são opcionais.
-- ausência de um campo opcional significa "não medido/não disponível"; não deve ser convertida em zero.
+- `schemaVersion = 1`;
+- `complete` exige download, upload e latência;
+- `partial` exige ao menos uma métrica;
+- valores medidos não podem ser negativos ou não finitos;
+- perda de pacotes, quando presente, fica entre 0 e 100;
+- campos opcionais ausentes significam não medido/não disponível, nunca zero;
+- diagnóstico, opinião, assinatura, UI e contexto do usuário não fazem parte da medição.
 
-### O que não pertence ao contrato
+## Fase 2 — MeasurementHistory implementado
 
-- diagnóstico ou causa provável;
-- recomendação;
-- pergunta/resposta de Assist;
-- tier Free/Plus ou entitlement;
-- preço/paywall;
-- estado de UI, animação ou progresso;
-- problema declarado pelo usuário;
-- velocidade contratada.
+### Contrato do repositório
 
-## Fixtures canônicas
+O módulo expõe:
 
-- `fixtures/network-measurement-complete-v1.json`: medição completa.
-- `fixtures/network-measurement-partial-v1.json`: medição interrompida, mas com latência aproveitável.
+- `save` com upsert idempotente por `id`;
+- busca por `id`;
+- consultas por `MeasurementQuery`;
+- contagem total;
+- exclusão individual;
+- exclusão total.
 
-Elas documentam o formato que adapters futuros de Web e Apple devem produzir.
+### Consultas
 
-## Próximas fases — ainda não implementadas
+`MeasurementQuery` suporta:
 
-### Fase 2 — repositório e persistência Apple
+- data inicial e final;
+- tipo de conexão;
+- outcome completo/parcial;
+- ordenação crescente/decrescente por data;
+- offset;
+- limit.
 
-- definir queries e política de retenção;
-- tornar `HistoryProviding` explicitamente um repository de domínio;
-- implementar storage persistente Apple;
-- migração/versionamento;
-- deduplicação por id;
-- testes de reinício, exclusão e corrupção;
-- adapter `SpeedTestCore -> NetworkMeasurement` somente após remover/contornar dados simulados.
+### Retenção
 
-### Fase 3 — adapter Web
+`HistoryRetentionPolicy` é configurável por:
 
-Mapear o resultado real do Linka Web para `NetworkMeasurement` sem alterar seu motor e sem obrigar Apple e Web a usar o mesmo mecanismo de persistência.
+- quantidade máxima de registros;
+- idade máxima dos registros;
+- sem limite quando ambos são omitidos.
 
-### Fase 4 — comparação/Insights
+A política pertence ao repositório, não à UI nem ao plano Free/Plus.
 
-Consolidar regras puras de comparação sobre medições persistidas. Comparação relata diferença observada; não atribui causa.
+### Implementações
 
-### Fase 5 — UI
+`InMemoryMeasurementHistoryRepository` serve para testes, desenvolvimento e consumidores que não precisam de persistência.
 
-Só depois da persistência e dos contratos passarem pelos gates. Histórico não deve contaminar o fluxo principal `ABRIR -> MEDIR -> RESULTADO -> REPETIR`.
+`FileMeasurementHistoryRepository` persiste um documento JSON próprio, com:
 
-## Gate para avançar
+- versão do store;
+- medições canônicas;
+- escrita atômica;
+- criação automática do diretório;
+- falha fechada em arquivo corrompido;
+- falha fechada em versão de store desconhecida;
+- nenhuma exclusão/migração destrutiva automática.
 
-Antes da Fase 2:
+### Testes adicionados
 
-1. `swift test` em `aplicativo-ios/LinkaModules` verde;
-2. contrato v1 aprovado sem campos de diagnóstico/produto/UI;
-3. fixtures decodificáveis de forma determinística;
-4. nenhuma alteração de comportamento do SpeedTest;
-5. nenhuma dependência nova de outro produto.
+- idempotência por id;
+- ordenação, filtros e paginação;
+- retenção;
+- rejeição de medição inválida;
+- persistência entre instâncias;
+- persistência de exclusão;
+- arquivo corrompido;
+- versão de store não suportada;
+- contrato canônico e serialização JSON.
+
+## O que continua fora do módulo
+
+- adapter do motor de SpeedTest;
+- qualquer ViewModel;
+- SwiftUI;
+- React/Web;
+- StoreKit e Free/Plus;
+- CloudKit/Firebase/Supabase;
+- Assist/IA;
+- diagnóstico e recomendação.
+
+## Próximo gate
+
+Antes de considerar o módulo concluído para integração:
+
+1. executar `swift test` em `aplicativo-ios/NetworkCore`;
+2. executar `swift test` em `aplicativo-ios/MeasurementHistory`;
+3. executar `swift test` em `aplicativo-ios/LinkaModules` para validar compatibilidade;
+4. revisar API pública e política de retenção;
+5. somente depois decidir se haverá adapter iOS, Web ou ambos.
+
+Até esse gate passar, o módulo existe como backend isolado e não deve ser ligado às interfaces.

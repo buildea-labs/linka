@@ -13,9 +13,17 @@ let package = Package(
             targets: ["LinkaModules"]
         )
     ],
+    dependencies: [
+        .package(path: "../NetworkCore"),
+        .package(path: "../MeasurementHistory")
+    ],
     targets: [
         .target(
             name: "LinkaModules",
+            dependencies: [
+                .product(name: "NetworkCore", package: "NetworkCore"),
+                .product(name: "MeasurementHistory", package: "MeasurementHistory")
+            ],
             path: "Sources"
         ),
         .testTarget(
