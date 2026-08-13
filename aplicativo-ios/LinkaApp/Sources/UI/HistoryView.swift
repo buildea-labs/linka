@@ -1,0 +1,268 @@
+import SwiftUI
+import MeasurementHistory
+import NetworkCore
+import LinkaEntitlements
+
+struct HistoryView: View {
+    @State private var measurements: [NetworkMeasurement] = []
+    @State private var isLoading = true
+    @State private var hasPlus = false
+    
+    // For demo purposes, we'll use the in-memory repository to show the layout.
+    // In the real app, this would be injected.
+    let repository = InMemoryMeasurementHistoryRepository()
+    
+    @ViewBuilder
+    var body: some View {
+        ZStack {
+            if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.surfacePage)
+            } else if !hasPlus {
+                // Upsell View for Free users
+                VStack(spacing: 24) {
+                    Image(systemName: "clock.badge.exclamationmark")
+                        .font(.system(size: 64, weight: .light))
+                        .foregroundColor(.brandAccentWarm)
+                    
+                    Text("Linka Plus")
+                        .font(.displayTitle)
+                        .foregroundColor(.textPrimary)
+                    
+                    Text("O histórico de medições e as análises de rede são exclusivos para assinantes do Linka Plus.")
+                        .font(.bodyRegular)
+                        .foregroundColor(.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                    
+                    Button("Conhecer o Linka Plus") {
+                        // Action for Plus purchase flow
+                    }
+                    .font(Font.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                    .background(Color.brandAccentWarm)
+                    .clipShape(Capsule())
+                    .padding(.top, 16)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.surfacePage)
+            } else {
+                List {
+                    // Assist Insight Card
+                    Section {
+                        HStack(alignment: .top, spacing: 16) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 24))
+                                .foregroundColor(.brandAccentWarm)
+                            
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Insight da Semana")
+                                    .font(Font.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.textPrimary)
+                                
+                                Text("Sua conexão Wi-Fi está 15% mais rápida nos últimos 3 dias.")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                
+                                Button(action: {
+                                    // Open Assist
+                                }) {
+                                    Text("Perguntar ao Assist")
+                                        .font(Font.system(size: 11, weight: .bold))
+                                        .foregroundColor(.brandAccentWarm)
+                                }
+                                .padding(.top, 4)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    
+                    // History List
+                    Section(header: Text("MÊS ATUAL").font(.monoCaption).foregroundColor(.textSecondary)) {
+                        if measurements.isEmpty {
+                            Text("Nenhuma medição encontrada.")
+                                .font(.bodySmall)
+                                .foregroundColor(.textSecondary)
+                                .padding(.vertical, 8)
+                        } else {
+                            ForEach(measurements, id: \.id) { measurement in
+                                HistoryRow(measurement: measurement)
+                            }
+                        }
+                    }
+                }
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .background(Color.surfacePage)
+            }
+        }
+        .navigationTitle("Histórico")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            loadData()
+        }
+    }
+    
+    private func loadData() {
+        Task {
+            // Check entitlement using the new LinkaEntitlements package
+            let policy = LinkaEntitlementPolicy.decision(
+                for: .history,
+                snapshot: .plus(status: .active, source: .subscription), // Mocking Plus active
+                at: Date()
+            )
+            
+            hasPlus = policy.isGranted
+            
+            if hasPlus {
+                // Populate mock data if empty
+                let count = try? await repository.totalCount()
+                if count == 0 {
+                    let mock = NetworkMeasurement(
+                        id: UUID(),
+                        measuredAt: Date(),
+                        outcome: .complete,
+                        downloadMbps: 245.0,
+                        uploadMbps: 110.5,
+                        latencyMs: 12.0,
+                        jitterMs: 2.1,
+                        connectionKind: .wifi,
+                        serverIdentifier: "sp-server-01",
+                        engineVersion: "v1"
+                    )
+                    try? await repository.save(mock)
+                }
+                
+                let query = MeasurementQuery(limit: 50, sortOrder: .newestFirst)
+                measurements = (try? await repository.measurements(matching: query)) ?? []
+            }
+            
+            isLoading = false
+        }
+    }
+}
+
+struct HistoryView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            HistoryView()
+        }
+    }
+}
+
+struct HistoryRow: View {
+    let measurement: NetworkMeasurement
+    @State private var isExpanded = false
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                withAnimation(LinkaMotion.spring) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(formatDate(measurement.measuredAt))
+                            .font(.bodySmall.weight(.medium))
+                            .foregroundColor(.textPrimary)
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: measurement.connectionKind == .wifi ? "wifi" : "cellularbars")
+                                .font(.system(size: 10))
+                            Text(measurement.connectionKind?.rawValue.uppercased() ?? "WIFI")
+                                .font(.monoCaption)
+                        }
+                        .foregroundColor(.textSecondary)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 4) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.down")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.brandAccentWarm)
+                            Text(formatSpeed(measurement.downloadMbps))
+                                .font(.monoEyebrow)
+                                .foregroundColor(.textPrimary)
+                        }
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.textSecondary)
+                            Text(formatSpeed(measurement.uploadMbps))
+                                .font(.monoEyebrow)
+                                .foregroundColor(.textSecondary)
+                        }
+                    }
+                }
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            
+            if isExpanded {
+                VStack(spacing: 12) {
+                    Divider()
+                        .background(Color.borderDefault)
+                        .padding(.top, 4)
+                    
+                    HStack {
+                        DetailItem(label: "PING", value: formatPing(measurement.latencyMs))
+                        Spacer()
+                        DetailItem(label: "JITTER", value: formatPing(measurement.jitterMs))
+                        Spacer()
+                        DetailItem(label: "PERDA", value: measurement.packetLossPercent != nil ? "\(Int(measurement.packetLossPercent!))%" : "--")
+                    }
+                    
+                    HStack {
+                        DetailItem(label: "SERVIDOR", value: measurement.serverIdentifier ?? "Automático")
+                        Spacer()
+                    }
+                }
+                .padding(.bottom, 8)
+                .padding(.top, 4)
+            }
+        }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        formatter.locale = Locale(identifier: "pt_BR")
+        return formatter.string(from: date)
+    }
+    
+    private func formatSpeed(_ speed: Double?) -> String {
+        guard let speed = speed else { return "--" }
+        return String(format: "%.1f", speed)
+    }
+    
+    private func formatPing(_ ping: Double?) -> String {
+        guard let ping = ping else { return "--" }
+        return String(format: "%.0f ms", ping)
+    }
+}
+
+struct DetailItem: View {
+    let label: String
+    let value: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.monoCaption)
+                .foregroundColor(.textSecondary)
+            Text(value)
+                .font(.bodySmall.weight(.medium))
+                .foregroundColor(.textPrimary)
+        }
+    }
+}
