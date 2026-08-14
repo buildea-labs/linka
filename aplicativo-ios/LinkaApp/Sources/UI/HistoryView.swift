@@ -7,6 +7,7 @@ struct HistoryView: View {
     @State private var measurements: [NetworkMeasurement] = []
     @State private var isLoading = true
     @State private var hasPlus = false
+    @State private var showAssist = false
     
     // For demo purposes, we'll use the in-memory repository to show the layout.
     // In the real app, this would be injected.
@@ -26,17 +27,17 @@ struct HistoryView: View {
                         .font(.system(size: 64, weight: .light))
                         .foregroundColor(.brandAccentWarm)
                     
-                    Text("Linka Plus")
+                    Text("Linka")
                         .font(.displayTitle)
                         .foregroundColor(.textPrimary)
                     
-                    Text("O histórico de medições e as análises de rede são exclusivos para assinantes do Linka Plus.")
+                    Text("O histórico de medições e as análises de rede são exclusivos para assinantes do Linka.")
                         .font(.bodyRegular)
                         .foregroundColor(.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
                     
-                    Button("Conhecer o Linka Plus") {
+                    Button("Conhecer o Linka") {
                         // Action for Plus purchase flow
                     }
                     .font(Font.system(size: 15, weight: .semibold))
@@ -69,7 +70,7 @@ struct HistoryView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                                 
                                 Button(action: {
-                                    // Open Assist
+                                    showAssist = true
                                 }) {
                                     Text("Perguntar ao Assist")
                                         .font(Font.system(size: 11, weight: .bold))
@@ -102,6 +103,9 @@ struct HistoryView: View {
         }
         .navigationTitle("Histórico")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showAssist) {
+            AssistSheet()
+        }
         .onAppear {
             loadData()
         }
@@ -120,23 +124,6 @@ struct HistoryView: View {
             
             if hasPlus {
                 // Populate mock data if empty
-                let count = try? await repository.totalCount()
-                if count == 0 {
-                    let mock = NetworkMeasurement(
-                        id: UUID(),
-                        measuredAt: Date(),
-                        outcome: .complete,
-                        downloadMbps: 245.0,
-                        uploadMbps: 110.5,
-                        latencyMs: 12.0,
-                        jitterMs: 2.1,
-                        connectionKind: .wifi,
-                        serverIdentifier: "sp-server-01",
-                        engineVersion: "v1"
-                    )
-                    try? await repository.save(mock)
-                }
-                
                 let query = MeasurementQuery(limit: 50, sortOrder: .newestFirst)
                 measurements = (try? await repository.measurements(matching: query)) ?? []
             }

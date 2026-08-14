@@ -7,12 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		074A78EB05FB73EAA13BFF42 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86E6389194D1938B09BEE51 /* HistoryView.swift */; };
 		080B674A908A6C5DA086E6FB /* StatDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240C677AB8218C3DE05600FB /* StatDisplay.swift */; };
+		1F40D1C6737FB0E30B0EB7EE /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86E6389194D1938B09BEE51 /* HistoryView.swift */; };
 		22ACBF6A87B265E99D871533 /* MetricRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179DA64F9C7059B7A140B92E /* MetricRing.swift */; };
 		2AD6E6F6C8A5849D189EFFD5 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60A040FE4E49231CD858102 /* MainView.swift */; };
+		2D978D5BAD95A0E29AE7AE85 /* LinkaModules in Frameworks */ = {isa = PBXBuildFile; productRef = 2A1ED27B4CE61C438B43B40C /* LinkaModules */; };
 		2F7AC1D0FB4C81453B1B1EC7 /* PurchaseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1056216026BABB240C8AC371 /* PurchaseSheet.swift */; };
 		45C0F482F56FF0A25084CBD1 /* PurchaseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1056216026BABB240C8AC371 /* PurchaseSheet.swift */; };
 		460A04738C58DD0F7081552C /* LinkaEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 32F32DAB5F80BE2584F3A3DB /* LinkaEngine */; };
+		4C677DE785ED6352129A9839 /* AssistSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988979889EF4E4AC03B8A21D /* AssistSheet.swift */; };
 		50C85316B3E53EB821D140B2 /* PhaseDots.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */; };
 		58AAEC10AB55272DF16453E3 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3234D1B179CE201E17961385 /* SplashView.swift */; };
 		6F17598AD7C151721E54AB92 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */; };
@@ -35,6 +39,8 @@
 		D1F96FFD9A366D9F61AD5F96 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */; };
 		DDDA516AB439EF732458C5F6 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */; };
 		E1CC58942197732477D20D52 /* SpeedTestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E816515881C246C6E28B0653 /* SpeedTestViewModel.swift */; };
+		E4B904926847BAFFF4BCD8EC /* AssistSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988979889EF4E4AC03B8A21D /* AssistSheet.swift */; };
+		EFE90B32EE9F3C3441921A5D /* LinkaModules in Frameworks */ = {isa = PBXBuildFile; productRef = F9AA1524670AA76CD25C8EE7 /* LinkaModules */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,15 +50,18 @@
 		240C677AB8218C3DE05600FB /* StatDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatDisplay.swift; sourceTree = "<group>"; };
 		3234D1B179CE201E17961385 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
-		4AA2E4A391D36FDA86E36727 /* LinkaEngine */ = {isa = PBXFileReference; lastKnownFileType = folder; path = LinkaEngine; sourceTree = SOURCE_ROOT; };
-		6F3C93A80DDDCD9D80E5235B /* LinkaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LinkaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4AA2E4A391D36FDA86E36727 /* LinkaEngine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaEngine; path = LinkaEngine; sourceTree = SOURCE_ROOT; };
+		4D0615340FFF59EAAF050BE2 /* LinkaModules */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaModules; path = LinkaModules; sourceTree = SOURCE_ROOT; };
+		6F3C93A80DDDCD9D80E5235B /* LinkaApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LinkaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		72C35725E79C96780D745AB7 /* LinkaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaApp.swift; sourceTree = "<group>"; };
 		736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		8041784263895147F69C02D2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		988979889EF4E4AC03B8A21D /* AssistSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistSheet.swift; sourceTree = "<group>"; };
 		C60A040FE4E49231CD858102 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		DEF366EB2385DC20D0757E43 /* DetailsDisclosure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailsDisclosure.swift; sourceTree = "<group>"; };
 		E3B3AA7959A5149C12DAD039 /* LinkaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LinkaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E816515881C246C6E28B0653 /* SpeedTestViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestViewModel.swift; sourceTree = "<group>"; };
+		E86E6389194D1938B09BEE51 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseDots.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -62,6 +71,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				460A04738C58DD0F7081552C /* LinkaEngine in Frameworks */,
+				EFE90B32EE9F3C3441921A5D /* LinkaModules in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,6 +80,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				847E859C6B4B4BC90D19D8BE /* LinkaEngine in Frameworks */,
+				2D978D5BAD95A0E29AE7AE85 /* LinkaModules in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,8 +102,10 @@
 		10937898CCD45A4354EAA6CF /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				988979889EF4E4AC03B8A21D /* AssistSheet.swift */,
 				43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */,
 				DEF366EB2385DC20D0757E43 /* DetailsDisclosure.swift */,
+				E86E6389194D1938B09BEE51 /* HistoryView.swift */,
 				C60A040FE4E49231CD858102 /* MainView.swift */,
 				179DA64F9C7059B7A140B92E /* MetricRing.swift */,
 				0201C342E6C12B31716E8FDB /* OnboardingSheet.swift */,
@@ -118,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				4AA2E4A391D36FDA86E36727 /* LinkaEngine */,
+				4D0615340FFF59EAAF050BE2 /* LinkaModules */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -157,6 +171,7 @@
 			name = LinkaApp_iOS;
 			packageProductDependencies = (
 				32F32DAB5F80BE2584F3A3DB /* LinkaEngine */,
+				F9AA1524670AA76CD25C8EE7 /* LinkaModules */,
 			);
 			productName = LinkaApp_iOS;
 			productReference = 6F3C93A80DDDCD9D80E5235B /* LinkaApp.app */;
@@ -177,6 +192,7 @@
 			name = LinkaApp_macOS;
 			packageProductDependencies = (
 				86760C16968147ADE1D36961 /* LinkaEngine */,
+				2A1ED27B4CE61C438B43B40C /* LinkaModules */,
 			);
 			productName = LinkaApp_macOS;
 			productReference = E3B3AA7959A5149C12DAD039 /* LinkaApp.app */;
@@ -190,6 +206,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = C2CE0C2BCF81362355C11576 /* Build configuration list for PBXProject "LinkaApp" */;
 			developmentRegion = en;
@@ -202,6 +220,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				501DCE8450FC9C3F97A936C6 /* XCLocalSwiftPackageReference "LinkaEngine" */,
+				622D20AD0BCF2FAAC6BFF7A8 /* XCLocalSwiftPackageReference "LinkaModules" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 89593D469806B613A3DDE80D /* Products */;
@@ -238,8 +257,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C677DE785ED6352129A9839 /* AssistSheet.swift in Sources */,
 				DDDA516AB439EF732458C5F6 /* DesignSystem.swift in Sources */,
 				939AB442072FC3494E2B785F /* DetailsDisclosure.swift in Sources */,
+				1F40D1C6737FB0E30B0EB7EE /* HistoryView.swift in Sources */,
 				CF3CD7092B1A2A05068FD02F /* LinkaApp.swift in Sources */,
 				2AD6E6F6C8A5849D189EFFD5 /* MainView.swift in Sources */,
 				99DC47095EFAC9A6C617FE64 /* MetricRing.swift in Sources */,
@@ -257,8 +278,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E4B904926847BAFFF4BCD8EC /* AssistSheet.swift in Sources */,
 				8EDC61449DB6F193BE332F11 /* DesignSystem.swift in Sources */,
 				8D66BEE737572D8CC731228A /* DetailsDisclosure.swift in Sources */,
+				074A78EB05FB73EAA13BFF42 /* HistoryView.swift in Sources */,
 				D023E595162ADE7D1452F5EC /* LinkaApp.swift in Sources */,
 				9D9CAA41523C5B4063A18FF2 /* MainView.swift in Sources */,
 				22ACBF6A87B265E99D871533 /* MetricRing.swift in Sources */,
@@ -280,6 +303,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -287,6 +311,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.linka.LinkaApp-macOS";
 				PRODUCT_NAME = LinkaApp;
 				SDKROOT = macosx;
@@ -359,7 +384,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 2Z4T8228GR;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -367,6 +392,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.linka.LinkaApp-iOS";
 				PRODUCT_NAME = LinkaApp;
 				SDKROOT = iphoneos;
@@ -433,7 +459,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 2Z4T8228GR;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -441,6 +467,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.linka.LinkaApp-iOS";
 				PRODUCT_NAME = LinkaApp;
 				SDKROOT = iphoneos;
@@ -453,6 +480,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -460,6 +488,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.linka.LinkaApp-macOS";
 				PRODUCT_NAME = LinkaApp;
 				SDKROOT = macosx;
@@ -503,9 +532,17 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = LinkaEngine;
 		};
+		622D20AD0BCF2FAAC6BFF7A8 /* XCLocalSwiftPackageReference "LinkaModules" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LinkaModules;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		2A1ED27B4CE61C438B43B40C /* LinkaModules */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LinkaModules;
+		};
 		32F32DAB5F80BE2584F3A3DB /* LinkaEngine */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LinkaEngine;
@@ -513,6 +550,10 @@
 		86760C16968147ADE1D36961 /* LinkaEngine */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LinkaEngine;
+		};
+		F9AA1524670AA76CD25C8EE7 /* LinkaModules */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LinkaModules;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

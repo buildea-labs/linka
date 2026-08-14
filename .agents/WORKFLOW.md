@@ -44,6 +44,12 @@ Antes de declarar o código pronto, o sub-agente **Marcelinho** tenta quebrar a 
 O Giam consolida as revisões, confronta a entrega com o objetivo original e apresenta a conclusão ao Luiz.
 Com a aprovação necessária, o código é mergeado na `main` e as branches temporárias são limpas.
 
+### Passo 5: Lançamento Automático e Release Notes (Giam)
+A partir da versão 1.0.0-beta, o Giam assumiu a automação completa do ciclo final. Sem que o dono do produto precise pedir, o Giam DEVE:
+- Executar o script `.agents/scripts/release.sh` para atualizar o *Build Number* no XcodeGen.
+- Escrever automaticamente o documento `RELEASE_NOTES.md` traduzindo a entrega técnica da sprint em um texto comercial para o usuário.
+- Preparar o commit final de empacotamento.
+
 ---
 
 > *"Uma coisa de cada vez. Termina. Valida. Mergeia."*

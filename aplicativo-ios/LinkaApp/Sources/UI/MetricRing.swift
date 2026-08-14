@@ -6,6 +6,8 @@ struct MetricRing: View {
     var value: String
     var unit: String?
     var size: CGFloat = 168
+    var animation: Namespace.ID? = nil
+    var matchedId: String? = nil
     
     var body: some View {
         ZStack {
@@ -28,12 +30,19 @@ struct MetricRing: View {
                         .font(.bodyRegular)
                         .foregroundColor(.textSecondary)
                 } else {
-                    Text(value)
-                        .font(Font.system(size: size > 200 ? 56 : 40, weight: .bold, design: .rounded))
-                        .foregroundColor(.textPrimary)
-                        .minimumScaleFactor(0.5)
-                        .lineLimit(1)
-                        .tracking(-1)
+                    Group {
+                        if let id = matchedId, let ns = animation {
+                            Text(value)
+                                .matchedGeometryEffect(id: id, in: ns)
+                        } else {
+                            Text(value)
+                        }
+                    }
+                    .font(Font.system(size: size > 200 ? 56 : 40, weight: .bold, design: .rounded))
+                    .foregroundColor(.textPrimary)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .tracking(-1)
                     
                     if let u = unit {
                         Text(u)

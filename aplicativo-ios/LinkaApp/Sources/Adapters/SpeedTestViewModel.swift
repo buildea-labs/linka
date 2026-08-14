@@ -18,6 +18,9 @@ public class SpeedTestViewModel: ObservableObject {
     @Published public var uploadSpeed: Double = 0.0
     @Published public var ping: Int = 0
     @Published public var jitter: Double = 0.0
+    @Published public var provider: String = ""
+    @Published public var networkType: String = ""
+    @Published public var testDuration: String = ""
     @Published public var uiPhase: SpeedTestUIPhase = .idle
     
     // UI states
@@ -38,6 +41,9 @@ public class SpeedTestViewModel: ObservableObject {
         uploadSpeed = 0.0
         ping = 0
         jitter = 0.0
+        provider = ""
+        networkType = ""
+        testDuration = ""
         uiPhase = .connecting
         
         testTask?.cancel()
@@ -73,6 +79,9 @@ public class SpeedTestViewModel: ObservableObject {
         if let j = state.jitter { self.jitter = j }
         if let d = state.downloadSpeed { self.downloadSpeed = d }
         if let u = state.uploadSpeed { self.uploadSpeed = u }
+        if let prov = state.provider { self.provider = prov }
+        if let net = state.networkType { self.networkType = net }
+        if let dur = state.duration { self.testDuration = String(format: "%.1fs", dur).replacingOccurrences(of: ".", with: ",") }
         
         switch state.phase {
         case .idle: self.uiPhase = .idle

@@ -5,6 +5,8 @@ struct StatDisplay: View {
     var value: String
     var unit: String
     var accent: Bool = false
+    var animation: Namespace.ID? = nil
+    var matchedId: String? = nil
     
     var body: some View {
         VStack(spacing: 4) {
@@ -15,10 +17,17 @@ struct StatDisplay: View {
                 .tracking(1.2)
             
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value)
-                    .font(.displayTitle)
-                    .foregroundColor(accent ? .brandAccentWarm : .textPrimary)
-                    .lineLimit(1)
+                Group {
+                    if let id = matchedId, let ns = animation {
+                        Text(value)
+                            .matchedGeometryEffect(id: id, in: ns)
+                    } else {
+                        Text(value)
+                    }
+                }
+                .font(.displayTitle)
+                .foregroundColor(accent ? .brandAccentWarm : .textPrimary)
+                .lineLimit(1)
                 
                 Text(unit)
                     .font(.monoCaption)

@@ -27,15 +27,15 @@ struct PurchaseSheet: View {
                 
                 Spacer()
                 
-                Text("Linka")
-                    .font(.displayTitle)
-                    .foregroundColor(.textPrimary)
+                Image("wordmark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 32)
                     .padding(.bottom, 24)
                 
                 VStack(alignment: .leading, spacing: 16) {
-                    ProFeatureRow(title: "Teste de velocidade completo", icon: "speedometer")
-                    ProFeatureRow(title: "Histórico de medições", icon: "clock.arrow.circlepath")
-                    ProFeatureRow(title: "Bitrate (Streaming 4K, HD)", icon: "play.tv.fill")
+                    FeatureRow(title: "Teste de velocidade completo", icon: "speedometer")
+                    FeatureRow(title: "Histórico de medições", icon: "clock.arrow.circlepath")
                 }
                 .padding(.horizontal, 32)
                 .padding(.bottom, 36)
@@ -66,18 +66,33 @@ struct PurchaseSheet: View {
                 
                 Spacer()
                 
-                Text("Assinatura renovada automaticamente. Cancele a qualquer momento nas configurações da App Store. Termos de Uso e Política de Privacidade.")
-                    .font(.system(size: 10))
-                    .foregroundColor(.textSecondary.opacity(0.6))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-                    .padding(.bottom, 24)
+                VStack(spacing: 4) {
+                    Text("Assinatura renovada automaticamente. Cancele a qualquer momento nas configurações da App Store.")
+                        .font(.system(size: 10))
+                        .foregroundColor(.textSecondary.opacity(0.6))
+                        .multilineTextAlignment(.center)
+                    
+                    HStack(spacing: 4) {
+                        Link("Termos de Uso", destination: URL(string: "https://linka.app/termos")!)
+                            .font(.system(size: 10))
+                        
+                        Text("e")
+                            .font(.system(size: 10))
+                            .foregroundColor(.textSecondary.opacity(0.6))
+                        
+                        Link("Política de Privacidade", destination: URL(string: "https://linka.app/privacidade")!)
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(.brandSurface)
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 24)
             }
         }
     }
 }
 
-struct ProFeatureRow: View {
+struct FeatureRow: View {
     var title: String
     var icon: String
     

@@ -42,14 +42,14 @@ O produto tem duas frentes oficiais:
 ### Web
 
 - React + TypeScript + Vite.
-- SpeedTest público sem instalação e sem cadastro.
-- Deve ser leve e funcionar bem inclusive quando a conexão estiver ruim.
+- **Apenas página de marketing (Landing Page)** adaptativa para desktop e mobile. Não roda teste de velocidade real na web.
+- O objetivo exclusivo da web é apresentar as funcionalidades e direcionar o usuário para o app iOS.
 
-### Apple
+### Apple (Plataforma Exclusiva do Produto)
 
-- iPhone, iPad e Mac são a prioridade nativa.
-- Implementação alvo: **Swift + SwiftUI**.
-- A experiência deve parecer nativa do ecossistema Apple, não um site dentro de uma casca.
+- iPhone, iPad e Mac são o único destino do produto.
+- **Não está prevista versão para Android.**
+- A experiência deve parecer nativa do ecossistema Apple.
 
 ### Linka Engine
 
@@ -158,6 +158,7 @@ Motion deve transmitir estado e precisão, não chamar atenção para si.
 
 O novo Design System em `documentacao/design/design_system/` substitui a governança visual antiga.
 - A pasta `documentacao/design/design_system/assets/icons/` é a ÚNICA fonte de verdade dos ícones. É expressamente proibido redesenhar o símbolo ou manter variantes visuais antigas concorrentes.
+- **Logo Oficial:** O logo do produto é estrita e unicamente o arquivo `wordmark.svg` (tanto na Web quanto no App). É expressamente proibido usar texto puro (ex: `<div>Linka</div>`) no lugar da logo.
 
 Não use Material Design 3 como regra do novo Linka.
 

@@ -6,6 +6,7 @@ struct MainView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding: Bool = false
     @State private var showSettings: Bool = false
+    @Namespace private var animation
     
     var body: some View {
         NavigationStack {
@@ -14,29 +15,10 @@ struct MainView: View {
                 
                 VStack(spacing: 0) {
                     ZStack {
-                        HStack(alignment: .bottom, spacing: 2) {
-                            Text("l")
-                                .font(Font.system(size: 20, weight: .bold, design: .rounded))
-                                .foregroundColor(.textPrimary)
-                            
-                            VStack(spacing: 0) {
-                                Circle()
-                                    .fill(Color.brandAccentWarm)
-                                    .frame(width: 6, height: 6)
-                                    .padding(.bottom, 2)
-                                
-                                Rectangle()
-                                    .fill(Color.textPrimary)
-                                    .frame(width: 6, height: 10)
-                                    .cornerRadius(2)
-                            }
-                            .padding(.bottom, 1)
-                            
-                            Text("nka")
-                                .font(Font.system(size: 20, weight: .bold, design: .rounded))
-                                .foregroundColor(.textPrimary)
-                        }
-                        .tracking(-0.5)
+                        Image("wordmark")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 20)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, 16)
@@ -52,7 +34,9 @@ struct MainView: View {
                                 progress: viewModel.progress,
                                 value: ringValue,
                                 unit: (viewModel.uiPhase == .connecting || viewModel.uiPhase == .idle) ? nil : "Mbps",
-                                size: 160
+                                size: 160,
+                                animation: animation,
+                                matchedId: "downloadValue"
                             )
                             
                             Text("LINKA SPEEDTEST")
@@ -75,8 +59,7 @@ struct MainView: View {
                                 activeKey: activePhaseKey
                             )
                         }
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        
+                        // removed transition to allow fluid geometry effect
                     } else {
                         // Result UI
                         VStack(spacing: 0) {
@@ -85,7 +68,9 @@ struct MainView: View {
                                     label: "Download",
                                     value: String(format: "%.1f", viewModel.downloadSpeed),
                                     unit: "Mbps",
-                                    accent: true
+                                    accent: true,
+                                    animation: animation,
+                                    matchedId: "downloadValue"
                                 )
                                 
                                 Rectangle()
@@ -126,9 +111,9 @@ struct MainView: View {
                             
                             if detailsOpen {
                                 DetailsDisclosure(
-                                    operatorName: "Wi-Fi",
-                                    provider: "Linka Network Labs",
-                                    duration: "7,4",
+                                    operatorName: viewModel.networkType.isEmpty ? "--" : viewModel.networkType,
+                                    provider: viewModel.provider.isEmpty ? "--" : viewModel.provider,
+                                    duration: viewModel.testDuration.isEmpty ? "--" : viewModel.testDuration,
                                     ping: viewModel.ping
                                 )
                                 .padding(.top, 14)
@@ -170,7 +155,7 @@ struct MainView: View {
                             )
                             .padding(.top, 28)
                         }
-                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        // removed transition to allow fluid geometry effect
                     }
                     
                     Spacer()

@@ -1,4 +1,5 @@
 import Foundation
+import Network
 
 public actor SpeedTestCore {
     
@@ -10,6 +11,39 @@ public actor SpeedTestCore {
             Task {
                 do {
                     var state = MeasurementState(progress: 0.0, phase: .ping)
+                    
+                    let testStart = Date()
+                    
+                    let monitor = NWPathMonitor()
+                    let queue = DispatchQueue(label: "NetworkMonitor")
+                    monitor.start(queue: queue)
+                    
+                    // Small delay to allow NWPathMonitor to fetch the initial path
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                    
+                    if monitor.currentPath.usesInterfaceType(.wifi) {
+                        state.networkType = "Wi-Fi"
+                    } else if monitor.currentPath.usesInterfaceType(.cellular) {
+                        state.networkType = "5G/4G Cellular"
+                    } else {
+                        state.networkType = "Desconhecido"
+                    }
+                    monitor.cancel()
+                    
+                    do {
+                        if let url = URL(string: "https://ipinfo.io/json") {
+                            var request = URLRequest(url: url)
+                            request.timeoutInterval = 2.0
+                            let (data, _) = try await URLSession.shared.data(for: request)
+                            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any], let org = json["org"] as? String {
+                                let parts = org.split(separator: " ", maxSplits: 1)
+                                state.provider = parts.count > 1 ? String(parts[1]) : org
+                            }
+                        }
+                    } catch {
+                        state.provider = "Desconhecido"
+                    }
+                    
                     continuation.yield(state)
                     
                     // Measure Ping
@@ -50,6 +84,7 @@ public actor SpeedTestCore {
                     state.uploadSpeed = uploadSpeed
                     state.phase = .result
                     state.progress = 1.0
+                    state.duration = Date().timeIntervalSince(testStart)
                     continuation.yield(state)
                     
                     continuation.finish()
