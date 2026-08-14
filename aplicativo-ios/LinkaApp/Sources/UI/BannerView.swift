@@ -2,8 +2,10 @@ import SwiftUI
 import GoogleMobileAds
 
 struct BannerView: UIViewRepresentable {
+    var adSize: GADAdSize = GADAdSizeLargeBanner
+    
     func makeUIView(context: Context) -> GADBannerView {
-        let banner = GADBannerView(adSize: GADAdSizeBanner)
+        let banner = GADBannerView(adSize: adSize)
         
         // Use test ad unit ID for testing
         banner.adUnitID = "ca-app-pub-3940256099942544/2934735716"

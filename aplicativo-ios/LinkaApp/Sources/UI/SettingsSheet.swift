@@ -131,14 +131,11 @@ struct SettingsSheet: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(Color.surfacePage, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button(action: { dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.textPrimary)
-                            .frame(width: 36, height: 36)
-                            .background(Color.surfaceCard)
-                            .clipShape(Circle())
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(Color(UIColor.tertiaryLabel))
                     }
                 }
             }
@@ -149,7 +146,6 @@ struct SettingsSheet: View {
                 PurchaseSheet()
             }
         }
-        .id(appAppearance)
         .preferredColorScheme(colorScheme)
     }
     

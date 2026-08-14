@@ -8,6 +8,13 @@ struct HistoryView: View {
     @State private var isLoading = true
     @State private var hasPlus = false
     @State private var showAssist = false
+    @State private var selectedFilter: ConnectionFilter = .all
+    
+    enum ConnectionFilter: String, CaseIterable {
+        case all = "Todos"
+        case wifi = "Wi-Fi"
+        case cellular = "Móvel"
+    }
     
     let repository = FileMeasurementHistoryRepository(
         fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json")
@@ -51,7 +58,21 @@ struct HistoryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.surfacePage)
             } else {
-                List {
+                VStack(spacing: 0) {
+                    Picker("Filtro", selection: $selectedFilter) {
+                        ForEach(ConnectionFilter.allCases, id: \.self) { filter in
+                            Text(filter.rawValue).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
+                    .padding(.top, 16)
+                    .padding(.bottom, 8)
+                    .onChange(of: selectedFilter) { _ in
+                        loadData()
+                    }
+                    
+                    List {
                     // Assist Insight Card
                     Section {
                         HStack(alignment: .top, spacing: 16) {
@@ -93,11 +114,13 @@ struct HistoryView: View {
                             ForEach(measurements, id: \.id) { measurement in
                                 HistoryRow(measurement: measurement)
                             }
+                            .onDelete(perform: deleteMeasurements)
                         }
                     }
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
+                }
                 .background(Color.surfacePage)
             }
         }
@@ -113,6 +136,17 @@ struct HistoryView: View {
         }
     }
     
+    private func deleteMeasurements(at offsets: IndexSet) {
+        let itemsToDelete = offsets.map { measurements[$0] }
+        measurements.remove(atOffsets: offsets)
+        
+        Task {
+            for item in itemsToDelete {
+                try? await repository.delete(id: item.id)
+            }
+        }
+    }
+    
     private func loadData() {
         Task {
             // Check entitlement using the new LinkaEntitlements package
@@ -125,8 +159,12 @@ struct HistoryView: View {
             hasPlus = policy.isGranted
             
             if hasPlus {
+                var kinds: Set<NetworkConnectionKind> = []
+                if selectedFilter == .wifi { kinds.insert(.wifi) }
+                if selectedFilter == .cellular { kinds.insert(.cellular) }
+                
                 // Populate mock data if empty
-                let query = MeasurementQuery(limit: 50, sortOrder: .newestFirst)
+                let query = MeasurementQuery(connectionKinds: kinds, limit: 50, sortOrder: .newestFirst)
                 measurements = (try? await repository.measurements(matching: query)) ?? []
             }
             

@@ -60,8 +60,7 @@ struct PurchaseSheet: View {
                         // Features List
                         VStack(spacing: 0) {
                             PurchaseFeatureRow(text: "Nenhum anúncio, em nenhuma tela", showDivider: true)
-                            PurchaseFeatureRow(text: "Acesso antecipado a novos recursos", showDivider: true)
-                            PurchaseFeatureRow(text: "Widget de velocidade na tela de início", showDivider: false)
+                            PurchaseFeatureRow(text: "Acesso antecipado a novos recursos", showDivider: false)
                         }
                         .padding(.vertical, 8)
                         .background(Color.surfaceCard)
