@@ -40,3 +40,6 @@ xcuserdata/
 *.xcuserdatad
 *.xcuserstate
 
+# Swift Package Manager build artifacts (LinkaEngine, LinkaModules, etc.)
+.build/
+
