@@ -1,5 +1,16 @@
 # DSI de Arquitetura: Fundação Novo Linka
 
+> **Status: seções 1–3 SUPERADAS (confirmado em 2026-08-14).** O plano de reconstrução via
+> Firebase (WebApp e Desktop) descrito abaixo **não é mais a direção do produto**. A autoridade
+> vigente é `AGENTS.md` (raiz do repositório): Apple (iPhone/iPad/Mac) é a **única plataforma real**
+> do produto; a Web é só landing page de marketing, sem motor de medição próprio; não há versão
+> Android prevista. O caminho real é o app nativo Swift (`aplicativo-ios/LinkaApp` +
+> `aplicativo-ios/LinkaEngine`), que já está em desenvolvimento ativo — build validado e funcional
+> em 2026-08-14, monetização (Free/Plus, AdMob) já integrada. A **seção 4** deste documento
+> (arquitetura Engine-Adapter-UI em SwiftUI) continua válida — é a descrição correta do que foi
+> de fato implementado. Mantido aqui por histórico; não usar as seções 1–3 para orientar trabalho
+> novo.
+
 Este documento mapeia o estado atual do repositório `linka-speedtest` e define a estratégia de reaproveitamento para a construção da nova versão Apple-First (WebApp e Desktop via Firebase), conforme os novos protótipos.
 
 ## 1. Escopo e Objetivo
