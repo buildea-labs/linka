@@ -10,6 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+
+# Env files: nunca commitar (nem .env, nem .env.production, nem *.local)
+.env
+.env.*
 *.local
 
 # Editor directories and files

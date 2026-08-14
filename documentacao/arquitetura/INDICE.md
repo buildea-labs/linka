@@ -43,7 +43,7 @@ Este arquivo é apenas um índice. Ele não decide nada — só aponta para o qu
 
 ## Arquivado nesta auditoria (2026-08-14)
 
-Toda a documentação que descrevia workspaces antigos (`E:\Projetos\Linka\`, `C:\Projetos\Linka WebApp\`, `D:\Projetos\Linka SpeedTest\`) ou apresentava os projetos `linkaAndroidKotlin/` e `linkaSpeedtestPwa/` como realidade atual foi movida para `<pasta>/.old/` com sufixo `.2026-08-14.old.md` (padrão já usado neste repo, ex.: `aplicativo-android/kotlin/_archive/`).
+Toda a documentação que descrevia workspaces antigos (`E:\Projetos\Linka\`, `C:\Projetos\Linka WebApp\`, `D:\Projetos\Linka SpeedTest\`) ou apresentava os projetos `linkaAndroidKotlin/` e `linkaSpeedtestPwa/` como realidade atual foi movida para `<pasta>/.old/` com sufixo `.2026-08-14.old.md`.
 
 Também foram arquivados:
 

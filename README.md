@@ -19,9 +19,7 @@ Governança completa em [`AGENTS.md`](AGENTS.md) na raiz — este README é só 
 | [`aplicativo-ios/LinkaEngine/`](aplicativo-ios/LinkaEngine/) | Motor real de medição (download/upload/latência) |
 | [`aplicativo-ios/NetworkCore/`](aplicativo-ios/NetworkCore/), [`MeasurementHistory/`](aplicativo-ios/MeasurementHistory/), [`NetworkInsights/`](aplicativo-ios/NetworkInsights/), [`NetworkAssist/`](aplicativo-ios/NetworkAssist/) | Pacotes Swift isolados (contrato canônico, histórico, estatísticas, contexto para IA) |
 | [`aplicacao-web/`](aplicacao-web/) | Site institucional e de marketing. **Não é uma versão do produto** — apresenta o Linka e direciona para o app Apple. |
-| [`backend/`](backend/), [`servicos-backend/`](servicos-backend/) | Serviços de backend |
 | [`documentacao/`](documentacao/) | Documentação atual do produto — comece por [`documentacao/arquitetura/INDICE.md`](documentacao/arquitetura/INDICE.md) |
-| [`scripts-automacao/`](scripts-automacao/) | Scripts locais de automação |
 
 ## Plataformas
 
