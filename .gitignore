@@ -40,3 +40,6 @@ xcuserdata/
 *.xcuserdatad
 *.xcuserstate
 
+
+# Firebase Hosting deploy cache
+.firebase/
