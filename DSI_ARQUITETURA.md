@@ -44,7 +44,7 @@ A camada visual atual será trocada pelo novo Design System e protótipos Apple-
 - `src/features/*` (local-network, pulse, local-wifi, ios-wifi-context) - A integração visual dessas features morre. A lógica que sobrar será encapsulada na nova interface.
 - Arquivos CSS soltos (`*.css`) - Substituídos pela nova fundação de estilos e tokens do novo Design System.
 
-### 2.3. O que já foi LIMPO (Ação do Marcelinho)
+### 2.3. O que já foi LIMPO (Ação do Marcelo)
 - Arquivos residuais do design anterior (`hub/docs/DESIGN_SYSTEM_CROSSPLATFORM.md`, `MATERIAL_DESIGN_3.md`).
 - Mockups e screenshots de auditorias visuais antigas.
 - Referências antigas de `.apk` e comandos da IA obsoletos.

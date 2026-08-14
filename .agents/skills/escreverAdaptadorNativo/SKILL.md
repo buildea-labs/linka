@@ -1,97 +1,93 @@
 ---
 name: escreverAdaptadorNativo
-description: Procedimento do Guinho para código nativo entrar no Aue atrás de uma porta existente, sem virar um segundo jogo.
+description: Procedimento do Guinho para adaptar SwiftUI a capacidades do LinkaEngine e dos pacotes Swift sem acoplar a View ao motor nem quebrar a fronteira Engine/Adapter/UI.
 ---
 
 # Skill: escreverAdaptadorNativo
 
-Procedimento do **Guinho** para quando a casca precisa fazer algo que o
-navegador não faz — vibrar, folha de compartilhamento do sistema, armazenamento
-que o sistema não limpa, ciclo de vida de app.
+Procedimento do **Guinho** para quando uma capacidade do sistema Apple (histórico persistente, App Intents, background task, App Group, Widget, notificação) precisa ser ligada ao produto **sem** contaminar `LinkaEngine` ou as `View`s do `LinkaApp`.
 
 A regra que decide tudo:
 
-> **Plugin nativo entra atrás de uma porta que já existe, ou não entra.**
-> ([ADR 0002](../../../docs/technical/adr/0002-o-aue-nas-lojas.md) §1 e §2)
+> **A UI não conhece o motor diretamente. O motor não conhece a UI. Entre os dois vive um adaptador.**
+
+Autoridade: [`AGENTS.md`](../../../AGENTS.md) §4, §8; padrão Engine-Adapter-UI confirmado em [`documentacao/funcional/HISTORIA.md`](../../../documentacao/funcional/HISTORIA.md).
 
 ---
 
 ## 1. Antes de escrever, responda uma pergunta
 
-**Existe porta em [`src/portas/`](../../../src/portas/) para isso?**
+**Existe um pacote (`NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaEngine`, `LinkaModules`) cujo contrato já expõe o que a UI precisa?**
 
 - **Existe** → é adaptador. Segue esta skill.
-- **Não existe** → **pare.** Porta nova significa capacidade nova do jogo, e
-  capacidade nova não é empacotamento: é escopo, e volta pro Giam. Criar uma
-  porta para justificar um plugin é como o app vira um segundo jogo.
+- **Não existe** → **pare.** Capacidade nova de motor não se resolve escrevendo `URLSession` dentro de uma `View`. Volta para o Giam para decidir se estende um pacote existente ou se abre outro.
+
+Criar shim ad-hoc dentro da `View` para "só desta vez" é como o app vira mistura.
 
 ## 2. Onde o código mora
 
 ```text
-src/plataforma/
-├── web/      o produto — continua sendo a implementação que manda
-└── nativo/   a casca — só o que o aparelho faz diferente
+aplicativo-ios/
+├── NetworkCore/           contrato canônico da medição (não conhece UI)
+├── MeasurementHistory/    persistência (não conhece UI)
+├── NetworkInsights/       estatísticas puras (não conhece UI)
+├── NetworkAssist/         camada de contexto para IA (não conhece UI)
+├── LinkaEngine/           motor de medição (não conhece UI)
+├── LinkaModules/          compatibilidade
+├── LinkaAppIntents/       App Intents (Siri, Shortcuts)
+├── LinkaEntitlements/     capacidades da App Store
+└── LinkaApp/              SwiftUI — a UI. Consome os pacotes acima via adapter.
 ```
 
-A montagem é em [`src/arena/adaptadores.ts`](../../../src/arena/adaptadores.ts),
-que já é função e já recebe tudo por injeção. A Arena não sabe qual metade está
-rodando, e **não pode passar a saber**: nada de `if (ehApp)` dentro de tela.
-
-**Adaptador nativo não substitui o web — ele fica ao lado.** Se a implementação
-web já resolve dentro da casca, não escreva a nativa. Menos código é melhor
-casca.
+O adapter tipicamente vive em `LinkaApp/Sources/Adapters/` (ou análogo), traduz o dado do pacote em `ObservableObject` / `Observable` para a `View` consumir, e é o único ponto que sabe do async/URLSession/File I/O.
 
 ## 3. A fronteira é testada, não prometida
 
-[`src/arquitetura.fronteira.test.ts`](../../../src/arquitetura.fronteira.test.ts)
-reprova o build se qualquer arquivo fora de `src/plataforma/` mencionar
-Capacitor. Vale para o `src/` inteiro, inclusive o legado.
+- `NetworkCore` **não** pode importar `SwiftUI`, `UIKit`, `AppKit`.
+- `MeasurementHistory`, `NetworkInsights`, `NetworkAssist` **não** podem importar UI framework.
+- `LinkaEngine` idem: sem UI framework.
+- CI: [`.github/workflows/swift-modules-ci.yml`](../../../.github/workflows/swift-modules-ci.yml) roda `swift test` em cada pacote isoladamente — se um pacote não compila sem UI, ele já não vai passar (SPM não linka `SwiftUI` sem declaração explícita).
 
-Se você precisou importar plugin numa tela, o desenho está errado — não o teste.
+Se você precisou importar SwiftUI num pacote fora de `LinkaApp`, o desenho está errado — não o build.
 
-## 4. Comportamento igual dos dois lados
+## 4. Comportamento igual dos dois lados do adapter
 
-A porta é um contrato, e o contrato não muda de significado por plataforma:
+O contrato do pacote não muda de significado só porque a `View` quer:
 
-- **mesmo tipo de retorno, mesmos casos de erro.** Se a web devolve
-  `cancelado` quando a pessoa fecha a folha de compartilhamento, o nativo também
-  devolve `cancelado` — não `falhou`;
-- **nada de capacidade nova entrando de carona.** Adaptador nativo de
-  compartilhamento compartilha; não manda notificação porque "já que estamos
-  aqui";
-- **falha continua sendo falha.** O jeito mais fácil de mentir é o adaptador
-  nativo devolver sucesso porque o plugin não reclamou. Plugin que não reclama
-  não é plugin que fez — confira o retorno.
-
-Esse último já custou caro na web: a remoção de áudio devolvia sucesso porque a
-resposta vinha vazia em vez de vir com erro. Mesma armadilha, outro andar.
+- **mesmo tipo de retorno, mesmos casos de erro.** Se o pacote devolve `.partial(reason: .cancelled)`, o adapter não vira isso em "sucesso silencioso" para a UI ficar bonita. O contrato canônico `NetworkMeasurement` (v1) define os estados possíveis — respeite.
+- **nada de capacidade nova entrando de carona.** Adapter que expõe medição não deve, no meio do caminho, começar a inferir "sua conexão está boa" — isso é escopo SignallQ ([`AGENTS.md`](../../../AGENTS.md) §1).
+- **falha continua sendo falha.** Task cancelada não é sucesso. Timeout não é sucesso vazio. Se o pacote retorna `Result.failure`, a `View` recebe estado de erro — não uma medida zerada.
 
 ## 5. Recurso sensível tem dono e tem parada
 
-Microfone, stream, áudio, timer:
-[`ADR 0001`](../../../docs/technical/adr/0001-arquitetura-oficial-do-aue.md) §4.
+`URLSession`, `Task`, `DispatchTimer`, `AVAudioSession` (se algum dia entrar), `NWPathMonitor`:
 
-No app isso aperta mais que no navegador: o sistema manda o app pro fundo sem
-avisar, e **desmontar componente não é garantia de limpeza**. Todo caminho de
-saída solta o recurso — inclusive o caminho "o usuário apertou o botão de casa".
+- ciclo de vida explícito no adapter, não espalhado pelas Views;
+- todo caminho de saída solta o recurso — inclusive `.onDisappear`, task cancellation, app entering background;
+- iOS pode mandar o app pro fundo sem avisar; a `View` desmontar não garante limpeza do que rodava em background;
+- **quem inicia é quem cancela.** Sem exceção.
 
-Quem traduz isso é a porta de ciclo de vida, não cada tela.
+## 6. App Intents, Widgets, App Groups
 
-## 6. Antes de abrir o PR
+- `LinkaAppIntents` é o único caminho para Siri/Shortcuts pedir uma medição. Ele consome `LinkaEngine`, não duplica o motor.
+- Widgets (se existirem) leem do `MeasurementHistory` via App Group; não medem por conta própria.
+- App Group para compartilhar dados: definido em `LinkaEntitlements`. O adapter é quem escreve/lê; a `View` recebe pronto.
 
-- [ ] a porta já existia, e o contrato dela não mudou
-- [ ] o código novo está inteiro dentro de `src/plataforma/nativo/`
-- [ ] o teste de fronteira continua verde
-- [ ] a web continua funcionando **igual** — o mesmo build roda nos dois lugares
-- [ ] o adaptador tem teste da regra que ele carrega, não só do caminho feliz
-- [ ] recurso sensível tem parada em todo caminho de saída
-- [ ] rodou no aparelho ([`rodarNoIphone`](../rodarNoIphone/SKILL.md)), e o que
-      não rodou está escrito como não rodado
+## 7. Antes de abrir o PR
+
+- [ ] o adapter está em `LinkaApp/`, não dentro de um pacote de motor;
+- [ ] nenhum pacote fora de `LinkaApp` importa framework de UI;
+- [ ] o contrato canônico da medição não foi violado (schema v1);
+- [ ] falha do pacote chega na UI como estado de erro, não como sucesso vazio;
+- [ ] recurso sensível tem parada em todo caminho de saída (inclusive background/cancelamento);
+- [ ] `swift test` verde em todos os pacotes tocados;
+- [ ] rodou no aparelho ([`rodarNoIphone`](../rodarNoIphone/SKILL.md)); o que não foi rodado está escrito como não rodado.
 
 ## Relacionados
 
-- **A decisão das lojas:** [`docs/technical/adr/0002-o-aue-nas-lojas.md`](../../../docs/technical/adr/0002-o-aue-nas-lojas.md)
-- **As camadas e a fronteira:** [`docs/technical/adr/0001-arquitetura-oficial-do-aue.md`](../../../docs/technical/adr/0001-arquitetura-oficial-do-aue.md) §2
-- **Instalar e testar no aparelho:** [`rodarNoIphone`](../rodarNoIphone/SKILL.md)
-- **Teste junto com a implementação:** [`escreverTestes`](../escreverTestes/SKILL.md)
+- **Contrato canônico:** [`documentacao/arquitetura/contratos/network-measurement.schema.json`](../../../documentacao/arquitetura/contratos/network-measurement.schema.json)
+- **Pacotes:** [`documentacao/arquitetura/PLANO_HISTORICO_MEDICOES.md`](../../../documentacao/arquitetura/PLANO_HISTORICO_MEDICOES.md), [`PLANO_NETWORK_INSIGHTS.md`](../../../documentacao/arquitetura/PLANO_NETWORK_INSIGHTS.md), [`PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md)
+- **Arquitetura de módulo:** [`arquitetarModulo`](../arquitetarModulo/SKILL.md)
+- **Testes:** [`escreverTestes`](../escreverTestes/SKILL.md)
 - **Coesão e acoplamento:** [`validarModularidade`](../validarModularidade/SKILL.md)
+- **Rodar no iPhone:** [`rodarNoIphone`](../rodarNoIphone/SKILL.md)

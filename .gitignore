@@ -44,6 +44,9 @@ xcuserdata/
 *.xcuserdatad
 *.xcuserstate
 
+# Swift Package Manager build cache (por pacote, em aplicativo-ios/*/.build/)
+.build/
+
 
 # Firebase Hosting deploy cache
 .firebase/

@@ -1,45 +1,101 @@
 ---
 name: auditarSegurancaETestes
-description: Procedimento do Marcelinho para validar robustez do Linka Engine, métricas reais em mobile e lidar com perdas de conexão simuladas.
+description: Runbook do Marcelo para validar robustez do LinkaEngine, comportamento em rede real e integridade da fronteira Linka/SignallQ.
 ---
 
 # Skill: auditarSegurancaETestes
 
-Runbook do **Marcelinho (Qualidade)** antes de aprovar a qualidade de uma entrega do Linka.
+Runbook do **Marcelo (Qualidade)** antes de aprovar uma entrega do Linka.
 
-Marcelinho aprova qualidade e garante que não estamos sendo enganados pelo próprio código. O **aceite** contra os requisitos é do Giam.
+Marcelo aprova qualidade e garante que ninguém está sendo enganado pelo próprio código. O **aceite** contra os requisitos é do Giam ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 3).
 
-Teste verde é necessário. Não é prova de que o produto funciona num iPhone 11 com 3G na chuva.
+Teste verde é necessário, não suficiente. Não prova que o produto funciona num iPhone 12 no 4G, dentro do metrô, no fim do dia útil.
 
 ## 0. Leia o escopo
-A QA barra expansão de escopo. Se alguém enfiar um "Diagnóstico de Ping DNS" no Linka (que só deve medir a banda), o Marcelinho barra, porque diagnóstico é coisa de SignallQ.
+
+Marcelo barra expansão silenciosa. Se alguém enfiar "Diagnóstico de DNS" ou "Análise de canal Wi-Fi" no Linka (que só mede banda, latência e jitter/perda quando disponível), ele barra. Diagnóstico é SignallQ, per [`AGENTS.md`](../../../AGENTS.md) §1.
+
+Confira também [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) para saber se a mudança pertence ao Free, ao Plus, ou está fora.
 
 ## 1. Pipeline automático
+
+Para os pacotes Swift em `aplicativo-ios/`:
+
 ```bash
-npm run typecheck
+cd aplicativo-ios/NetworkCore && swift test
+cd aplicativo-ios/MeasurementHistory && swift test
+cd aplicativo-ios/NetworkInsights && swift test
+cd aplicativo-ios/NetworkAssist && swift test
+cd aplicativo-ios/LinkaModules && swift test
+```
+
+CI oficial: [`.github/workflows/swift-modules-ci.yml`](../../../.github/workflows/swift-modules-ci.yml). Qualquer erro aqui bloqueia.
+
+Para o app SwiftUI (`LinkaApp`), build via Xcode + testes de UI/integração quando existirem. Ver [`rodarNoIphone`](../rodarNoIphone/SKILL.md).
+
+Para o site institucional em `aplicacao-web/`:
+
+```bash
+cd aplicacao-web
 npm run lint
-npm run test
 npm run build
 ```
-Qualquer erro aqui bloqueia.
 
-## 2. Teste do comportamento de Rede (Condições Adversas)
-A maior mentira num SpeedTest é assumir que o socket nunca cai. Marcelinho exige a resposta para:
-- E se o usuário trocar do Wi-Fi pro 4G no meio do Download?
-- E se o pacote de latência simplesmente nunca voltar (Timeout)?
-- E se o usuário fechar e reabrir o app rápido? O teste antigo continuou rodando em background matando os dados dele?
+## 2. Teste do comportamento de rede (condições adversas)
 
-## 3. O Falso Sucesso (Mentira Visual)
-O pior bug de um SpeedTest não é o app fechar. É o app desenhar uma tela linda de sucesso com `100 Mbps` sendo que o teste falhou silenciosamente nos bastidores e mostrou um número gravado em cache ou inventado. 
-- A ausência de erro em requisição NÃO é sucesso. Se a resposta veio vazia ou lenta, o motor precisa avisar e abortar o cálculo.
-- Uma interface bonita com um número errado é SÓ UM ERRO BEM DESENHADO.
+A maior mentira num SpeedTest é assumir que o socket nunca cai. Marcelo exige resposta para:
 
-## 4. Celular Real (Apple-first)
-**Celular real é padrão.** No desktop a internet geralmente é a cabo e a latência é 1ms. 
-O Linka foi feito com mentalidade **Apple-first**.
-- Testar massivamente no Safari iOS (iPhone, iPad).
-- Respeitar a safe area.
-- Garantir fluidez.
-- Testar também no Chrome Android (como PWA).
+- E se o usuário trocar do Wi-Fi para 5G no meio do download?
+- E se o pacote de latência simplesmente não voltar (timeout)?
+- E se o usuário fechar e reabrir o app rápido? Uma medição antiga ficou rodando em background contaminando dados?
+- E se a conexão é lenta demais para completar uma fase? O motor tem que produzir `partial` (ver [`documentacao/arquitetura/contratos/network-measurement.schema.json`](../../../documentacao/arquitetura/contratos/network-measurement.schema.json)) em vez de mentir.
+- Cancelamento pelo usuário libera `URLSession`, `Task`, timer? (`aconselharArquitetura` § adaptadores)
 
-Marcelinho é preciso. Nada de "Acho que a animação ficou legal", o report deve ser técnico e destrutivo.
+## 3. O falso sucesso (mentira visual)
+
+O pior bug de um SpeedTest não é o app fechar. É desenhar uma tela linda com `100 Mbps` sendo que o teste falhou nos bastidores e mostrou número gravado em cache ou inventado.
+
+- Ausência de erro em requisição **não é** sucesso. Resposta vazia ou lenta = motor avisa e aborta o cálculo.
+- Interface bonita com número errado é **só um erro bem desenhado**.
+- Mock em código de produção é reprovação automática (o commit `b410c6e` os removeu; qualquer PR que traga de volta precisa justificar).
+
+## 4. Aparelho real (Apple-first)
+
+**iPhone real é padrão.** No simulador e no desktop a latência costuma ser 1 ms — não mostra o produto que o usuário vai ver.
+
+O Linka é distribuído exclusivamente para o ecossistema Apple ([`AGENTS.md`](../../../AGENTS.md) §2). Marcelo valida:
+
+- iPhone real (idealmente entrada + topo): safe area, gestos, notch/Dynamic Island, retrato/paisagem se aplicável;
+- iPad: adaptação de layout, split view se relevante;
+- Mac: janela redimensionável, comportamento no macOS;
+- rede Wi-Fi + celular + offline;
+- `prefers-reduced-motion` respeitado;
+- acessibilidade básica (VoiceOver lê o resultado, foco visível);
+- contraste em sol direto e em ambiente escuro.
+
+## 5. Fronteira Linka/SignallQ
+
+Marcelo é a última linha antes do aceite do Giam. Confere:
+
+- copy da entrega não interpreta resultado (ver [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md));
+- nenhum tela nova diz "sua conexão está boa para X";
+- `NetworkAssist`, se tocado, continua respondendo apenas sobre medição/histórico e não sobre diagnóstico causal ([`documentacao/arquitetura/PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md));
+- nenhum segredo de API ficou no bundle (busca por `sk-ant-`, `AIza`, chaves de fornecedor).
+
+## 6. Formato do relatório
+
+O relatório de qualidade vira parágrafo no corpo do PR ([`registrarIssue`](../registrarIssue/SKILL.md)), separando:
+
+1. o que foi verificado automaticamente (`swift test`, `build`);
+2. o que foi verificado por leitura de código;
+3. o que foi testado em aparelho real (qual, em que rede);
+4. o que **não** foi verificado, e por quê.
+
+"Compilou" não é uma linha do relatório.
+
+## Relacionados
+
+- **Aconselhamento arquitetural:** [`aconselharArquitetura`](../aconselharArquitetura/SKILL.md)
+- **Modularidade:** [`validarModularidade`](../validarModularidade/SKILL.md)
+- **iPhone real:** [`garantirIphoneReal`](../garantirIphoneReal/SKILL.md)
+- **Rodar no iPhone:** [`rodarNoIphone`](../rodarNoIphone/SKILL.md)

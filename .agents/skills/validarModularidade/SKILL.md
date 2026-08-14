@@ -1,103 +1,100 @@
 ---
 name: validarModularidade
-description: Runbook do Marcelinho para detectar acoplamento, responsabilidades misturadas e duplicacao de regra no codigo do Aue.
+description: Runbook do Marcelo para detectar acoplamento, responsabilidades misturadas e duplicação de regra no código do Linka.
 ---
 
 # Skill: validarModularidade
 
-Ferramenta de revisão do **Marcelinho (Qualidade)** para impedir que o Auê vire um
-monobloco impossível de mexer.
+Ferramenta de revisão do **Marcelo (Qualidade)** para impedir que o Linka vire um bloco impossível de mexer.
 
 ## 1. O que é monólito aqui
 
-Não é simplesmente "arquivo com mais de N linhas".
+Não é simplesmente "arquivo grande".
 
 Problemas reais:
 
-- componente React que também conhece SQL/RPC;
-- regra de score duplicada em várias telas;
-- cleanup de recurso sem um dono claro;
-- função com responsabilidades independentes;
-- hook que virou depósito de qualquer estado da feature;
-- utilitário `shared` que depende de feature específica;
-- módulo impossível de testar sem montar metade do aplicativo.
+- `View` SwiftUI que também conhece `URLSession` ou cálculo de bytes;
+- regra de conversão (bytes → Mbps, latência média, jitter) duplicada em vários pacotes;
+- cleanup de `URLSession`/`Task`/`Timer` sem dono claro — quem inicia é quem cancela;
+- função com responsabilidades independentes que mudam por razões diferentes;
+- `ObservableObject` que virou depósito de qualquer estado da tela;
+- utilitário genérico que depende de tipo específico de feature (dependência invertida);
+- pacote Swift impossível de testar sem montar o app inteiro (importação silenciosa de UI framework);
+- pacote de motor (`NetworkCore`, `LinkaEngine`) importando `SwiftUI` — quebra imediata da fronteira Engine/UI.
 
 Tamanho de arquivo é **sinal para olhar**, não sentença automática.
 
 ## 2. Heurística de tamanho
 
-Ao encontrar arquivo novo/modificado grande:
+Ao encontrar arquivo novo ou modificado grande:
 
 - acima de ~200 linhas: revisar coesão com atenção;
-- acima de ~300 linhas: exigir justificativa explícita ou decomposição;
-- exceção é aceitável quando manter o invariante no mesmo lugar deixa o código
-  mais seguro e legível.
+- acima de ~400 linhas: exigir justificativa explícita ou decomposição;
+- exceção aceitável quando manter o invariante no mesmo lugar torna o código mais seguro e legível.
 
-Exemplo válido: captura de microfone pode concentrar ciclo de vida e cleanup se
-separar essas partes espalharia o invariante "todo caminho libera o stream".
+Exemplo válido: `FileMeasurementHistoryRepository` concentra escrita atômica, criação de diretório, tratamento de arquivo corrompido e migração de versão porque separar essas partes espalharia o invariante "toda persistência falha fechada".
 
 A justificativa precisa falar de responsabilidade, não "não deu tempo".
 
-## 3. Separação de preocupações
+## 3. Separação de camadas do Linka
 
 Preferir:
 
-- UI renderiza/interage;
-- hook cuida do ciclo de vida;
-- domínio calcula regra pura;
-- camada de dados conversa com Supabase;
-- backend protege regra que não pode confiar no cliente.
+- **`View` (SwiftUI)** apresenta e interage;
+- **Adapter/ViewModel** cuida do ciclo de vida e converte pacote → estado observável;
+- **Pacote de domínio** (`NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaEngine`) calcula regra pura ou I/O específico, sem UI;
+- **Contrato canônico** (`NetworkMeasurement` v1) é a única definição da medição.
 
-Não criar camada vazia apenas para dizer que tem arquitetura limpa.
+Não criar camada vazia só para dizer que tem arquitetura limpa.
 
 ## 4. Dependências
 
-Verifique direção de dependência.
+Verifique direção:
 
-`shared/` não deve importar uma feature específica para resolver formatação ou
-utilitário genérico.
+- pacote de motor **não** importa `SwiftUI`/`UIKit`/`AppKit`;
+- `LinkaApp` importa os pacotes de motor — nunca o contrário;
+- `NetworkCore` é a base — os outros pacotes dependem dele, ele não depende de ninguém do produto;
+- se cinco lugares precisam da mesma regra, procure o dono canônico antes de copiar (ver [`escreverAdaptadorNativo`](../escreverAdaptadorNativo/SKILL.md)).
 
-Se cinco features precisam da mesma regra, procure dono canônico antes de
-copiar.
+## 5. Duplicação perigosa
 
-## 5. Duplicação
+Duplicação perigosa não é copiar 20 linhas — é duplicar **regra de negócio ou contrato**:
 
-Duplicação perigosa não é só copiar 20 linhas.
+- fórmula de conversão de banda;
+- definição do que é `complete` vs `partial` na medição;
+- política de retenção do histórico;
+- regra de agregação estatística (média, mediana, desvio padrão);
+- schema do `NetworkMeasurement`.
 
-É principalmente duplicar **regra de negócio**:
+Quando houver duas implementações inevitáveis (ex.: Swift do motor + JavaScript de um consumidor futuro), precisa existir schema JSON + fixtures + teste de paridade — o que já existe em [`documentacao/arquitetura/contratos/`](../../../documentacao/arquitetura/contratos/).
 
-- fórmula do score;
-- classificação;
-- autorização;
-- status de batalha;
-- formatação que precisa ser idêntica em telas compartilhadas.
+## 6. Escopo também é modularidade
 
-Quando houver duas implementações inevitáveis, como TypeScript + SQL, precisa
-existir teste/contrato que trave a paridade.
+Leia [`AGENTS.md`](../../../AGENTS.md) §1-2 e [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md).
 
-## 6. Escopo também faz parte da modularidade
+Não aprove refatoração que, para "organizar melhor", começa a construir infraestrutura de diagnóstico, recomendação, análise Wi-Fi ou chatbot — que estão fora do escopo do Linka (são SignallQ).
 
-Leia [`docs/escopo/ESCOPO_ATUAL.md`](../../../docs/escopo/ESCOPO_ATUAL.md).
+Refatoração boa reduz risco da fatia atual. Não usa limpeza como desculpa para reabrir o que foi fechado.
 
-Não aprove uma refatoração que, para "organizar melhor", começa a construir
-infraestrutura de feed, ranking ou monetização — que saíram da visão.
-
-Refatoração boa reduz risco da fatia atual. Não usa limpeza como desculpa para
-reabrir o que foi fechado.
-
-**A remoção do código legado é o oposto disso, e é bem-vinda** — mas em fatias,
-uma área por PR, pela issue própria, sem se misturar com a migração para a
-Arena.
+**Remover código legado é o oposto disso e é bem-vindo** — mas em fatias, uma área por PR, sem se misturar com features novas. Ver o padrão dos PRs #33 e #34 (limpezas grandes, isoladas, com relatório de verificação).
 
 ## 7. Checklist de QA
 
-- cada módulo tem responsabilidade explicável em uma frase?
-- regra canônica tem um dono?
-- cleanup de recurso tem um dono?
-- UI conhece detalhes de banco sem necessidade?
-- `shared` está realmente compartilhado?
-- houve abstração prematura para feature futura?
-- teste consegue atingir a regra sem montar o mundo?
+- cada arquivo/tipo tem responsabilidade explicável em uma frase?
+- regra canônica (medição, retenção, agregação) tem um dono?
+- cleanup de `URLSession`/`Task`/`Timer` tem um dono?
+- `View` conhece detalhes de motor sem necessidade?
+- pacote de motor importa framework de UI? (deve ser NÃO)
+- há abstração prematura para feature futura?
+- teste consegue atingir a regra sem montar o app inteiro?
 - arquivo grande tem justificativa de coesão?
+- a mudança não está trazendo escopo SignallQ de volta?
 
 Se a resposta ruim for "mas ficou em menos de 200 linhas", continua ruim.
+
+## Relacionados
+
+- **Arquitetura de módulo:** [`arquitetarModulo`](../arquitetarModulo/SKILL.md)
+- **Aconselhamento arquitetural:** [`aconselharArquitetura`](../aconselharArquitetura/SKILL.md)
+- **Adapter:** [`escreverAdaptadorNativo`](../escreverAdaptadorNativo/SKILL.md)
+- **Auditoria final:** [`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)

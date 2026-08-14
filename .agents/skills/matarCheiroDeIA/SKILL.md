@@ -1,22 +1,19 @@
 ---
 name: matarCheiroDeIA
-description: Filtro obrigatorio contra linguagem e formato tipicos de IA em copy, issue, PR, commit e conversa do Aue.
+description: Filtro obrigatório contra linguagem e formato típicos de IA em copy, issue, PR, commit e conversa do Linka.
 ---
 
 # Skill: matarCheiroDeIA
 
-Filtro final de **tudo que é escrito no Auê**: copy do jogo, issue, PR, commit,
-mensagem pro primo, texto de erro, README.
+Filtro final de **tudo que é escrito no Linka**: copy do produto, texto do site, issue, PR, commit, mensagem para o Luiz, texto de erro, README, release notes.
 
-Não é sobre estilo bonito. É sobre uma coisa só:
+Uma coisa só:
 
-> **Se dá pra sentir que um robô escreveu, refaz.**
+> **Se dá para sentir que um robô escreveu, refaz.**
 
-O Auê é um jogo de arroto feito por três primos. Nada aqui pode soar como
-assistente virtual de banco.
+O Linka fala com voz curta, técnica e calma ([`documentacao/produto/VOZ.md`](../../../documentacao/produto/VOZ.md)). Nada aqui pode soar como assistente virtual de banco, copy de release note SaaS ou onboarding de app de startup.
 
-Esta skill não é a fonte da voz — a fonte é
-[`docs/jogo/VOZ.md`](../../../docs/jogo/VOZ.md). Aqui é a **lista do que mata**.
+Esta skill não é a fonte da voz — a fonte é [`documentacao/produto/VOZ.md`](../../../documentacao/produto/VOZ.md). Aqui é a **lista do que mata**.
 
 ---
 
@@ -24,103 +21,91 @@ Esta skill não é a fonte da voz — a fonte é
 
 ### Abertura de robô
 
-"Claro!" · "Com certeza!" · "Ótima pergunta!" · "Perfeito!" · "Excelente!" ·
-"Vamos lá!" · "Boa!" seguido de explicação · repetir a pergunta antes de
-responder · "Aqui está o que eu fiz" · "Segue abaixo" · "Vamos mergulhar em"
+`Claro!` · `Com certeza!` · `Ótima pergunta!` · `Perfeito!` · `Excelente!` · `Vamos lá!` · `Boa!` seguido de explicação · repetir a pergunta antes de responder · `Aqui está o que eu fiz` · `Segue abaixo` · `Vamos mergulhar em`
 
 ### Fechamento de robô
 
-"Espero que ajude!" · "Fico à disposição" · "Qualquer dúvida, é só chamar" ·
-"Em resumo," · "Concluindo," · "## Conclusão" · "Me avise se quiser que eu
-ajuste" · oferecer três próximos passos que ninguém pediu
+`Espero que ajude!` · `Fico à disposição` · `Qualquer dúvida, é só chamar` · `Em resumo,` · `Concluindo,` · `## Conclusão` · `Me avise se quiser que eu ajuste` · oferecer três próximos passos que ninguém pediu
 
-### Vocabulário de release note
+### Vocabulário de release note e marketing
 
-robusto · poderoso · elegante · seamless · sem esforço · intuitivo · escalável ·
-otimizar · alavancar · potencializar · impulsionar · elevar · desbloquear ·
-maximizar · jornada do usuário · experiência fluida · solução completa ·
-de forma eficiente e eficaz · valor agregado · alinhado com · leve e rápido
+robusto · poderoso · elegante (em copy — como direção interna do design system, tudo bem) · seamless · sem esforço · intuitivo · escalável · otimizar · alavancar · potencializar · impulsionar · elevar · desbloquear · maximizar · jornada do usuário · experiência fluida · solução completa · de forma eficiente e eficaz · valor agregado · alinhado com · leve e rápido · revolucionário · inovador · próxima geração · reinventando · redefinindo
 
 ### Corporativês
 
-"Como usuário, eu quero…" · critérios de aceitação · definition of done ·
-entregável · stakeholder · alinhamento · sinergia · impacto no negócio ·
-priorização estratégica · nice to have · quick win · MVP como adjetivo de
-qualidade
+`Como usuário, eu quero…` · critérios de aceitação · definition of done · entregável · stakeholder · alinhamento · sinergia · impacto no negócio · priorização estratégica · nice to have · quick win · MVP como adjetivo de qualidade
 
 ### Muleta de estrutura
 
-- **"Não é X. É Y."** — funciona uma vez. Três vezes no mesmo texto é tique.
-- **"Não apenas X, mas também Y."**
-- **"X — e isso muda tudo."**
-- **"A verdade é que…"** / **"O ponto é…"** / **"Vale notar que…"**
-- **"É importante lembrar que…"**
-- travessão dramático em toda frase — o texto vira gagueira com pausa cara
+- **`Não é X. É Y.`** — funciona uma vez. Três vezes no mesmo texto é tique.
+- **`Não apenas X, mas também Y.`**
+- **`X — e isso muda tudo.`**
+- **`A verdade é que…`** / **`O ponto é…`** / **`Vale notar que…`**
+- **`É importante lembrar que…`**
+- travessão dramático em toda frase — o texto vira gagueira com pausa.
+- tríade forçada — "rápido, simples e elegante" quando cabia só uma palavra.
 
 ## 2. Formatos banidos
 
-- **Emoji abrindo cada bullet.** Um emoji porque coube, tudo bem. Um por linha, não.
-- **Tudo virando lista.** Se era um parágrafo de três frases, é um parágrafo de
-  três frases.
-- **Negrito espalhado.** Negrito marca o que decide. Se metade do texto está em
-  negrito, nada está.
-- **Tabela pra duas informações.** Tabela é pra comparar, não pra enfeitar.
-- **A tríade eterna.** Nem tudo tem exatamente três itens. Se tem dois, são dois.
+- **Emoji abrindo cada bullet.** Um emoji porque coube, ok. Um por linha, não.
+- **Tudo virando lista.** Se era um parágrafo de três frases, continua sendo um parágrafo de três frases.
+- **Negrito espalhado.** Negrito marca o que decide. Se metade do texto está em negrito, nada está.
+- **Tabela para duas informações.** Tabela compara — não enfeita.
+- **A tríade eterna.** Nem tudo tem exatamente três itens.
 - **Título em tudo.** Bilhete de três frases não tem `## Contexto`.
 - **Resumo do que acabou de ser dito**, logo embaixo do que foi dito.
-- **Disclaimer preventivo** — "vale lembrar que isso pode variar" — quando
-  ninguém perguntou.
-- **Hedge empilhado** — "talvez possa eventualmente". Ou é, ou não é, ou não se
-  sabe e fala que não se sabe.
+- **Disclaimer preventivo** — "vale lembrar que isso pode variar" — quando ninguém perguntou.
+- **Hedge empilhado** — "talvez possa eventualmente". Ou é, ou não é, ou não se sabe e fala que não se sabe.
 
 ## 3. O que fazer no lugar
 
-| Cheiro de IA | Auê |
+| Cheiro de IA | Linka |
 |---|---|
-| "Ops! Tivemos uma pequena instabilidade." | "Deu ruim no envio. A batalha não foi criada." |
-| "Parabéns! Sua gravação foi processada com sucesso." | "91. Tá maluco." |
-| "Otimizamos a experiência de compartilhamento." | "Agora o link abre mais rápido." |
-| "Deseja tentar novamente?" | "Vai amarelar?" |
-| "Sua sessão expirou. Por favor, faça login novamente." | "Caiu a sessão. Entra de novo." |
-| "Estamos processando sua solicitação…" | "Julgando…" |
+| `Ops! Tivemos uma pequena instabilidade.` | `Falha na medição. Tente novamente.` |
+| `Parabéns! Sua medição foi processada com sucesso.` | `Download 91 Mbps · Upload 12 Mbps` |
+| `Otimizamos a experiência de compartilhamento.` | `Agora o compartilhamento inclui o horário do teste.` |
+| `Deseja tentar novamente?` | `Testar novamente` |
+| `Sua sessão expirou. Por favor, faça login novamente.` | (o Linka não tem sessão) |
+| `Estamos processando sua solicitação…` | `Preparando` |
+| `Descubra uma nova forma revolucionária de medir sua internet.` | `Sua conexão. Sem distrações.` |
+| `Nossa experiência minimalista foi criada para…` | (remova; a experiência demonstra) |
 
-## 4. Copy do jogo tem regra extra
+## 4. Copy do produto tem regra extra
 
-Além de tudo acima, copy que vai pra tela obedece
-[`docs/jogo/VOZ.md`](../../../docs/jogo/VOZ.md) — inclusive:
+Além de tudo acima, texto que vai para tela obedece [`documentacao/produto/VOZ.md`](../../../documentacao/produto/VOZ.md), inclusive:
 
-- **rótulo de botão nunca varia** (é contrato); provocação e reação variam;
-- **erro fala a verdade primeiro**, humor depois, e nunca esconde perda de dado;
-- **a piada é com o arroto, não com a pessoa**;
+- **rótulo de botão não varia** (é contrato) — `Testar novamente`, `Detalhes`, `Como medimos`;
+- **erro fala a verdade** — não esconde falha atrás de mensagem simpática;
+- **o Linka não opina sobre o resultado** — nunca "sua conexão está boa para X" (isso é SignallQ, ver [`AGENTS.md`](../../../AGENTS.md) §1 e §9);
 - **voz não cria capacidade** — não escreve copy de coisa que não existe.
 
-E aplica a [`aplicarTomOgro`](../aplicarTomOgro/SKILL.md), que é o procedimento
-de escrever com essa voz.
+Ver também [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md).
 
 ## 5. O teste
 
-Lê em voz alta. Uma pergunta:
+Leia em voz alta. Uma pergunta:
 
-> **Isso cabe num áudio de WhatsApp pro grupo dos primos?**
+> **Isso soa como o produto ou como uma agência tentando vender o produto?**
 
-Se cabe, tá bom. Se parece post de LinkedIn, campanha de agência ou changelog de
-SaaS, refaz.
+Se soa como agência, refaz. Se soa como manifesto ("a nova forma de..."), refaz. Se soa como changelog de SaaS ("Otimizamos a experiência..."), refaz.
 
-Segundo teste, pra copy e issue — o **Teste de Guinho**, em
-[`docs/jogo/VOZ.md`](../../../docs/jogo/VOZ.md).
+Segundo teste, para copy de tela:
+
+> Cabe numa tela sem que o usuário tenha que ler duas vezes?
+
+Terceiro teste, para issue/PR/commit:
+
+> Um colega de outra squad entende o que a mudança faz sem precisar do Slack?
 
 ## 6. Uma coisa que não é cheiro de IA
 
-Texto **claro e organizado** não é cheiro de IA. Um passo a passo de verdade,
-uma tabela que compara opções de verdade, um relatório de teste que separa o que
-foi verificado do que não foi — isso é trabalho bem feito.
+Texto **claro e organizado** não é cheiro de IA. Um passo a passo de verdade, uma tabela que compara opções de verdade, um relatório de teste que separa o que foi verificado do que não foi — isso é trabalho bem feito.
 
-O cheiro é o enfeite: a estrutura que existe porque enche o olho, não porque
-alguém precisava dela.
+O cheiro é o **enfeite**: a estrutura que existe porque enche o olho, não porque alguém precisava dela.
 
 ## Relacionados
 
-- **A voz:** [`docs/jogo/VOZ.md`](../../../docs/jogo/VOZ.md)
-- **Escrever copy:** [`aplicarTomOgro`](../aplicarTomOgro/SKILL.md)
-- **Falar com o primo:** [`conversarComOPrimo`](../conversarComOPrimo/SKILL.md)
+- **A voz:** [`documentacao/produto/VOZ.md`](../../../documentacao/produto/VOZ.md)
+- **Escrever copy do produto:** [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md)
+- **Falar com o Luiz:** [`conversarComOLuiz`](../conversarComOLuiz/SKILL.md)
 - **Issue, PR e commit:** [`registrarIssue`](../registrarIssue/SKILL.md)
