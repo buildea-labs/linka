@@ -221,31 +221,11 @@ O aplicativo Apple deve ser realmente nativo.
 
 Apple-first não significa Apple-only.
 
-O Linka também precisa existir na Web.
+O Linka também está presente na Web — hoje **apenas como página de marketing**, sem motor de medição próprio no navegador.
 
-Um teste de velocidade possui uma vantagem enorme quando pode ser usado simplesmente abrindo um endereço.
+A Web apresenta o produto, mostra as funcionalidades e direciona o usuário para o app Apple, que é onde a medição real acontece. A linguagem visual e os tokens do design system são compartilhados para que as duas superfícies pareçam parte do mesmo produto.
 
-Portanto:
-
-```text
-Linka Web
-+
-Linka para Apple
-```
-
-devem coexistir.
-
-A experiência visual deve ser reconhecível entre as plataformas.
-
-A implementação técnica não precisa ser idêntica.
-
-O objetivo é manter:
-
-* mesma metodologia;
-* mesmas métricas essenciais;
-* mesmo comportamento;
-* mesma linguagem visual;
-* mesmo padrão de resultado.
+Se a Web voltar a rodar teste real algum dia, isso será uma decisão futura explícita, não uma capacidade em uso hoje.
 
 ---
 

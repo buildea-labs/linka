@@ -1,114 +1,53 @@
-# LINKA SpeedTest
+# Linka SpeedTest
 
-PWA standalone para medir velocidade e qualidade da conexão de internet, com diagnóstico simples para o usuário final.
+**Linka é um SpeedTest minimalista, eficiente e visualmente refinado, Apple-first e também presente na Web.**
 
-## Objetivo
+Ele existe para fazer uma coisa muito bem: medir a qualidade da conexão e apresentar o resultado de forma imediata, clara e bonita — sem login, sem onboarding, sem escolha de modo. Abre, mede, mostra, repete.
 
-O LINKA SpeedTest não mostra apenas Mbps. Ele ajuda a interpretar se a conexão atual é adequada para jogos online, streaming, videochamadas e trabalho remoto.
+A fronteira com o produto irmão SignallQ é deliberada:
 
-Aplicação pública:
+- **Linka mede.**
+- **SignallQ interpreta, diagnostica e orienta.**
 
-```text
-https://linkaSpeedtestPwa.pages.dev/
-```
+Governança completa em [`AGENTS.md`](AGENTS.md) na raiz — este README é só a porta de entrada.
 
-## Funcionalidades
+## Onde vive cada coisa
 
-- Medição de download e upload
-- Indicadores de resposta, oscilação e estabilidade
-- Diagnóstico por tipo de uso
-- Histórico local
-- Comparação com o teste anterior
-- Exportação em PDF
-- Compartilhamento via Web Share API
-- Tema claro e escuro
-- Instalação como PWA
+| Pasta | Papel |
+|---|---|
+| [`aplicativo-ios/`](aplicativo-ios/) | App nativo Apple (iPhone/iPad/Mac). SwiftUI + Swift Concurrency, padrão Engine-Adapter-UI. Produto real. |
+| [`aplicativo-ios/LinkaEngine/`](aplicativo-ios/LinkaEngine/) | Motor real de medição (download/upload/latência) |
+| [`aplicativo-ios/NetworkCore/`](aplicativo-ios/NetworkCore/), [`MeasurementHistory/`](aplicativo-ios/MeasurementHistory/), [`NetworkInsights/`](aplicativo-ios/NetworkInsights/), [`NetworkAssist/`](aplicativo-ios/NetworkAssist/) | Pacotes Swift isolados (contrato canônico, histórico, estatísticas, contexto para IA) |
+| [`aplicacao-web/`](aplicacao-web/) | Landing page de marketing. **Não roda teste de velocidade real.** |
+| [`aplicacao-web-veloo/`](aplicacao-web-veloo/) | Landing page complementar |
+| [`backend/`](backend/), [`servicos-backend/`](servicos-backend/) | Serviços de backend |
+| [`documentacao/`](documentacao/) | Documentação atual do produto — comece por [`documentacao/arquitetura/INDICE.md`](documentacao/arquitetura/INDICE.md) |
+| [`scripts-automacao/`](scripts-automacao/) | Scripts locais de automação |
 
-## Stack
+## Plataformas
 
-- React
-- TypeScript
-- Vite
-- Vitest
-- Recharts
-- jsPDF e html2canvas
-- vite-plugin-pwa
-- Cloudflare Pages
+- **iPhone, iPad, Mac** — plataforma exclusiva do produto real de medição.
+- **Web** — apenas landing page. Direciona para o app Apple; não mede.
+- **Android** — não está previsto.
 
-## Estrutura principal
+## Como executar
 
-```text
-src/components/   Componentes reutilizáveis
-src/hooks/        Hooks de medição e detecção
-src/screens/      Telas principais
-src/types/        Tipagens globais
-src/utils/        Speedtest, diagnóstico, histórico e exportação
-docs/             Documentação técnica e funcional
-webapp/           Ex-repo linka-webapp, consolidado aqui em 2026-07-23 — app
-                  próprio, sem deploy automático, ver webapp/README.md
-```
+Cada pasta com código tem seu próprio ciclo de build/testes:
 
-## Desenvolvimento
+- **App iOS**: abrir `aplicativo-ios/LinkaApp.xcodeproj` no Xcode; testes via `swift test` em cada pacote (`NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaEngine`, `LinkaModules`). CI em `.github/workflows/swift-modules-ci.yml`.
+- **Landing web** (`aplicacao-web/`): `npm install && npm run dev`.
+- **Landing complementar** (`aplicacao-web-veloo/`): mesmo padrão, ver `aplicacao-web-veloo/README.md`.
 
-```bash
-npm install
-npm run dev
-```
+Detalhes de build e teste do app iOS ficam nos README dos próprios pacotes Swift e em [`documentacao/arquitetura/`](documentacao/arquitetura/).
 
-Para testar em outro aparelho na mesma rede:
+## Governança
 
-```bash
-npm run dev -- --host 0.0.0.0 --port 5173
-```
+- Autoridade única: [`AGENTS.md`](AGENTS.md)
+- Squad e fluxo de trabalho: [`AGENTS.md`](AGENTS.md) §4-5 e [`.agents/WORKFLOW.md`](.agents/WORKFLOW.md)
+- Política de branches: [`AGENTS.md`](AGENTS.md) §12
+- Índice de documentação: [`documentacao/arquitetura/INDICE.md`](documentacao/arquitetura/INDICE.md)
 
-## Validação
-
-Antes de publicar:
-
-```bash
-npm run lint
-npm run test
-npm run build
-```
-
-Valide também, manualmente:
-
-- início, execução e resultado do teste;
-- histórico e comparação;
-- instalação e atualização da PWA;
-- tema claro e escuro;
-- exportação e compartilhamento;
-- comportamento offline;
-- uso em Wi-Fi e rede móvel.
-
-## Limitações
-
-O teste mede a conexão do navegador até a internet. Ele não mede diretamente a velocidade contratada, o sinal óptico da fibra, a qualidade de outros cômodos ou o tráfego de todos os dispositivos da rede.
-
-Uma única medição não prova descumprimento da operadora. Resultados devem ser repetidos em horários e condições diferentes.
-
-## Privacidade
-
-O aplicativo não exige login. O histórico é salvo localmente no navegador. Informações como IP público não devem ser expostas por padrão em relatórios ou compartilhamentos.
-
-## Deploy
-
-Configuração recomendada no Cloudflare Pages:
-
-```text
-Framework preset: Vite
-Build command: npm run build
-Build output directory: dist
-```
-
-## Status
-
-Projeto funcional em manutenção. Pendências técnicas e regras detalhadas devem permanecer em `docs/`, evitando transformar o README em um documento gigante e difícil de manter.
-
-`webapp/` (ex-repo `linka-webapp`) foi consolidado aqui em 2026-07-23 — é um app PWA irmão, com
-build/testes próprios e isolado do lint e da suíte de testes da raiz. CI conectado em
-`.github/workflows/webapp-ci.yml` (dispara só com mudanças em `webapp/**`). Sem deploy
-automático — nunca chegou a ir pro ar; ver `webapp/README.md` e `webapp/docs/release/CI-CD.md`.
+Documentos antigos que descreviam workspaces anteriores (Android nativo Kotlin, PWA como produto de medição, workspaces `E:\`/`C:\`/`D:\`) foram arquivados em `<pasta>/.old/` durante a auditoria de 2026-08-14 — não são referência viva.
 
 ## Licença
 
