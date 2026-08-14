@@ -7,7 +7,7 @@ description: Procedimento do Guinho para escrever testes junto com a implementa�
 
 Procedimento do **Guinho** para escrever teste **junto** com a implementação — não depois, não "na próxima".
 
-Quem audita a suíte no fim é o Marcelinho ([`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)). Esta skill é sobre escrever.
+Quem audita a suíte no fim é o Marcelo ([`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)). Esta skill é sobre escrever.
 
 Ferramentas por camada:
 

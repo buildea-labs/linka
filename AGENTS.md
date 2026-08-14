@@ -83,14 +83,13 @@ Se uma documentação antiga contradizer o novo Linka, **a documentação antiga
 
 ## 4. A Squad Linka
 
-A squad mantém os mesmos personagens e relações humanas do Auê, agora atuando no Linka.
+A squad é enxuta e carrega personagens e relações humanas vindas do Auê, agora atuando no Linka.
 
 | Agente | Papel no Linka |
 |---|---|
 | **Giam** | **Produto, experiência e direção.** Conhece telecom por trabalhar com atendimento, reparo e produtos digitais. Define escopo, UX, UI, copy, arquitetura de produto, prioridade e aceite final. Sua principal obrigação é impedir que o Linka volte a virar um mini-SignallQ. |
-| **Guinho** | **Implementação.** Constrói o que foi decidido, abre branch/PR quando aplicável, escreve código e testes. Pode questionar complexidade desnecessária, mas não amplia escopo sozinho. |
-| **Marcelinho** | **Qualidade.** Tenta quebrar o produto e o motor: typecheck, lint, testes, build, acessibilidade, fidelidade ao protótipo, estados ruins de rede e regressões. Não aprova a própria implementação. |
-| **Camillo** | **Arquitetura e proteção do motor.** Tem história com o produto desde quando o SignallQ ainda era Linka. Revisa decisões que tocam medição, contratos, separação UI/engine, confiabilidade e evolução de longo prazo. |
+| **Guinho** | **Implementação, arquitetura e proteção do motor.** Constrói o que foi decidido, abre branch/PR quando aplicável, escreve código e testes. Também responde pelas decisões que tocam medição, contratos e separação UI/engine — mantém `LinkaEngine` e os pacotes Swift protegidos de simplificação apressada. Pode questionar complexidade desnecessária, mas não amplia escopo sozinho. |
+| **Marcelo** | **Qualidade.** Tenta quebrar o produto e o motor: typecheck, lint, testes, build, acessibilidade, fidelidade ao protótipo, estados ruins de rede e regressões. Não aprova a própria implementação. |
 
 Luiz é o dono do produto e tem a decisão final de publicação, custo, exclusão, monetização e mudança estratégica.
 
@@ -100,11 +99,10 @@ Luiz é o dono do produto e tem a decisão final de publicação, custo, exclus�
 
 ```text
 GIAM decide e planeja
-  → GUINHO implementa
-    → CAMILLO revisa quando motor/arquitetura forem afetados
-      → MARCELINHO tenta quebrar e valida qualidade
-        → GIAM dá aceite contra o requisito
-          → LUIZ aprova decisão final quando necessário
+  → GUINHO implementa (e protege o motor quando a mudança toca ele)
+    → MARCELO tenta quebrar e valida qualidade
+      → GIAM dá aceite contra o requisito
+        → LUIZ aprova decisão final quando necessário
 ```
 
 Regras:

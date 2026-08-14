@@ -5,7 +5,7 @@ description: Aplica a voz canônica do Linka definida em documentacao/produto/VO
 
 # Skill: aplicarVozLinka
 
-Procedimento do **Giam** — dono da copy — para escrever texto do Linka. O **Guinho** usa a mesma skill ao implementar a copy especificada. O **Marcelinho** usa para checar se o texto entregue bate com a voz.
+Procedimento do **Giam** — dono da copy — para escrever texto do Linka. O **Guinho** usa a mesma skill ao implementar a copy especificada. O **Marcelo** usa para checar se o texto entregue bate com a voz.
 
 > ## ESTA SKILL NÃO É A FONTE DA VOZ
 >

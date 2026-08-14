@@ -17,7 +17,7 @@ Autoridade: [`AGENTS.md`](../../../AGENTS.md) §2 (Apple-only), §6 (precisão a
 
 ## 1. Aparelho real é alvo de validação, não "quando der"
 
-Cada mudança que toca o motor, a medição ou o resultado precisa de teste no aparelho antes do aceite. É o item mais fácil de pular e o mais fácil de esconder no PR — Marcelinho vai perguntar diretamente.
+Cada mudança que toca o motor, a medição ou o resultado precisa de teste no aparelho antes do aceite. É o item mais fácil de pular e o mais fácil de esconder no PR — Marcelo vai perguntar diretamente.
 
 ## 2. Layout que não quebra no dispositivo
 
@@ -98,7 +98,7 @@ Hoje o Linka não pede permissão sensível para o fluxo principal (medição n�
 - [ ] rede lenta o suficiente para gerar `partial`: resultado é honesto
 - [ ] `Reduce Motion` ligado: informação completa
 
-O que não foi testado **vai escrito como não testado** no relatório ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 3, [`registrarIssue`](../registrarIssue/SKILL.md)).
+O que não foi testado **vai escrito como não testado** no relatório ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 2, [`registrarIssue`](../registrarIssue/SKILL.md)).
 
 ## Relacionados
 

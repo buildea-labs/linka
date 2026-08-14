@@ -20,31 +20,28 @@ Se a ideia passar no filtro de minimalismo, o Giam:
 
 > **Regra de Ouro:** Ninguém escreve uma linha de código antes do acordo de produto estar fechado nesta etapa.
 
-### Passo 1: A Batalha no Background (Guinho)
+### Passo 1: Implementação e Proteção do Motor (Guinho)
 Com o plano selado e aprovado pelo Luiz, o sub-agente **Guinho** é invocado.
 O Guinho atua no bastidor para:
 - Criar uma branch isolada;
 - Implementar a lógica e os componentes seguindo o Design System do Linka;
 - Escrever os testes iniciais;
+- **Proteger o motor** — quando a mudança toca `LinkaEngine` ou os pacotes Swift (`NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`), garantir que UI e medição permaneçam desacopladas e que nenhum atalho prejudique precisão, contratos ou evolução do motor;
 - Executar sem ampliar escopo por conta própria.
 
-### Passo 2: Proteção do Motor (Camillo)
-Para mudanças que tocam o núcleo, o **Linka Engine**, o sub-agente **Camillo** entra para revisar a implementação.
-O papel dele é garantir que UI e medição permaneçam desacopladas e que nenhum atalho prejudique precisão, contratos ou evolução do motor.
-
-### Passo 3: A Marreta da Qualidade (Marcelinho)
-Antes de declarar o código pronto, o sub-agente **Marcelinho** tenta quebrar a solução:
-- Executa a pipeline aplicável (`typecheck`, `lint`, `test`, `build`);
+### Passo 2: A Marreta da Qualidade (Marcelo)
+Antes de declarar o código pronto, o sub-agente **Marcelo** tenta quebrar a solução:
+- Executa a pipeline aplicável (`typecheck`, `lint`, `test`, `build`, `swift test` nos pacotes);
 - Audita falhas e mudanças bruscas de rede;
 - Confere acessibilidade e fidelidade visual;
 - Verifica se a copy fala mais do que precisa;
 - Garante que segurança e privacidade não foram comprometidas.
 
-### Passo 4: Aceite e Merge (Giam + Luiz)
+### Passo 3: Aceite e Merge (Giam + Luiz)
 O Giam consolida as revisões, confronta a entrega com o objetivo original e apresenta a conclusão ao Luiz.
 Com a aprovação necessária, o código é mergeado na `main` e as branches temporárias são limpas.
 
-### Passo 5: Lançamento Automático e Release Notes (Giam)
+### Passo 4: Lançamento Automático e Release Notes (Giam)
 A partir da versão 1.0.0-beta, o Giam assumiu a automação completa do ciclo final. Sem que o dono do produto precise pedir, o Giam DEVE:
 - Executar o script `.agents/scripts/release.sh` para atualizar o *Build Number* no XcodeGen.
 - Escrever automaticamente o documento `RELEASE_NOTES.md` traduzindo a entrega técnica da sprint em um texto comercial para o usuário.

@@ -131,7 +131,7 @@ A última linha é obrigatória. É ela que impede uma feature de medição vira
 
 ## Relacionados
 
-- **Aconselhamento do Camillo:** [`aconselharArquitetura`](../aconselharArquitetura/SKILL.md)
+- **Proteção do motor:** [`aconselharArquitetura`](../aconselharArquitetura/SKILL.md)
 - **Adaptador entre Engine e UI:** [`escreverAdaptadorNativo`](../escreverAdaptadorNativo/SKILL.md)
 - **Testes:** [`escreverTestes`](../escreverTestes/SKILL.md)
 - **Modularidade:** [`validarModularidade`](../validarModularidade/SKILL.md)

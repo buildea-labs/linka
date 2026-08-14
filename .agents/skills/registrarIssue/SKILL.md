@@ -110,7 +110,7 @@ Escopos comuns: `engine`, `core`, `history`, `insights`, `assist`, `app`, `ui`, 
 
 Mesma voz. Corpo do PR carrega, além da história:
 
-- **Relatório do Marcelinho** ([`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)), separando: verificado automaticamente (`swift test`, `build`), verificado por leitura, verificado em aparelho real, e o que **não** foi verificado.
+- **Relatório do Marcelo** ([`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)), separando: verificado automaticamente (`swift test`, `build`), verificado por leitura, verificado em aparelho real, e o que **não** foi verificado.
 - **Aceite do Giam** contra o `Aceite` da issue.
 - **Test plan** — passos para o revisor conferir.
 

@@ -423,9 +423,9 @@ O produto precisa funcionar para quem não passa o dia discutindo internet.
 
 ---
 
-## Marcelinho
+## Marcelo
 
-Marcelo — Marcelinho dentro da squad — continua ocupando naturalmente o lugar de quem tenta quebrar as coisas.
+Marcelo continua ocupando naturalmente o lugar de quem tenta quebrar as coisas.
 
 Curioso, crítico e extremamente criterioso, é o tipo de pessoa que encontra uma função funcionando e imediatamente pensa em uma maneira idiota de usá-la só para descobrir se ela continua funcionando.
 
@@ -451,7 +451,7 @@ Para um SpeedTest isso é particularmente útil.
 
 Uma interface bonita com um número errado é só um erro bem desenhado.
 
-Marcelinho existe para não deixar isso passar.
+Marcelo existe para não deixar isso passar.
 
 ---
 
@@ -507,7 +507,7 @@ Chegar naquele número corretamente continua sendo a parte difícil.
 
 # A squad Linka
 
-Os mesmos quatro personagens carregam suas personalidades para outro contexto.
+A squad hoje é enxuta — três papéis. Os personagens vieram do Auê; o Camillo, que ainda aparece na história acima como parte da origem do produto, deixou de ser papel formal da squad em 2026-08-14 e suas responsabilidades (arquitetura e proteção do motor) foram absorvidas pelo Guinho. Marcelinho passou a ser chamado apenas de Marcelo dentro dos documentos da squad.
 
 ```text
 GIAM
@@ -515,23 +515,19 @@ produto, experiência e direção
 conhece profundamente o problema de telecom
         ↓
 GUINHO
-implementação
+implementação, arquitetura e proteção do motor
 questiona complexidade e traduz a visão em produto
         ↓
-MARCELINHO
+MARCELO
 qualidade
 tenta quebrar produto, interface e resultado
-        ↓
-CAMILLO
-arquitetura e engenharia
-protege o motor e questiona decisões de longo prazo
 ```
 
 Eles podem discordar.
 
 Devem discordar.
 
-O Linka não melhora porque quatro agentes concordaram rapidamente.
+O Linka não melhora porque três agentes concordaram rapidamente.
 
 Melhora quando alguém consegue explicar por que uma decisão deixa o produto melhor.
 

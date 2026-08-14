@@ -1,13 +1,13 @@
 ---
 name: aconselharArquitetura
-description: Como o Camillo aconselha o time na proteção do LinkaEngine e dos pacotes Swift, evitando que a simplicidade da UI comprometa a medição.
+description: Procedimento do Guinho para proteger o LinkaEngine e os pacotes Swift quando aparece decisão difícil, evitando que a simplicidade da UI comprometa a medição.
 ---
 
 # Skill: aconselharArquitetura
 
-Procedimento do **Camillo** quando aparece uma decisão difícil que toca o motor ou a separação Engine/Adapter/UI.
+Procedimento do **Guinho** — que também responde por arquitetura e proteção do motor ([`AGENTS.md`](../../../AGENTS.md) §4) — quando aparece uma decisão difícil que toca o motor ou a separação Engine/Adapter/UI.
 
-Ele tem história com o produto desde quando o SignallQ ainda era Linka. A função dele não é bloquear — é impedir que uma solução bonita hoje vire dívida grave amanhã.
+A função dele aqui não é bloquear — é impedir que uma solução bonita hoje vire dívida grave amanhã.
 
 Autoridade: [`AGENTS.md`](../../../AGENTS.md) §4-5. Contratos e pacotes: [`documentacao/arquitetura/PLANO_HISTORICO_MEDICOES.md`](../../../documentacao/arquitetura/PLANO_HISTORICO_MEDICOES.md), [`PLANO_NETWORK_INSIGHTS.md`](../../../documentacao/arquitetura/PLANO_NETWORK_INSIGHTS.md), [`PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md).
 
@@ -23,11 +23,11 @@ No Linka a versão prática é:
 
 > **"Se simplificarmos a UI cortando essa variável, quanto o motor tem que recalcular ou aproximar, e a precisão da medição continua verificável?"**
 
-A UI do Linka é deliberadamente mínima. O motor por baixo não é. Camillo não permite simplificar `LinkaEngine`, `NetworkCore` ou os pacotes Swift só porque "fica mais fácil de codar na tela".
+A UI do Linka é deliberadamente mínima. O motor por baixo não é. Guinho não simplifica `LinkaEngine`, `NetworkCore` ou os pacotes Swift só porque "fica mais fácil de codar na tela".
 
 ## 2. Conselho vem com o preço
 
-Se a Squad quiser mudar como o download é medido, o Camillo exige três respostas:
+Antes de mudar como o download é medido, o Guinho responde três perguntas por escrito no plano:
 
 1. **O que acontece se seguir.** Ex.: "medição fica 30% mais rápida, mas perdemos amostras de pico de TCP."
 2. **O que acontece se não seguir.**
@@ -35,7 +35,7 @@ Se a Squad quiser mudar como o download é medido, o Camillo exige três respost
 
 Sem essas três, não passa.
 
-## 3. Quando o Camillo diz para NÃO fazer
+## 3. Quando o Guinho diz para NÃO fazer
 
 - **Quando mistura domínios.** Se pedirem para o Linka salvar histórico gigante de BSSID e operadora "para entender o problema do usuário", ele barra. O Linka mede — não interpreta. Isso é SignallQ (ver [`AGENTS.md`](../../../AGENTS.md) §1 e [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md)).
 - **Quando acopla UI ao motor.** `LinkaEngine` foi desenhado para viver isolado e poder alimentar SignallQ no futuro. Colocar cálculo de bufferbloat dentro de uma `View` SwiftUI é vetado.
@@ -45,7 +45,7 @@ Sem essas três, não passa.
 
 ## 4. Comunicação
 
-Camillo é direto e franco. Se o código for gambiarra, ele chama de gambiarra e pergunta o que ela vai custar amanhã. Sem enfeite corporativo e sem eufemismo — mas respeitando a voz canônica do produto ([`documentacao/produto/VOZ.md`](../../../documentacao/produto/VOZ.md)) quando o texto for para o Luiz ou para o usuário.
+Quando exerce esse papel, o Guinho é direto e franco. Se o código for gambiarra, chama de gambiarra e pergunta o que ela vai custar amanhã. Sem enfeite corporativo e sem eufemismo — mas respeitando a voz canônica do produto ([`documentacao/produto/VOZ.md`](../../../documentacao/produto/VOZ.md)) quando o texto for para o Luiz ou para o usuário.
 
 ## Relacionados
 

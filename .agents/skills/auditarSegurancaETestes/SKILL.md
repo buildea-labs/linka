@@ -1,19 +1,19 @@
 ---
 name: auditarSegurancaETestes
-description: Runbook do Marcelinho para validar robustez do LinkaEngine, comportamento em rede real e integridade da fronteira Linka/SignallQ.
+description: Runbook do Marcelo para validar robustez do LinkaEngine, comportamento em rede real e integridade da fronteira Linka/SignallQ.
 ---
 
 # Skill: auditarSegurancaETestes
 
-Runbook do **Marcelinho (Qualidade)** antes de aprovar uma entrega do Linka.
+Runbook do **Marcelo (Qualidade)** antes de aprovar uma entrega do Linka.
 
-Marcelinho aprova qualidade e garante que ninguém está sendo enganado pelo próprio código. O **aceite** contra os requisitos é do Giam ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 4).
+Marcelo aprova qualidade e garante que ninguém está sendo enganado pelo próprio código. O **aceite** contra os requisitos é do Giam ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 3).
 
 Teste verde é necessário, não suficiente. Não prova que o produto funciona num iPhone 12 no 4G, dentro do metrô, no fim do dia útil.
 
 ## 0. Leia o escopo
 
-Marcelinho barra expansão silenciosa. Se alguém enfiar "Diagnóstico de DNS" ou "Análise de canal Wi-Fi" no Linka (que só mede banda, latência e jitter/perda quando disponível), ele barra. Diagnóstico é SignallQ, per [`AGENTS.md`](../../../AGENTS.md) §1.
+Marcelo barra expansão silenciosa. Se alguém enfiar "Diagnóstico de DNS" ou "Análise de canal Wi-Fi" no Linka (que só mede banda, latência e jitter/perda quando disponível), ele barra. Diagnóstico é SignallQ, per [`AGENTS.md`](../../../AGENTS.md) §1.
 
 Confira também [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) para saber se a mudança pertence ao Free, ao Plus, ou está fora.
 
@@ -43,7 +43,7 @@ npm run build
 
 ## 2. Teste do comportamento de rede (condições adversas)
 
-A maior mentira num SpeedTest é assumir que o socket nunca cai. Marcelinho exige resposta para:
+A maior mentira num SpeedTest é assumir que o socket nunca cai. Marcelo exige resposta para:
 
 - E se o usuário trocar do Wi-Fi para 5G no meio do download?
 - E se o pacote de latência simplesmente não voltar (timeout)?
@@ -63,7 +63,7 @@ O pior bug de um SpeedTest não é o app fechar. É desenhar uma tela linda com 
 
 **iPhone real é padrão.** No simulador e no desktop a latência costuma ser 1 ms — não mostra o produto que o usuário vai ver.
 
-O Linka é distribuído exclusivamente para o ecossistema Apple ([`AGENTS.md`](../../../AGENTS.md) §2). Marcelinho valida:
+O Linka é distribuído exclusivamente para o ecossistema Apple ([`AGENTS.md`](../../../AGENTS.md) §2). Marcelo valida:
 
 - iPhone real (idealmente entrada + topo): safe area, gestos, notch/Dynamic Island, retrato/paisagem se aplicável;
 - iPad: adaptação de layout, split view se relevante;
@@ -75,7 +75,7 @@ O Linka é distribuído exclusivamente para o ecossistema Apple ([`AGENTS.md`](.
 
 ## 5. Fronteira Linka/SignallQ
 
-Marcelinho é a última linha antes do aceite do Giam. Confere:
+Marcelo é a última linha antes do aceite do Giam. Confere:
 
 - copy da entrega não interpreta resultado (ver [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md));
 - nenhum tela nova diz "sua conexão está boa para X";

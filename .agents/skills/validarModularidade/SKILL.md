@@ -1,11 +1,11 @@
 ---
 name: validarModularidade
-description: Runbook do Marcelinho para detectar acoplamento, responsabilidades misturadas e duplicação de regra no código do Linka.
+description: Runbook do Marcelo para detectar acoplamento, responsabilidades misturadas e duplicação de regra no código do Linka.
 ---
 
 # Skill: validarModularidade
 
-Ferramenta de revisão do **Marcelinho (Qualidade)** para impedir que o Linka vire um bloco impossível de mexer.
+Ferramenta de revisão do **Marcelo (Qualidade)** para impedir que o Linka vire um bloco impossível de mexer.
 
 ## 1. O que é monólito aqui
 

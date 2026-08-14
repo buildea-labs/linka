@@ -120,7 +120,7 @@ Build verde não é entrega. No aparelho, com o Linka na mão:
 - [ ] retrato + paisagem, se permitido
 - [ ] `Reduce Motion` ligado: informação completa
 
-O que não foi testado **vai escrito como não testado** no relatório do PR ([`registrarIssue`](../registrarIssue/SKILL.md) §5, [`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 3).
+O que não foi testado **vai escrito como não testado** no relatório do PR ([`registrarIssue`](../registrarIssue/SKILL.md) §5, [`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 2).
 
 ## 8. O que esta skill NÃO autoriza
 
