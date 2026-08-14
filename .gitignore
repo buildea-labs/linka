@@ -34,3 +34,9 @@ _android-toolchain/
 
 # APKs gerados para entrega manual (não versionar binários)
 builds/apk/*.apk
+
+# Xcode User State
+xcuserdata/
+*.xcuserdatad
+*.xcuserstate
+

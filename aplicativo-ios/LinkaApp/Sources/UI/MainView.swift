@@ -1,29 +1,23 @@
 import SwiftUI
+import MeasurementHistory
 
 struct MainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
+    @AppStorage("appAppearance") private var appAppearance: String = "system"
+    @AppStorage("isPro") private var isPro: Bool = false
     @State private var detailsOpen: Bool = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding: Bool = false
     @State private var showSettings: Bool = false
     @Namespace private var animation
-    
     var body: some View {
         NavigationStack {
             ZStack {
                 Color.surfacePage.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    ZStack {
-                        Image("wordmark")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 20)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 16)
-                    .padding(.top, 16)
-                    
+                    // Safe Area Padding
+                    Color.clear.frame(height: 80)
                     Spacer()
                     
                     if viewModel.uiPhase != .done {
@@ -63,31 +57,44 @@ struct MainView: View {
                     } else {
                         // Result UI
                         VStack(spacing: 0) {
-                            HStack(spacing: 40) {
-                                StatDisplay(
-                                    label: "Download",
-                                    value: String(format: "%.1f", viewModel.downloadSpeed),
-                                    unit: "Mbps",
-                                    accent: true,
-                                    animation: animation,
-                                    matchedId: "downloadValue"
-                                )
-                                
-                                Rectangle()
-                                    .fill(Color.borderDefault)
-                                    .frame(width: 1, height: 64)
-                                
-                                StatDisplay(
-                                    label: "Upload",
-                                    value: String(format: "%.1f", viewModel.uploadSpeed),
-                                    unit: "Mbps"
-                                )
-                            }
+                            MetricRing(
+                                connecting: false,
+                                progress: viewModel.progress,
+                                value: String(format: "%.1f", viewModel.downloadSpeed).replacingOccurrences(of: ".", with: ","),
+                                unit: "Mbps",
+                                size: 210,
+                                animation: animation,
+                                matchedId: "downloadValue"
+                            )
+                            .padding(.bottom, 24)
                             
-                            Text("Sua conexão está pronta.")
-                                .font(.displayTitle)
-                                .foregroundColor(.textPrimary)
-                                .padding(.top, 24)
+                            Text("DOWNLOAD")
+                                .font(.monoEyebrow)
+                                .foregroundColor(.textSecondary)
+                                .tracking(1.0)
+                                .padding(.bottom, 8)
+                            
+                            HStack(spacing: 6) {
+                                Text(String(format: "%.1f", viewModel.uploadSpeed).replacingOccurrences(of: ".", with: ","))
+                                    .font(Font.system(size: 16, weight: .bold))
+                                    .foregroundColor(.textPrimary)
+                                Text("Mbps upload")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                                
+                                Text("·")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                                    .padding(.horizontal, 4)
+                                
+                                Text("\(viewModel.ping)")
+                                    .font(Font.system(size: 16, weight: .bold))
+                                    .foregroundColor(.textPrimary)
+                                Text("ms ping")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                            }
+                            .padding(.bottom, 24)
                             
                             Button(action: {
                                 withAnimation(LinkaMotion.spring) {
@@ -107,7 +114,6 @@ struct MainView: View {
                                 .padding(.horizontal, 16)
                                 .background(Color.clear)
                             }
-                            .padding(.top, 16)
                             
                             if detailsOpen {
                                 DetailsDisclosure(
@@ -120,79 +126,92 @@ struct MainView: View {
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                             }
                             
+                            // Último teste Glass Pill
+                            NavigationLink(destination: HistoryView()) {
+                                HStack {
+                                    Text("Último teste")
+                                        .font(.bodySmall.weight(.medium))
+                                        .foregroundColor(.textPrimary)
+                                    
+                                    Spacer()
+                                    
+                                    Text(viewModel.lastTestSpeedString ?? "Nenhum teste anterior")
+                                        .font(.monoCaption)
+                                        .foregroundColor(.textSecondary)
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundColor(.textSecondary)
+                                }
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 16)
+                                .background(.ultraThinMaterial)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+                                .padding(.horizontal, 32)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.top, 24)
+                            
+                            Spacer(minLength: 16)
+                            
+                            // Bottom Action Button
                             Button(action: {
                                 detailsOpen = false
                                 viewModel.startTest()
                             }) {
-                                HStack(spacing: 6) {
-                                    Text("Testar novamente")
-                                        .font(.bodySmall)
-                                    
-                                    Image(systemName: "arrow.clockwise")
-                                        .font(.system(size: 12, weight: .semibold))
-                                }
-                                .foregroundColor(.textPrimary)
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 16)
-                                .background(Color.clear)
+                                Text("Testar novamente")
+                                    .font(Font.system(size: 16, weight: .semibold))
+                                    .foregroundColor(Color.surfacePage)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 18)
+                                    .background(Color.textPrimary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
-                            .padding(.top, 14)
-                            
-                            // Ad Slot
-                            VStack(spacing: 4) {
-                                Text("Publicidade")
-                                    .font(.monoCaption)
-                                    .foregroundColor(.textSecondary)
-                                
-                                Text("320×50")
-                                    .font(.monoCaption)
-                                    .foregroundColor(.textSecondary)
-                            }
-                            .frame(width: 320, height: 50)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .strokeBorder(Color.borderDefault, style: StrokeStyle(lineWidth: 1, dash: [4]))
-                            )
-                            .padding(.top, 28)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 24)
                         }
-                        // removed transition to allow fluid geometry effect
                     }
                     
-                    Spacer()
-                }
-                
-                // Settings & History Glass Pills
-                if viewModel.uiPhase == .idle || viewModel.uiPhase == .connecting || viewModel.uiPhase == .done {
-                    VStack {
-                        HStack(spacing: 12) {
-                            Spacer()
-                            
-                            NavigationLink(destination: HistoryView()) {
-                                Image(systemName: "clock")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.textPrimary)
-                                    .frame(width: 40, height: 40)
-                                    .background(.ultraThinMaterial)
-                                    .clipShape(Circle())
-                                    .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
-                            }
-                            
-                            Button(action: {
-                                showSettings = true
-                            }) {
-                                Image(systemName: "slider.horizontal.3")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.textPrimary)
-                                    .frame(width: 40, height: 40)
-                                    .background(.ultraThinMaterial)
-                                    .clipShape(Circle())
-                                    .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
-                            }
-                        }
-                        .padding(.trailing, 16)
-                        .padding(.top, 54)
+                    if viewModel.uiPhase != .done {
                         Spacer()
                     }
+                    
+                    if !isPro {
+                        BannerView()
+                            .frame(width: 320, height: 50)
+                            .padding(.bottom, 8)
+                    }
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                // Settings & History Glass Pills
+                if viewModel.uiPhase == .idle || viewModel.uiPhase == .connecting || viewModel.uiPhase == .done {
+                    HStack(spacing: 12) {
+                        NavigationLink(destination: HistoryView()) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.textPrimary)
+                                .frame(width: 40, height: 40)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+                        }
+                        
+                        Button(action: {
+                            showSettings = true
+                        }) {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.textPrimary)
+                                .frame(width: 40, height: 40)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+                        }
+                    }
+                    .padding(.trailing, 16)
+                    .padding(.top, 16)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -224,9 +243,9 @@ struct MainView: View {
         case .idle, .connecting:
             return "Preparando"
         case .downloading:
-            return String(format: "%.1f", viewModel.downloadSpeed)
+            return String(format: "%.1f", viewModel.downloadSpeed).replacingOccurrences(of: ".", with: ",")
         case .uploading, .done:
-            return String(format: "%.1f", viewModel.uploadSpeed)
+            return String(format: "%.1f", viewModel.uploadSpeed).replacingOccurrences(of: ".", with: ",")
         }
     }
     

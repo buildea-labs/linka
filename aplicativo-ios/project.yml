@@ -10,17 +10,24 @@ targets:
       macOS: 13.0
     settings:
       base:
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        MARKETING_VERSION: 1.0.0
-        CURRENT_PROJECT_VERSION: 2
+        GENERATE_INFOPLIST_FILE: NO
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "2"
+    info:
+      path: LinkaApp/Info.plist
+      properties:
+        GADApplicationIdentifier: "ca-app-pub-3940256099942544~1458002511"
     sources:
       - path: LinkaApp/Sources
     dependencies:
       - package: LinkaEngine
       - package: LinkaModules
+      - package: GoogleMobileAds
 packages:
   LinkaEngine:
     path: LinkaEngine
   LinkaModules:
     path: LinkaModules
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    exactVersion: 11.8.0

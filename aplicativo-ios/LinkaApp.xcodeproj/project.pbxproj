@@ -9,11 +9,13 @@
 /* Begin PBXBuildFile section */
 		074A78EB05FB73EAA13BFF42 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86E6389194D1938B09BEE51 /* HistoryView.swift */; };
 		080B674A908A6C5DA086E6FB /* StatDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240C677AB8218C3DE05600FB /* StatDisplay.swift */; };
+		17E73DA323A120A6FECBD6A1 /* BannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6C710FA9D415DDBB3316F9 /* BannerView.swift */; };
 		1F40D1C6737FB0E30B0EB7EE /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86E6389194D1938B09BEE51 /* HistoryView.swift */; };
 		22ACBF6A87B265E99D871533 /* MetricRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179DA64F9C7059B7A140B92E /* MetricRing.swift */; };
 		2AD6E6F6C8A5849D189EFFD5 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60A040FE4E49231CD858102 /* MainView.swift */; };
 		2D978D5BAD95A0E29AE7AE85 /* LinkaModules in Frameworks */ = {isa = PBXBuildFile; productRef = 2A1ED27B4CE61C438B43B40C /* LinkaModules */; };
 		2F7AC1D0FB4C81453B1B1EC7 /* PurchaseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1056216026BABB240C8AC371 /* PurchaseSheet.swift */; };
+		368C7157F6ECC02B56BC655D /* BannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6C710FA9D415DDBB3316F9 /* BannerView.swift */; };
 		45C0F482F56FF0A25084CBD1 /* PurchaseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1056216026BABB240C8AC371 /* PurchaseSheet.swift */; };
 		460A04738C58DD0F7081552C /* LinkaEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 32F32DAB5F80BE2584F3A3DB /* LinkaEngine */; };
 		4C677DE785ED6352129A9839 /* AssistSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988979889EF4E4AC03B8A21D /* AssistSheet.swift */; };
@@ -34,7 +36,9 @@
 		99DC47095EFAC9A6C617FE64 /* MetricRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179DA64F9C7059B7A140B92E /* MetricRing.swift */; };
 		9D9CAA41523C5B4063A18FF2 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60A040FE4E49231CD858102 /* MainView.swift */; };
 		A1448C6403A7DFB5C5B2FE7F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8041784263895147F69C02D2 /* Assets.xcassets */; };
+		C52F715538667A43E3CCA1CA /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 8B33A51CB0672AFF8EF05F84 /* GoogleMobileAds */; };
 		CF3CD7092B1A2A05068FD02F /* LinkaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C35725E79C96780D745AB7 /* LinkaApp.swift */; };
+		CF756CF19A8EA39ED487FAD2 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 059516B90F8986F4F939E518 /* GoogleMobileAds */; };
 		D023E595162ADE7D1452F5EC /* LinkaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C35725E79C96780D745AB7 /* LinkaApp.swift */; };
 		D1F96FFD9A366D9F61AD5F96 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */; };
 		DDDA516AB439EF732458C5F6 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */; };
@@ -52,6 +56,7 @@
 		43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		4AA2E4A391D36FDA86E36727 /* LinkaEngine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaEngine; path = LinkaEngine; sourceTree = SOURCE_ROOT; };
 		4D0615340FFF59EAAF050BE2 /* LinkaModules */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaModules; path = LinkaModules; sourceTree = SOURCE_ROOT; };
+		4F6C710FA9D415DDBB3316F9 /* BannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerView.swift; sourceTree = "<group>"; };
 		6F3C93A80DDDCD9D80E5235B /* LinkaApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LinkaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		72C35725E79C96780D745AB7 /* LinkaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaApp.swift; sourceTree = "<group>"; };
 		736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
@@ -72,6 +77,7 @@
 			files = (
 				460A04738C58DD0F7081552C /* LinkaEngine in Frameworks */,
 				EFE90B32EE9F3C3441921A5D /* LinkaModules in Frameworks */,
+				C52F715538667A43E3CCA1CA /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -81,6 +87,7 @@
 			files = (
 				847E859C6B4B4BC90D19D8BE /* LinkaEngine in Frameworks */,
 				2D978D5BAD95A0E29AE7AE85 /* LinkaModules in Frameworks */,
+				CF756CF19A8EA39ED487FAD2 /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,6 +110,7 @@
 			isa = PBXGroup;
 			children = (
 				988979889EF4E4AC03B8A21D /* AssistSheet.swift */,
+				4F6C710FA9D415DDBB3316F9 /* BannerView.swift */,
 				43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */,
 				DEF366EB2385DC20D0757E43 /* DetailsDisclosure.swift */,
 				E86E6389194D1938B09BEE51 /* HistoryView.swift */,
@@ -172,6 +180,7 @@
 			packageProductDependencies = (
 				32F32DAB5F80BE2584F3A3DB /* LinkaEngine */,
 				F9AA1524670AA76CD25C8EE7 /* LinkaModules */,
+				8B33A51CB0672AFF8EF05F84 /* GoogleMobileAds */,
 			);
 			productName = LinkaApp_iOS;
 			productReference = 6F3C93A80DDDCD9D80E5235B /* LinkaApp.app */;
@@ -193,6 +202,7 @@
 			packageProductDependencies = (
 				86760C16968147ADE1D36961 /* LinkaEngine */,
 				2A1ED27B4CE61C438B43B40C /* LinkaModules */,
+				059516B90F8986F4F939E518 /* GoogleMobileAds */,
 			);
 			productName = LinkaApp_macOS;
 			productReference = E3B3AA7959A5149C12DAD039 /* LinkaApp.app */;
@@ -219,6 +229,7 @@
 			mainGroup = 46CB6B0A1845242346BCC90C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				E3FA5A1F81215844743FCBDF /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 				501DCE8450FC9C3F97A936C6 /* XCLocalSwiftPackageReference "LinkaEngine" */,
 				622D20AD0BCF2FAAC6BFF7A8 /* XCLocalSwiftPackageReference "LinkaModules" */,
 			);
@@ -258,6 +269,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4C677DE785ED6352129A9839 /* AssistSheet.swift in Sources */,
+				368C7157F6ECC02B56BC655D /* BannerView.swift in Sources */,
 				DDDA516AB439EF732458C5F6 /* DesignSystem.swift in Sources */,
 				939AB442072FC3494E2B785F /* DetailsDisclosure.swift in Sources */,
 				1F40D1C6737FB0E30B0EB7EE /* HistoryView.swift in Sources */,
@@ -279,6 +291,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E4B904926847BAFFF4BCD8EC /* AssistSheet.swift in Sources */,
+				17E73DA323A120A6FECBD6A1 /* BannerView.swift in Sources */,
 				8EDC61449DB6F193BE332F11 /* DesignSystem.swift in Sources */,
 				8D66BEE737572D8CC731228A /* DetailsDisclosure.swift in Sources */,
 				074A78EB05FB73EAA13BFF42 /* HistoryView.swift in Sources */,
@@ -304,8 +317,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LinkaApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -385,8 +398,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 2;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LinkaApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -460,8 +473,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 2;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LinkaApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -481,8 +494,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LinkaApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -538,7 +551,23 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		E3FA5A1F81215844743FCBDF /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = exactVersion;
+				version = 11.8.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		059516B90F8986F4F939E518 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E3FA5A1F81215844743FCBDF /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
 		2A1ED27B4CE61C438B43B40C /* LinkaModules */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LinkaModules;
@@ -550,6 +579,11 @@
 		86760C16968147ADE1D36961 /* LinkaEngine */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LinkaEngine;
+		};
+		8B33A51CB0672AFF8EF05F84 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E3FA5A1F81215844743FCBDF /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
 		};
 		F9AA1524670AA76CD25C8EE7 /* LinkaModules */ = {
 			isa = XCSwiftPackageProductDependency;

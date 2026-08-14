@@ -1,6 +1,8 @@
 import Foundation
 import Combine
 import LinkaEngine
+import MeasurementHistory
+import NetworkCore
 
 public enum SpeedTestUIPhase {
     case idle
@@ -21,7 +23,10 @@ public class SpeedTestViewModel: ObservableObject {
     @Published public var provider: String = ""
     @Published public var networkType: String = ""
     @Published public var testDuration: String = ""
+    @Published public var packetLossPercent: Double? = nil
     @Published public var uiPhase: SpeedTestUIPhase = .idle
+    
+    @Published public var lastTestSpeedString: String? = nil
     
     // UI states
     @Published public var showOnboarding: Bool = false
@@ -31,7 +36,32 @@ public class SpeedTestViewModel: ObservableObject {
     private let engine = SpeedTestCore()
     private var testTask: Task<Void, Never>?
     
-    public init() {}
+    public init() {
+        loadLastTest()
+    }
+    
+    public func loadLastTest() {
+        Task { @MainActor in
+            let repository = FileMeasurementHistoryRepository(
+                fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json")
+            )
+            if let count = try? await repository.totalCount(), count > 0 {
+                let query = MeasurementQuery(limit: 1, sortOrder: .newestFirst)
+                let results = try? await repository.measurements(matching: query)
+                if let last = results?.first, let dl = last.downloadMbps {
+                    let formattedSpeed = String(format: "%.1f", dl).replacingOccurrences(of: ".", with: ",")
+                    let formatter = DateFormatter()
+                    formatter.locale = Locale(identifier: "pt_BR")
+                    if Calendar.current.isDateInToday(last.measuredAt) {
+                        self.lastTestSpeedString = "\(formattedSpeed) Mbps · Hoje"
+                    } else {
+                        formatter.dateFormat = "dd/MM"
+                        self.lastTestSpeedString = "\(formattedSpeed) Mbps · \(formatter.string(from: last.measuredAt))"
+                    }
+                }
+            }
+        }
+    }
     
     public func startTest() {
         guard !isTesting else { return }
@@ -60,6 +90,22 @@ public class SpeedTestViewModel: ObservableObject {
                     }
                 }
                 
+                if self.uiPhase == .done {
+                    let m = NetworkMeasurement(
+                        outcome: .complete,
+                        downloadMbps: self.downloadSpeed,
+                        uploadMbps: self.uploadSpeed,
+                        latencyMs: Double(self.ping),
+                        jitterMs: self.jitter,
+                        packetLossPercent: self.packetLossPercent,
+                        connectionKind: self.networkType == "Wi-Fi" ? .wifi : (self.networkType.isEmpty ? .other : .cellular),
+                        networkIdentifier: self.provider
+                    )
+                    let repo = FileMeasurementHistoryRepository(fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json"))
+                    try? await repo.save(m)
+                    self.loadLastTest()
+                }
+                
                 self.isTesting = false
             } catch {
                 self.isTesting = false
@@ -82,6 +128,7 @@ public class SpeedTestViewModel: ObservableObject {
         if let prov = state.provider { self.provider = prov }
         if let net = state.networkType { self.networkType = net }
         if let dur = state.duration { self.testDuration = String(format: "%.1fs", dur).replacingOccurrences(of: ".", with: ",") }
+        if let loss = state.packetLossPercent { self.packetLossPercent = loss }
         
         switch state.phase {
         case .idle: self.uiPhase = .idle
