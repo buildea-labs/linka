@@ -10,17 +10,9 @@ import { fileURLToPath } from 'node:url'
 const rootDir = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig([
-  // webapp/ é o ex-repo linka-webapp, consolidado aqui em 2026-07-23 — app
-  // standalone com seu próprio tsconfig/eslint. Ignorado aqui pra não colidir
-  // com o parser do root (dois tsconfigRootDir candidatos = erro de parsing).
   globalIgnores([
     'dist',
-    'android/app/build',
-    'android/app/src/main/assets/public/assets',
-    'builds',
-    '_android-toolchain',
     '.claude',
-    'webapp',
   ]),
   {
     files: ['**/*.{ts,tsx}'],
