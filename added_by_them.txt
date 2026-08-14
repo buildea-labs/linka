@@ -1,1 +1,0 @@
-UA aplicacao-web/src/features/diagnosis/claudeApi.ts
