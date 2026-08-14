@@ -46,13 +46,12 @@ public actor SpeedTestCore {
                     
                     continuation.yield(state)
                     
-                    // Measure Ping
-                    let pingStart = Date()
-                    _ = try await performDownload(bytes: 100) // small request for ping
-                    let pingMs = Date().timeIntervalSince(pingStart) * 1000.0
+                    // Measure Ping and Packet Loss
+                    let (pingMs, jitterMs, lossPercent) = await performPingTest()
                     
                     state.ping = pingMs
-                    state.jitter = pingMs * 0.1 // Simulated jitter for now
+                    state.jitter = jitterMs
+                    state.packetLossPercent = lossPercent
                     state.phase = .download
                     state.progress = 0.1
                     continuation.yield(state)
@@ -123,5 +122,54 @@ public actor SpeedTestCore {
         
         let (data, _) = try await URLSession.shared.data(for: request)
         return data
+    }
+    
+    private func performPingTest() async -> (latency: Double, jitter: Double, packetLoss: Double) {
+        var latencies: [Double] = []
+        var failures = 0
+        let totalPings = 10
+        
+        for _ in 0..<totalPings {
+            let start = Date()
+            do {
+                // Using HEAD request to simulate ping with minimal payload
+                guard let url = URL(string: "https://speed.cloudflare.com/__down?bytes=0") else { continue }
+                var request = URLRequest(url: url)
+                request.httpMethod = "HEAD"
+                request.timeoutInterval = 1.0
+                request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+                let (_, response) = try await URLSession.shared.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                    let latency = Date().timeIntervalSince(start) * 1000.0
+                    latencies.append(latency)
+                } else {
+                    failures += 1
+                }
+            } catch {
+                failures += 1
+            }
+            // Small delay between pings
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        
+        let lossPercent = (Double(failures) / Double(totalPings)) * 100.0
+        
+        guard !latencies.isEmpty else {
+            return (0.0, 0.0, lossPercent) // 100% loss
+        }
+        
+        let avgLatency = latencies.reduce(0, +) / Double(latencies.count)
+        
+        // Calculate Jitter (average of differences between consecutive pings)
+        var jitterSum = 0.0
+        if latencies.count > 1 {
+            for i in 1..<latencies.count {
+                jitterSum += abs(latencies[i] - latencies[i-1])
+            }
+            let avgJitter = jitterSum / Double(latencies.count - 1)
+            return (avgLatency, avgJitter, lossPercent)
+        }
+        
+        return (avgLatency, 0.0, lossPercent)
     }
 }

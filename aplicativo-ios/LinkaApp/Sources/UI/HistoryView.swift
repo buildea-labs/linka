@@ -9,9 +9,9 @@ struct HistoryView: View {
     @State private var hasPlus = false
     @State private var showAssist = false
     
-    // For demo purposes, we'll use the in-memory repository to show the layout.
-    // In the real app, this would be injected.
-    let repository = InMemoryMeasurementHistoryRepository()
+    let repository = FileMeasurementHistoryRepository(
+        fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json")
+    )
     
     @ViewBuilder
     var body: some View {
@@ -105,6 +105,8 @@ struct HistoryView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showAssist) {
             AssistSheet()
+                .presentationDetents([.fraction(0.6), .large])
+                .presentationDragIndicator(.visible)
         }
         .onAppear {
             loadData()

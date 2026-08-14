@@ -8,8 +8,8 @@ struct DetailsDisclosure: View {
     
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
-            Text("Operadora **\(operatorName)** · Provedor **\(provider)**")
-            Text("Duração **\(duration)s** · Ping **\(ping) ms**")
+            Text("Rede **\(operatorName)** · Provedor **\(provider)**")
+            Text("Duração **\(duration)**")
         }
         .font(.bodySmall)
         .foregroundColor(.textSecondary)

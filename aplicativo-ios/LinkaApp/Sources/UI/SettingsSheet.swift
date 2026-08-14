@@ -1,84 +1,116 @@
 import SwiftUI
+import MeasurementHistory
 
 struct SettingsSheet: View {
     @Environment(\.dismiss) var dismiss
     @AppStorage("appAppearance") private var appAppearance: String = "system"
+    @AppStorage("isPro") private var isPro: Bool = false
     @State private var showPurchase = false
-    
-    @State private var isCheckingUpdate = false
-    @State private var showUpdateAlert = false
-    @State private var updateAlertTitle = ""
-    @State private var updateAlertMessage = ""
+    @State private var testCount: Int = 0
     
     var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         return version
     }
     
+    var colorScheme: ColorScheme? {
+        if appAppearance == "light" { return .light }
+        if appAppearance == "dark" { return .dark }
+        return nil
+    }
+    
     var body: some View {
         NavigationStack {
             List {
-                Section(header: Text("Aparência").font(.monoCaption).foregroundColor(.textSecondary)) {
-                    Picker("Aparência", selection: $appAppearance) {
-                        Text("Claro").tag("light")
-                        Text("Escuro").tag("dark")
-                        Text("Sistema").tag("system")
+                Section(header: Text("ATIVIDADE").font(.monoCaption).foregroundColor(.textSecondary)) {
+                    NavigationLink(destination: HistoryView()) {
+                        HStack {
+                            Text("Histórico")
+                                .foregroundColor(.textPrimary)
+                            Spacer()
+                            Text("\(testCount) testes")
+                                .foregroundColor(.textSecondary)
+                        }
                     }
-                    .pickerStyle(.segmented)
                     .listRowBackground(Color.surfaceCard)
                 }
                 
-                Section(header: Text("Assinatura").font(.monoCaption).foregroundColor(.textSecondary)) {
-                    Button(action: {
-                        showPurchase = true
-                    }) {
+                Section(header: Text("APARÊNCIA").font(.monoCaption).foregroundColor(.textSecondary)) {
+                    HStack {
+                        Text("Aparência")
+                            .foregroundColor(.textPrimary)
+                        Spacer()
+                        Picker("Aparência", selection: $appAppearance) {
+                            Text("Claro").tag("light")
+                            Text("Escuro").tag("dark")
+                            Text("Sistema").tag("system")
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 180)
+                    }
+                    .listRowBackground(Color.surfaceCard)
+                }
+                
+                Section(header: Text("ASSINATURA").font(.monoCaption).foregroundColor(.textSecondary)) {
+                    Button(action: { showPurchase = true }) {
                         HStack {
-                            Image("wordmark")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 16)
+                            Text("Linka")
+                                .foregroundColor(.textPrimary)
                             Spacer()
-                            Text("Em breve")
-                                .font(.bodyRegular)
+                            Text("R$ 6,90/ano")
                                 .foregroundColor(.textSecondary)
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(UIColor.tertiaryLabel))
+                        }
+                    }
+                    .listRowBackground(Color.surfaceCard)
+                }
+                
+                Section(header: Text("GERAL").font(.monoCaption).foregroundColor(.textSecondary)) {
+                    Button(action: { /* placeholder */ }) {
+                        HStack {
+                            Text("Buscar atualização")
+                                .foregroundColor(.textPrimary)
+                            Spacer()
+                            Text("Buscar agora")
                                 .foregroundColor(.textSecondary)
                         }
                     }
                     .listRowBackground(Color.surfaceCard)
-                }
-                
-                Section(header: Text("Geral").font(.monoCaption).foregroundColor(.textSecondary)) {
-                    Button(action: {
-                        checkForUpdates()
-                    }) {
+                    
+                    Button(action: { /* placeholder */ }) {
                         HStack {
-                            Text("Buscar atualização")
-                                .font(.bodyRegular)
+                            Text("Notas da versão")
                                 .foregroundColor(.textPrimary)
                             Spacer()
-                            if isCheckingUpdate {
-                                ProgressView()
-                            } else {
-                                Image(systemName: "arrow.triangle.2.circlepath")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.textSecondary)
-                            }
+                            Text("Versão \(appVersion)")
+                                .foregroundColor(.textSecondary)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(UIColor.tertiaryLabel))
                         }
                     }
                     .listRowBackground(Color.surfaceCard)
                 }
                 
-                Section(header: Text("Sobre o app").font(.monoCaption).foregroundColor(.textSecondary)) {
-                    HStack {
-                        Text("Versão")
-                            .font(.bodyRegular)
-                            .foregroundColor(.textPrimary)
-                        Spacer()
-                        Text(appVersion)
-                            .font(.bodyRegular)
-                            .foregroundColor(.textSecondary)
+                Section(header: Text("SOBRE O APP").font(.monoCaption).foregroundColor(.textSecondary)) {
+                    SettingsRow(icon: "info.circle.fill", color: Color(red: 0.1, green: 0.2, blue: 0.4), title: "Sobre Nós", url: "https://linka-speedtest.web.app")
+                    SettingsRow(icon: "speedometer", color: .orange, title: "Como medimos", url: "https://linka-speedtest.web.app/como-medimos")
+                    SettingsRow(icon: "lock.fill", color: .gray, title: "Privacidade & Termos de Uso", url: "https://linka-speedtest.web.app/privacidade")
+                }
+                .listRowBackground(Color.surfaceCard)
+                
+                if isPro {
+                    Section(header: Text("DEBUG INTERNO").font(.monoCaption).foregroundColor(.brandAccentWarm)) {
+                        Button(action: { isPro = false }) {
+                            HStack {
+                                Image(systemName: "trash.fill")
+                                    .foregroundColor(.brandAccentWarm)
+                                Text("Resetar Compra Mockada")
+                                    .foregroundColor(.textPrimary)
+                            }
+                        }
                     }
                     .listRowBackground(Color.surfaceCard)
                 }
@@ -87,68 +119,84 @@ struct SettingsSheet: View {
                     EmptyView()
                 } footer: {
                     Text("Linka Speedtest · Versão \(appVersion)")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
+            .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(Color.surfacePage.ignoresSafeArea())
             .navigationTitle("Ajustes")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(Color.surfacePage, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("OK") {
-                        dismiss()
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.textPrimary)
+                            .frame(width: 36, height: 36)
+                            .background(Color.surfaceCard)
+                            .clipShape(Circle())
                     }
-                    .font(.bodyRegular.weight(.bold))
-                    .foregroundColor(.brandSurface)
                 }
+            }
+            .onAppear {
+                loadTestCount()
             }
             .sheet(isPresented: $showPurchase) {
                 PurchaseSheet()
             }
-            .alert(isPresented: $showUpdateAlert) {
-                Alert(title: Text(updateAlertTitle), message: Text(updateAlertMessage), dismissButton: .default(Text("OK")))
+        }
+        .id(appAppearance)
+        .preferredColorScheme(colorScheme)
+    }
+    
+    private func loadTestCount() {
+        Task { @MainActor in
+            let repo = FileMeasurementHistoryRepository(
+                fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json")
+            )
+            if let count = try? await repo.totalCount() {
+                self.testCount = count
             }
         }
     }
+}
+
+struct SettingsRow: View {
+    @Environment(\.openURL) var openURL
+    var icon: String
+    var color: Color
+    var title: String
+    var url: String?
     
-    private func checkForUpdates() {
-        isCheckingUpdate = true
-        guard let bundleId = Bundle.main.bundleIdentifier,
-              let url = URL(string: "https://itunes.apple.com/lookup?bundleId=\(bundleId)") else {
-            self.updateAlertTitle = "Erro"
-            self.updateAlertMessage = "Não foi possível verificar atualizações."
-            self.showUpdateAlert = true
-            self.isCheckingUpdate = false
-            return
-        }
-        
-        URLSession.shared.dataTask(with: url) { data, response, error in
-            DispatchQueue.main.async {
-                self.isCheckingUpdate = false
-                if let data = data,
-                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let results = json["results"] as? [[String: Any]],
-                   let firstResult = results.first,
-                   let appStoreVersion = firstResult["version"] as? String {
-                    
-                    let currentVersion = self.appVersion
-                    if appStoreVersion.compare(currentVersion, options: .numeric) == .orderedDescending {
-                        self.updateAlertTitle = "Atualização Disponível"
-                        self.updateAlertMessage = "A versão \(appStoreVersion) está disponível na App Store."
-                    } else {
-                        self.updateAlertTitle = "App Atualizado"
-                        self.updateAlertMessage = "Você já está usando a versão mais recente."
-                    }
-                } else {
-                    self.updateAlertTitle = "Erro"
-                    self.updateAlertMessage = "Não foi possível verificar atualizações."
-                }
-                self.showUpdateAlert = true
+    var body: some View {
+        Button(action: {
+            if let urlString = url, let dest = URL(string: urlString) {
+                openURL(dest)
             }
-        }.resume()
+        }) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(color)
+                        .frame(width: 30, height: 30)
+                    Image(systemName: icon)
+                        .foregroundColor(.white)
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                
+                Text(title)
+                    .foregroundColor(.textPrimary)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(UIColor.tertiaryLabel))
+            }
+        }
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PurchaseSheet: View {
     @Environment(\.dismiss) var dismiss
+    @AppStorage("isPro") private var isPro: Bool = false
     @State private var isPurchasing = false
     
     var body: some View {
@@ -9,6 +10,7 @@ struct PurchaseSheet: View {
             Color.surfacePage.ignoresSafeArea()
             
             VStack(spacing: 0) {
+                // Top Close Button
                 HStack {
                     Spacer()
                     Button(action: {
@@ -25,87 +27,155 @@ struct PurchaseSheet: View {
                 .padding(.trailing, 16)
                 .padding(.top, 16)
                 
-                Spacer()
-                
-                Image("wordmark")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 32)
-                    .padding(.bottom, 24)
-                
-                VStack(alignment: .leading, spacing: 16) {
-                    FeatureRow(title: "Teste de velocidade completo", icon: "speedometer")
-                    FeatureRow(title: "Histórico de medições", icon: "clock.arrow.circlepath")
-                }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 36)
-                
-                Button(action: {
-                    // Coming soon
-                }) {
-                    Text("Em breve")
-                        .font(.bodyRegular.weight(.bold))
-                        .foregroundColor(.brandOnSurface)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        // Logo Box
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.textPrimary)
+                                .frame(width: 72, height: 72)
+                            
+                            Image("wordmark")
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 18)
+                                .foregroundColor(Color.surfacePage)
+                        }
+                        .padding(.top, 40)
+                        
+                        // Titles
+                        Text("Linka Pro")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.textPrimary)
+                            .padding(.top, 24)
+                        
+                        Text("Uma medição limpa, sem interrupções, e tudo\no que vier depois.")
+                            .font(.system(size: 15))
+                            .foregroundColor(.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 8)
+                            .padding(.horizontal, 32)
+                            
+                        // Features List
+                        VStack(spacing: 0) {
+                            PurchaseFeatureRow(text: "Nenhum anúncio, em nenhuma tela", showDivider: true)
+                            PurchaseFeatureRow(text: "Acesso antecipado a novos recursos", showDivider: true)
+                            PurchaseFeatureRow(text: "Widget de velocidade na tela de início", showDivider: false)
+                        }
+                        .padding(.vertical, 8)
+                        .background(Color.surfaceCard)
+                        .cornerRadius(16)
+                        .padding(.top, 32)
+                        .padding(.horizontal, 24)
+                        
+                        // Price Card
+                        VStack(spacing: 8) {
+                            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                Text("R$")
+                                    .font(.system(size: 24, weight: .bold))
+                                Text("6,90")
+                                    .font(.system(size: 36, weight: .bold))
+                                Text("/ ano")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.textSecondary)
+                            }
+                            .foregroundColor(.textPrimary)
+                            
+                            Text("Compra única · sem renovação automática")
+                                .font(.system(size: 12))
+                                .foregroundColor(.textSecondary)
+                        }
+                        .padding(.vertical, 24)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.textSecondary)
-                        .cornerRadius(100)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.textPrimary, lineWidth: 1.5)
+                        )
+                        .padding(.top, 24)
+                        .padding(.horizontal, 24)
+                    }
+                    .padding(.bottom, 40)
                 }
-                .disabled(true)
-                .padding(.horizontal, 24)
                 
-                Button(action: {
-                    // Restaurar compra
-                }) {
-                    Text("Restaurar compra")
-                        .font(.bodySmall)
-                        .foregroundColor(.textSecondary.opacity(0.5))
-                }
-                .disabled(true)
-                .padding(.top, 24)
-                
-                Spacer()
-                
-                VStack(spacing: 4) {
-                    Text("Assinatura renovada automaticamente. Cancele a qualquer momento nas configurações da App Store.")
+                // Bottom CTA and Disclaimer
+                VStack(spacing: 0) {
+                    Button(action: {
+                        isPro = true
+                        dismiss()
+                    }) {
+                        Text("Comprar por R$ 6,90/ano")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color.surfacePage)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 18)
+                            .background(Color.textPrimary)
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    Button(action: {
+                        isPro = true
+                        dismiss()
+                    }) {
+                        Text("Restaurar compra")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.textSecondary)
+                    }
+                    .padding(.top, 16)
+                    
+                    Text("Compra única de R$ 6,90, válida por um ano, sem renovação automática. Gerencie sua compra nos Ajustes do Apple ID.")
                         .font(.system(size: 10))
                         .foregroundColor(.textSecondary.opacity(0.6))
                         .multilineTextAlignment(.center)
-                    
+                        .padding(.top, 16)
+                        .padding(.horizontal, 32)
+                        
                     HStack(spacing: 4) {
-                        Link("Termos de Uso", destination: URL(string: "https://linka.app/termos")!)
+                        Link("Termos de Uso", destination: URL(string: "https://linka-speedtest.web.app/termos")!)
                             .font(.system(size: 10))
                         
                         Text("e")
                             .font(.system(size: 10))
                             .foregroundColor(.textSecondary.opacity(0.6))
                         
-                        Link("Política de Privacidade", destination: URL(string: "https://linka.app/privacidade")!)
+                        Link("Política de Privacidade", destination: URL(string: "https://linka-speedtest.web.app/privacidade")!)
                             .font(.system(size: 10))
                     }
                     .foregroundColor(.brandSurface)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
                 }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 24)
+                .padding(.top, 16)
             }
         }
     }
 }
 
-struct FeatureRow: View {
-    var title: String
-    var icon: String
+struct PurchaseFeatureRow: View {
+    var text: String
+    var showDivider: Bool
     
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.brandSurface)
-                .frame(width: 24)
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.textPrimary)
+                
+                Text(text)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.textPrimary)
+                
+                Spacer()
+            }
+            .padding(.vertical, 16)
+            .padding(.horizontal, 20)
             
-            Text(title)
-                .font(.bodyRegular)
-                .foregroundColor(.textSecondary)
+            if showDivider {
+                Divider()
+                    .padding(.horizontal, 20)
+            }
         }
     }
 }
