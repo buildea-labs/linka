@@ -1,6 +1,7 @@
 import SwiftUI
 import MeasurementHistory
-
+import GoogleMobileAds
+import AudioToolbox
 struct MainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
     @AppStorage("appAppearance") private var appAppearance: String = "system"
@@ -9,7 +10,15 @@ struct MainView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding: Bool = false
     @State private var showSettings: Bool = false
+    @State private var ringScale: CGFloat = 1.0
     @Namespace private var animation
+    
+    var colorScheme: ColorScheme? {
+        if appAppearance == "light" { return .light }
+        if appAppearance == "dark" { return .dark }
+        return nil
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -32,6 +41,7 @@ struct MainView: View {
                                 animation: animation,
                                 matchedId: "downloadValue"
                             )
+                            .scaleEffect(ringScale)
                             
                             Text("LINKA SPEEDTEST")
                                 .font(.monoEyebrow)
@@ -155,6 +165,14 @@ struct MainView: View {
                             
                             Spacer(minLength: 16)
                             
+                            if !isPro {
+                                BannerView(adSize: GADAdSizeLargeBanner)
+                                    .frame(width: 320, height: 100)
+                                    .padding(.vertical, 8)
+                            }
+                            
+                            Spacer(minLength: 16)
+                            
                             // Bottom Action Button
                             Button(action: {
                                 detailsOpen = false
@@ -175,12 +193,6 @@ struct MainView: View {
                     
                     if viewModel.uiPhase != .done {
                         Spacer()
-                    }
-                    
-                    if !isPro {
-                        BannerView()
-                            .frame(width: 320, height: 50)
-                            .padding(.bottom, 8)
                     }
                 }
             }
@@ -234,8 +246,26 @@ struct MainView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet()
+                .preferredColorScheme(colorScheme)
         }
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
+        .onChange(of: viewModel.uiPhase) { newPhase in
+            if newPhase == .uploading {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                AudioServicesPlaySystemSound(1104) // Tick
+                
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                    ringScale = 1.05
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                        ringScale = 1.0
+                    }
+                }
+            } else if newPhase == .downloading || newPhase == .done {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        }
     }
     
     private var ringValue: String {

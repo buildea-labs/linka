@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import './Gauge.css';
 
 interface Props {
@@ -15,6 +16,17 @@ export function Gauge({ value, phase, num, unit, color, size = 220 }: Props) {
   const offset = c * (1 - Math.min(1, Math.max(0, value)));
   const cx = size / 2;
   const vb = size;
+
+  // Animação de pulso quando a fase muda
+  const [isPulsing, setIsPulsing] = useState(false);
+  
+  useEffect(() => {
+    if (phase) {
+      setIsPulsing(true);
+      const timer = setTimeout(() => setIsPulsing(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [phase]);
 
   return (
     <div className="lk-gauge" style={{ width: size, height: size }}>
@@ -50,7 +62,7 @@ export function Gauge({ value, phase, num, unit, color, size = 220 }: Props) {
           }}
         />
       </svg>
-      <div className="lk-gauge__center">
+      <div className={`lk-gauge__center ${isPulsing ? 'lk-gauge__center--pulsing' : ''}`}>
         <div className="lk-gauge__phase" style={{ color }}>{phase}</div>
         <div className="lk-gauge__num" style={{ color }}>{num}</div>
         <div className="lk-gauge__unit">{unit}</div>

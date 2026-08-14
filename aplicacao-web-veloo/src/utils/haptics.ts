@@ -22,6 +22,34 @@ const PATTERNS: Record<HapticPattern, number | number[]> = {
  */
 export function triggerHaptic(pattern: HapticPattern, enabled: boolean): void {
   if (!enabled) return;
+  
+  // Toca um beep curto sintético (Tick) na mudança de fase usando Web Audio API
+  if (pattern === 'phaseChange' && typeof window !== 'undefined') {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        const ctx = new AudioContextClass();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.05);
+        
+        gain.gain.setValueAtTime(1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      }
+    } catch {
+      // Ignora erro se AudioContext não for suportado ou for bloqueado por policy
+    }
+  }
+
   try {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
       navigator.vibrate(PATTERNS[pattern]);

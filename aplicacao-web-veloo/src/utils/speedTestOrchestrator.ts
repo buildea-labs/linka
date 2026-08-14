@@ -219,6 +219,9 @@ export async function runSpeedTestV2(
     partial: { dl, latency: latencyUnloaded, jitter, packetLoss, latencyUnloaded, latencyDownload },
   });
 
+  // Pausa dramática para o respiro visual e percepção de mudança de fase
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
   // ── Fase 3: Upload + bufferbloat simultâneo ─────────────────────────────────
   const ulPings: number[] = [];
   const ulPingCtrl = new AbortController();
