@@ -37,19 +37,21 @@ Uma feature nova só entra no Linka se melhorar diretamente a experiência ou a 
 
 ## 2. Plataformas e direção técnica
 
-O produto tem duas frentes oficiais:
+**O Linka é distribuído exclusivamente para o ecossistema Apple (iPhone, iPad, Mac). Não haverá versão Web nem Android.**
 
-### Web
+### Apple (única plataforma do produto)
+
+- iPhone, iPad e Mac são o único destino do Linka.
+- A experiência deve parecer nativa do ecossistema Apple.
+- **Não haverá versão para Android.**
+- **Não haverá versão Web** do produto (Web-app, PWA instalável, motor de medição no navegador, etc. estão fora de escopo).
+
+### Site institucional e de marketing (`aplicacao-web/`)
 
 - React + TypeScript + Vite.
-- **Apenas página de marketing (Landing Page)** adaptativa para desktop e mobile. Não roda teste de velocidade real na web.
-- O objetivo exclusivo da web é apresentar as funcionalidades e direcionar o usuário para o app iOS.
-
-### Apple (Plataforma Exclusiva do Produto)
-
-- iPhone, iPad e Mac são o único destino do produto.
-- **Não está prevista versão para Android.**
-- A experiência deve parecer nativa do ecossistema Apple.
+- **Não é uma versão do Linka.** É um site institucional/marketing adaptativo para desktop e mobile que apresenta o produto, comunica a marca e direciona o usuário para o app Apple.
+- Não roda teste de velocidade, não instala como PWA, não é caminho de evolução do produto.
+- Compartilha tokens e componentes do Design System para parecer parte do mesmo produto visualmente.
 
 ### Linka Engine
 
