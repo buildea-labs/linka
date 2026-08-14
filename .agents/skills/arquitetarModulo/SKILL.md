@@ -1,55 +1,39 @@
 ---
 name: arquitetarModulo
-description: Guia do Giam para desenhar mudancas modulares no jogo Aue sem ampliar o escopo por acidente.
+description: Guia do Giam para desenhar mudanças modulares no Linka sem ampliar o escopo por acidente, respeitando a separação Engine/Adapter/UI e a fronteira Linka/SignallQ.
 ---
 
 # Skill: arquitetarModulo
 
-Procedimento do **Giam** para desenhar uma mudança antes de o Guinho implementar.
+Procedimento do **Giam** para desenhar uma mudança antes do Guinho implementar.
 
-A saída desta skill é a **parte técnica** do plano exigido em
-[`AGENTS.md`](../../../AGENTS.md) §5.0: arquitetura decidida, recorte da
-implementação, prioridade e **requisitos de aceite**. Sem ele, nenhuma branch é
-aberta.
+A saída desta skill é a **parte técnica** do plano exigido em [`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 0: arquitetura decidida, recorte da implementação, prioridade e requisitos de aceite. Sem ele, nenhuma branch é aberta.
 
-O mesmo plano carrega a parte de produto e desenho, que sai de
-[`desenharExperiencia`](../desenharExperiencia/SKILL.md),
-[`desenharInterface`](../desenharInterface/SKILL.md),
-[`pensarComoJogo`](../pensarComoJogo/SKILL.md) e
-[`aplicarTomOgro`](../aplicarTomOgro/SKILL.md).
+A parte de produto e desenho sai de [`desenharExperiencia`](../desenharExperiencia/SKILL.md), [`desenharInterface`](../desenharInterface/SKILL.md), [`pensarComoMedicao`](../pensarComoMedicao/SKILL.md) e [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md).
 
-**A decisão técnica é do Giam e ele a toma sozinho, avaliando o produto.** O que
-ele não decide sozinho é dúvida **de produto** — aí ele pergunta ao primo, do
-jeito da [`conversarComOPrimo`](../conversarComOPrimo/SKILL.md), e espera a
-resposta em vez de preencher.
+**A decisão técnica é do Giam, tomada sozinho, avaliando o produto.** O que não decide sozinho é dúvida de produto — aí pergunta ao Luiz, do jeito da [`conversarComOLuiz`](../conversarComOLuiz/SKILL.md), e espera resposta em vez de preencher.
 
-## 0. Escopo — antes da arquitetura
+## 0. Escopo antes da arquitetura
 
-Leia [`docs/escopo/ESCOPO_ATUAL.md`](../../../docs/escopo/ESCOPO_ATUAL.md).
+Leia [`AGENTS.md`](../../../AGENTS.md) §1-2 e [`documentacao/funcional/VISAO.md`](../../../documentacao/funcional/VISAO.md).
 
 Pergunte:
 
-> Esta mudança é necessária para um comportamento do jogo, ou é uma ideia
-> tentando entrar pela porta da arquitetura?
+> Esta mudança é necessária para medir a conexão ou mostrar o resultado, ou é uma ideia tentando entrar pela porta da arquitetura?
 
-Se estiver fora do escopo, **não desenhe tabela, RPC, estado ou abstração para
-ela nesta tarefa**. Abra uma issue.
+Se estiver fora do escopo (diagnóstico, recomendação, análise Wi-Fi/modem/fibra, chatbot), **não desenhe pacote, contrato, estado ou abstração para ela nesta tarefa**. Abra issue e mande para o SignallQ ou para o backlog.
 
 Depois leia, conforme o caso:
 
-- [`docs/jogo/ARENA.md`](../../../docs/jogo/ARENA.md) — a Arena é uma máquina de
-  estados, e comportamento novo quase sempre é um estado ou uma transição, não
-  uma rota;
-- [`docs/jogo/REGRAS.md`](../../../docs/jogo/REGRAS.md);
-- [`docs/technical/arquitetura.md`](../../../docs/technical/arquitetura.md);
-- [`docs/schema/nomenclatura.md`](../../../docs/schema/nomenclatura.md).
+- [`documentacao/arquitetura/PLANO_HISTORICO_MEDICOES.md`](../../../documentacao/arquitetura/PLANO_HISTORICO_MEDICOES.md) — `NetworkCore` + `MeasurementHistory`
+- [`documentacao/arquitetura/PLANO_NETWORK_INSIGHTS.md`](../../../documentacao/arquitetura/PLANO_NETWORK_INSIGHTS.md) — `NetworkInsights`
+- [`documentacao/arquitetura/PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md) — `NetworkAssist`
+- [`documentacao/arquitetura/contratos/network-measurement.schema.json`](../../../documentacao/arquitetura/contratos/network-measurement.schema.json) — schema canônico v1
 
-**Duas regras que o jogo impõe à arquitetura:**
+## Duas regras que o produto impõe à arquitetura
 
-1. **Motor separado da tela.** Áudio e score são módulos, não código de
-   componente. É o que mantém a porta aberta para Android/iOS depois.
-2. **Recurso sensível tem dono.** Microfone, stream, timer e replay precisam de
-   ciclo de vida explícito, e só um replay roda por vez.
+1. **Motor separado da tela.** `LinkaEngine`, `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist` são pacotes Swift isolados — não conhecem `LinkaApp` (SwiftUI). É o que mantém o motor reutilizável pelo SignallQ.
+2. **Fronteira Linka/SignallQ é dura.** Diagnóstico, recomendação, análise avançada de rede, chatbot conversacional que dê opinião: não entram. Ver [`AGENTS.md`](../../../AGENTS.md) §1 e [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md).
 
 ## 1. Comece pelo comportamento
 
@@ -58,92 +42,96 @@ Antes de criar camada, escreva o fluxo em uma linha.
 Exemplo:
 
 ```text
-resultado → criar batalha → receber código → compartilhar → amigo responder
+usuário abre app → medição inicia automaticamente → download → upload → resultado mostrado
 ```
 
 Liste:
 
 - entrada;
 - saída;
-- estado persistido;
-- falhas importantes;
-- regra que precisa ser confiada ao servidor;
-- recurso que precisa ser liberado (microfone, listener etc.).
+- estado persistido (histórico? preferências?);
+- falhas importantes (perda de rede, cancelamento, timeout);
+- recurso que precisa de ciclo de vida explícito (URLSession, timer, task Swift).
 
-## 2. Separe responsabilidades
+## 2. Onde a mudança mora
 
-Uma divisão típica pode ter:
+Divisão típica dos pacotes no `aplicativo-ios/`:
 
-- banco/migração: schema, constraints, RLS, RPC;
-- acesso a dados: chamadas ao Supabase;
-- domínio: regra pura/testável;
-- hooks: ciclo de vida/estado;
-- UI: apresentação e interação.
+- **`NetworkCore`** — contrato canônico `NetworkMeasurement`, sem dependências de produto;
+- **`LinkaEngine`** — motor de medição real (download, upload, latência);
+- **`MeasurementHistory`** — persistência (in-memory ou file-based), políticas de retenção;
+- **`NetworkInsights`** — estatísticas puras (comparação, tendência), sem diagnóstico;
+- **`NetworkAssist`** — camada de contexto para IA responder sobre medição/histórico, sem inferir causa;
+- **`LinkaModules`** — compatibilidade temporária com a fundação anterior;
+- **`LinkaAppIntents`** — SiriKit / App Intents;
+- **`LinkaEntitlements`** — capacidades da App Store;
+- **`LinkaApp`** — SwiftUI, UI apenas.
 
-Isso é orientação, não obrigação de criar cinco pastas para uma função de dez
-linhas.
+**Modularidade não é quantidade de arquivo. É responsabilidade clara.** Não crie pacote novo para uma função de dez linhas.
 
-**Modularidade não é quantidade de arquivo. É responsabilidade clara.**
+## 3. Persistência só quando o domínio exige
 
-## 3. Banco só quando o domínio exige
+Antes de persistir dado novo:
 
-Antes de criar tabela/coluna:
+1. confirme que persistência é necessária (o dado sobrevive a fechar o app?);
+2. confirme que a feature pertence ao escopo do Linka;
+3. procure entidade existente em `MeasurementHistory` que já represente o conceito;
+4. defina política de retenção junto do design;
+5. planeje o path do arquivo (documento, cache, App Group) e o que acontece se corromper.
 
-1. confirme que persistência é necessária;
-2. confirme que a feature pertence ao escopo;
-3. procure objeto existente que já representa o conceito;
-4. siga `docs/schema/nomenclatura.md`;
-5. defina RLS/grants/policies junto da modelagem;
-6. planeje rollback/restauração.
+`FileMeasurementHistoryRepository` já falha fechado em arquivo corrompido ou versão desconhecida — respeite esse padrão.
 
-Não crie schema para roadmap "porque um dia vamos usar".
+## 4. Contrato canônico
 
-## 4. Server-side quando o cliente não pode ser autoridade
+`NetworkMeasurement` segue o schema v1. Regras:
 
-Leve para RPC/constraint/trigger quando envolver, por exemplo:
+- `schemaVersion = 1`;
+- `complete` exige download, upload e latência;
+- `partial` exige ao menos uma métrica;
+- valores medidos não podem ser negativos ou não finitos;
+- campos opcionais ausentes = não medido/não disponível, nunca zero;
+- diagnóstico, opinião, assinatura, UI e contexto do usuário não fazem parte da medição.
 
-- score oficial;
-- resultado competitivo;
-- autorização;
-- acesso a batalha por capability URL;
-- regra que precisa impedir fraude óbvia do navegador.
+Mudança incompatível = `schemaVersion` novo + migração dos consumidores.
 
-Não mova cálculo para backend só para parecer arquitetura robusta se a regra
-pode continuar local com validação simples.
+## 5. Segurança e privacidade
 
-## 5. Segurança
-
-- RLS em tabela exposta ao cliente;
-- policy e grant precisam concordar;
-- sessão anônima continua sendo identidade autenticada do ponto de vista do Supabase;
-- esconder rota/botão não substitui autorização;
-- código de batalha é segredo compartilhado: imprevisível, não enumerável e com expiração validada no backend.
+- Sem login obrigatório ([`AGENTS.md`](../../../AGENTS.md) §6, §10);
+- coletar e reter apenas o necessário;
+- afirmação em `Como medimos` precisa ser verificável no código;
+- **nenhuma chave de API no bundle iOS ou Web**. Segredo vive no servidor, nunca no cliente ([`AGENTS.md`](../../../AGENTS.md) §9).
+- informação sensível (IP, BSSID, operadora) não aparece em share por padrão.
 
 ## 6. Anti-monolítico sem numerologia
 
-Não existe um número mágico de linhas que transforme arquivo em monólito.
+Não existe número mágico de linhas que transforme arquivo em monólito.
 
 Sinais reais de problema:
 
-- UI + SQL + regra de negócio no mesmo componente;
-- cleanup de recurso espalhado em vários módulos sem dono;
+- UI + medição + persistência no mesmo tipo Swift;
+- cleanup de `URLSession`/`Task` espalhado sem dono;
 - função com razões independentes para mudar;
-- duplicação de regra oficial;
-- componente impossível de testar sem montar o aplicativo inteiro.
+- duplicação de fórmula (ex.: bytes→Mbps em dois lugares);
+- `View` impossível de testar sem montar o app inteiro.
 
-Arquivo grande com uma responsabilidade coesa pode ser justificável. Arquivo de
-80 linhas com quatro responsabilidades não é automaticamente bom.
+Arquivo grande com uma responsabilidade coesa pode ser justificado. Arquivo de 80 linhas com quatro responsabilidades não fica bom porque é pequeno.
 
 ## 7. Entrega do planejamento
 
 Antes de implementar, deixe claro:
 
-- arquivos/camadas afetados;
-- contrato de dados;
-- segurança;
-- erros;
-- testes;
-- o que **não** será feito nesta fatia.
+- pacotes/camadas afetados;
+- contrato de dados (se novo ou modificado, com nota sobre `schemaVersion`);
+- segurança e privacidade;
+- erros e cancelamento;
+- testes (`swift test` em qual pacote);
+- **o que NÃO será feito nesta fatia.**
 
-A última linha é obrigatória. É ela que impede uma batalha de arroto de virar
-plataforma social no meio da PR.
+A última linha é obrigatória. É ela que impede uma feature de medição virar central de diagnóstico no meio do PR.
+
+## Relacionados
+
+- **Aconselhamento do Camillo:** [`aconselharArquitetura`](../aconselharArquitetura/SKILL.md)
+- **Adaptador entre Engine e UI:** [`escreverAdaptadorNativo`](../escreverAdaptadorNativo/SKILL.md)
+- **Testes:** [`escreverTestes`](../escreverTestes/SKILL.md)
+- **Modularidade:** [`validarModularidade`](../validarModularidade/SKILL.md)

@@ -1,129 +1,137 @@
 ---
 name: rodarNoIphone
-description: Procedimento do Guinho para construir, assinar e instalar a casca iOS do Aue num iPhone de verdade, com os portoes que travam o caminho.
+description: Procedimento do Guinho para construir, assinar e instalar o Linka num iPhone/iPad/Mac de verdade, com os portões do Xcode que travam o caminho.
 ---
 
 # Skill: rodarNoIphone
 
-Procedimento do **Guinho** para pôr o Auê rodando **dentro do app**, num iPhone
-de verdade.
+Procedimento do **Guinho** para pôr o Linka rodando **no aparelho de verdade** — iPhone, iPad ou Mac.
 
-O que decide se a casca funciona não é o build — é o microfone, o áudio e o
-ciclo de vida no aparelho. Simulador não prova arroto.
+O que decide se o produto funciona não é o build. É o comportamento em rede real, a permissão iOS, o ciclo de vida do app. Simulador não prova medição ([`garantirIphoneReal`](../garantirIphoneReal/SKILL.md)).
 
-Autoridade: [ADR 0002](../../../docs/technical/adr/0002-o-aue-nas-lojas.md).
+Projeto Xcode: [`aplicativo-ios/LinkaApp.xcodeproj`](../../../aplicativo-ios/LinkaApp.xcodeproj). Pacotes Swift: `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaEngine`, `LinkaModules`, `LinkaAppIntents`, `LinkaEntitlements`. CI: [`.github/workflows/swift-modules-ci.yml`](../../../.github/workflows/swift-modules-ci.yml).
 
 ---
 
-## 1. Antes de qualquer coisa: o build é outro
+## 1. O básico
 
-A casca **não** usa o build da web. Usa o modo `casca`:
+Rodar pacotes Swift isoladamente (rápido, sem UI):
 
 ```bash
-npm run casca:ios
+cd aplicativo-ios/NetworkCore && swift test
+cd aplicativo-ios/MeasurementHistory && swift test
+cd aplicativo-ios/NetworkInsights && swift test
+cd aplicativo-ios/NetworkAssist && swift test
+cd aplicativo-ios/LinkaModules && swift test
 ```
 
-Isso é `build:casca` (mesmo código, sem service worker) mais o `cap sync`. As
-duas metades importam:
+Abrir o app no Xcode:
 
-- **sem service worker** porque dentro do app os arquivos já vieram pela loja, e
-  um cache por cima só serve para o app continuar servindo a versão velha;
-- **`cap sync` copia o `dist/`**, então sincronizar sem construir antes empacota
-  a versão anterior e ninguém avisa.
+```bash
+open aplicativo-ios/LinkaApp.xcodeproj
+```
 
-O modo existe em vez de uma variável na linha de comando porque `VITE_X=1 vite
-build` não funciona no Windows, e o Android se desenvolve no Windows
-([ADR 0002](../../../docs/technical/adr/0002-o-aue-nas-lojas.md) §7).
+Ou usar XcodeGen se o `project.yml` foi modificado:
 
-**Sem as chaves do Supabase no `.env.local`, o app abre na tela de "não está
-configurado".** Ela é honesta e é o comportamento certo — mas quem esquece disso
-passa meia hora achando que a casca quebrou.
+```bash
+cd aplicativo-ios && xcodegen
+```
 
 ## 2. Os portões da máquina, na ordem em que eles aparecem
 
-Todos já morderam. Quase todos exigem a mão do dono do Mac, porque pedem senha.
+Todos já morderam alguém. Alguns exigem senha do dono do Mac.
 
 | Sintoma | O que é | Quem resolve |
 |---|---|---|
-| Qualquer comando `git` responde "you have not agreed to the Xcode license" | licença do Xcode nunca aceita — e nesta máquina o `git` passa por ela | dono do Mac: `sudo xcodebuild -license accept` |
-| "Found no destinations" / "iOS 26.5 is not installed" | Xcode instalado, plataforma iOS não baixada (~8 GB) | `xcodebuild -downloadPlatform iOS` |
+| Qualquer comando de build responde "you have not agreed to the Xcode license" | licença do Xcode nunca aceita | dono do Mac: `sudo xcodebuild -license accept` |
+| "Found no destinations" / "iOS X.Y is not installed" | Xcode instalado, plataforma iOS não baixada (~8 GB) | `xcodebuild -downloadPlatform iOS` |
 | "Signing for App requires a development team" | nenhuma conta Apple registrada no Xcode | dono do Mac: Xcode → Settings → Accounts → **+** |
 | "Developer Mode disabled" | trava do iOS 16+ no aparelho | dono do aparelho: Ajustes → Privacidade e Segurança → Modo de Desenvolvedor, e **reinicia** |
-| `errSecInternalComponent` no `codesign` | o chaveiro recusou a chave para um processo sem tela | rodar uma vez pelo Xcode (▶) e responder **Sempre Permitir** |
+| `errSecInternalComponent` no `codesign` | chaveiro recusou a chave para processo sem tela | rodar uma vez pelo Xcode (▶) e responder **Sempre Permitir** |
 | "Invalid trust settings ... restore system default" | alguém mexeu na confiança do certificado no chaveiro | Acesso às Chaves → aba **Certificados** → o certificado → Confiar → **Usar Padrões do Sistema** |
-| O app instala e não abre | conta gratuita: o aparelho ainda não confia no desenvolvedor | Ajustes → Geral → VPN e Gerenciamento de Dispositivo → Confiar |
+| App instala e não abre | conta gratuita: o aparelho ainda não confia no desenvolvedor | Ajustes → Geral → VPN e Gerenciamento de Dispositivo → Confiar |
 
-**Não mande o dono do Mac mexer em "Chaves" quando o problema é "Certificados".**
-Isso já quebrou a assinatura uma vez e custou uma ida e volta.
+**Não mande o dono do Mac mexer em "Chaves" quando o problema é "Certificados".** São abas diferentes do Acesso às Chaves e trocar uma pela outra quebra assinatura.
 
-## 3. O caminho que funciona
-
-Simulador (não serve para microfone, serve para ver a tela):
+## 3. Simulador (para layout, não para medição)
 
 ```bash
-xcrun simctl boot <udid>
-xcodebuild -scheme App -destination 'platform=iOS Simulator,id=<udid>' -configuration Debug -derivedDataPath /tmp/aue-dd CODE_SIGNING_ALLOWED=NO build
-xcrun simctl install <udid> /tmp/aue-dd/Build/Products/Debug-iphonesimulator/App.app
-xcrun simctl launch <udid> com.auegames.aue
-xcrun simctl io <udid> screenshot /tmp/tela.png
+# lista simulators
+xcrun simctl list devices available
+
+# boot
+xcrun simctl boot "iPhone 16 Pro"
+
+# build para simulator
+xcodebuild -project aplicativo-ios/LinkaApp.xcodeproj -scheme LinkaApp \
+  -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+  -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO build
+
+# install + launch
+xcrun simctl install "iPhone 16 Pro" /path/to/build/Debug-iphonesimulator/LinkaApp.app
+xcrun simctl launch "iPhone 16 Pro" com.linka.speedtest
+
+# screenshot
+xcrun simctl io "iPhone 16 Pro" screenshot /tmp/tela.png
 ```
 
-iPhone de verdade, com o aparelho **plugado e desbloqueado**:
+Simulador serve para conferir layout em várias tamanhos Apple (iPhone SE, iPhone 16 Pro Max, iPad Pro, Mac). **Não serve para medição real** — a rede é a do Mac.
+
+## 4. iPhone/iPad real
+
+Aparelho **plugado e desbloqueado**:
 
 ```bash
+# lista aparelhos conectados
 xcrun devicectl list devices
-xcodebuild -scheme App -destination 'id=<device-id>' -configuration Debug -derivedDataPath /tmp/aue-dev -allowProvisioningUpdates build
-xcrun devicectl device install app --device <device-id> /tmp/aue-dev/Build/Products/Debug-iphoneos/App.app
+
+# build + install
+xcodebuild -project aplicativo-ios/LinkaApp.xcodeproj -scheme LinkaApp \
+  -destination 'id=<device-id>' \
+  -configuration Debug \
+  -allowProvisioningUpdates build
+
+xcrun devicectl device install app --device <device-id> \
+  /path/to/build/Debug-iphoneos/LinkaApp.app
 ```
 
-Duas coisas que economizam tempo:
+Depois, no aparelho: rodar em rede real (Wi-Fi + celular), observar o comportamento — não só o layout.
 
-- **a primeira captura de tela sempre parece quebrada.** O webview leva alguns
-  segundos; tirar foto cedo mostra preto e manda todo mundo caçar bug que não
-  existe. Espere e tire de novo antes de acusar;
-- **o painel de simulador integrado pode recusar** dizendo que o Xcode não está
-  selecionado quando ele está. Nesse caso vá de `xcrun simctl` e **avise que foi
-  por ali** — trocar de ferramenta em silêncio é o começo de um relatório falso.
+## 5. Mac
 
-## 4. O time de assinatura não vai para o repositório
+O Linka roda em Mac (Apple-only inclui iPhone/iPad/Mac). No Xcode, selecione o esquema `LinkaApp` com destino "My Mac (Designed for iPad)" ou destino nativo Mac se o target Catalyst/Mac estiver configurado. Testar janela redimensionável e Full Screen.
 
-O `DEVELOPMENT_TEAM` fica **fora** do controle de versão: o repositório é
-público e o time é conta pessoal. Quem clonar escolhe o time uma vez no Xcode.
+## 6. O time de assinatura não vai para o repositório
 
-Se aparecer no `git status` depois de um build, é ruído de máquina — não commite.
+`DEVELOPMENT_TEAM` fica fora do controle de versão: cada dev tem sua conta. Se aparecer no `git status` depois de um build, é ruído — não commite.
 
-## 5. O que só o aparelho responde
+## 7. O que só o aparelho responde
 
-Build verde não é entrega. No iPhone, com o jogo na mão:
+Build verde não é entrega. No aparelho, com o Linka na mão:
 
-- [ ] o loop inteiro: arrotar, o juiz recusar o que não é arroto, receber a
-      nota, criar o desafio, abrir o link no segundo aparelho, responder, placar
-      e revanche
-- [ ] o iPhone pede o microfone **uma vez**, no toque, com o texto do
-      `Info.plist`
-- [ ] **mandar o app pro fundo solta o microfone** — conferido pelo indicador do
-      próprio sistema, não por leitura de código
-      ([ADR 0001](../../../docs/technical/adr/0001-arquitetura-oficial-do-aue.md) §4)
-- [ ] voltar do fundo não deixa gravação órfã nem timer rodando
-- [ ] com o silencioso ligado, o resultado continua legível
-- [ ] o link do desafio criado dentro do app aponta para o endereço público, não
-      para o endereço interno da casca
-- [ ] retrato travado, e nada encostando na faixa do gesto
+- [ ] medição inicia sozinha ao abrir
+- [ ] fluxo Preparando → Download → Upload → Finalizando → Resultado sem trancar
+- [ ] "Testar novamente" reinicia limpo
+- [ ] cancelar durante a medição libera task, não deixa órfão
+- [ ] mandar app para background durante medição não corrompe estado
+- [ ] rede desligada: erro tratado, não fica rodando em vão
+- [ ] rede lenta (Network Link Conditioner ou 3G real): gera `partial` honesto
+- [ ] retrato + paisagem, se permitido
+- [ ] `Reduce Motion` ligado: informação completa
 
-O que não foi testado **vai escrito como não testado**
-([`AGENTS.md`](../../../AGENTS.md) §5.4). "Compilou" não é uma dessas linhas.
+O que não foi testado **vai escrito como não testado** no relatório do PR ([`registrarIssue`](../registrarIssue/SKILL.md) §5, [`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 3).
 
-## 6. O que esta skill não autoriza
+## 8. O que esta skill NÃO autoriza
 
-- publicar em loja, TestFlight ou produção aberta — exige ADR novo
-  ([ADR 0002](../../../docs/technical/adr/0002-o-aue-nas-lojas.md) §1);
-- plugin novo que não sirva a uma porta existente — ver
-  [`escreverAdaptadorNativo`](../escreverAdaptadorNativo/SKILL.md);
-- tela, regra ou feature que só existe no app.
+- publicar em App Store, TestFlight ou distribuir fora sem autorização do Luiz;
+- adicionar entitlement ou capability nova sem discutir escopo com o Giam;
+- mudar `Info.plist` de forma que exija permissão sensível nova sem alinhamento;
+- desabilitar teste ou pipeline "para o build passar".
 
 ## Relacionados
 
-- **A decisão das lojas:** [`docs/technical/adr/0002-o-aue-nas-lojas.md`](../../../docs/technical/adr/0002-o-aue-nas-lojas.md)
-- **Código nativo atrás da porta:** [`escreverAdaptadorNativo`](../escreverAdaptadorNativo/SKILL.md)
-- **O mesmo jogo no navegador:** [`garantirMobileReal`](../garantirMobileReal/SKILL.md)
+- **iPhone real:** [`garantirIphoneReal`](../garantirIphoneReal/SKILL.md)
+- **Adapter entre motor e UI:** [`escreverAdaptadorNativo`](../escreverAdaptadorNativo/SKILL.md)
 - **Auditoria final:** [`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)
+- **Testes automatizados:** [`escreverTestes`](../escreverTestes/SKILL.md)

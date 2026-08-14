@@ -1,113 +1,105 @@
 ---
 name: desenharExperiencia
-description: Procedimento do Giam para desenhar a UX do Aue dentro da maquina de estados da Arena, sem inventar tela.
+description: Procedimento do Giam para desenhar o fluxo e os estados do Linka (abrir → medir → mostrar → repetir) sem inventar tela nova nem inflar o produto.
 ---
 
 # Skill: desenharExperiencia
 
-Procedimento do **Giam** para desenhar **o que acontece** — fluxo, estado,
-sensação e saída — antes de qualquer pixel e antes de qualquer código.
+Procedimento do **Giam** para desenhar **o que acontece** — fluxo, estado, sensação e saída — antes de qualquer pixel e antes de qualquer código.
 
-> ## ESTA SKILL NÃO É A FONTE DA ARENA
+> ## FONTES CANÔNICAS DA EXPERIÊNCIA
 >
-> As fontes são, nesta ordem:
+> Nesta ordem:
 >
-> 1. [`docs/escopo/ESCOPO_ATUAL.md`](../../../docs/escopo/ESCOPO_ATUAL.md) — o
->    que pertence ao jogo agora;
-> 2. [`docs/jogo/ARENA.md`](../../../docs/jogo/ARENA.md) — **quais estados
->    existem**, o que cada um faz, o que não pode e para onde sai. Só este
->    arquivo define a máquina;
-> 3. [`docs/jogo/LOOP.md`](../../../docs/jogo/LOOP.md) — o loop;
-> 4. [`docs/design/prototipo-arena/arena.html`](../../../docs/design/prototipo-arena/arena.html)
->    — como cada estado se parece e se comporta. Abre no navegador.
+> 1. [`documentacao/funcional/VISAO.md`](../../../documentacao/funcional/VISAO.md) — o que o Linka é hoje;
+> 2. [`AGENTS.md`](../../../AGENTS.md) §1, §6 — o essencial do produto e os princípios obrigatórios;
+> 3. [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) — fronteira Free/Plus;
+> 4. [`documentacao/design/prototipo/`](../../../documentacao/design/prototipo/) — o protótipo canônico do fluxo e da geometria;
+> 5. [`documentacao/design/design_system/readme.md`](../../../documentacao/design/design_system/readme.md) — como cada estado se parece.
 >
-> **Protótipo, design system e handoff não criam, não renomeiam e não removem
-> estado.** Onde eles descreverem uma máquina diferente da `ARENA.md` — e o
-> material atual descreve, com 19–20 estados —, vale a `ARENA.md`.
->
-> **`AD_BREAK` está fora.** Não é estado, não é momento, e não se desenha nada
-> que dependa dele.
->
-> **Não existe outro arquivo de protótipo.** Se um HTML aparecer ao lado do
-> `arena.html`, é resíduo de exportação antiga — apaga, não porta.
-
----
+> Se o desenho quiser um estado que o protótipo não descreve, isso é escopo novo. Volta para o §0.
 
 ## 0. Escopo antes de tudo
 
-Leia [`docs/escopo/ESCOPO_ATUAL.md`](../../../docs/escopo/ESCOPO_ATUAL.md).
+Leia [`AGENTS.md`](../../../AGENTS.md) §14 (a pergunta final):
 
-> Isto é um comportamento do jogo, ou é uma ideia tentando entrar pela porta do
-> design?
+> Isso ajuda o Linka a medir a internet melhor, mais rápido, mais confiável ou de forma mais clara?
 
-Fora do escopo: registra no backlog. Não desenha.
+Se a resposta for "não", provavelmente não pertence ao Linka. Registra no backlog e não desenha.
 
-## 1. A Arena é uma superfície de estado
+## 1. O fluxo do Linka é curto
 
-Não existe "tela nova". Existe **estado**, ou mudança dentro de um estado que já
-existe. Os dez estados vivem em
-[`docs/jogo/ARENA.md`](../../../docs/jogo/ARENA.md): `IDLE`, `RECORDING`,
-`ORIGIN`, `JUDGING`, `RESULT`, `CHALLENGE`, `VERSUS`, `SCOREBOARD`, `REMATCH`,
-`ERROR`.
+O Linka tem um fluxo principal deliberadamente simples ([`AGENTS.md`](../../../AGENTS.md) §1):
 
-A estrutura é fixa — HUD, palco, reação, ação. **Ela não muda entre estados.** O
-que muda é o conteúdo de cada faixa e o modo da Bolha.
+```text
+ABRIR → MEDIR → MOSTRAR RESULTADO → REPETIR
+```
 
-Se o seu desenho precisa de uma quinta faixa, de rolagem no meio do jogo ou de
-uma rota nova, o desenho está errado. Volta.
+Estados principais (na prática):
+
+- **preparação** — app abre, medição inicia automaticamente;
+- **medição de latência** — pode ser silenciosa se a UI já comunicar;
+- **medição de download** — número dominante;
+- **medição de upload** — mesma tela, muda a fase;
+- **resultado** — download + upload lado a lado, opção de detalhes, ação "testar novamente";
+- **erro/parcial** — se uma fase falhou, mostrar o que foi possível medir com honestidade.
+
+Não invente "tela nova". Se a mudança precisa de um sexto estado, provavelmente é feature de SignallQ, não de Linka.
 
 ## 2. As perguntas
 
 Para cada mudança, responda por escrito:
 
 1. **Qual estado muda?** Muda o conteúdo, a saída, ou nasce transição nova?
-2. **O que o jogador está sentindo** quando entra nesse estado? E quando sai?
-3. **Quantos toques** até o resultado? Dá pra tirar um?
+2. **O que o usuário está sentindo** ao entrar nesse estado? E ao sair?
+3. **Quantos toques** até o resultado? Dá para tirar um?
 4. **Qual é a saída?** Todo estado tem saída. Estado sem saída é bug de design.
-5. **E se der ruim?** Sem rede, sem microfone, permissão negada, link morto,
-   parceiro sumiu. Cada um vai pra onde?
-6. **Qual é a provocação depois?** O Auê nunca termina em "pronto" — termina em
-   tenta de novo, chama no x1, manda no grupo, vai amarelar
-   ([`docs/jogo/VOZ.md`](../../../docs/jogo/VOZ.md) §7).
-7. **Com `prefers-reduced-motion` ligado**, o que acontece? A informação
-   continua completa?
+5. **E se der ruim?** Sem rede, permissão negada, servidor lento, medição incompleta. Cada caso vai para onde?
+6. **Depois do resultado, o que naturalmente acontece?** No Linka a resposta padrão é "testar novamente" — não é "compartilhar", "compare com outros", "adicione ao histórico" (o histórico é background). Divulgação progressiva ([`AGENTS.md`](../../../AGENTS.md) §6).
+7. **Com `prefers-reduced-motion` ligado**, a informação continua completa?
 8. **O que isso NÃO deve virar?** Escreve. Isso vira o "Não viaja" da issue.
 
 ## 3. Regras que não se negociam
 
-- **Nada finge que funciona.** Botão sem backend fica desabilitado. Mock fica
-  marcado. Falha não vira sucesso por copy.
-- **Estado nunca fica preso.** Sempre tem como sair, cancelar ou tentar de novo.
-- **Recurso sensível tem começo e fim visíveis.** Microfone, gravação, timer e
-  áudio tocando: o jogador enxerga que ligou e enxerga que desligou.
-- **Erro conta a verdade** antes da piada
-  ([`docs/jogo/VOZ.md`](../../../docs/jogo/VOZ.md) §8).
-- **Resultado é placar, não relatório.** Nota, reação, provocação, próxima ação.
-  Métrica explica depois.
-- **A Arena não é feed.** Se o desenho começa a parecer perfil, timeline ou
-  seguidores, parou — está fora da visão.
+- **Nada finge que funciona.** Botão sem backend fica desabilitado. Mock fica marcado. Falha não vira sucesso por copy ([`AGENTS.md`](../../../AGENTS.md) §6, §8).
+- **Estado nunca fica preso.** Sempre existe caminho de cancelar ou tentar de novo.
+- **Recurso sensível tem começo e fim visíveis.** `URLSession`, `Task`, timer: usuário entende que o app está trabalhando e entende quando parou.
+- **Erro conta a verdade.** Se a medição de upload falhou mas o download foi bom, o resultado é `partial` e a UI reflete isso, sem inventar valor.
+- **Resultado é medida, não interpretação.** Nunca "sua conexão está boa para X" (isso é SignallQ). Ver [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md).
+- **A tela de medição não é feed.** Sem cards, sem histórico visível no meio, sem gráfico decorativo. Histórico é background acessível, não é hero.
 
-## 4. A saída
+## 4. Sem fricção antes da medição
 
-O que sai daqui entra no plano do Giam
-([`AGENTS.md`](../../../AGENTS.md) §5.0) e na issue:
+Por padrão, o Linka NÃO faz o usuário passar por:
+
+- login;
+- onboarding obrigatório;
+- formulário;
+- seleção de modo (rápido/completo);
+- seleção manual de servidor.
+
+O teste inicia automaticamente. Ver [`AGENTS.md`](../../../AGENTS.md) §6.
+
+## 5. A saída
+
+O que sai daqui entra no plano do Giam ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 0) e na issue:
 
 ```text
-ESTADO: qual estado da Arena, e o que muda nele
-ANTES:  o que o jogador vê e sente ao entrar
-AÇÃO:   o que ele faz, em quantos toques
-DEPOIS: o que ele vê, e qual é a provocação
-DEU RUIM: cada falha e pra onde ela leva
+ESTADO: qual estado do fluxo, e o que muda nele
+ANTES:  o que o usuário vê e sente ao entrar
+AÇÃO:   o que ele faz (se aplicável — muitos estados são passivos)
+DEPOIS: o que ele vê ao sair, e para onde vai
+DEU RUIM: cada falha e para onde ela leva
 REDUCED MOTION: o que muda
 NÃO VIAJA: no que isso não pode virar
 ```
 
-Depois disso é que entra a [`desenharInterface`](../desenharInterface/SKILL.md).
+Depois entra a [`desenharInterface`](../desenharInterface/SKILL.md).
 
 ## Relacionados
 
 - **Como isso vira forma:** [`desenharInterface`](../desenharInterface/SKILL.md)
-- **Se é jogo bom:** [`pensarComoJogo`](../pensarComoJogo/SKILL.md)
-- **O texto:** [`aplicarTomOgro`](../aplicarTomOgro/SKILL.md)
-- **A arquitetura:** [`arquitetarModulo`](../arquitetarModulo/SKILL.md)
+- **Filtro de escopo do produto:** [`pensarComoMedicao`](../pensarComoMedicao/SKILL.md)
+- **Voz e copy:** [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md)
+- **Arquitetura:** [`arquitetarModulo`](../arquitetarModulo/SKILL.md)
 - **Quem implementa:** [`criarComponenteUI`](../criarComponenteUI/SKILL.md)
