@@ -1,6 +1,6 @@
 # Linka SpeedTest
 
-**Linka é um SpeedTest minimalista, eficiente e visualmente refinado, Apple-first e também presente na Web.**
+**Linka é um SpeedTest minimalista, eficiente e visualmente refinado, exclusivo do ecossistema Apple (iPhone, iPad, Mac).**
 
 Ele existe para fazer uma coisa muito bem: medir a qualidade da conexão e apresentar o resultado de forma imediata, clara e bonita — sem login, sem onboarding, sem escolha de modo. Abre, mede, mostra, repete.
 
@@ -18,25 +18,24 @@ Governança completa em [`AGENTS.md`](AGENTS.md) na raiz — este README é só 
 | [`aplicativo-ios/`](aplicativo-ios/) | App nativo Apple (iPhone/iPad/Mac). SwiftUI + Swift Concurrency, padrão Engine-Adapter-UI. Produto real. |
 | [`aplicativo-ios/LinkaEngine/`](aplicativo-ios/LinkaEngine/) | Motor real de medição (download/upload/latência) |
 | [`aplicativo-ios/NetworkCore/`](aplicativo-ios/NetworkCore/), [`MeasurementHistory/`](aplicativo-ios/MeasurementHistory/), [`NetworkInsights/`](aplicativo-ios/NetworkInsights/), [`NetworkAssist/`](aplicativo-ios/NetworkAssist/) | Pacotes Swift isolados (contrato canônico, histórico, estatísticas, contexto para IA) |
-| [`aplicacao-web/`](aplicacao-web/) | Landing page de marketing. **Não roda teste de velocidade real.** |
-| [`aplicacao-web-veloo/`](aplicacao-web-veloo/) | Landing page complementar |
+| [`aplicacao-web/`](aplicacao-web/) | Site institucional e de marketing. **Não é uma versão do produto** — apresenta o Linka e direciona para o app Apple. |
+| [`aplicacao-web-veloo/`](aplicacao-web-veloo/) | Site institucional complementar |
 | [`backend/`](backend/), [`servicos-backend/`](servicos-backend/) | Serviços de backend |
 | [`documentacao/`](documentacao/) | Documentação atual do produto — comece por [`documentacao/arquitetura/INDICE.md`](documentacao/arquitetura/INDICE.md) |
 | [`scripts-automacao/`](scripts-automacao/) | Scripts locais de automação |
 
 ## Plataformas
 
-- **iPhone, iPad, Mac** — plataforma exclusiva do produto real de medição.
-- **Web** — apenas landing page. Direciona para o app Apple; não mede.
-- **Android** — não está previsto.
+- **iPhone, iPad, Mac** — **única** plataforma do produto Linka. Não haverá versão Web nem Android.
+- **Site institucional** (`aplicacao-web/`) — presença de marketing na Web. Não roda medição.
 
 ## Como executar
 
 Cada pasta com código tem seu próprio ciclo de build/testes:
 
 - **App iOS**: abrir `aplicativo-ios/LinkaApp.xcodeproj` no Xcode; testes via `swift test` em cada pacote (`NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaEngine`, `LinkaModules`). CI em `.github/workflows/swift-modules-ci.yml`.
-- **Landing web** (`aplicacao-web/`): `npm install && npm run dev`.
-- **Landing complementar** (`aplicacao-web-veloo/`): mesmo padrão, ver `aplicacao-web-veloo/README.md`.
+- **Site institucional** (`aplicacao-web/`): `npm install && npm run dev`.
+- **Site complementar** (`aplicacao-web-veloo/`): mesmo padrão, ver `aplicacao-web-veloo/README.md`.
 
 Detalhes de build e teste do app iOS ficam nos README dos próprios pacotes Swift e em [`documentacao/arquitetura/`](documentacao/arquitetura/).
 

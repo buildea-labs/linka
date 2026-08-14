@@ -47,7 +47,7 @@ Toda a documentação que descrevia workspaces antigos (`E:\Projetos\Linka\`, `C
 
 Também foram arquivados:
 
-- **Pasta `aplicativo-android/` inteira** (removida do working tree; recuperável via `git log`) — o código Kotlin nativo já estava em `kotlin/_archive/`, o build Android/Capacitor não é mais alvo do produto per `AGENTS.md` §2 ("Não está prevista versão para Android").
+- **Pasta `aplicativo-android/` inteira** (removida do working tree; recuperável via `git log`) — o código Kotlin nativo já estava em `kotlin/_archive/`, o build Android/Capacitor não é mais alvo do produto. O Linka é **exclusivamente Apple** (iPhone/iPad/Mac): não haverá versão Web nem Android. O site em `aplicacao-web/` continua existindo, mas apenas como site institucional/marketing, não como versão do produto.
 - **Roster de personas legadas** (Claudete/Renan/Marcelo/Gema/Lia/Otavio/Camilo/Nina/**Taisa**) documentado em `GUIA_CONVIVENCIA_IA.md` / `GUIA_DESENVOLVIMENTO_IA.md` / `GUIA_SELECAO_MODELO_IA.md` — superado por `AGENTS.md` §4-5 e explicitamente listado como aposentado em §13.
 - **`PoliticaBranchUnico.md`** — a regra "toda IA trabalha exclusivamente na branch `main`" conflitava diretamente com `AGENTS.md` §12 ("Trabalhe em branch para mudanças relevantes") e §13 ("regra de trabalhar sempre diretamente em `main`" está formalmente aposentada). A política de branches vive agora em `AGENTS.md` §12.
 - **Design system do SignallQ** (`design_system/_ds/signallq-design-system-.../`) — pacote de outro produto (MD3, Android StatusBar, Google Sans Flex) que aterrissou por engano nesta pasta.

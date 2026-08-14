@@ -217,15 +217,13 @@ O aplicativo Apple deve ser realmente nativo.
 
 ---
 
-# Web continua existindo
+# O produto é Apple-only
 
-Apple-first não significa Apple-only.
+O Linka é distribuído **exclusivamente para o ecossistema Apple** (iPhone, iPad, Mac).
 
-O Linka também está presente na Web — hoje **apenas como página de marketing**, sem motor de medição próprio no navegador.
+Não haverá versão Web nem Android do produto.
 
-A Web apresenta o produto, mostra as funcionalidades e direciona o usuário para o app Apple, que é onde a medição real acontece. A linguagem visual e os tokens do design system são compartilhados para que as duas superfícies pareçam parte do mesmo produto.
-
-Se a Web voltar a rodar teste real algum dia, isso será uma decisão futura explícita, não uma capacidade em uso hoje.
+A Web continua existindo, mas apenas como **site institucional e de marketing**: apresenta o Linka, comunica a marca e direciona para o app Apple. A linguagem visual e os tokens do design system são compartilhados para que o site pareça parte do mesmo produto — mas o site não mede, não é uma "versão Web do Linka" e não é caminho de evolução do produto.
 
 ---
 
