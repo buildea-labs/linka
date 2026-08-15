@@ -238,3 +238,16 @@ extension View {
     }
 }
 #endif
+
+#if !canImport(UIKit)
+extension View {
+    /// No-op fora do UIKit (ex.: macOS) — mantém os call sites de
+    /// `MainView`/`HistoryRow` livres de `#if` espalhado. O
+    /// `UIActivityViewController` é exclusivo de UIKit; compartilhar
+    /// resultado nessas plataformas fica fora de escopo até existir um
+    /// caminho nativo equivalente (AGENTS.md §2).
+    func shareMeasurementSheet(isPresented: Binding<Bool>, measurement: NetworkMeasurement?) -> some View {
+        self
+    }
+}
+#endif
