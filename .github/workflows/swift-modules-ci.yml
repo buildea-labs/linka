@@ -12,6 +12,9 @@ on:
       - 'aplicativo-ios/LinkaEntitlements/**'
       - 'aplicativo-ios/LinkaAppIntents/**'
       - 'aplicativo-ios/LinkaModules/**'
+      - 'aplicativo-ios/LinkaEngine/**'
+      - 'aplicativo-ios/LinkaApp/**'
+      - 'aplicativo-ios/LinkaApp.xcodeproj/**'
       - '.github/workflows/swift-modules-ci.yml'
   pull_request:
     paths:
@@ -22,6 +25,9 @@ on:
       - 'aplicativo-ios/LinkaEntitlements/**'
       - 'aplicativo-ios/LinkaAppIntents/**'
       - 'aplicativo-ios/LinkaModules/**'
+      - 'aplicativo-ios/LinkaEngine/**'
+      - 'aplicativo-ios/LinkaApp/**'
+      - 'aplicativo-ios/LinkaApp.xcodeproj/**'
       - '.github/workflows/swift-modules-ci.yml'
 
 jobs:
@@ -64,3 +70,37 @@ jobs:
       - name: Test LinkaModules compatibility
         working-directory: aplicativo-ios/LinkaModules
         run: swift test
+
+      - name: Test LinkaEngine
+        working-directory: aplicativo-ios/LinkaEngine
+        run: swift test
+
+  xcodebuild-app:
+    name: LinkaApp build (iOS + macOS)
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build LinkaApp for iOS Simulator
+        run: |
+          xcodebuild build \
+            -project aplicativo-ios/LinkaApp.xcodeproj \
+            -scheme LinkaApp_iOS \
+            -destination 'generic/platform=iOS Simulator' \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build LinkaApp for macOS
+        run: |
+          xcodebuild build \
+            -project aplicativo-ios/LinkaApp.xcodeproj \
+            -scheme LinkaApp_macOS \
+            -destination 'platform=macOS' \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO
