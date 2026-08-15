@@ -91,6 +91,60 @@ final class MeasurementHistoryTests: XCTestCase {
         }
     }
 
+    /// Issue #51 — Mac com `CoreWLAN` confirmando banda: o repositório
+    /// aceita e preserva `wifiBandGHz` junto de `connectionKind == .wifi`.
+    func testSavingWifiMeasurementWithBandSucceeds() async throws {
+        let repository = InMemoryMeasurementHistoryRepository()
+        let measurement = makeMeasurement(
+            connectionKind: .wifi,
+            wifiBandGHz: 5.0
+        )
+
+        try await repository.save(measurement)
+
+        let stored = try await repository.measurement(id: measurement.id)
+        XCTAssertEqual(stored?.wifiBandGHz, 5.0)
+    }
+
+    /// Issue #51 — iPhone (sempre) ou Mac sem `CoreWLAN` confirmando nada:
+    /// ausência de banda é o estado normal, não impede salvar.
+    func testSavingWifiMeasurementWithoutBandSucceeds() async throws {
+        let repository = InMemoryMeasurementHistoryRepository()
+        let measurement = makeMeasurement(
+            connectionKind: .wifi,
+            wifiBandGHz: nil
+        )
+
+        try await repository.save(measurement)
+
+        let stored = try await repository.measurement(id: measurement.id)
+        XCTAssertNil(stored?.wifiBandGHz)
+    }
+
+    /// Issue #51 — banda Wi-Fi persistida junto de uma interface que não é
+    /// Wi-Fi seria um metadado enganoso; o contrato bloqueia isso na
+    /// gravação, não só na validação isolada (`NetworkCoreTests`).
+    func testSavingNonWifiMeasurementWithBandIsRejected() async {
+        let repository = InMemoryMeasurementHistoryRepository()
+        let measurement = makeMeasurement(
+            connectionKind: .cellular,
+            wifiBandGHz: 5.0
+        )
+
+        do {
+            try await repository.save(measurement)
+            XCTFail("Expected invalidMeasurement")
+        } catch let error as MeasurementHistoryError {
+            guard case .invalidMeasurement(let violations) = error else {
+                XCTFail("Unexpected history error: \(error)")
+                return
+            }
+            XCTAssertTrue(violations.contains("wifiBandGHz"))
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
     func testFileRepositoryPersistsAcrossInstances() async throws {
         let fileURL = temporaryFileURL()
         defer { try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent()) }
@@ -162,11 +216,56 @@ final class MeasurementHistoryTests: XCTestCase {
         }
     }
 
+    /// Issue #51, nota do plano — um documento de store gravado antes do
+    /// campo `wifiBandGHz` existir (sem esse campo no JSON) precisa
+    /// continuar carregando: opcional com default `nil` não exige bump de
+    /// `schemaVersion`, nem no contrato do documento nem no da medição.
+    func testFileRepositoryLoadsLegacyDocumentWithoutWifiBandField() async throws {
+        let fileURL = temporaryFileURL()
+        defer { try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent()) }
+
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+
+        let legacyDocument = """
+        {
+            "schemaVersion": 1,
+            "measurements": [
+                {
+                    "schemaVersion": 1,
+                    "id": "4A5F9B63-E4F4-4D90-904F-3E618FC92C32",
+                    "measuredAt": 700000000.0,
+                    "outcome": "complete",
+                    "downloadMbps": 512.4,
+                    "uploadMbps": 104.8,
+                    "latencyMs": 11.7,
+                    "connectionKind": "wifi",
+                    "serverIdentifier": "cloudflare"
+                }
+            ]
+        }
+        """
+        try Data(legacyDocument.utf8).write(to: fileURL)
+
+        let repository = FileMeasurementHistoryRepository(fileURL: fileURL)
+        let count = try await repository.totalCount()
+        let restored = try await repository.measurement(
+            id: UUID(uuidString: "4A5F9B63-E4F4-4D90-904F-3E618FC92C32")!
+        )
+
+        XCTAssertEqual(count, 1)
+        XCTAssertNil(restored?.wifiBandGHz)
+        XCTAssertEqual(restored?.connectionKind, .wifi)
+    }
+
     private func makeMeasurement(
         id: UUID = UUID(),
         measuredAt: Date = Date(),
         download: Double = 100,
-        connectionKind: NetworkConnectionKind? = .wifi
+        connectionKind: NetworkConnectionKind? = .wifi,
+        wifiBandGHz: Double? = nil
     ) -> NetworkMeasurement {
         NetworkMeasurement(
             id: id,
@@ -175,7 +274,8 @@ final class MeasurementHistoryTests: XCTestCase {
             downloadMbps: download,
             uploadMbps: 50,
             latencyMs: 15,
-            connectionKind: connectionKind
+            connectionKind: connectionKind,
+            wifiBandGHz: wifiBandGHz
         )
     }
 

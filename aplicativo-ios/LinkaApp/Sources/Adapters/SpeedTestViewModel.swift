@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import Network
 import LinkaEngine
 import MeasurementHistory
 import NetworkCore
@@ -32,6 +33,22 @@ public class SpeedTestViewModel: ObservableObject {
     /// Fato tipado da falha fatal (issue #66) — não-`nil` só quando
     /// `uiPhase == .error`. Mapeamento pra mensagem amigável vive só na UI.
     @Published public var failureReason: EngineFailureReason? = nil
+
+    /// Tipo real de interface de rede usado no teste (issue #51) — Wi-Fi,
+    /// rede móvel, Ethernet ou outra. Amostrado de forma independente do
+    /// motor (`NWPathMonitor` próprio, fora de `SpeedTestCore`) no início e
+    /// no fim do teste; se a interface mudar no meio do caminho, fica
+    /// `nil` em vez de afirmar um tipo que não valeu para o teste inteiro.
+    /// Fonte única para `MainView` e para o que é salvo no histórico —
+    /// evita a divergência que existia entre os dois lugares que derivavam
+    /// isso de `networkType` (string legada de exibição, não removida).
+    @Published public var connectionKind: NetworkConnectionKind? = nil
+
+    /// Banda Wi-Fi confirmada pelo sistema em GHz (issue #51) — só
+    /// preenchida quando `connectionKind == .wifi` e a plataforma
+    /// realmente informa (CoreWLAN no Mac). `nil` é estado normal no
+    /// iPhone e sempre que a rede mudou durante o teste.
+    @Published public var wifiBandGHz: Double? = nil
 
     /// Latência sob carga (issue #52) — motor-interna nesta entrega, sem
     /// superfície própria na UI ainda; só alimenta o `NetworkMeasurement`
@@ -87,13 +104,20 @@ public class SpeedTestViewModel: ObservableObject {
         testDuration = ""
         loadedLatencyMs = nil
         failureReason = nil
+        connectionKind = nil
+        wifiBandGHz = nil
         uiPhase = .connecting
-        
+
         testTask?.cancel()
         testTask = Task {
+            // Amostra o tipo de interface no início do teste, em paralelo à
+            // subida do motor (não soma latência) — independente do
+            // `NWPathMonitor` interno de `SpeedTestCore` (issue #51).
+            async let startingKindTask = Self.sampleConnectionKind()
+
             do {
                 var lastUpdateTime = Date()
-                
+
                 for try await state in await engine.runTest() {
                     let now = Date()
                     // Throttle updates to ~30fps
@@ -102,8 +126,20 @@ public class SpeedTestViewModel: ObservableObject {
                         lastUpdateTime = now
                     }
                 }
-                
+
                 if self.uiPhase == .done {
+                    // Amostra de novo ao final. Se a interface mudou no
+                    // meio do teste (ex.: Wi-Fi → rede móvel), o teste não
+                    // rodou inteiro numa única rede — não afirma nenhum
+                    // tipo específico nesse caso (nil é o estado neutro).
+                    let startingKind = await startingKindTask
+                    let endingKind = await Self.sampleConnectionKind()
+
+                    self.connectionKind = NetworkConnectionKind.resolve(start: startingKind, end: endingKind)
+                    self.wifiBandGHz = self.connectionKind == .wifi
+                        ? ApplePlatformSignalProvider.currentWifiBandGHz()
+                        : nil
+
                     let m = NetworkMeasurement(
                         outcome: .complete,
                         downloadMbps: self.downloadSpeed,
@@ -112,7 +148,8 @@ public class SpeedTestViewModel: ObservableObject {
                         jitterMs: self.jitter,
                         packetLossPercent: self.packetLossPercent,
                         loadedLatencyMs: self.loadedLatencyMs,
-                        connectionKind: self.networkType == "Wi-Fi" ? .wifi : (self.networkType.isEmpty ? .other : .cellular),
+                        connectionKind: self.connectionKind,
+                        wifiBandGHz: self.wifiBandGHz,
                         networkIdentifier: self.provider
                     )
                     let repo = FileMeasurementHistoryRepository(fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json"))
@@ -153,6 +190,35 @@ public class SpeedTestViewModel: ObservableObject {
         case .upload: self.uiPhase = .uploading
         case .result: self.uiPhase = .done
         case .error: self.uiPhase = .error
+        }
+    }
+
+    /// Amostra pontual e independente do tipo de interface de rede ativa
+    /// no momento da chamada, via um `NWPathMonitor` próprio deste ponto —
+    /// nunca lê estado interno do `NWPathMonitor` de `SpeedTestCore`
+    /// (issue #51; motor fica intocado, ver AGENTS.md §8 e issue #66 em
+    /// paralelo). Chamada no início e no fim do teste para detectar troca
+    /// de rede no meio do caminho.
+    private static func sampleConnectionKind() async -> NetworkConnectionKind {
+        let monitor = NWPathMonitor()
+        let queue = DispatchQueue(label: "com.linka.speedtest.viewmodel.interface-sample")
+        monitor.start(queue: queue)
+
+        // Mesma folga que `SpeedTestCore` usa para dar tempo do
+        // `NWPathMonitor` buscar o caminho inicial antes da leitura.
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        let path = monitor.currentPath
+        monitor.cancel()
+
+        if path.usesInterfaceType(.wifi) {
+            return .wifi
+        } else if path.usesInterfaceType(.wiredEthernet) {
+            return .ethernet
+        } else if path.usesInterfaceType(.cellular) {
+            return .cellular
+        } else {
+            return .other
         }
     }
 }

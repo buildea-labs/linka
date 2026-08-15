@@ -17,6 +17,12 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
     public let loadedLatencyMs: Double?
     public let durationMs: Int?
     public let connectionKind: NetworkConnectionKind?
+    /// Banda Wi-Fi confirmada pelo sistema, em GHz (ex.: `2.4`, `5`) —
+    /// issue #51. Só é preenchida quando a plataforma realmente informa a
+    /// banda (hoje, `CoreWLAN` no Mac); nunca inferida por SSID/BSSID. `nil`
+    /// é o estado normal quando a plataforma não expõe essa informação
+    /// (sempre o caso no iPhone) ou quando `connectionKind` não é `.wifi`.
+    public let wifiBandGHz: Double?
     public let networkIdentifier: String?
     public let serverIdentifier: String?
     public let engineVersion: String?
@@ -34,6 +40,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         loadedLatencyMs: Double? = nil,
         durationMs: Int? = nil,
         connectionKind: NetworkConnectionKind? = nil,
+        wifiBandGHz: Double? = nil,
         networkIdentifier: String? = nil,
         serverIdentifier: String? = nil,
         engineVersion: String? = nil
@@ -50,6 +57,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         self.loadedLatencyMs = loadedLatencyMs
         self.durationMs = durationMs
         self.connectionKind = connectionKind
+        self.wifiBandGHz = wifiBandGHz
         self.networkIdentifier = networkIdentifier
         self.serverIdentifier = serverIdentifier
         self.engineVersion = engineVersion
@@ -66,6 +74,20 @@ public enum NetworkConnectionKind: String, Codable, Equatable, Hashable, Sendabl
     case cellular
     case ethernet
     case other
+}
+
+public extension NetworkConnectionKind {
+    /// Reconcilia amostras de início e fim de uma medição.
+    ///
+    /// Retorna o tipo comum quando início e fim concordam; `nil` quando
+    /// divergem ou quando qualquer uma das amostras está ausente — trocar
+    /// de rede (ou não conseguir amostrar) no meio do teste torna o
+    /// metadado de interface enganoso, então o estado neutro é preferível
+    /// a afirmar um tipo que não valeu para o teste inteiro (issue #51).
+    static func resolve(start: NetworkConnectionKind?, end: NetworkConnectionKind?) -> NetworkConnectionKind? {
+        guard let start, let end else { return nil }
+        return start == end ? start : nil
+    }
 }
 
 public enum NetworkMeasurementContract {
@@ -104,6 +126,17 @@ public enum NetworkMeasurementContract {
 
         if let durationMs = measurement.durationMs, durationMs < 0 {
             result.append("durationMs")
+        }
+
+        if let wifiBandGHz = measurement.wifiBandGHz {
+            if !wifiBandGHz.isFinite || wifiBandGHz <= 0 {
+                result.append("wifiBandGHz")
+            }
+            // Banda Wi-Fi só faz sentido junto de `connectionKind == .wifi` —
+            // caso contrário seria um metadado enganoso (issue #51).
+            if measurement.connectionKind != .wifi {
+                result.append("wifiBandGHz")
+            }
         }
 
         switch measurement.outcome {

@@ -78,6 +78,31 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
         #endif
     }
 
+    /// Banda Wi-Fi confirmada pelo sistema, em GHz — issue #51. Reaproveita
+    /// a mesma leitura de `CWChannel.channelBand` que já alimenta
+    /// `PlatformHints.Wifi.band` (linha ~44), mas devolve `Double` (2.4/5)
+    /// em vez de `String`, para `NetworkMeasurement.wifiBandGHz`.
+    ///
+    /// Só macOS: no iPhone não há fonte pública de banda sem
+    /// `NEHotspotHelper` (entitlement) nem sem localização — `nil` é o
+    /// estado normal ali, não erro. Nunca infere banda por SSID/BSSID.
+    static func currentWifiBandGHz() -> Double? {
+        #if canImport(CoreWLAN) && os(macOS)
+        guard let iface = CWWiFiClient.shared().interface(),
+              let band = iface.wlanChannel()?.channelBand else {
+            return nil
+        }
+        switch band {
+        case .band2GHz: return 2.4
+        case .band5GHz: return 5.0
+        case .bandUnknown: return nil
+        @unknown default: return nil
+        }
+        #else
+        return nil
+        #endif
+    }
+
     #if canImport(CoreTelephony) && os(iOS)
     private func mapTechnology(_ raw: String) -> String? {
         switch raw {
