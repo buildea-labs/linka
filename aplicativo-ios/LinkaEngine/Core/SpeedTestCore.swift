@@ -1,6 +1,53 @@
 import Foundation
 import Network
 
+/// Delegate to track download and upload progress continuously
+final class NetworkProgressDelegate: NSObject, URLSessionDataDelegate, URLSessionTaskDelegate, @unchecked Sendable {
+    private let lock = NSLock()
+    private var bytesAccumulated: Int64 = 0
+    private var continuations: [Int: CheckedContinuation<Void, Error>] = [:]
+    
+    func setContinuation(for taskIdentifier: Int, continuation: CheckedContinuation<Void, Error>) {
+        lock.lock()
+        continuations[taskIdentifier] = continuation
+        lock.unlock()
+    }
+    
+    // For download
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        lock.lock()
+        self.bytesAccumulated += Int64(data.count)
+        lock.unlock()
+    }
+    
+    // For upload
+    func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
+        lock.lock()
+        self.bytesAccumulated += bytesSent
+        lock.unlock()
+    }
+    
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        lock.lock()
+        let cont = continuations.removeValue(forKey: task.taskIdentifier)
+        lock.unlock()
+        
+        if let e = error {
+            cont?.resume(throwing: e)
+        } else {
+            cont?.resume(returning: ())
+        }
+    }
+    
+    func getAndResetBytes() -> Int64 {
+        lock.lock()
+        let b = bytesAccumulated
+        self.bytesAccumulated = 0
+        lock.unlock()
+        return b
+    }
+}
+
 public actor SpeedTestCore {
     
     public init() {}
@@ -24,7 +71,7 @@ public actor SpeedTestCore {
                     if monitor.currentPath.usesInterfaceType(.wifi) {
                         state.networkType = "Wi-Fi"
                     } else if monitor.currentPath.usesInterfaceType(.cellular) {
-                        state.networkType = "Rede móvel"
+                        state.networkType = "5G/4G Cellular"
                     } else {
                         state.networkType = "Desconhecido"
                     }
@@ -55,29 +102,41 @@ public actor SpeedTestCore {
                     state.progress = 0.1
                     continuation.yield(state)
                     
-                    // Measure Download
-                    // 25MB payload
-                    let downloadBytes = 25_000_000
-                    let downloadStart = Date()
-                    _ = try await performDownload(bytes: downloadBytes)
-                    let downloadDuration = Date().timeIntervalSince(downloadStart)
-                    
-                    // Mbps = (Bytes * 8 / Duration) / 1,000,000
-                    let downloadSpeed = (Double(downloadBytes) * 8.0 / downloadDuration) / 1_000_000.0
+                    // ----------------------------------------------------
+                    // Measure Download (SignallQ COMPLETE preset)
+                    // 18s duration, 8 streams, 25MB chunk
+                    // ----------------------------------------------------
+                    let downloadSpeed = try await runPhaseTimeBased(
+                        phase: .download,
+                        duration: 18.0,
+                        streams: 8,
+                        bytes: 25_000_000, // 25 MB
+                        state: &state,
+                        continuation: continuation,
+                        testStart: testStart
+                    )
                     
                     state.downloadSpeed = downloadSpeed
                     state.phase = .upload
                     state.progress = 0.5
                     continuation.yield(state)
                     
-                    // Measure Upload
-                    // 10MB payload
-                    let uploadBytes = 10_000_000
-                    let uploadStart = Date()
-                    _ = try await performUpload(bytes: uploadBytes)
-                    let uploadDuration = Date().timeIntervalSince(uploadStart)
+                    // Pausa dramática para o respiro visual e percepção de mudança de fase
+                    try? await Task.sleep(nanoseconds: 500_000_000)
                     
-                    let uploadSpeed = (Double(uploadBytes) * 8.0 / uploadDuration) / 1_000_000.0
+                    // ----------------------------------------------------
+                    // Measure Upload (SignallQ COMPLETE preset)
+                    // 18s duration, 8 streams, 10MB chunk
+                    // ----------------------------------------------------
+                    let uploadSpeed = try await runPhaseTimeBased(
+                        phase: .upload,
+                        duration: 18.0,
+                        streams: 8,
+                        bytes: 10_000_000, // 10 MB
+                        state: &state,
+                        continuation: continuation,
+                        testStart: testStart
+                    )
                     
                     state.uploadSpeed = uploadSpeed
                     state.phase = .result
@@ -93,33 +152,117 @@ public actor SpeedTestCore {
         }
     }
     
-    private func performDownload(bytes: Int) async throws -> Data {
-        guard let url = URL(string: "https://speed.cloudflare.com/__down?bytes=\(bytes)") else {
-            throw URLError(.badURL)
+    private func runPhaseTimeBased(
+        phase: Phase,
+        duration: TimeInterval,
+        streams: Int,
+        bytes: Int,
+        state: inout MeasurementState,
+        continuation: AsyncThrowingStream<MeasurementState, Error>.Continuation,
+        testStart: Date
+    ) async throws -> Double {
+        
+        let delegate = NetworkProgressDelegate()
+        let phaseStart = Date()
+        let sampleInterval = 0.3 // 300ms
+        
+        // Random payload for upload to avoid compression caching at network level
+        let payload = phase == .upload ? generateRandomPayload(size: bytes) : nil
+        
+        // Custom ephemeral session to bypass caching aggressively and not limit max connections
+        let config = URLSessionConfiguration.ephemeral
+        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        config.httpMaximumConnectionsPerHost = streams + 2
+        config.timeoutIntervalForRequest = 5.0
+        let session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
+        
+        let workersTask = Task {
+            await withTaskGroup(of: Void.self) { group in
+                for _ in 0..<streams {
+                    group.addTask {
+                        while Date().timeIntervalSince(phaseStart) < duration && !Task.isCancelled {
+                            do {
+                                if phase == .download {
+                                    guard let url = URL(string: "https://speed.cloudflare.com/__down?bytes=\(bytes)") else { return }
+                                    var request = URLRequest(url: url)
+                                    request.httpMethod = "GET"
+                                    
+                                    try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                                        let task = session.dataTask(with: request)
+                                        delegate.setContinuation(for: task.taskIdentifier, continuation: cont)
+                                        task.resume()
+                                    }
+                                } else {
+                                    guard let url = URL(string: "https://speed.cloudflare.com/__up") else { return }
+                                    var request = URLRequest(url: url)
+                                    request.httpMethod = "POST"
+                                    
+                                    if let p = payload {
+                                        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                                            let task = session.uploadTask(with: request, from: p)
+                                            delegate.setContinuation(for: task.taskIdentifier, continuation: cont)
+                                            task.resume()
+                                        }
+                                    }
+                                }
+                            } catch {
+                                // Ignore intermittent network errors, just retry until duration ends
+                            }
+                        }
+                    }
+                }
+            }
         }
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        var mbpsSamples: [Double] = []
+        var smoothedMbps: Double = 0.0
         
-        let (data, _) = try await URLSession.shared.data(for: request)
-        return data
+        while Date().timeIntervalSince(phaseStart) < duration {
+            try? await Task.sleep(nanoseconds: UInt64(sampleInterval * 1_000_000_000))
+            if Task.isCancelled { break }
+            
+            let tickBytes = delegate.getAndResetBytes()
+            let instantMbps = (Double(tickBytes) * 8.0) / sampleInterval / 1_000_000.0
+            
+            if instantMbps > 0 {
+                smoothedMbps = smoothedMbps == 0 ? instantMbps : 0.3 * instantMbps + 0.7 * smoothedMbps
+                mbpsSamples.append(instantMbps)
+                
+                if phase == .download {
+                    state.downloadSpeed = smoothedMbps
+                } else {
+                    state.uploadSpeed = smoothedMbps
+                }
+            }
+            
+            // Progress interpolation
+            let elapsed = Date().timeIntervalSince(phaseStart)
+            let phaseProgress = min(elapsed / duration, 1.0)
+            let baseProgress = phase == .download ? 0.1 : 0.5
+            let totalPhaseRange = phase == .download ? 0.4 : 0.5
+            state.progress = baseProgress + (phaseProgress * totalPhaseRange)
+            
+            continuation.yield(state)
+        }
+        
+        workersTask.cancel()
+        _ = await workersTask.result
+        session.invalidateAndCancel()
+        
+        // Calculate stable speed (SignallQ stable window: last 65% of valid samples)
+        let valid = mbpsSamples.filter { $0 > 0 }
+        let stableStart = Int(ceil(Double(valid.count) * 0.35))
+        let stable = valid.count > stableStart ? Array(valid[stableStart...]) : valid
+        
+        let finalMbps = stable.isEmpty ? 0.0 : stable.reduce(0, +) / Double(stable.count)
+        return finalMbps
     }
     
-    private func performUpload(bytes: Int) async throws -> Data {
-        guard let url = URL(string: "https://speed.cloudflare.com/__up") else {
-            throw URLError(.badURL)
+    private func generateRandomPayload(size: Int) -> Data {
+        var data = Data(count: size)
+        data.withUnsafeMutableBytes { buffer in
+            arc4random_buf(buffer.baseAddress, size)
         }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        
-        // Generate random data for upload payload
-        let payload = Data(count: bytes)
-        request.httpBody = payload
-        
-        let (data, _) = try await URLSession.shared.data(for: request)
         return data
     }
     
@@ -131,7 +274,6 @@ public actor SpeedTestCore {
         for _ in 0..<totalPings {
             let start = Date()
             do {
-                // Using HEAD request to simulate ping with minimal payload
                 guard let url = URL(string: "https://speed.cloudflare.com/__down?bytes=0") else { continue }
                 var request = URLRequest(url: url)
                 request.httpMethod = "HEAD"
@@ -147,19 +289,17 @@ public actor SpeedTestCore {
             } catch {
                 failures += 1
             }
-            // Small delay between pings
             try? await Task.sleep(nanoseconds: 50_000_000)
         }
         
         let lossPercent = (Double(failures) / Double(totalPings)) * 100.0
         
         guard !latencies.isEmpty else {
-            return (0.0, 0.0, lossPercent) // 100% loss
+            return (0.0, 0.0, lossPercent)
         }
         
         let avgLatency = latencies.reduce(0, +) / Double(latencies.count)
         
-        // Calculate Jitter (average of differences between consecutive pings)
         var jitterSum = 0.0
         if latencies.count > 1 {
             for i in 1..<latencies.count {
