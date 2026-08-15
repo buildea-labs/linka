@@ -10,7 +10,8 @@ struct SettingsSheet: View {
     
     var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        return version
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(version) (build \(build))"
     }
     
     var colorScheme: ColorScheme? {
