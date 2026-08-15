@@ -74,6 +74,12 @@ private actor FakeMeasurementRemoteStore: MeasurementRemoteStore {
     private let server: FakeCloudKitServer
     private var isAccountAvailable: Bool
     private let uploadDelayNanoseconds: UInt64
+    /// Simula um erro transitório do CloudKit especificamente em
+    /// `deleteRemote` mesmo com conta disponível — usado para testar que
+    /// `applyRemote` não ressuscita uma medição já apagada localmente
+    /// quando o push da exclusão falha mas o pull ainda encontra o record
+    /// remoto (PR #93 R2, achado 1).
+    private var shouldFailDelete: Bool = false
 
     init(
         server: FakeCloudKitServer,
@@ -87,6 +93,10 @@ private actor FakeMeasurementRemoteStore: MeasurementRemoteStore {
 
     func setAccountAvailable(_ value: Bool) {
         isAccountAvailable = value
+    }
+
+    func setShouldFailDelete(_ value: Bool) {
+        shouldFailDelete = value
     }
 
     func accountStatus() async -> CKAccountStatus {
@@ -103,6 +113,10 @@ private actor FakeMeasurementRemoteStore: MeasurementRemoteStore {
     }
 
     func deleteRemote(recordIDs: [CKRecord.ID]) async throws {
+        if shouldFailDelete {
+            struct SimulatedTransientCloudKitError: Error {}
+            throw SimulatedTransientCloudKitError()
+        }
         await server.delete(recordIDs)
     }
 
@@ -205,6 +219,108 @@ final class CloudKitMeasurementSyncTests: XCTestCase {
 
         let uploadedAfterReconnecting = await server.record(for: recordID)
         XCTAssertNotNil(uploadedAfterReconnecting)
+    }
+
+    // MARK: Exclusão pendente ("tombstones", PR #93 R2, achado 1)
+
+    func testDeleteOfflineIsPendingAndPropagatesOnNextSyncNowWhenBackOnline() async throws {
+        let server = FakeCloudKitServer()
+        let local = InMemoryMeasurementHistoryRepository()
+        let remote = FakeMeasurementRemoteStore(server: server)
+        let tombstoneStore = InMemoryTombstoneStore()
+        let sut = SyncingMeasurementHistoryRepository(
+            local: local,
+            remote: remote,
+            tokenStore: InMemoryChangeTokenStore(),
+            tombstoneStore: tombstoneStore
+        )
+        await sut.waitForBackgroundSync()
+
+        let measurement = Self.makeMeasurement()
+        try await sut.save(measurement)
+        await sut.waitForBackgroundSync()
+
+        let recordID = MeasurementRecordMapper.recordID(for: measurement.id)
+        let uploadedBeforeDelete = await server.record(for: recordID)
+        XCTAssertNotNil(uploadedBeforeDelete)
+
+        // Fica offline e apaga localmente.
+        await remote.setAccountAvailable(false)
+        try await sut.delete(id: measurement.id)
+        await sut.waitForBackgroundSync()
+
+        // Apagou local mesmo sem conta iCloud disponível — requisito de
+        // aceite preservado.
+        let storedLocally = try await local.measurement(id: measurement.id)
+        XCTAssertNil(storedLocally)
+
+        // Não conseguiu propagar (offline): sem a fila de pendências, isto
+        // ficaria perdido para sempre. O record remoto continua existindo
+        // e a exclusão fica registrada como pendente.
+        let stillOnServerWhileOffline = await server.record(for: recordID)
+        XCTAssertNotNil(stillOnServerWhileOffline)
+        let pendingWhileOffline = await tombstoneStore.loadPendingDeletes()
+        XCTAssertEqual(pendingWhileOffline, [measurement.id])
+
+        // Volta a ficar online: `syncNow` reprocessa a fila de pendências
+        // antes de qualquer pull/push.
+        await remote.setAccountAvailable(true)
+        await sut.syncNow()
+
+        let onServerAfterSync = await server.record(for: recordID)
+        XCTAssertNil(onServerAfterSync)
+        let pendingAfterSync = await tombstoneStore.loadPendingDeletes()
+        XCTAssertTrue(pendingAfterSync.isEmpty)
+    }
+
+    func testPendingDeleteIsNotResurrectedWhenPullFindsTheRemoteRecordAgain() async throws {
+        let server = FakeCloudKitServer()
+        let local = InMemoryMeasurementHistoryRepository()
+        let remote = FakeMeasurementRemoteStore(server: server)
+        let tombstoneStore = InMemoryTombstoneStore()
+        let sut = SyncingMeasurementHistoryRepository(
+            local: local,
+            remote: remote,
+            tokenStore: InMemoryChangeTokenStore(),
+            tombstoneStore: tombstoneStore
+        )
+        await sut.waitForBackgroundSync()
+
+        let measurement = Self.makeMeasurement()
+        try await sut.save(measurement)
+        await sut.waitForBackgroundSync()
+
+        // Apaga localmente, mas o push da exclusão falha mesmo com conta
+        // disponível (simula erro transitório do CloudKit) — o record
+        // continua existindo no servidor.
+        await remote.setShouldFailDelete(true)
+        try await sut.delete(id: measurement.id)
+        await sut.waitForBackgroundSync()
+
+        let recordID = MeasurementRecordMapper.recordID(for: measurement.id)
+        let stillOnServerAfterFailedDelete = await server.record(for: recordID)
+        XCTAssertNotNil(stillOnServerAfterFailedDelete) // delete não propagou
+
+        // `syncNow` reprocessa a fila: o push da exclusão falha de novo
+        // (mesmo erro simulado), então o pull que roda em seguida encontra
+        // o record remoto de novo. Sem a defesa em `applyRemote`, isso
+        // ressuscitaria localmente uma medição que o usuário já apagou.
+        await sut.syncNow()
+
+        let afterFailedRetry = try await local.measurement(id: measurement.id)
+        XCTAssertNil(afterFailedRetry)
+        let stillPending = await tombstoneStore.loadPendingDeletes()
+        XCTAssertEqual(stillPending, [measurement.id])
+
+        // O CloudKit volta a responder normalmente: a próxima sync limpa
+        // tudo (remoto e fila de pendências).
+        await remote.setShouldFailDelete(false)
+        await sut.syncNow()
+
+        let onServerAfterRecovery = await server.record(for: recordID)
+        XCTAssertNil(onServerAfterRecovery)
+        let pendingAfterRecovery = await tombstoneStore.loadPendingDeletes()
+        XCTAssertTrue(pendingAfterRecovery.isEmpty)
     }
 
     // MARK: Conflito

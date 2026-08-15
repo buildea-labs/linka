@@ -21,10 +21,13 @@ import MeasurementHistory
 /// - **Idempotência.** `id: UUID` vira `CKRecord.recordID.recordName`
 ///   (`MeasurementRecordMapper`), então reenviar a mesma medição faz upsert
 ///   pelo mesmo recordID — nunca duplica.
-/// - **Exclusão é propagada nas duas direções.** Apagar localmente
-///   enfileira a exclusão do `CKRecord` correspondente; um `CKRecord`
-///   reportado como apagado por outro dispositivo (via
-///   `fetchChanges`/`deletions`) apaga a medição local correspondente.
+/// - **Exclusão é propagada nas duas direções e nunca se perde.** Apagar
+///   localmente enfileira a exclusão do `CKRecord` correspondente numa fila
+///   persistida (`MeasurementSyncTombstoneStore`, PR #93 R2) que sobrevive a
+///   estar offline/sem conta iCloud no instante do `delete()` — `syncNow`
+///   reprocessa a fila antes de qualquer pull/push. Um `CKRecord` reportado
+///   como apagado por outro dispositivo (via `fetchChanges`/`deletions`)
+///   apaga a medição local correspondente.
 /// - **Conflito é resolvido de forma determinística** por
 ///   `MeasurementConflictResolver`, nunca descartando dados silenciosamente.
 /// - **Não reimplementa checagem de plano.** `isSyncPermitted` é injetado
@@ -36,6 +39,9 @@ public actor SyncingMeasurementHistoryRepository: MeasurementHistoryRepository {
     private let local: any MeasurementHistoryRepository
     private let remote: any MeasurementRemoteStore
     private let tokenStore: any MeasurementSyncChangeTokenStore
+    /// Fila de exclusões pendentes (PR #93 R2, achado 1) — ver
+    /// `MeasurementSyncTombstoneStore` para a justificativa completa.
+    private let tombstoneStore: any MeasurementSyncTombstoneStore
     private let isSyncPermitted: @Sendable () async -> Bool
 
     private var zoneEnsured = false
@@ -57,11 +63,13 @@ public actor SyncingMeasurementHistoryRepository: MeasurementHistoryRepository {
         local: any MeasurementHistoryRepository,
         remote: any MeasurementRemoteStore,
         tokenStore: any MeasurementSyncChangeTokenStore = UserDefaultsChangeTokenStore(),
+        tombstoneStore: any MeasurementSyncTombstoneStore = UserDefaultsTombstoneStore(),
         isSyncPermitted: @escaping @Sendable () async -> Bool = { true }
     ) {
         self.local = local
         self.remote = remote
         self.tokenStore = tokenStore
+        self.tombstoneStore = tombstoneStore
         self.isSyncPermitted = isSyncPermitted
 
         // Atribuição direta (não via `kickOffBackgroundSync`) de propósito:
@@ -107,6 +115,13 @@ public actor SyncingMeasurementHistoryRepository: MeasurementHistoryRepository {
         try await local.delete(id: id)
         localTouchDates[id] = nil
 
+        // Registrado antes do push (best-effort, em `Task` separada) para
+        // que uma exclusão offline nunca se perca — ver
+        // `MeasurementSyncTombstoneStore` (PR #93 R2, achado 1). Isto é uma
+        // gravação local (`UserDefaults`), não uma chamada de rede: aguardar
+        // aqui não fere "delete nunca depende de rede/iCloud".
+        await tombstoneStore.addPendingDeletes([id])
+
         kickOffBackgroundSync { await $0.pushRemoteDelete(ids: [id]) }
     }
 
@@ -120,6 +135,8 @@ public actor SyncingMeasurementHistoryRepository: MeasurementHistoryRepository {
         try await local.deleteAll()
         localTouchDates.removeAll()
 
+        await tombstoneStore.addPendingDeletes(existingIDs)
+
         kickOffBackgroundSync { await $0.pushRemoteDelete(ids: existingIDs) }
     }
 
@@ -130,15 +147,21 @@ public actor SyncingMeasurementHistoryRepository: MeasurementHistoryRepository {
     /// disparado automaticamente (fire-and-forget) no `init`. Faz, nesta
     /// ordem:
     ///
-    /// 1. **Pull** — busca mudanças remotas desde o último `changeToken`
+    /// 1. **Pending deletes** — reprocessa, *antes* de qualquer pull, a
+    ///    fila de exclusões que ainda não foram confirmadas no CloudKit
+    ///    (`MeasurementSyncTombstoneStore`, PR #93 R2, achado 1). Isso cobre
+    ///    o caso de `delete()` ter acontecido offline/sem conta iCloud: sem
+    ///    essa reconciliação, o record remoto continuaria existindo para
+    ///    sempre e um pull futuro poderia "ressuscitar" localmente algo que
+    ///    o usuário já apagou.
+    /// 2. **Pull** — busca mudanças remotas desde o último `changeToken`
     ///    (novas medições de outros dispositivos, exclusões remotas,
     ///    conflitos resolvidos por `MeasurementConflictResolver`).
-    /// 2. **Push de reconciliação** — reenvia todas as medições locais
+    /// 3. **Push de reconciliação** — reenvia todas as medições locais
     ///    atuais para o CloudKit. Isso é o que garante que uma medição
     ///    salva enquanto offline (ou com o push imediato de `save`
     ///    falhando por qualquer motivo) acabe sincronizada assim que o
-    ///    iCloud voltar a ficar disponível — sem depender de manter uma
-    ///    fila de pendências separada. O upload é idempotente por
+    ///    iCloud voltar a ficar disponível. O upload é idempotente por
     ///    `recordID` (issue #71): reenviar o que já está sincronizado não
     ///    duplica nada no servidor, só reconfirma o estado.
     ///
@@ -151,11 +174,23 @@ public actor SyncingMeasurementHistoryRepository: MeasurementHistoryRepository {
 
         do {
             try await ensureZone()
+            await processPendingTombstones()
             try await pullChanges()
             try await pushAllLocalMeasurements()
         } catch {
             // Best-effort — ver documentação do tipo.
         }
+    }
+
+    /// Reenvia ao CloudKit qualquer exclusão que ficou pendente (offline ou
+    /// sem conta iCloud disponível no momento do `delete()` original).
+    /// Reaproveita `pushRemoteDelete`, que já remove da fila em caso de
+    /// sucesso — se falhar de novo, o registro continua pendente para a
+    /// próxima chamada de `syncNow`.
+    private func processPendingTombstones() async {
+        let pending = await tombstoneStore.loadPendingDeletes()
+        guard !pending.isEmpty else { return }
+        await pushRemoteDelete(ids: pending)
     }
 
     private func pullChanges() async throws {
@@ -184,6 +219,16 @@ public actor SyncingMeasurementHistoryRepository: MeasurementHistoryRepository {
 
     private func applyRemote(_ remoteMeasurement: NetworkMeasurement, modifiedAt: Date?) async {
         guard let existingLocal = try? await local.measurement(id: remoteMeasurement.id) else {
+            // Defesa extra além de `processPendingTombstones` (que já roda
+            // antes do pull dentro de `syncNow`): se por algum motivo o
+            // push da exclusão pendente falhou mas chegamos até aqui mesmo
+            // assim, não ressuscita localmente algo que o usuário já
+            // apagou (PR #93 R2, achado 1) — o tombstone continua
+            // pendente para a próxima `syncNow` cobrir a exclusão remota.
+            guard await !tombstoneStore.loadPendingDeletes().contains(remoteMeasurement.id) else {
+                return
+            }
+
             // Primeiro sync desta medição neste dispositivo: grava direto,
             // sem reenfileirar push (já veio do servidor).
             try? await local.save(remoteMeasurement)
@@ -224,8 +269,14 @@ public actor SyncingMeasurementHistoryRepository: MeasurementHistoryRepository {
             try await ensureZone()
             let recordIDs = ids.map { MeasurementRecordMapper.recordID(for: $0) }
             try await remote.deleteRemote(recordIDs: recordIDs)
+            // Só sai da fila de pendências depois de confirmado no
+            // CloudKit (PR #93 R2, achado 1) — se `deleteRemote` lançar,
+            // os ids continuam pendentes para a próxima `syncNow`.
+            await tombstoneStore.removePendingDeletes(ids)
         } catch {
-            // Best-effort — mesma justificativa de pushRemote.
+            // Best-effort — mesma justificativa de pushRemote. Os ids
+            // seguem na fila de pendências; a próxima `syncNow` tenta de
+            // novo.
         }
     }
 

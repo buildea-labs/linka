@@ -410,3 +410,81 @@ public actor InMemoryChangeTokenStore: MeasurementSyncChangeTokenStore {
         self.token = token
     }
 }
+
+// MARK: - Fila de exclusões pendentes ("tombstones")
+
+/// Fila persistida de exclusões locais ainda não confirmadas no CloudKit
+/// (PR #93, R2 — achado 1 do Marcelo). `delete`/`deleteAll` gravam aqui logo
+/// depois de apagar localmente, antes de tentar o push remoto: se o
+/// dispositivo estiver offline ou sem conta iCloud disponível *naquele
+/// instante*, a exclusão não se perde silenciosamente — fica registrada até
+/// `syncNow` (chamado de novo mais tarde, ex. app voltando a ficar ativo)
+/// conseguir propagá-la ao CloudKit.
+///
+/// Sem isso, `pushRemoteDelete` falhava calado quando offline e nada
+/// reenfileirava a exclusão depois: `pushAllLocalMeasurements` só reenvia o
+/// que ainda existe localmente, então uma medição já apagada localmente
+/// nunca era reenviada como exclusão — o registro remoto sobrevivia para
+/// sempre e podia "ressuscitar" localmente no próximo pull.
+public protocol MeasurementSyncTombstoneStore: Sendable {
+    func loadPendingDeletes() async -> [UUID]
+    func addPendingDeletes(_ ids: [UUID]) async
+    func removePendingDeletes(_ ids: [UUID]) async
+}
+
+public actor UserDefaultsTombstoneStore: MeasurementSyncTombstoneStore {
+    private let defaults: UserDefaults
+    private let key: String
+
+    public init(
+        defaults: UserDefaults = .standard,
+        key: String = "com.linka.measurementHistorySync.pendingDeletes"
+    ) {
+        self.defaults = defaults
+        self.key = key
+    }
+
+    public func loadPendingDeletes() async -> [UUID] {
+        (defaults.array(forKey: key) as? [String] ?? []).compactMap(UUID.init(uuidString:))
+    }
+
+    public func addPendingDeletes(_ ids: [UUID]) async {
+        guard !ids.isEmpty else { return }
+        var current = Set(await loadPendingDeletes())
+        current.formUnion(ids)
+        persist(current)
+    }
+
+    public func removePendingDeletes(_ ids: [UUID]) async {
+        guard !ids.isEmpty else { return }
+        var current = Set(await loadPendingDeletes())
+        current.subtract(ids)
+        persist(current)
+    }
+
+    private func persist(_ ids: Set<UUID>) {
+        defaults.set(ids.map(\.uuidString), forKey: key)
+    }
+}
+
+/// Usado em teste e como estado efêmero quando persistência em disco não é
+/// necessária.
+public actor InMemoryTombstoneStore: MeasurementSyncTombstoneStore {
+    private var ids: Set<UUID>
+
+    public init(initialIDs: Set<UUID> = []) {
+        self.ids = initialIDs
+    }
+
+    public func loadPendingDeletes() async -> [UUID] {
+        Array(ids)
+    }
+
+    public func addPendingDeletes(_ newIDs: [UUID]) async {
+        ids.formUnion(newIDs)
+    }
+
+    public func removePendingDeletes(_ removedIDs: [UUID]) async {
+        ids.subtract(removedIDs)
+    }
+}

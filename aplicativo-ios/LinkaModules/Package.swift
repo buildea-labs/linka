@@ -38,7 +38,10 @@ let package = Package(
         ),
         .testTarget(
             name: "LinkaModulesTests",
-            dependencies: ["LinkaModules"],
+            dependencies: [
+                "LinkaModules",
+                .product(name: "MeasurementHistoryCloudKit", package: "MeasurementHistoryCloudKit")
+            ],
             path: "Tests"
         )
     ]

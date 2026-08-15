@@ -1,8 +1,26 @@
 import XCTest
+import CloudKit
 @testable import LinkaModules
 import LinkaEntitlements
+import MeasurementHistoryCloudKit
 import NetworkAssist
 import NetworkInsights
+
+/// Dublê de `MeasurementRemoteStore` que nunca toca `CKContainer` — usado
+/// só para testar `LinkaMeasurementHistory.makeRepository` (PR #93 R2,
+/// achado 2) sem derrubar o processo de `swift test`: instanciar
+/// `CKContainer` fora de um binário assinado com o entitlement de iCloud
+/// crasha o processo, inclusive em CI (`.github/workflows/swift-modules-ci.yml`
+/// roda `swift test` puro para este pacote).
+private actor NeverCallsCloudKitRemoteStore: MeasurementRemoteStore {
+    func accountStatus() async -> CKAccountStatus { .noAccount }
+    func ensureZoneExists() async throws {}
+    func upload(_ records: [CKRecord]) async throws {}
+    func deleteRemote(recordIDs: [CKRecord.ID]) async throws {}
+    func fetchChanges(since token: Data?) async throws -> MeasurementRemoteChangeSet {
+        MeasurementRemoteChangeSet(changedRecords: [], deletedRecordIDs: [], newChangeToken: nil)
+    }
+}
 
 final class LinkaModulesTests: XCTestCase {
     func testFreeTierOnlyIncludesSpeedTest() {
@@ -19,6 +37,59 @@ final class LinkaModulesTests: XCTestCase {
             LinkaAccessPolicy.capabilities(for: .plus),
             Set(LinkaCapability.allCases)
         )
+    }
+
+    // MARK: - LinkaMeasurementHistory.makeRepository (PR #93 R2, achado 2)
+
+    func testMakeRepositoryReturnsSameInstanceAcrossRepeatedCalls() async throws {
+        // Antes desta correção, cada chamada criava um
+        // `SyncingHistoryRepository` novo — e o `init` desse tipo dispara
+        // `syncNow()` sozinho — então chamar `makeRepository` várias vezes
+        // (como `SpeedTestViewModel.loadLastTest()`/`startTest()` faziam a
+        // cada instância) disparava um `syncNow()` redundante por chamada.
+        // Mesma instância para o mesmo `fileURL` == `init` roda uma vez só.
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("linka-history-singleton-test-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+
+        let entitlements = StaticLinkaEntitlementProvider(
+            snapshot: .plus(status: .active, source: .subscription)
+        )
+        let remote = NeverCallsCloudKitRemoteStore()
+
+        let first = LinkaMeasurementHistory.makeRepository(fileURL: tempURL, entitlements: entitlements, remote: remote)
+        let second = LinkaMeasurementHistory.makeRepository(fileURL: tempURL, entitlements: entitlements, remote: remote)
+        let third = LinkaMeasurementHistory.makeRepository(fileURL: tempURL, entitlements: entitlements, remote: remote)
+
+        // Mesma instância nas três chamadas: o `init` de
+        // `SyncingMeasurementHistoryRepository` (que dispara `syncNow()`
+        // sozinho) roda uma única vez, não uma por chamada de
+        // `makeRepository` — era exatamente isto que faltava antes da
+        // correção (`SpeedTestViewModel.loadLastTest()`/`startTest()`
+        // chamavam o factory a cada instância).
+        XCTAssertTrue(first === second)
+        XCTAssertTrue(first === third)
+    }
+
+    func testMakeRepositoryReturnsDifferentInstancesForDifferentFileURLs() async throws {
+        let tempURLA = FileManager.default.temporaryDirectory
+            .appendingPathComponent("linka-history-singleton-test-a-\(UUID().uuidString).json")
+        let tempURLB = FileManager.default.temporaryDirectory
+            .appendingPathComponent("linka-history-singleton-test-b-\(UUID().uuidString).json")
+        defer {
+            try? FileManager.default.removeItem(at: tempURLA)
+            try? FileManager.default.removeItem(at: tempURLB)
+        }
+
+        let entitlements = StaticLinkaEntitlementProvider(
+            snapshot: .plus(status: .active, source: .subscription)
+        )
+        let remote = NeverCallsCloudKitRemoteStore()
+
+        let repoA = LinkaMeasurementHistory.makeRepository(fileURL: tempURLA, entitlements: entitlements, remote: remote)
+        let repoB = LinkaMeasurementHistory.makeRepository(fileURL: tempURLB, entitlements: entitlements, remote: remote)
+
+        XCTAssertFalse(repoA === repoB)
     }
 
     func testHistoryCompatibilityUsesStandaloneRepository() async throws {
