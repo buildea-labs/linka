@@ -163,7 +163,7 @@ struct HistoryRow: View {
                         HStack(spacing: 4) {
                             Image(systemName: measurement.connectionKind == .wifi ? "wifi" : "cellularbars")
                                 .font(.system(size: 10))
-                            Text(measurement.connectionKind?.rawValue.uppercased() ?? "WIFI")
+                            Text(connectionLabel(for: measurement.connectionKind))
                                 .font(.monoCaption)
                         }
                         .foregroundColor(.textSecondary)
@@ -237,6 +237,15 @@ struct HistoryRow: View {
     private func formatPing(_ ping: Double?) -> String {
         guard let ping = ping else { return "--" }
         return String(format: "%.0f ms", ping)
+    }
+
+    private func connectionLabel(for kind: NetworkConnectionKind?) -> String {
+        switch kind {
+        case .wifi: return "WI-FI"
+        case .cellular: return "REDE MÓVEL"
+        case .ethernet: return "ETHERNET"
+        case .other, .none: return "OUTRA"
+        }
     }
 }
 
