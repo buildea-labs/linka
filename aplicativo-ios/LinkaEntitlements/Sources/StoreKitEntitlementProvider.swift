@@ -58,11 +58,25 @@ public enum LinkaStoreError: Error, Equatable, Sendable {
 public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitlementProviding, @unchecked Sendable {
     @Published public private(set) var snapshot: LinkaEntitlementSnapshot = .free
 
+    /// `Product` real do StoreKit para `productID`, publicado para a UI
+    /// (`PurchaseSheet`) ler preço/moeda reais (`product.displayPrice`) em
+    /// vez de string hardcoded. `nil` até a primeira carga resolver ou se
+    /// ela falhar (ex.: sem `.storekit` Configuration file em dev — issue
+    /// #60 — ou sem rede). A UI trata esse `nil` como estado de
+    /// loading/erro, nunca como fallback para um preço inventado.
+    @Published public private(set) var product: Product?
+
+    /// `true` enquanto a primeira carga (ou uma retentativa manual) de
+    /// `product` está em andamento. Permite a `PurchaseSheet` distinguir
+    /// "carregando" de "falhou e não há produto".
+    @Published public private(set) var isLoadingProduct = false
+
     private let productID: String
     private let validityInterval: TimeInterval
     private let defaults: UserDefaults
     private let purchaseDateKey = "com.linka.plus.lastKnownPurchaseDate"
     private var updatesTask: Task<Void, Never>?
+    private var productTask: Task<Void, Never>?
 
     public init(
         productID: String = LinkaStoreProductID.plusAnnual,
@@ -81,10 +95,15 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
         updatesTask = Task { [weak self] in
             await self?.observeTransactionUpdates()
         }
+
+        productTask = Task { [weak self] in
+            await self?.loadProduct()
+        }
     }
 
     deinit {
         updatesTask?.cancel()
+        productTask?.cancel()
     }
 
     // MARK: - LinkaEntitlementProviding
@@ -110,6 +129,28 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
 
         let result = try await product.purchase()
         return try await handle(result)
+    }
+
+    /// Carrega (ou recarrega) o `Product` real de `productID` junto à App
+    /// Store e publica o resultado em `product` para a UI ler preço e
+    /// metadata reais. `nil` em caso de falha (produto não encontrado,
+    /// sem `.storekit` Configuration file em dev, sem rede) — não há
+    /// fallback local de preço: a UI deve tratar `product == nil` como
+    /// estado de loading/erro, nunca inventar um valor.
+    ///
+    /// Chamado automaticamente no `init`; exposto (não `private`) para
+    /// permitir retry manual pela `PurchaseSheet` quando a primeira carga
+    /// falhar (ex.: sheet aberta sem rede no momento do init).
+    public func loadProduct() async {
+        isLoadingProduct = true
+        defer { isLoadingProduct = false }
+
+        do {
+            let products = try await Product.products(for: [productID])
+            product = products.first
+        } catch {
+            product = nil
+        }
     }
 
     /// Restaura compras anteriores consultando o estado real da App Store
