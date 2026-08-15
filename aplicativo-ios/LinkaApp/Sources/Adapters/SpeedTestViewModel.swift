@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import Network
+import SwiftUI
 import LinkaEngine
 import MeasurementHistory
 import NetworkCore
@@ -100,7 +101,12 @@ public class SpeedTestViewModel: ObservableObject {
     /// `skipOrCancel()` pra restaurar a tela de resultado integralmente
     /// (todos os campos, não só a velocidade de download) sem round-trip ao
     /// histórico em disco.
-    private struct ResultSnapshot {
+    /// Acesso `internal` (não `private`) de propósito (issue #65): permite
+    /// que `@testable import LinkaApp` semeie um snapshot em teste sem
+    /// depender de uma medição de rede real completa — não é API pública do
+    /// módulo, só visível dentro do target do app e de quem importa com
+    /// `@testable`.
+    struct ResultSnapshot {
         let downloadSpeed: Double
         let uploadSpeed: Double
         let ping: Int
@@ -113,7 +119,9 @@ public class SpeedTestViewModel: ObservableObject {
         let wifiBandGHz: Double?
     }
 
-    private var lastValidResultSnapshot: ResultSnapshot?
+    /// Mesmo racional de acesso `internal` de `ResultSnapshot` acima
+    /// (issue #65) — testável via `@testable import` sem expor API pública.
+    var lastValidResultSnapshot: ResultSnapshot?
 
     /// Verdadeiro quando existe, nesta sessão, um resultado válido pra
     /// restaurar (issue #47). A UI usa isto só pra escolher o texto do
@@ -298,23 +306,114 @@ public class SpeedTestViewModel: ObservableObject {
         isTesting = false
 
         if let snapshot = lastValidResultSnapshot {
-            downloadSpeed = snapshot.downloadSpeed
-            uploadSpeed = snapshot.uploadSpeed
-            ping = snapshot.ping
-            jitter = snapshot.jitter
-            provider = snapshot.provider
-            networkType = snapshot.networkType
-            testDuration = snapshot.testDuration
-            packetLossPercent = snapshot.packetLossPercent
-            connectionKind = snapshot.connectionKind
-            wifiBandGHz = snapshot.wifiBandGHz
-            progress = 1.0
-            uiPhase = .done
+            restoreLastValidSnapshot(snapshot)
         } else {
             startTest()
         }
     }
-    
+
+    /// Reage à mudança de `ScenePhase` da cena (issue #65) — único ponto de
+    /// decisão de ciclo de vida do teste; `MainView` só repassa o valor via
+    /// `.onChange(of: scenePhase)`, sem lógica própria aqui.
+    ///
+    /// Reage só à transição para `.background`, nunca a `.inactive`:
+    /// `.inactive` também dispara em blips transitórios que não devem
+    /// cancelar nada (sheet de compartilhamento, prompt de permissão,
+    /// interstitial de anúncio, Control Center) — reagir a `.inactive`
+    /// cancelaria testes por engano nesses casos.
+    ///
+    /// Decisão de produto (issue #65): PAUSAR não é opção real aqui.
+    /// `SpeedTestCore.runTest()` usa `URLSessionConfiguration.ephemeral`,
+    /// sem `URLSessionConfiguration.background`, `BGTaskScheduler` ou
+    /// `UIBackgroundModes` (Info.plist protegido, ver AGENTS.md) —
+    /// iOS/iPadOS suspendem essas conexões assim que o processo entra em
+    /// background, então não há como retomar de forma confiável um
+    /// download/upload em andamento. A única reação correta é cancelar de
+    /// forma limpa, nunca prometer conclusão silenciosa em segundo plano.
+    ///
+    /// No Mac, `ScenePhase.background` pode nunca disparar em uso normal de
+    /// janela (perder foco, ocultar com Cmd+H, minimizar não necessariamente
+    /// suspendem o processo como no iOS) — comportamento observado
+    /// documentado no PR desta issue, não afirmado como testado ao vivo.
+    public func handleScenePhaseChange(_ phase: ScenePhase) {
+        switch phase {
+        case .background:
+            // Só age em cima de uma medição em andamento — `.done`/`.error`
+            // já são estados terminais e não têm nada pra cancelar; agir
+            // ali arriscaria sobrescrever um resultado que já passou por
+            // `phase == .result` no motor (requisito de aceite #2).
+            guard uiPhase == .connecting || uiPhase == .downloading || uiPhase == .uploading else {
+                return
+            }
+
+            // Mecanismo de cancelamento já existe e já funciona
+            // (`SpeedTestCore.runTest()` propaga cancelamento via
+            // `continuation.onTermination`, libera `session
+            // .invalidateAndCancel()` e cancela `workersTask`/
+            // `latencySamplingTask`) — este handler só aciona o gatilho que
+            // faltava, não reimplementa nada do motor (AGENTS.md §8).
+            testTask?.cancel()
+            testTask = nil
+            failureReason = nil
+            isTesting = false
+
+            // Não incrementa `testGeneration` nem chama `startTest()` aqui
+            // (issue #47, rodada 3 — reintroduziria a mesma classe de
+            // corrida que aquela issue já resolveu). Disparar rede
+            // enquanto o app está indo para background não tem sentido
+            // (seria cancelado de novo no instante seguinte) e contradiz
+            // "nenhuma promessa de conclusão em segundo plano". O reinício,
+            // quando fizer sentido, só acontece na volta a `.active`.
+            if let snapshot = lastValidResultSnapshot {
+                restoreLastValidSnapshot(snapshot)
+            } else {
+                progress = 0.0
+                uiPhase = .idle
+            }
+
+        case .active:
+            // Só reinicia quando `uiPhase` ficou `.idle` pelo branch acima:
+            // depois do primeiro `startTest()` em `MainView.onAppear`, o
+            // app nunca mais fica `.idle` sozinho por nenhum outro caminho,
+            // então este sinal é inequívoco. Resume "ABRIR → MEDIR"
+            // automático (AGENTS.md §6) sem nenhum banner/copy extra de
+            // "medição interrompida" — o próprio reinício já comunica o
+            // estado sem fricção adicional.
+            if uiPhase == .idle {
+                startTest()
+            }
+
+        case .inactive:
+            break
+
+        @unknown default:
+            break
+        }
+    }
+
+    /// Restaura os campos de exibição a partir do último resultado válido
+    /// desta sessão (issue #47, extraído em #65 para ser compartilhado
+    /// entre `skipOrCancel()` e `handleScenePhaseChange()` sem duplicar os
+    /// mesmos ~10 campos nos dois lugares). Não mexe em `isTesting`,
+    /// `failureReason` ou `testTask` — quem chama é responsável por esses
+    /// campos antes/depois, já que os dois fluxos que usam isto (cancelamento
+    /// explícito do usuário vs. backgrounding) tratam esses três campos de
+    /// forma ligeiramente diferente.
+    private func restoreLastValidSnapshot(_ snapshot: ResultSnapshot) {
+        downloadSpeed = snapshot.downloadSpeed
+        uploadSpeed = snapshot.uploadSpeed
+        ping = snapshot.ping
+        jitter = snapshot.jitter
+        provider = snapshot.provider
+        networkType = snapshot.networkType
+        testDuration = snapshot.testDuration
+        packetLossPercent = snapshot.packetLossPercent
+        connectionKind = snapshot.connectionKind
+        wifiBandGHz = snapshot.wifiBandGHz
+        progress = 1.0
+        uiPhase = .done
+    }
+
     private func update(with state: MeasurementState) {
         self.progress = state.progress
         if let p = state.ping { self.ping = Int(p) }

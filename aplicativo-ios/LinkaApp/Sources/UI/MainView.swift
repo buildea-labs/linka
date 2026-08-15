@@ -13,6 +13,13 @@ struct MainView: View {
     @State private var showAssist: Bool = false
     @State private var ringScale: CGFloat = 1.0
     @Namespace private var animation
+    // Sinal de ciclo de vida (issue #65) — `@Environment(\.scenePhase)` é
+    // cross-platform SwiftUI e cobre iPhone, iPad e Mac com o mesmo código,
+    // sem `#if os(iOS)` espalhado (AGENTS.md §2: Mac é destino de primeira
+    // classe, não Catalyst-gambiarra). Toda a decisão do que fazer com a
+    // mudança de fase vive em `viewModel.handleScenePhaseChange(_:)` — esta
+    // view só repassa o valor.
+    @Environment(\.scenePhase) private var scenePhase
 
     private var currentMeasurement: NetworkMeasurement? {
         guard viewModel.uiPhase == .done else { return nil }
@@ -339,6 +346,13 @@ struct MainView: View {
             AssistSheet(currentMeasurement: currentMeasurement, entitlements: entitlements)
         }
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
+        .onChange(of: scenePhase) { newPhase in
+            // Mesmo padrão de `.onChange` de parâmetro único já usado neste
+            // arquivo (issue #65) — mantém compatibilidade com o
+            // deployment target atual, sem migrar para a assinatura de dois
+            // parâmetros do iOS 17.
+            viewModel.handleScenePhaseChange(newPhase)
+        }
         .onChange(of: viewModel.uiPhase) { newPhase in
             switch newPhase {
             case .uploading:
