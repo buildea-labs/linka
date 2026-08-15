@@ -48,6 +48,9 @@ targets:
     platform: iOS
     deploymentTarget:
       iOS: 16.0
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
     sources:
       - path: LinkaApp/Tests
     dependencies:
