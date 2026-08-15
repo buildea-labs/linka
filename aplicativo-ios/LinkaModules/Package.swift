@@ -16,6 +16,7 @@ let package = Package(
     dependencies: [
         .package(path: "../NetworkCore"),
         .package(path: "../MeasurementHistory"),
+        .package(path: "../MeasurementHistoryCloudKit"),
         .package(path: "../NetworkAssist"),
         .package(path: "../NetworkInsights"),
         .package(path: "../NetworkDiagnostics"),
@@ -27,6 +28,7 @@ let package = Package(
             dependencies: [
                 .product(name: "NetworkCore", package: "NetworkCore"),
                 .product(name: "MeasurementHistory", package: "MeasurementHistory"),
+                .product(name: "MeasurementHistoryCloudKit", package: "MeasurementHistoryCloudKit"),
                 .product(name: "NetworkAssist", package: "NetworkAssist"),
                 .product(name: "NetworkInsights", package: "NetworkInsights"),
                 .product(name: "NetworkDiagnostics", package: "NetworkDiagnostics"),
@@ -36,7 +38,10 @@ let package = Package(
         ),
         .testTarget(
             name: "LinkaModulesTests",
-            dependencies: ["LinkaModules"],
+            dependencies: [
+                "LinkaModules",
+                .product(name: "MeasurementHistoryCloudKit", package: "MeasurementHistoryCloudKit")
+            ],
             path: "Tests"
         )
     ]

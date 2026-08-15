@@ -4,6 +4,8 @@ import Network
 import LinkaEngine
 import MeasurementHistory
 import NetworkCore
+import LinkaEntitlements
+import LinkaModules
 
 public enum SpeedTestUIPhase {
     case idle
@@ -75,6 +77,18 @@ public class SpeedTestViewModel: ObservableObject {
     private let engine = SpeedTestCore()
     private var testTask: Task<Void, Never>?
 
+    /// Instância própria (não compartilhada com `MainView`/`SettingsSheet`,
+    /// que recebem a delas via `@EnvironmentObject`) só para decidir se a
+    /// sincronização CloudKit do histórico está liberada (capability
+    /// `.history`, issue #71). `SpeedTestViewModel` não tem acesso direto
+    /// ao `StoreKitEntitlementProvider` do ambiente SwiftUI — não é uma
+    /// `View` — e mudar isso exigiria tocar `MainView.swift`, fora do
+    /// escopo desta issue. O snapshot de entitlement é derivado da mesma
+    /// fonte (StoreKit/`UserDefaults`) então converge para o mesmo estado;
+    /// o custo é uma segunda instância de observador de transações em
+    /// memória, não uma decisão de acesso divergente.
+    private let historySyncEntitlements = StoreKitEntitlementProvider()
+
     /// Geração monotônica da task de teste atual (issue #47, rodada 3 —
     /// achado de Marcelo). `Task<Void, Never>` não é `Equatable`, então não
     /// dá pra comparar identidade de task diretamente; um contador simples
@@ -127,12 +141,10 @@ public class SpeedTestViewModel: ObservableObject {
     public init() {
         loadLastTest()
     }
-    
+
     public func loadLastTest() {
         Task { @MainActor in
-            let repository = FileMeasurementHistoryRepository(
-                fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json")
-            )
+            let repository = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
             if let count = try? await repository.totalCount(), count > 0 {
                 let query = MeasurementQuery(limit: 1, sortOrder: .newestFirst)
                 let results = try? await repository.measurements(matching: query)
@@ -260,7 +272,7 @@ public class SpeedTestViewModel: ObservableObject {
                         wifiBandGHz: self.wifiBandGHz,
                         networkIdentifier: self.provider
                     )
-                    let repo = FileMeasurementHistoryRepository(fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json"))
+                    let repo = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
                     try? await repo.save(m)
                     self.loadLastTest()
                 }

@@ -1,6 +1,6 @@
 import SwiftUI
-import MeasurementHistory
 import LinkaEntitlements
+import LinkaModules
 
 struct SettingsSheet: View {
     @AppStorage("appAppearance") private var appAppearance: String = "system"
@@ -164,9 +164,7 @@ struct SettingsSheet: View {
 
     private func loadTestCount() {
         Task { @MainActor in
-            let repo = FileMeasurementHistoryRepository(
-                fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json")
-            )
+            let repo = LinkaMeasurementHistory.makeRepository(entitlements: entitlements)
             if let count = try? await repo.totalCount() {
                 self.testCount = count
             }
