@@ -1,4 +1,5 @@
 import SwiftUI
+import AudioToolbox
 import MeasurementHistory
 import NetworkCore
 
@@ -8,6 +9,7 @@ struct MainView: View {
     @AppStorage("isPro") private var isPro: Bool = false
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
+    @State private var ringScale: CGFloat = 1.0
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding: Bool = false
     @State private var showSettings: Bool = false
@@ -56,6 +58,7 @@ struct MainView: View {
                                 animation: animation,
                                 matchedId: "downloadValue"
                             )
+                            .scaleEffect(ringScale)
                             
                             Text("LINKA SPEEDTEST")
                                 .font(.monoEyebrow)
@@ -198,7 +201,13 @@ struct MainView: View {
                             .padding(.top, 24)
                             
                             Spacer(minLength: 16)
-                            
+
+                            if !isPro {
+                                BannerView()
+                                    .frame(width: 320, height: 50)
+                                    .padding(.bottom, 8)
+                            }
+
                             // Bottom Action Button
                             Button(action: {
                                 detailsOpen = false
@@ -216,15 +225,9 @@ struct MainView: View {
                             .padding(.bottom, 24)
                         }
                     }
-                    
+
                     if viewModel.uiPhase != .done {
                         Spacer()
-                    }
-                    
-                    if !isPro {
-                        BannerView()
-                            .frame(width: 320, height: 50)
-                            .padding(.bottom, 8)
                     }
                 }
             }
@@ -283,6 +286,27 @@ struct MainView: View {
             AssistSheet(currentMeasurement: currentMeasurement)
         }
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
+        .onChange(of: viewModel.uiPhase) { newPhase in
+            switch newPhase {
+            case .uploading:
+                // Momento de transição download→upload: haptic médio + tick +
+                // pulse rápido do ring pra tornar a mudança de fase perceptível.
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                AudioServicesPlaySystemSound(1104)
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                    ringScale = 1.05
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                        ringScale = 1.0
+                    }
+                }
+            case .downloading, .done:
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            default:
+                break
+            }
+        }
     }
     
     private var ringValue: String {
