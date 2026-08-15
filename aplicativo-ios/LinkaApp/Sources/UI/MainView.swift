@@ -204,7 +204,6 @@ struct MainView: View {
 
                             if !isPro {
                                 BannerView()
-                                    .frame(width: 320, height: 50)
                                     .padding(.bottom, 8)
                             }
 
