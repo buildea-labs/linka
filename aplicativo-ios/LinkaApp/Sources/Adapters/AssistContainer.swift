@@ -5,6 +5,7 @@ import NetworkCore
 import NetworkDiagnostics
 import LinkaEntitlements
 import LinkaModules
+import UIKit
 
 /// Constrói o `NetworkAssistProviding` que a UI usa. Substitui a antiga
 /// resposta algorítmica (if/else PT-BR) por um transport HTTP real que fala
@@ -124,5 +125,33 @@ enum AssistContainer {
                 recentMeasurements: recentMeasurements
             )
         )
+    }
+
+    /// Decide a próxima ação sugerida (issue #58) a partir do resultado da
+    /// investigação local (issue #56) — puro repasse para
+    /// `NetworkAssistActionEngine.suggest(for:)`, mesma forma de
+    /// `investigateFailure`. Retorna `nil` sem nenhuma investigação ou sem
+    /// gatilho objetivo suficiente, preservando divulgação progressiva:
+    /// sem sugestão, `AssistSheet` não mostra nenhum botão de ação.
+    static func suggestedAction(
+        for investigation: NetworkAssistInvestigationResult?
+    ) -> NetworkAssistActionSuggestion? {
+        NetworkAssistActionEngine.suggest(for: investigation)
+    }
+
+    /// Executa `.openAppSettings` — a única sugestão de ação que este
+    /// adapter sabe executar diretamente. Usa
+    /// `UIApplication.openSettingsURLString`, a única forma pública e
+    /// documentada pela Apple de deep-linkar em Ajustes a partir de um app
+    /// iOS/iPadOS/macOS (Catalyst): abre a página do próprio app dentro de
+    /// Ajustes, nunca uma tela interna específica de Wi-Fi ou DNS (não
+    /// existe API pública para isso — ver `NetworkAssistManualGuidanceTopic`
+    /// em `NetworkAssist`). `.retryMeasurement` é deliberadamente ausente
+    /// aqui: quem dispara reteste é o closure do chamador (`AssistSheet`),
+    /// nunca este adapter reimplementando o caminho de início de teste.
+    @MainActor
+    static func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 }
