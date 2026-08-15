@@ -50,11 +50,13 @@ public class SpeedTestViewModel: ObservableObject {
     /// iPhone e sempre que a rede mudou durante o teste.
     @Published public var wifiBandGHz: Double? = nil
 
-    /// Latência sob carga (issue #52) — motor-interna nesta entrega, sem
-    /// superfície própria na UI ainda; só alimenta o `NetworkMeasurement`
-    /// final. Não é `@Published` de propósito: não deve disparar re-render
-    /// nenhum, para não competir com o resultado (AGENTS.md §6).
-    private var loadedLatencyMs: Double? = nil
+    /// Latência sob carga (issue #52). Não é `@Published` de propósito: não
+    /// deve disparar re-render nenhum, para não competir com o resultado
+    /// (AGENTS.md §6). Leitura pública (issue #53) para que `MainView` possa
+    /// ler o valor já calculado no momento em que monta `DetailsDisclosure`
+    /// (teste já concluído, `uiPhase == .done`) — escrita continua só interna
+    /// a esta classe.
+    public private(set) var loadedLatencyMs: Double? = nil
 
     /// Duração bruta do teste em segundos (issue #50), do jeito que o motor
     /// entrega em `MeasurementState.duration` — mesmo padrão de

@@ -260,12 +260,38 @@ struct HistoryRow: View {
                         .background(Color.borderDefault)
                         .padding(.top, 4)
 
-                    HStack {
-                        DetailItem(label: "PING", value: formatPing(measurement.latencyMs))
+                    HStack(alignment: .top) {
+                        DetailItem(
+                            label: "PING",
+                            value: formatPing(measurement.latencyMs),
+                            explanation: measurement.latencyMs != nil ? MetricExplanation.ping : nil
+                        )
                         Spacer()
-                        DetailItem(label: "JITTER", value: formatPing(measurement.jitterMs))
+                        DetailItem(
+                            label: "JITTER",
+                            value: formatPing(measurement.jitterMs),
+                            explanation: measurement.jitterMs != nil ? MetricExplanation.jitter : nil
+                        )
                         Spacer()
-                        DetailItem(label: "PERDA", value: measurement.packetLossPercent != nil ? "\(Int(measurement.packetLossPercent!))%" : "--")
+                        DetailItem(
+                            label: "PERDA",
+                            value: measurement.packetLossPercent != nil ? "\(Int(measurement.packetLossPercent!))%" : "--",
+                            explanation: measurement.packetLossPercent != nil ? MetricExplanation.packetLoss : nil
+                        )
+                    }
+
+                    // Latência sob carga (issue #53) — dado já era salvo desde
+                    // a issue #52, só nunca tinha superfície de leitura no
+                    // Histórico. `nil` some, sem "--" ao lado de explicação.
+                    if let loadedLatencyMs = measurement.loadedLatencyMs {
+                        HStack {
+                            DetailItem(
+                                label: "LATÊNCIA SOB CARGA",
+                                value: String(format: "%.0f ms", loadedLatencyMs),
+                                explanation: MetricExplanation.loadedLatency
+                            )
+                            Spacer()
+                        }
                     }
 
                     HStack {
@@ -351,6 +377,10 @@ struct HistoryRow: View {
 struct DetailItem: View {
     let label: String
     let value: String
+    /// Explicação curta opcional (issue #53). `nil` quando a métrica não tem
+    /// explicação (ex.: SERVIDOR, DURAÇÃO, BANDA WI-FI) ou quando o valor
+    /// subjacente é ausente — nunca aparece ao lado de "--".
+    var explanation: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -360,6 +390,19 @@ struct DetailItem: View {
             Text(value)
                 .font(.bodySmall.weight(.medium))
                 .foregroundColor(.textPrimary)
+            if let explanation {
+                Text(explanation)
+                    .font(.caption2)
+                    .foregroundColor(.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityText)
+    }
+
+    private var accessibilityText: String {
+        guard let explanation else { return "\(label): \(value)" }
+        return "\(label): \(value). \(explanation)"
     }
 }
