@@ -57,13 +57,44 @@ public class SpeedTestViewModel: ObservableObject {
     private var loadedLatencyMs: Double? = nil
     
     @Published public var lastTestSpeedString: String? = nil
-    
+
     // UI states
     @Published public var showPurchase: Bool = false
-    
+
     private let engine = SpeedTestCore()
     private var testTask: Task<Void, Never>?
-    
+
+    /// Snapshot do último resultado `.done` alcançado nesta sessão do view
+    /// model (issue #47) — capturado em `startTest()` no instante em que um
+    /// teste chega a `.done`, antes que um `startTest()` seguinte zere os
+    /// campos `@Published` no próprio início. É a fonte usada por
+    /// `skipOrCancel()` pra restaurar a tela de resultado integralmente
+    /// (todos os campos, não só a velocidade de download) sem round-trip ao
+    /// histórico em disco.
+    private struct ResultSnapshot {
+        let downloadSpeed: Double
+        let uploadSpeed: Double
+        let ping: Int
+        let jitter: Double
+        let provider: String
+        let networkType: String
+        let testDuration: String
+        let packetLossPercent: Double?
+        let connectionKind: NetworkConnectionKind?
+        let wifiBandGHz: Double?
+    }
+
+    private var lastValidResultSnapshot: ResultSnapshot?
+
+    /// Verdadeiro quando existe, nesta sessão, um resultado válido pra
+    /// restaurar (issue #47). A UI usa isto só pra escolher o texto do
+    /// botão de saída ("Pular" quando ainda não há resultado vs. "Cancelar"
+    /// quando há um reteste em andamento) — a ação por trás dos dois é
+    /// sempre `skipOrCancel()`, nunca dois mecanismos distintos.
+    public var hasValidResult: Bool {
+        lastValidResultSnapshot != nil
+    }
+
     public init() {
         loadLastTest()
     }
@@ -127,7 +158,13 @@ public class SpeedTestViewModel: ObservableObject {
                     }
                 }
 
-                if self.uiPhase == .done {
+                // `!Task.isCancelled` além do `uiPhase == .done` (issue #47):
+                // `skipOrCancel()` chama `testTask?.cancel()` antes de
+                // qualquer outra coisa, então essa checagem cobre até a
+                // corrida rara em que o resultado final chegou bem no
+                // instante do cancelamento — um teste interrompido nunca
+                // vira snapshot válido nem entra no histórico.
+                if self.uiPhase == .done && !Task.isCancelled {
                     // Amostra de novo ao final. Se a interface mudou no
                     // meio do teste (ex.: Wi-Fi → rede móvel), o teste não
                     // rodou inteiro numa única rede — não afirma nenhum
@@ -139,6 +176,19 @@ public class SpeedTestViewModel: ObservableObject {
                     self.wifiBandGHz = self.connectionKind == .wifi
                         ? ApplePlatformSignalProvider.currentWifiBandGHz()
                         : nil
+
+                    self.lastValidResultSnapshot = ResultSnapshot(
+                        downloadSpeed: self.downloadSpeed,
+                        uploadSpeed: self.uploadSpeed,
+                        ping: self.ping,
+                        jitter: self.jitter,
+                        provider: self.provider,
+                        networkType: self.networkType,
+                        testDuration: self.testDuration,
+                        packetLossPercent: self.packetLossPercent,
+                        connectionKind: self.connectionKind,
+                        wifiBandGHz: self.wifiBandGHz
+                    )
 
                     let m = NetworkMeasurement(
                         outcome: .complete,
@@ -164,10 +214,49 @@ public class SpeedTestViewModel: ObservableObject {
         }
     }
     
-    public func stopTest() {
+    /// Único mecanismo técnico pra interromper um teste em andamento
+    /// (issue #47) — "Pular" na primeira medição automática e "Cancelar"
+    /// num reteste chamam sempre este mesmo método, nunca dois handlers
+    /// separados. Cancela a task/stream do motor e nunca deixa o teste
+    /// interrompido entrar no histórico (ver guarda `!Task.isCancelled` em
+    /// `startTest()`). Restaura integralmente o último resultado válido
+    /// desta sessão quando existir; senão volta a `.idle` sem fabricar
+    /// valores zerados como se fossem um resultado (`MainView` já trata
+    /// `.idle`/`.connecting` como "Preparando", sem número).
+    public func skipOrCancel() {
         testTask?.cancel()
+        testTask = nil
+
+        failureReason = nil
         isTesting = false
-        uiPhase = .idle
+
+        if let snapshot = lastValidResultSnapshot {
+            downloadSpeed = snapshot.downloadSpeed
+            uploadSpeed = snapshot.uploadSpeed
+            ping = snapshot.ping
+            jitter = snapshot.jitter
+            provider = snapshot.provider
+            networkType = snapshot.networkType
+            testDuration = snapshot.testDuration
+            packetLossPercent = snapshot.packetLossPercent
+            connectionKind = snapshot.connectionKind
+            wifiBandGHz = snapshot.wifiBandGHz
+            progress = 1.0
+            uiPhase = .done
+        } else {
+            downloadSpeed = 0.0
+            uploadSpeed = 0.0
+            ping = 0
+            jitter = 0.0
+            provider = ""
+            networkType = ""
+            testDuration = ""
+            packetLossPercent = nil
+            connectionKind = nil
+            wifiBandGHz = nil
+            progress = 0.0
+            uiPhase = .idle
+        }
     }
     
     private func update(with state: MeasurementState) {
