@@ -1,5 +1,7 @@
 import Foundation
+import LinkaEngine
 import NetworkAssist
+import NetworkCore
 import NetworkDiagnostics
 import LinkaEntitlements
 import LinkaModules
@@ -98,5 +100,29 @@ enum AssistContainer {
             platformProvider: ApplePlatformSignalProvider()
         )
         return NetworkAssistService(transport: transport)
+    }
+
+    /// Constrói a investigação local determinística (issue #56) a partir do
+    /// fato de falha do motor. 100% on-device: não usa `configuration()`
+    /// nem `isRemoteAssistEnabled()` — a investigação nunca depende do
+    /// transport remoto do Assist, então indisponibilidade dele nunca a
+    /// bloqueia nem impede início de nova medição.
+    ///
+    /// `reason` mapeia via `AssistFailureSignalMapping` — a única ponte
+    /// entre `LinkaEngine` e `NetworkAssist`; o pacote `NetworkAssist`
+    /// continua sem importar `LinkaEngine` (AGENTS.md §8). Retorna `nil`
+    /// quando não há falha para investigar, preservando divulgação
+    /// progressiva: sem falha, não há seção de investigação no `AssistSheet`.
+    static func investigateFailure(
+        _ reason: EngineFailureReason?,
+        recentMeasurements: [NetworkMeasurement]
+    ) -> NetworkAssistInvestigationResult? {
+        guard let signal = AssistFailureSignalMapping.map(reason) else { return nil }
+        return NetworkAssistInvestigationEngine.investigate(
+            NetworkAssistInvestigationInput(
+                failureSignal: signal,
+                recentMeasurements: recentMeasurements
+            )
+        )
     }
 }

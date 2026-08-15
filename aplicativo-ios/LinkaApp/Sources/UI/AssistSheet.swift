@@ -22,6 +22,7 @@ struct AssistSheet: View {
     @State private var messages: [ChatMessage] = []
     @State private var isTyping: Bool = false
     @State private var expandedMessages: Set<UUID> = []
+    @State private var investigationExpanded: Bool = false
     @State private var selectedDetent: PresentationDetent = .medium
     @State private var availableQuestions: [String] = [
         "Serve para uma chamada de vídeo?",
@@ -32,6 +33,11 @@ struct AssistSheet: View {
 
     let currentMeasurement: NetworkMeasurement?
     let recentMeasurements: [NetworkMeasurement]
+    /// Sinal de falha local (issue #56) que motivou a abertura do Assist —
+    /// `nil` quando o Assist foi aberto a partir de um resultado bom.
+    /// Chamadores atuais (`MainView`, `HistoryView`) não passam esse
+    /// parâmetro ainda; o valor default preserva o comportamento existente.
+    let failureSignal: NetworkAssistFailureSignal?
 
     private let assistProvider: any NetworkAssistProviding
     private let assistIsRemote: Bool
@@ -45,12 +51,14 @@ struct AssistSheet: View {
     init(
         currentMeasurement: NetworkMeasurement?,
         recentMeasurements: [NetworkMeasurement] = [],
+        failureSignal: NetworkAssistFailureSignal? = nil,
         entitlements: StoreKitEntitlementProvider? = nil,
         assistProvider: (any NetworkAssistProviding)? = nil,
         assistIsRemote: Bool = AssistContainer.isRemoteAssistEnabled()
     ) {
         self.currentMeasurement = currentMeasurement
         self.recentMeasurements = recentMeasurements
+        self.failureSignal = failureSignal
         if let assistProvider {
             self.assistProvider = assistProvider
         } else if let entitlements {
@@ -59,6 +67,21 @@ struct AssistSheet: View {
             self.assistProvider = NetworkAssistService(transport: UnconfiguredNetworkAssistTransport())
         }
         self.assistIsRemote = assistIsRemote
+    }
+
+    /// Investigação local determinística (issue #56) — calculada só quando
+    /// há `failureSignal`, direto pelo motor puro do `NetworkAssist`, sem
+    /// nenhuma chamada de rede. Continua funcionando mesmo se o transport
+    /// remoto do Assist estiver indisponível/não configurado, porque nunca
+    /// depende dele.
+    private var investigation: NetworkAssistInvestigationResult? {
+        guard let failureSignal else { return nil }
+        return NetworkAssistInvestigationEngine.investigate(
+            NetworkAssistInvestigationInput(
+                failureSignal: failureSignal,
+                recentMeasurements: recentMeasurements
+            )
+        )
     }
 
     var body: some View {
@@ -81,6 +104,19 @@ struct AssistSheet: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 12) {
+                        // Seção de investigação (issue #56) — só existe
+                        // quando o Assist foi aberto após uma falha
+                        // (`failureSignal` não-nil). Aparece assim que o
+                        // usuário abre o Assist (ação sob demanda), nunca no
+                        // primeiro frame da medição/erro/resultado em si.
+                        // Texto curto primeiro, detalhe sob "Ver mais" —
+                        // mesmo padrão de divulgação progressiva das bolhas
+                        // de resposta abaixo (`bubble(for:)`, desde `534c121`).
+                        if let investigation {
+                            investigationSection(investigation)
+                                .id("investigation")
+                        }
+
                         ForEach(messages) { msg in
                             bubble(for: msg)
                                 .id(msg.id)
@@ -179,6 +215,125 @@ struct AssistSheet: View {
                 .cornerRadius(16)
                 Spacer(minLength: 40)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func investigationSection(_ result: NetworkAssistInvestigationResult) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(investigationShortText(for: result))
+                    .font(.bodyRegular)
+                    .foregroundColor(.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if investigationExpanded {
+                    Text(investigationLongText(for: result))
+                        .font(.bodySmall)
+                        .foregroundColor(.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+
+                Button(action: { toggleInvestigationExpansion() }) {
+                    Text(investigationExpanded ? "Ver menos" : "Ver mais")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.brandAccentWarm)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding()
+            .background(Color.brandAccentWarm.opacity(0.1))
+            .cornerRadius(16)
+            Spacer(minLength: 40)
+        }
+    }
+
+    private func toggleInvestigationExpansion() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            investigationExpanded.toggle()
+            if investigationExpanded {
+                selectedDetent = .large
+            }
+        }
+    }
+
+    /// Copy da investigação local (issue #56) vive na UI, não no motor de
+    /// regras do `NetworkAssist` — o engine devolve só dado tipado
+    /// (disposição, evidência, sinais ausentes), nunca texto. Mesmo padrão
+    /// de `MainView.errorTitle`/`errorMessage` mapeando `EngineFailureReason`
+    /// (AGENTS.md §8): motor expõe fato, apresentação expõe linguagem.
+    /// Vocabulário estritamente observacional — nunca "provedor com
+    /// problema", nunca causa fora do que os sinais realmente sustentam.
+    private func investigationShortText(for result: NetworkAssistInvestigationResult) -> String {
+        switch result.disposition {
+        case .localSignalLikely:
+            return "Os sinais disponíveis apontam mais para o aparelho ou a rede local do que para algo além do seu acesso."
+        case .externalSignalLikely:
+            return "Os sinais disponíveis apontam mais para algo além do seu acesso do que para o aparelho ou a rede local."
+        case .inconclusive:
+            return "Não há sinais suficientes para dizer se o problema é do aparelho/rede local ou de algo além do seu acesso."
+        }
+    }
+
+    /// Detalhe sob "Ver mais": cita exatamente a evidência usada
+    /// (`result.evidenceIDs`/`result.evidence`) e declara o que falta
+    /// (`result.missingSignals`) — a lista de sinais ausentes limita
+    /// literalmente o que este texto tem base para afirmar.
+    private func investigationLongText(for result: NetworkAssistInvestigationResult) -> String {
+        var parts: [String] = [investigationEvidenceSummary(for: result)]
+        if !result.missingSignals.isEmpty {
+            let missing = result.missingSignals
+                .map(investigationMissingSignalLabel)
+                .joined(separator: ", ")
+            parts.append("Não temos: \(missing).")
+        }
+        return parts.joined(separator: " ")
+    }
+
+    private func investigationEvidenceSummary(for result: NetworkAssistInvestigationResult) -> String {
+        guard !result.evidence.isEmpty else {
+            return "Baseado apenas no que sabemos até agora."
+        }
+        let descriptions = result.evidence.map(investigationEvidenceLabel)
+        return "Baseado em: " + descriptions.joined(separator: "; ") + "."
+    }
+
+    private func investigationEvidenceLabel(_ evidence: NetworkAssistEvidence) -> String {
+        switch evidence.metricKey {
+        case "failureSignal":
+            return evidence.direction == "offline"
+                ? "nenhuma rede foi detectada antes de iniciar o teste"
+                : "a conexão foi perdida durante a medição"
+        case "recentOutcomeStability":
+            return evidence.direction == "stable"
+                ? "seus testes recentes completaram normalmente"
+                : "seus testes recentes também ficaram incompletos"
+        case "connectionKind":
+            return "seus testes recentes usaram principalmente \(evidence.direction ?? "conexão desconhecida")"
+        case "wifiBandGHz":
+            return "a banda de Wi-Fi recente observada"
+        case "loadedLatencyMs":
+            return "a latência sob carga recente"
+        default:
+            return "dado medido recente"
+        }
+    }
+
+    private func investigationMissingSignalLabel(_ signal: NetworkAssistInvestigationMissingSignal) -> String {
+        switch signal {
+        case .failureContext:
+            return "detalhe da falha"
+        case .recentMeasurementHistory:
+            return "histórico recente de testes"
+        case .alternateNetworkSample:
+            return "um teste em outra rede"
+        case .connectionKind:
+            return "o tipo de conexão"
+        case .wifiBandGHz:
+            return "a banda do Wi-Fi"
+        case .loadedLatencyBaseline:
+            return "a latência sob carga recente"
         }
     }
 
