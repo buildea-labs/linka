@@ -1,4 +1,6 @@
 import SwiftUI
+import NetworkCore
+import NetworkInsights
 
 struct DetailsDisclosure: View {
     var operatorName: String
@@ -21,6 +23,12 @@ struct DetailsDisclosure: View {
     /// #53/#52) — `nil` quando o motor não conseguiu calcular para este
     /// teste; a métrica some, sem "--".
     var loadedLatencyMs: Double? = nil
+    /// Velocidades medidas nesta execução (issue #57) — alimentam só a
+    /// frase de "para que serve" abaixo; o resultado principal (MetricRing)
+    /// já mostra os mesmos números em `MainView`, este parâmetro não
+    /// duplica exibição, só entra como insumo do classificador.
+    var downloadMbps: Double
+    var uploadMbps: Double
 
     private var networkLabel: String {
         guard let wifiBandGHz else { return operatorName }
@@ -28,6 +36,33 @@ struct DetailsDisclosure: View {
             ? String(format: "%.0f", wifiBandGHz)
             : String(format: "%.1f", wifiBandGHz)
         return "\(operatorName) · \(band)GHz"
+    }
+
+    /// Medição reconstruída só com o que já chegou até aqui, para alimentar
+    /// `UsageSuitabilityEvaluator` (issue #57). Não é uma segunda fonte de
+    /// verdade: os mesmos valores que `MainView` já mostra no resultado
+    /// principal, reempacotados no contrato canônico que o classificador
+    /// puro de `NetworkInsights` espera (AGENTS.md §8 — sem duplicar
+    /// lógica de medição na UI, só remontar o dado já medido).
+    private var usageSuitabilityMeasurement: NetworkMeasurement {
+        NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: downloadMbps,
+            uploadMbps: uploadMbps,
+            latencyMs: Double(ping),
+            jitterMs: jitter,
+            packetLossPercent: packetLossPercent,
+            loadedLatencyMs: loadedLatencyMs
+        )
+    }
+
+    /// Frase única de "para que serve" a conexão agora (issue #57) — só
+    /// existe aqui dentro de "Ver detalhes", nunca no primeiro frame do
+    /// resultado (AGENTS.md §6/§9).
+    private var usageSuitabilitySentence: String {
+        UsageSuitabilityCopy.sentence(
+            for: UsageSuitabilityEvaluator().evaluate(usageSuitabilityMeasurement)
+        )
     }
 
     var body: some View {
@@ -39,6 +74,12 @@ struct DetailsDisclosure: View {
             .font(.bodySmall)
             .foregroundColor(.textSecondary)
             .multilineTextAlignment(.center)
+
+            Text(usageSuitabilitySentence)
+                .font(.bodySmall.weight(.semibold))
+                .foregroundColor(.textPrimary)
+                .multilineTextAlignment(.center)
+                .accessibilityLabel(usageSuitabilitySentence)
 
             VStack(alignment: .leading, spacing: 10) {
                 MetricExplanationRow(
@@ -87,6 +128,59 @@ enum MetricExplanation {
     static let jitter = "Variação no tempo de resposta de uma medição para outra."
     static let packetLoss = "Parte dos dados que não chegou ao destino."
     static let loadedLatency = "Quanto o tempo de resposta piora com a conexão ocupada."
+}
+
+/// Traduz o veredito puro de `UsageSuitabilityReport` (NetworkInsights) numa
+/// única frase PT-BR de "para que serve" a conexão agora (issue #57).
+///
+/// Mesmo padrão de `MetricExplanation`: copy de produto vive só na UI, o
+/// pacote de interpretação (`NetworkInsights`) não conhece texto nem marca
+/// (AGENTS.md §8/§9). Nunca cita jogo, app ou serviço específico e nunca
+/// promete desempenho de título algum — só descreve, em linguagem comum, o
+/// que as métricas medidas hoje sustentam.
+enum UsageSuitabilityCopy {
+    /// Ordem de apresentação quando mais de um caso de uso está adequado —
+    /// decisão de produto (issue #57), não uma hierarquia técnica entre
+    /// unidades incomparáveis (Mbps vs. ms). Representa o "teto" da conexão
+    /// do mais ao menos exigente aos olhos de quem está lendo o resultado.
+    private static let priorityOrder: [UsageCase] = [.streaming4K, .onlineGaming, .streamingHD, .videoCall]
+
+    private static let positiveSentences: [UsageCase: String] = [
+        .videoCall: "Sua conexão sustenta bem chamada em vídeo agora.",
+        .streamingHD: "Sua conexão sustenta bem streaming de vídeo agora.",
+        .streaming4K: "Sua conexão sustenta bem streaming em 4K agora.",
+        .onlineGaming: "Sua conexão sustenta bem jogo online agora."
+    ]
+
+    private static let limitingMetricLabels: [NetworkMetric: String] = [
+        .downloadMbps: "a velocidade de download",
+        .uploadMbps: "a velocidade de upload",
+        .latencyMs: "o tempo de resposta",
+        .jitterMs: "a variação no tempo de resposta",
+        .packetLossPercent: "a perda de pacotes",
+        .loadedLatencyMs: "o tempo de resposta com a conexão ocupada"
+    ]
+
+    /// Escolhe uma única frase: o caso de uso mais exigente com veredito
+    /// `.adequate` (o "teto real" da conexão hoje). Quando nenhum caso
+    /// está `.adequate`, cita a métrica mais limitante em vez de uma frase
+    /// vazia tipo "conexão limitada" sem explicação — requisito explícito
+    /// da issue #57.
+    static func sentence(for report: UsageSuitabilityReport) -> String {
+        for usageCase in priorityOrder {
+            guard let verdict = report.verdict(for: usageCase), verdict.level == .adequate else { continue }
+            return positiveSentences[usageCase] ?? ""
+        }
+
+        for usageCase in priorityOrder {
+            guard let verdict = report.verdict(for: usageCase),
+                  let limitingMetric = verdict.limitingMetric,
+                  let label = limitingMetricLabels[limitingMetric] else { continue }
+            return "Hoje, \(label) é o que mais limita o uso desta conexão."
+        }
+
+        return "Ainda não há dados suficientes para avaliar o uso desta conexão."
+    }
 }
 
 /// Uma métrica com valor técnico + explicação curta, agrupada como um único

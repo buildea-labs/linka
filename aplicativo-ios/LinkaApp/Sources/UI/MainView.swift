@@ -239,7 +239,9 @@ struct MainView: View {
                                     wifiBandGHz: viewModel.wifiBandGHz,
                                     jitter: viewModel.jitter,
                                     packetLossPercent: viewModel.packetLossPercent,
-                                    loadedLatencyMs: viewModel.loadedLatencyMs
+                                    loadedLatencyMs: viewModel.loadedLatencyMs,
+                                    downloadMbps: viewModel.downloadSpeed,
+                                    uploadMbps: viewModel.uploadSpeed
                                 )
                                 .padding(.top, 14)
                                 .transition(.opacity.combined(with: .move(edge: .top)))
