@@ -66,13 +66,62 @@ public class SpeedTestViewModel: ObservableObject {
     private var rawTestDuration: Double? = nil
 
     @Published public var lastTestSpeedString: String? = nil
-    
+
     // UI states
     @Published public var showPurchase: Bool = false
-    
+
     private let engine = SpeedTestCore()
     private var testTask: Task<Void, Never>?
-    
+
+    /// Geração monotônica da task de teste atual (issue #47, rodada 3 —
+    /// achado de Marcelo). `Task<Void, Never>` não é `Equatable`, então não
+    /// dá pra comparar identidade de task diretamente; um contador simples
+    /// resolve o mesmo problema. Incrementado sincronamente no início de
+    /// `startTest()`, antes da nova `Task` ser criada — cada execução
+    /// captura o valor da geração que lhe pertence (`myGeneration`) e só
+    /// aplica seu próprio cleanup (`isTesting = false`, etc.) se a geração
+    /// ainda for a corrente quando ela terminar. Cobre a corrida: T1 é
+    /// cancelada por `skipOrCancel()`, que (sem snapshot pra restaurar)
+    /// chama `startTest()` de novo sincronamente — isso já criou T2 e
+    /// avançado a geração antes de T1 perceber o cancelamento no próprio
+    /// loop. Sem esta guarda, o `catch` de T1 fazia `self.isTesting = false`
+    /// incondicionalmente, sobrescrevendo o `true` que T2 acabou de setar;
+    /// se o usuário navegasse Histórico→voltar nesse instante, `.onAppear`
+    /// via `isTesting == false` e chamava `startTest()` de novo, criando T3
+    /// e cancelando T2 sem pedido do usuário.
+    private var testGeneration: Int = 0
+
+    /// Snapshot do último resultado `.done` alcançado nesta sessão do view
+    /// model (issue #47) — capturado em `startTest()` no instante em que um
+    /// teste chega a `.done`, antes que um `startTest()` seguinte zere os
+    /// campos `@Published` no próprio início. É a fonte usada por
+    /// `skipOrCancel()` pra restaurar a tela de resultado integralmente
+    /// (todos os campos, não só a velocidade de download) sem round-trip ao
+    /// histórico em disco.
+    private struct ResultSnapshot {
+        let downloadSpeed: Double
+        let uploadSpeed: Double
+        let ping: Int
+        let jitter: Double
+        let provider: String
+        let networkType: String
+        let testDuration: String
+        let packetLossPercent: Double?
+        let connectionKind: NetworkConnectionKind?
+        let wifiBandGHz: Double?
+    }
+
+    private var lastValidResultSnapshot: ResultSnapshot?
+
+    /// Verdadeiro quando existe, nesta sessão, um resultado válido pra
+    /// restaurar (issue #47). A UI usa isto só pra escolher o texto do
+    /// botão de saída ("Pular" quando ainda não há resultado vs. "Cancelar"
+    /// quando há um reteste em andamento) — a ação por trás dos dois é
+    /// sempre `skipOrCancel()`, nunca dois mecanismos distintos.
+    public var hasValidResult: Bool {
+        lastValidResultSnapshot != nil
+    }
+
     public init() {
         loadLastTest()
     }
@@ -119,6 +168,8 @@ public class SpeedTestViewModel: ObservableObject {
         uiPhase = .connecting
 
         testTask?.cancel()
+        testGeneration += 1
+        let myGeneration = testGeneration
         testTask = Task {
             // Amostra o tipo de interface no início do teste, em paralelo à
             // subida do motor (não soma latência) — independente do
@@ -129,6 +180,15 @@ public class SpeedTestViewModel: ObservableObject {
                 var lastUpdateTime = Date()
 
                 for try await state in await engine.runTest() {
+                    // Checa cancelamento a cada yield (issue #47, rodada 2):
+                    // sem isto, uma `skipOrCancel()` que chegue entre dois
+                    // yields do motor só é percebida no próximo `state`, em
+                    // vez de interromper o consumo imediatamente — agora que
+                    // `SpeedTestCore.runTest()` cancela o próprio Task
+                    // interno via `continuation.onTermination`, este loop
+                    // também precisa parar de consumir assim que percebe.
+                    try Task.checkCancellation()
+
                     let now = Date()
                     // Throttle updates to ~30fps
                     if now.timeIntervalSince(lastUpdateTime) >= 0.033 || state.progress >= 1.0 || state.progress == 0.0 {
@@ -137,7 +197,21 @@ public class SpeedTestViewModel: ObservableObject {
                     }
                 }
 
-                if self.uiPhase == .done {
+                // Guarda por geração (issue #47, rodada 3): se outra
+                // `startTest()` já avançou `testGeneration` — via
+                // `skipOrCancel()` reiniciando o loop sem snapshot pra
+                // restaurar —, esta execução (T1) não é mais a corrente e
+                // não deve tocar nenhum `@Published` nem salvar no
+                // histórico por baixo de T2.
+                guard self.testGeneration == myGeneration else { return }
+
+                // `!Task.isCancelled` além do `uiPhase == .done` (issue #47):
+                // `skipOrCancel()` chama `testTask?.cancel()` antes de
+                // qualquer outra coisa, então essa checagem cobre até a
+                // corrida rara em que o resultado final chegou bem no
+                // instante do cancelamento — um teste interrompido nunca
+                // vira snapshot válido nem entra no histórico.
+                if self.uiPhase == .done && !Task.isCancelled {
                     // Amostra de novo ao final. Se a interface mudou no
                     // meio do teste (ex.: Wi-Fi → rede móvel), o teste não
                     // rodou inteiro numa única rede — não afirma nenhum
@@ -145,10 +219,31 @@ public class SpeedTestViewModel: ObservableObject {
                     let startingKind = await startingKindTask
                     let endingKind = await Self.sampleConnectionKind()
 
+                    // Re-checa a geração depois dos dois `await` acima
+                    // (issue #47, rodada 3): a amostragem final leva ~100ms,
+                    // tempo suficiente pra um `skipOrCancel()` cancelar T1 e
+                    // iniciar T2 no meio do caminho. Sem isto, T1 ainda
+                    // gravaria snapshot/histórico por baixo do teste que já
+                    // está em andamento.
+                    guard self.testGeneration == myGeneration else { return }
+
                     self.connectionKind = NetworkConnectionKind.resolve(start: startingKind, end: endingKind)
                     self.wifiBandGHz = self.connectionKind == .wifi
                         ? ApplePlatformSignalProvider.currentWifiBandGHz()
                         : nil
+
+                    self.lastValidResultSnapshot = ResultSnapshot(
+                        downloadSpeed: self.downloadSpeed,
+                        uploadSpeed: self.uploadSpeed,
+                        ping: self.ping,
+                        jitter: self.jitter,
+                        provider: self.provider,
+                        networkType: self.networkType,
+                        testDuration: self.testDuration,
+                        packetLossPercent: self.packetLossPercent,
+                        connectionKind: self.connectionKind,
+                        wifiBandGHz: self.wifiBandGHz
+                    )
 
                     let m = NetworkMeasurement(
                         outcome: .complete,
@@ -170,15 +265,52 @@ public class SpeedTestViewModel: ObservableObject {
                 
                 self.isTesting = false
             } catch {
+                // Mesma guarda por geração do caminho de sucesso acima: uma
+                // T1 cancelada que só percebe isso aqui (via
+                // `Task.checkCancellation()` dentro do loop) não pode
+                // sobrescrever `isTesting`/`uiPhase` de uma T2 que já está
+                // rodando (issue #47, rodada 3 — achado de Marcelo).
+                guard self.testGeneration == myGeneration else { return }
                 self.isTesting = false
             }
         }
     }
     
-    public func stopTest() {
+    /// Único mecanismo técnico pra interromper um teste em andamento
+    /// (issue #47) — "Pular" na primeira medição automática e "Cancelar"
+    /// num reteste chamam sempre este mesmo método, nunca dois handlers
+    /// separados. Cancela a task/stream do motor e nunca deixa o teste
+    /// interrompido entrar no histórico (ver guarda `!Task.isCancelled` em
+    /// `startTest()`). Restaura integralmente o último resultado válido
+    /// desta sessão quando existir ("Cancelar"); senão reinicia um teste
+    /// novo automaticamente ("Pular" — bug reportado por Marcelo na rodada
+    /// 2 do PR #91: sem um snapshot pra restaurar, `uiPhase = .idle` sozinho
+    /// é beco sem saída, porque nenhum botão em `MainView` no branch
+    /// `.idle` chama `startTest()`; "Pular" sem resultado precisa, ele
+    /// mesmo, reiniciar o loop natural do produto).
+    public func skipOrCancel() {
         testTask?.cancel()
+        testTask = nil
+
+        failureReason = nil
         isTesting = false
-        uiPhase = .idle
+
+        if let snapshot = lastValidResultSnapshot {
+            downloadSpeed = snapshot.downloadSpeed
+            uploadSpeed = snapshot.uploadSpeed
+            ping = snapshot.ping
+            jitter = snapshot.jitter
+            provider = snapshot.provider
+            networkType = snapshot.networkType
+            testDuration = snapshot.testDuration
+            packetLossPercent = snapshot.packetLossPercent
+            connectionKind = snapshot.connectionKind
+            wifiBandGHz = snapshot.wifiBandGHz
+            progress = 1.0
+            uiPhase = .done
+        } else {
+            startTest()
+        }
     }
     
     private func update(with state: MeasurementState) {

@@ -130,6 +130,23 @@ struct MainView: View {
                                 ],
                                 activeKey: activePhaseKey
                             )
+
+                            // Saída única do teste em andamento (issue #47).
+                            // "Pular" (primeira medição automática) e
+                            // "Cancelar" (reteste) são o mesmo botão e a
+                            // mesma chamada técnica — só o texto muda,
+                            // derivado de `hasValidResult`. Secundário de
+                            // propósito: texto pequeno, sem fundo, sem
+                            // competir com o MetricRing.
+                            Button(action: {
+                                viewModel.skipOrCancel()
+                            }) {
+                                Text(viewModel.hasValidResult ? "Cancelar" : "Pular")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.top, 20)
                         }
                         // removed transition to allow fluid geometry effect
                     } else {
