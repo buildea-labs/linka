@@ -29,9 +29,9 @@ final class ProviderNormalizerTests: XCTestCase {
         XCTAssertEqual(result?.commercialName, "TIM")
     }
 
-    func test_ASN_resolvesOiInBrazil() {
+    func test_ASN_resolvesNioInBrazil() {
         let result = normalizer.normalize(org: "AS7738 Telemar Norte Leste S.A.")
-        XCTAssertEqual(result?.commercialName, "Oi")
+        XCTAssertEqual(result?.commercialName, "Nio")
     }
 
     func test_ASN_resolvesXfinityInUS() {
