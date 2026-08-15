@@ -1,6 +1,7 @@
 import SwiftUI
 import MeasurementHistory
 import NetworkCore
+import NetworkInsights
 import LinkaEntitlements
 
 struct HistoryView: View {
@@ -8,11 +9,14 @@ struct HistoryView: View {
     @State private var isLoading = true
     @State private var hasPlus = false
     @State private var showAssist = false
-    
+    @State private var insightText: String?
+
     let repository = FileMeasurementHistoryRepository(
         fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json")
     )
-    
+
+    private let insightsAnalyzer: NetworkInsightsAnalyzing = BasicNetworkInsightsAnalyzer()
+
     @ViewBuilder
     var body: some View {
         ZStack {
@@ -26,17 +30,17 @@ struct HistoryView: View {
                     Image(systemName: "clock.badge.exclamationmark")
                         .font(.system(size: 64, weight: .light))
                         .foregroundColor(.brandAccentWarm)
-                    
+
                     Text("Linka")
                         .font(.displayTitle)
                         .foregroundColor(.textPrimary)
-                    
+
                     Text("O histórico de medições e as análises de rede são exclusivos para assinantes do Linka.")
                         .font(.bodyRegular)
                         .foregroundColor(.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
-                    
+
                     Button("Conhecer o Linka") {
                         // Action for Plus purchase flow
                     }
@@ -52,36 +56,38 @@ struct HistoryView: View {
                 .background(Color.surfacePage)
             } else {
                 List {
-                    // Assist Insight Card
-                    Section {
-                        HStack(alignment: .top, spacing: 16) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 24))
-                                .foregroundColor(.brandAccentWarm)
-                            
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Insight da Semana")
-                                    .font(Font.system(size: 15, weight: .semibold))
-                                    .foregroundColor(.textPrimary)
-                                
-                                Text("Sua conexão Wi-Fi está 15% mais rápida nos últimos 3 dias.")
-                                    .font(.bodySmall)
-                                    .foregroundColor(.textSecondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                
-                                Button(action: {
-                                    showAssist = true
-                                }) {
-                                    Text("Perguntar ao Assist")
-                                        .font(Font.system(size: 11, weight: .bold))
-                                        .foregroundColor(.brandAccentWarm)
+                    // Assist Insight Card — omit if we have nothing to say
+                    if let insightText {
+                        Section {
+                            HStack(alignment: .top, spacing: 16) {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.brandAccentWarm)
+
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Insight da Semana")
+                                        .font(Font.system(size: 15, weight: .semibold))
+                                        .foregroundColor(.textPrimary)
+
+                                    Text(insightText)
+                                        .font(.bodySmall)
+                                        .foregroundColor(.textSecondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+
+                                    Button(action: {
+                                        showAssist = true
+                                    }) {
+                                        Text("Perguntar ao Assist")
+                                            .font(Font.system(size: 11, weight: .bold))
+                                            .foregroundColor(.brandAccentWarm)
+                                    }
+                                    .padding(.top, 4)
                                 }
-                                .padding(.top, 4)
                             }
+                            .padding(.vertical, 4)
                         }
-                        .padding(.vertical, 4)
                     }
-                    
+
                     // History List
                     Section(header: Text("MÊS ATUAL").font(.monoCaption).foregroundColor(.textSecondary)) {
                         if measurements.isEmpty {
@@ -104,33 +110,69 @@ struct HistoryView: View {
         .navigationTitle("Histórico")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showAssist) {
-            AssistSheet()
-                .presentationDetents([.fraction(0.6), .large])
-                .presentationDragIndicator(.visible)
+            AssistSheet(
+                currentMeasurement: measurements.first,
+                recentMeasurements: Array(measurements.dropFirst().prefix(19))
+            )
+            .presentationDetents([.fraction(0.6), .large])
+            .presentationDragIndicator(.visible)
         }
         .onAppear {
             loadData()
         }
     }
-    
+
     private func loadData() {
         Task {
-            // Check entitlement using the new LinkaEntitlements package
             let policy = LinkaEntitlementPolicy.decision(
                 for: .history,
-                snapshot: .plus(status: .active, source: .subscription), // Mocking Plus active
+                snapshot: .plus(status: .active, source: .subscription),
                 at: Date()
             )
-            
+
             hasPlus = policy.isGranted
-            
+
             if hasPlus {
-                // Populate mock data if empty
                 let query = MeasurementQuery(limit: 50, sortOrder: .newestFirst)
                 measurements = (try? await repository.measurements(matching: query)) ?? []
+                insightText = weeklyInsightText(from: measurements)
             }
-            
+
             isLoading = false
+        }
+    }
+
+    private func weeklyInsightText(from measurements: [NetworkMeasurement]) -> String? {
+        let now = Date()
+        let cutoff7d = now.addingTimeInterval(-7 * 86_400)
+        let cutoff14d = now.addingTimeInterval(-14 * 86_400)
+
+        let last7 = measurements.filter { $0.measuredAt >= cutoff7d }
+        let baseline = measurements.filter { $0.measuredAt >= cutoff14d && $0.measuredAt < cutoff7d }
+
+        guard last7.count >= 2, baseline.count >= 2 else { return nil }
+
+        let comparison: NetworkPeriodComparison
+        do {
+            comparison = try insightsAnalyzer.comparePeriods(current: last7, baseline: baseline)
+        } catch {
+            return nil
+        }
+
+        guard let download = comparison.comparison(for: .downloadMbps),
+              let percentDelta = download.percentDelta,
+              abs(percentDelta) >= 5 else {
+            return nil
+        }
+
+        let deltaStr = String(format: "%.0f", abs(percentDelta))
+        switch download.direction {
+        case .improved:
+            return "Sua velocidade de download está cerca de \(deltaStr)% melhor esta semana em comparação à semana anterior."
+        case .worsened:
+            return "Sua velocidade de download está cerca de \(deltaStr)% pior esta semana em comparação à semana anterior."
+        case .stable, .unavailable:
+            return nil
         }
     }
 }
@@ -146,7 +188,7 @@ struct HistoryView_Previews: PreviewProvider {
 struct HistoryRow: View {
     let measurement: NetworkMeasurement
     @State private var isExpanded = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             Button(action: {
@@ -159,7 +201,7 @@ struct HistoryRow: View {
                         Text(formatDate(measurement.measuredAt))
                             .font(.bodySmall.weight(.medium))
                             .foregroundColor(.textPrimary)
-                        
+
                         HStack(spacing: 4) {
                             Image(systemName: measurement.connectionKind == .wifi ? "wifi" : "cellularbars")
                                 .font(.system(size: 10))
@@ -168,9 +210,9 @@ struct HistoryRow: View {
                         }
                         .foregroundColor(.textSecondary)
                     }
-                    
+
                     Spacer()
-                    
+
                     VStack(alignment: .trailing, spacing: 4) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.down")
@@ -180,7 +222,7 @@ struct HistoryRow: View {
                                 .font(.monoEyebrow)
                                 .foregroundColor(.textPrimary)
                         }
-                        
+
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up")
                                 .font(.system(size: 10, weight: .bold))
@@ -195,13 +237,13 @@ struct HistoryRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            
+
             if isExpanded {
                 VStack(spacing: 12) {
                     Divider()
                         .background(Color.borderDefault)
                         .padding(.top, 4)
-                    
+
                     HStack {
                         DetailItem(label: "PING", value: formatPing(measurement.latencyMs))
                         Spacer()
@@ -209,7 +251,7 @@ struct HistoryRow: View {
                         Spacer()
                         DetailItem(label: "PERDA", value: measurement.packetLossPercent != nil ? "\(Int(measurement.packetLossPercent!))%" : "--")
                     }
-                    
+
                     HStack {
                         DetailItem(label: "SERVIDOR", value: measurement.serverIdentifier ?? "Automático")
                         Spacer()
@@ -220,7 +262,7 @@ struct HistoryRow: View {
             }
         }
     }
-    
+
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -228,12 +270,12 @@ struct HistoryRow: View {
         formatter.locale = Locale(identifier: "pt_BR")
         return formatter.string(from: date)
     }
-    
+
     private func formatSpeed(_ speed: Double?) -> String {
         guard let speed = speed else { return "--" }
         return String(format: "%.1f", speed)
     }
-    
+
     private func formatPing(_ ping: Double?) -> String {
         guard let ping = ping else { return "--" }
         return String(format: "%.0f ms", ping)
@@ -252,7 +294,7 @@ struct HistoryRow: View {
 struct DetailItem: View {
     let label: String
     let value: String
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)

@@ -2,41 +2,39 @@
 import PackageDescription
 
 let package = Package(
-    name: "LinkaModules",
+    name: "NetworkDiagnostics",
     platforms: [
         .iOS(.v16),
         .macOS(.v13)
     ],
     products: [
-        .library(
-            name: "LinkaModules",
-            targets: ["LinkaModules"]
-        )
+        .library(name: "NetworkDiagnostics", targets: ["NetworkDiagnostics"])
     ],
     dependencies: [
         .package(path: "../NetworkCore"),
-        .package(path: "../MeasurementHistory"),
         .package(path: "../NetworkAssist"),
         .package(path: "../NetworkInsights"),
-        .package(path: "../NetworkDiagnostics"),
-        .package(path: "../LinkaEntitlements")
+        .package(path: "../MeasurementHistory")
     ],
     targets: [
         .target(
-            name: "LinkaModules",
+            name: "NetworkDiagnostics",
             dependencies: [
                 .product(name: "NetworkCore", package: "NetworkCore"),
-                .product(name: "MeasurementHistory", package: "MeasurementHistory"),
                 .product(name: "NetworkAssist", package: "NetworkAssist"),
                 .product(name: "NetworkInsights", package: "NetworkInsights"),
-                .product(name: "NetworkDiagnostics", package: "NetworkDiagnostics"),
-                .product(name: "LinkaEntitlements", package: "LinkaEntitlements")
+                .product(name: "MeasurementHistory", package: "MeasurementHistory")
             ],
             path: "Sources"
         ),
         .testTarget(
-            name: "LinkaModulesTests",
-            dependencies: ["LinkaModules"],
+            name: "NetworkDiagnosticsTests",
+            dependencies: [
+                "NetworkDiagnostics",
+                .product(name: "NetworkCore", package: "NetworkCore"),
+                .product(name: "NetworkAssist", package: "NetworkAssist"),
+                .product(name: "MeasurementHistory", package: "MeasurementHistory")
+            ],
             path: "Tests"
         )
     ]
