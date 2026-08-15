@@ -9,9 +9,48 @@ actor ByteCounter {
     func total() -> Int64 { value }
 }
 
+/// Abstrai a origem do dado bruto de provedor (hoje ipinfo.io) para permitir
+/// injeção em teste, sem acoplar `SpeedTestCore` a `URLSession` diretamente.
+public protocol ProviderOrgLookup: Sendable {
+    /// Retorna o campo `org` bruto (ex.: "AS27699 TELEFÔNICA BRASIL S.A")
+    /// ou `nil` se a resposta não trouxer o dado. Lança em erro de rede.
+    func fetchOrg() async throws -> String?
+}
+
+/// Implementação real: consulta https://ipinfo.io/json.
+public struct IPInfoOrgLookup: ProviderOrgLookup {
+    public init() {}
+
+    public func fetchOrg() async throws -> String? {
+        guard let url = URL(string: "https://ipinfo.io/json") else { return nil }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 2.0
+        let (data, _) = try await URLSession.shared.data(for: request)
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        return json["org"] as? String
+    }
+}
+
 public actor SpeedTestCore {
 
-    public init() {}
+    private let providerLookup: ProviderOrgLookup
+    private let providerEnrichmentTimeout: TimeInterval
+
+    /// - Parameters:
+    ///   - providerLookup: fonte do dado bruto de provedor. Injetável para testes;
+    ///     produção usa `IPInfoOrgLookup()` por padrão.
+    ///   - providerEnrichmentTimeout: teto de tempo, em segundos, dedicado exclusivamente
+    ///     ao enriquecimento de provedor. Roda em paralelo à medição, nunca soma ao
+    ///     tempo de nenhuma fase (ping/download/upload).
+    public init(
+        providerLookup: ProviderOrgLookup = IPInfoOrgLookup(),
+        providerEnrichmentTimeout: TimeInterval = 2.0
+    ) {
+        self.providerLookup = providerLookup
+        self.providerEnrichmentTimeout = providerEnrichmentTimeout
+    }
 
     /// Starts the speed test and yields updates via an AsyncThrowingStream
     public func runTest() -> AsyncThrowingStream<MeasurementState, Error> {
@@ -38,17 +77,17 @@ public actor SpeedTestCore {
                     }
                     monitor.cancel()
 
-                    do {
-                        if let url = URL(string: "https://ipinfo.io/json") {
-                            var request = URLRequest(url: url)
-                            request.timeoutInterval = 2.0
-                            let (data, _) = try await URLSession.shared.data(for: request)
-                            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any], let org = json["org"] as? String {
-                                state.provider = ProviderNormalizer.shared.displayName(for: org)
-                            }
-                        }
-                    } catch {
-                        state.provider = "Desconhecido"
+                    // Descoberta de provedor (ipinfo.io) desacoplada do caminho crítico:
+                    // dispara como Task detached em paralelo ao ping/download/upload e
+                    // nunca bloqueia nenhum yield nem compete pelo executor do ator com
+                    // as fases de medição. Tem timeout próprio, bem menor que qualquer
+                    // fase — se falhar ou estourar o prazo, o resultado segue válido sem
+                    // provedor (nil), sem inventar "Desconhecido".
+                    let providerTask = Task.detached(priority: .utility) { [providerLookup, providerEnrichmentTimeout] in
+                        await SpeedTestCore.resolveProviderName(
+                            lookup: providerLookup,
+                            timeout: providerEnrichmentTimeout
+                        )
                     }
 
                     continuation.yield(state)
@@ -104,6 +143,16 @@ public actor SpeedTestCore {
                     )
 
                     state.uploadSpeed = uploadSpeed
+
+                    // Anexa o provedor somente aqui, na virada para o resultado final.
+                    // A essa altura download (18s) + upload (18s) já consumiram muito
+                    // mais tempo que o timeout de enriquecimento (2s por padrão), então
+                    // a Task já terminou (sucesso, timeout ou falha) e este await não
+                    // introduz espera real nem atrasa o resultado. Se por algum motivo
+                    // ainda estiver pendente, o próprio timeout interno da Task garante
+                    // que ela não segura o resultado além do prazo dedicado ao enriquecimento.
+                    state.provider = await providerTask.value
+
                     state.phase = .result
                     state.progress = 1.0
                     state.duration = Date().timeIntervalSince(testStart)
@@ -298,5 +347,37 @@ public actor SpeedTestCore {
         }
 
         return (avgLatency, 0.0, lossPercent)
+    }
+
+    /// Resolve o nome comercial do provedor com um timeout dedicado, isolado do
+    /// orçamento de tempo de qualquer fase de medição. `nonisolated` + `static`
+    /// de propósito: não precisa (nem deve) tocar o estado do ator, e assim a
+    /// corrida abaixo não faz nenhum hop de volta para `SpeedTestCore`.
+    ///
+    /// Implementado como corrida entre a consulta real e um timer de timeout —
+    /// o primeiro que terminar decide o resultado. Sucesso rápido não espera o
+    /// timeout; timeout ou erro nunca produzem "Desconhecido", só `nil`.
+    nonisolated static func resolveProviderName(
+        lookup: ProviderOrgLookup,
+        timeout: TimeInterval
+    ) async -> String? {
+        await withTaskGroup(of: String?.self) { group in
+            group.addTask {
+                do {
+                    guard let org = try await lookup.fetchOrg() else { return nil }
+                    return ProviderNormalizer.shared.displayName(for: org)
+                } catch {
+                    return nil
+                }
+            }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: UInt64(max(timeout, 0) * 1_000_000_000))
+                return nil
+            }
+
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
     }
 }
