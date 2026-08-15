@@ -110,14 +110,8 @@ struct MainView: View {
                                 matchedId: "downloadValue"
                             )
                             .scaleEffect(ringScale)
-                            
-                            Text("LINKA SPEEDTEST")
-                                .font(.monoEyebrow)
-                                .foregroundColor(.textSecondary)
-                                .tracking(1.0)
-                                .padding(.top, 24)
-                                .padding(.bottom, 12)
-                            
+                            .padding(.bottom, 28)
+
                             Text(phaseLabel)
                                 .font(.bodyRegular)
                                 .foregroundColor(.textSecondary)
