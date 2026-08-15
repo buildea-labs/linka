@@ -135,15 +135,10 @@ public class SpeedTestViewModel: ObservableObject {
                     let startingKind = await startingKindTask
                     let endingKind = await Self.sampleConnectionKind()
 
-                    if startingKind == endingKind {
-                        self.connectionKind = startingKind
-                        self.wifiBandGHz = startingKind == .wifi
-                            ? ApplePlatformSignalProvider.currentWifiBandGHz()
-                            : nil
-                    } else {
-                        self.connectionKind = nil
-                        self.wifiBandGHz = nil
-                    }
+                    self.connectionKind = NetworkConnectionKind.resolve(start: startingKind, end: endingKind)
+                    self.wifiBandGHz = self.connectionKind == .wifi
+                        ? ApplePlatformSignalProvider.currentWifiBandGHz()
+                        : nil
 
                     let m = NetworkMeasurement(
                         outcome: .complete,

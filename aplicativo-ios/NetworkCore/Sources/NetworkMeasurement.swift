@@ -76,6 +76,20 @@ public enum NetworkConnectionKind: String, Codable, Equatable, Hashable, Sendabl
     case other
 }
 
+public extension NetworkConnectionKind {
+    /// Reconcilia amostras de início e fim de uma medição.
+    ///
+    /// Retorna o tipo comum quando início e fim concordam; `nil` quando
+    /// divergem ou quando qualquer uma das amostras está ausente — trocar
+    /// de rede (ou não conseguir amostrar) no meio do teste torna o
+    /// metadado de interface enganoso, então o estado neutro é preferível
+    /// a afirmar um tipo que não valeu para o teste inteiro (issue #51).
+    static func resolve(start: NetworkConnectionKind?, end: NetworkConnectionKind?) -> NetworkConnectionKind? {
+        guard let start, let end else { return nil }
+        return start == end ? start : nil
+    }
+}
+
 public enum NetworkMeasurementContract {
     public static let currentSchemaVersion = 1
 

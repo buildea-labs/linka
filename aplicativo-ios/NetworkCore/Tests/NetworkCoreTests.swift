@@ -153,4 +153,34 @@ final class NetworkCoreTests: XCTestCase {
         XCTAssertEqual(decoded, original)
         XCTAssertEqual(decoded.wifiBandGHz, 5.0)
     }
+
+    // MARK: - NetworkConnectionKind.resolve(start:end:) — issue #51
+
+    /// Troca de rede durante o teste (início ≠ fim) deve persistir `nil`
+    /// em vez de afirmar um tipo que não valeu para o teste inteiro.
+    func testResolveReturnsNilWhenBothAreNil() {
+        XCTAssertNil(NetworkConnectionKind.resolve(start: nil, end: nil))
+    }
+
+    func testResolveReturnsNilWhenStartIsNil() {
+        XCTAssertNil(NetworkConnectionKind.resolve(start: nil, end: .wifi))
+    }
+
+    func testResolveReturnsNilWhenEndIsNil() {
+        XCTAssertNil(NetworkConnectionKind.resolve(start: .wifi, end: nil))
+    }
+
+    func testResolveReturnsCommonKindWhenBothMatch() {
+        XCTAssertEqual(NetworkConnectionKind.resolve(start: .wifi, end: .wifi), .wifi)
+        XCTAssertEqual(NetworkConnectionKind.resolve(start: .cellular, end: .cellular), .cellular)
+        XCTAssertEqual(NetworkConnectionKind.resolve(start: .ethernet, end: .ethernet), .ethernet)
+        XCTAssertEqual(NetworkConnectionKind.resolve(start: .other, end: .other), .other)
+    }
+
+    func testResolveReturnsNilWhenKindsDiverge() {
+        XCTAssertNil(NetworkConnectionKind.resolve(start: .wifi, end: .cellular))
+        XCTAssertNil(NetworkConnectionKind.resolve(start: .cellular, end: .wifi))
+        XCTAssertNil(NetworkConnectionKind.resolve(start: .ethernet, end: .other))
+        XCTAssertNil(NetworkConnectionKind.resolve(start: .wifi, end: .ethernet))
+    }
 }
