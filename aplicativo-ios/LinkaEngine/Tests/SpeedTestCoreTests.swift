@@ -220,3 +220,125 @@ final class SpeedTestCorePhaseStabilityTests: XCTestCase {
     }
 
 }
+
+/// Cobre a agregação de latência sob carga e a medida objetiva de variação
+/// de vazão introduzidas pela issue #52. Ambas `nonisolated static` — puras,
+/// sem `Date()` ao vivo nem `URLSession` — exercitáveis com arrays
+/// sintéticos, pelo mesmo motivo documentado no cabeçalho deste arquivo para
+/// `hasConverged`/`shouldStopPhase`: a fase real bate em endpoint Cloudflare
+/// sem ponto de injeção.
+final class SpeedTestCoreLoadedMetricsTests: XCTestCase {
+
+    // MARK: - aggregateLoadedLatency
+
+    func test_aggregateLoadedLatency_enoughSamples_returnsMedian() {
+        // Ímpar: mediana é o elemento central após ordenar.
+        let samples: [Double] = [40.0, 12.0, 18.0]
+
+        let result = SpeedTestCore.aggregateLoadedLatency(samples: samples)
+
+        XCTAssertEqual(result, 18.0)
+    }
+
+    func test_aggregateLoadedLatency_evenCount_returnsAverageOfTwoMiddleValues() {
+        let samples: [Double] = [10.0, 20.0, 30.0, 40.0]
+
+        let result = SpeedTestCore.aggregateLoadedLatency(samples: samples)
+
+        XCTAssertEqual(result, 25.0)
+    }
+
+    func test_aggregateLoadedLatency_absorbsSingleOutlier() {
+        // Uma sondagem colide com rajada de um stream e sai bem mais alta —
+        // a mediana não deve ser puxada pelo outlier como a média seria.
+        let samples: [Double] = [20.0, 22.0, 21.0, 19.0, 200.0]
+
+        let result = SpeedTestCore.aggregateLoadedLatency(samples: samples)
+
+        XCTAssertEqual(result, 21.0)
+    }
+
+    func test_aggregateLoadedLatency_belowMinSamples_returnsNil() {
+        // Só 2 amostras válidas, piso padrão é 3 — não deve inventar valor
+        // a partir de dado insuficiente (aceite #2/#5 do plano da issue #52).
+        let samples: [Double] = [15.0, 17.0]
+
+        let result = SpeedTestCore.aggregateLoadedLatency(samples: samples)
+
+        XCTAssertNil(result)
+    }
+
+    func test_aggregateLoadedLatency_noSamples_returnsNil() {
+        let result = SpeedTestCore.aggregateLoadedLatency(samples: [])
+
+        XCTAssertNil(result)
+    }
+
+    func test_aggregateLoadedLatency_ignoresInvalidSamples() {
+        // Zeros/negativos não representam latência real medida — mesmo
+        // espírito do filtro de zeros em `hasConverged`.
+        let samples: [Double] = [0.0, -5.0, 20.0, 22.0, 21.0]
+
+        let result = SpeedTestCore.aggregateLoadedLatency(samples: samples)
+
+        XCTAssertEqual(result, 21.0)
+    }
+
+    // MARK: - throughputVariation
+
+    func test_throughputVariation_stableWindow_returnsLowVariation() {
+        // Vazão bem estável — coeficiente de variação deve ser pequeno.
+        let stableSamples: [Double] = [98.0, 100.0, 99.0, 101.0, 100.0, 99.5]
+
+        let result = SpeedTestCore.throughputVariation(stableSamples: stableSamples)
+
+        XCTAssertNotNil(result)
+        XCTAssertLessThan(result!, 0.05)
+    }
+
+    func test_throughputVariation_noisyWindow_returnsHighVariation() {
+        // Vazão instável dentro da própria janela "estável" — coeficiente
+        // de variação bem maior que o caso estável acima.
+        let noisySamples: [Double] = [50.0, 120.0, 30.0, 140.0, 20.0, 150.0]
+
+        let result = SpeedTestCore.throughputVariation(stableSamples: noisySamples)
+
+        XCTAssertNotNil(result)
+        XCTAssertGreaterThan(result!, 0.3)
+    }
+
+    func test_throughputVariation_belowWindowFloor_returnsNil() {
+        // Só 4 amostras válidas, janela padrão exige 5 — mesmo piso de
+        // robustez de `hasConverged` (aceite #5 do plano da issue #52).
+        let samples: [Double] = [100.0, 101.0, 99.0, 100.0]
+
+        let result = SpeedTestCore.throughputVariation(stableSamples: samples)
+
+        XCTAssertNil(result)
+    }
+
+    func test_throughputVariation_emptySamples_returnsNil() {
+        let result = SpeedTestCore.throughputVariation(stableSamples: [])
+
+        XCTAssertNil(result)
+    }
+
+    func test_throughputVariation_ignoresZeroSamples() {
+        // Zeros representam ausência de dado na janela (ver
+        // `runPhaseTimeBased`), não vazão real — não devem contar para o
+        // piso nem distorcer a média/desvio.
+        let samples: [Double] = [0.0, 0.0, 100.0, 99.0, 101.0, 100.0, 100.0]
+
+        let result = SpeedTestCore.throughputVariation(stableSamples: samples)
+
+        XCTAssertNotNil(result)
+        XCTAssertLessThan(result!, 0.05)
+    }
+
+}
+
+// Nota: `performLoadedLatencyProbe` bate em endpoint Cloudflare real e não
+// tem ponto de injeção hoje, mesma limitação de `performPingTest` — não é
+// exercitada aqui por design (ver cabeçalho de `SpeedTestCoreTests`). A
+// lógica que ela alimenta (`aggregateLoadedLatency`) é a peça testável
+// desta issue.

@@ -9,6 +9,15 @@ actor ByteCounter {
     func total() -> Int64 { value }
 }
 
+/// Coletor thread-safe de amostras double por fase (issue #52). Usado para
+/// juntar as sondagens de latência sob carga coletadas em paralelo à
+/// transferência real, sem acoplar a task de amostragem ao estado do ator.
+actor DoubleSampleCollector {
+    private var values: [Double] = []
+    func add(_ value: Double) { values.append(value) }
+    func all() -> [Double] { values }
+}
+
 /// Abstrai a origem do dado bruto de provedor (hoje ipinfo.io) para permitir
 /// injeção em teste, sem acoplar `SpeedTestCore` a `URLSession` diretamente.
 public protocol ProviderOrgLookup: Sendable {
@@ -210,6 +219,31 @@ public actor SpeedTestCore {
         // Random payload for upload to avoid compression caching at network level.
         let payload = phase == .upload ? generateRandomPayload(size: bytes) : nil
 
+        // ------------------------------------------------------------
+        // Latência sob carga (issue #52), só na fase de download.
+        //
+        // Sonda HEAD leve (0 bytes) contra o mesmo endpoint Cloudflare,
+        // concorrente à carga real dos `streams` de download — é essa
+        // concorrência que a diferencia da latência ociosa de
+        // `performPingTest` (que roda isolada, antes de qualquer carga).
+        //
+        // Fica presa à mesma janela da fase (`phaseStart`/`maxDuration`) e é
+        // cancelada assim que o loop principal termina, cedo por convergência
+        // ou no teto — nunca estende a duração calibrada por #62. O
+        // intervalo de 1s entre sondagens mantém o custo de dados desprezível
+        // (HEAD de 0 bytes) e não compete por banda com os streams de carga.
+        let latencyCollector: DoubleSampleCollector? = phase == .download ? DoubleSampleCollector() : nil
+        let latencySamplingTask: Task<Void, Never>? = latencyCollector.map { collector in
+            Task.detached(priority: .utility) {
+                while Date().timeIntervalSince(phaseStart) < maxDuration && !Task.isCancelled {
+                    if let sample = await SpeedTestCore.performLoadedLatencyProbe() {
+                        await collector.add(sample)
+                    }
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1s entre sondagens
+                }
+            }
+        }
+
         // Ephemeral session sem delegate custom. Confiamos na API async
         // de URLSession pra contar bytes por requisição concluída — muito
         // mais confiável que o esquema anterior de delegate + NSLock, que
@@ -321,6 +355,17 @@ public actor SpeedTestCore {
         _ = await workersTask.result
         session.invalidateAndCancel()
 
+        // Encerra a sondagem de latência sob carga na mesma virada da carga
+        // real — nunca sobrevive além da janela da fase. Falha ou ausência
+        // total de amostras aqui nunca lança nem afeta `downloadSpeed`
+        // (aceite #4): `aggregateLoadedLatency` simplesmente devolve `nil`.
+        latencySamplingTask?.cancel()
+        _ = await latencySamplingTask?.value
+        if phase == .download, let latencyCollector {
+            let latencySamples = await latencyCollector.all()
+            state.loadedLatencyMs = Self.aggregateLoadedLatency(samples: latencySamples)
+        }
+
         // Fallback: se nenhum sample instantâneo pegou nada (rede muito
         // rápida ou requisição única muito lenta), calcula pela média
         // global bytes / duração da fase — nunca retorna 0 se algum byte
@@ -336,6 +381,19 @@ public actor SpeedTestCore {
         let stableStart = Int(ceil(Double(valid.count) * 0.35))
         let stable = valid.count > stableStart ? Array(valid[stableStart...]) : valid
         let stableAvg = stable.isEmpty ? 0.0 : stable.reduce(0, +) / Double(stable.count)
+
+        // Variação objetiva de vazão (issue #52): desvio relativo dentro da
+        // mesma janela estável usada para `stableAvg`, com o mesmo piso de
+        // robustez de `hasConverged` (>= window amostras válidas). Fica só
+        // em `MeasurementState` — motor-interno nesta primeira entrega, não
+        // entra no contrato canônico `NetworkMeasurement` (ver notas do
+        // plano da issue #52).
+        let variation = Self.throughputVariation(stableSamples: stable)
+        if phase == .download {
+            state.downloadThroughputVariation = variation
+        } else {
+            state.uploadThroughputVariation = variation
+        }
 
         return stableAvg > 0 ? stableAvg : averageMbps
     }
@@ -404,6 +462,76 @@ public actor SpeedTestCore {
         return hasConverged(samples: samples, window: window, tolerance: tolerance)
     }
 
+    /// Agregação da latência sob carga (issue #52): reduz as sondagens
+    /// coletadas por `performLoadedLatencyProbe` durante a fase de download
+    /// a um único valor representativo.
+    ///
+    /// `nonisolated static` de propósito — mesmo padrão de `hasConverged`:
+    /// não toca `Date()` ao vivo nem estado do ator, então é inteiramente
+    /// exercitável com arrays sintéticos em teste.
+    ///
+    /// Usa a mediana, não a média: sob carga real é comum que uma sondagem
+    /// isolada colida com uma rajada de um dos streams de download e saia
+    /// bem mais alta que as demais — a mediana absorve esse outlier sem
+    /// exigir lógica extra de filtragem.
+    ///
+    /// - Parameters:
+    ///   - samples: latências em ms coletadas durante a fase, em qualquer
+    ///     ordem (sondagens já vêm filtradas de falha por
+    ///     `performLoadedLatencyProbe`, que só produz valores positivos).
+    ///   - minSamples: piso mínimo de amostras válidas para produzir um
+    ///     valor — evita reportar "latência sob carga" a partir de uma
+    ///     única sondagem que pode não ser representativa.
+    /// - Returns: a mediana das amostras válidas (finitas e positivas), ou
+    ///   `nil` quando não há amostras suficientes — nunca inventa um valor.
+    nonisolated static func aggregateLoadedLatency(
+        samples: [Double],
+        minSamples: Int = 3
+    ) -> Double? {
+        let valid = samples.filter { $0.isFinite && $0 > 0 }
+        guard valid.count >= minSamples else { return nil }
+
+        let sorted = valid.sorted()
+        let mid = sorted.count / 2
+        if sorted.count % 2 == 0 {
+            return (sorted[mid - 1] + sorted[mid]) / 2.0
+        }
+        return sorted[mid]
+    }
+
+    /// Medida objetiva de variação de vazão (issue #52): coeficiente de
+    /// variação (desvio padrão relativo à média) das amostras de mbps já
+    /// coletadas na janela estável da fase (`stable`, a mesma usada para
+    /// `stableAvg` — descarta os primeiros 35% para cortar o warmup
+    /// TCP/TLS). Não introduz nenhuma amostragem nova: reaproveita
+    /// integralmente `mbpsSamples` já coletado no ritmo de `sampleInterval`.
+    ///
+    /// `nonisolated static` pelo mesmo motivo de `hasConverged`: puro,
+    /// sem tocar estado do ator, testável com arrays sintéticos.
+    ///
+    /// - Parameters:
+    ///   - stableSamples: amostras de mbps da janela estável da fase.
+    ///   - window: piso mínimo de amostras válidas para produzir um valor —
+    ///     mesmo piso de robustez de `hasConverged` (5 amostras).
+    /// - Returns: desvio padrão / média das amostras válidas (>0), como
+    ///   fração — quanto maior, mais instável a vazão dentro da janela
+    ///   estável. `nil` quando não há amostras suficientes ou a média é
+    ///   zero — nunca inventa um valor com dado insuficiente.
+    nonisolated static func throughputVariation(
+        stableSamples: [Double],
+        window: Int = 5
+    ) -> Double? {
+        let valid = stableSamples.filter { $0 > 0 }
+        guard valid.count >= window else { return nil }
+
+        let mean = valid.reduce(0, +) / Double(valid.count)
+        guard mean > 0 else { return nil }
+
+        let variance = valid.map { pow($0 - mean, 2) }.reduce(0, +) / Double(valid.count)
+        let stdDev = variance.squareRoot()
+        return stdDev / mean
+    }
+
     private func generateRandomPayload(size: Int) -> Data {
         var data = Data(count: size)
         data.withUnsafeMutableBytes { buffer in
@@ -458,6 +586,39 @@ public actor SpeedTestCore {
         }
 
         return (avgLatency, 0.0, lossPercent)
+    }
+
+    /// Uma única sondagem de latência sob carga (issue #52): HEAD leve
+    /// (0 bytes) contra o mesmo endpoint Cloudflare usado pela fase de
+    /// download, disparada em paralelo à carga real dos streams de
+    /// transferência — é essa concorrência com carga que a diferencia da
+    /// latência ociosa de `performPingTest`, que roda isolada antes de
+    /// qualquer transferência.
+    ///
+    /// `nonisolated static` de propósito, igual a `resolveProviderName`:
+    /// não toca estado do ator, então pode ser chamada de dentro de uma
+    /// `Task.detached` sem nenhum hop de volta para `SpeedTestCore`.
+    ///
+    /// - Returns: a latência em milissegundos quando a sondagem responde
+    ///   200, ou `nil` em qualquer falha/timeout/status diferente — nunca
+    ///   lança, para nunca derrubar a task de amostragem que a chama em
+    ///   loop.
+    nonisolated static func performLoadedLatencyProbe() async -> Double? {
+        let start = Date()
+        do {
+            guard let url = URL(string: "https://speed.cloudflare.com/__down?bytes=0") else { return nil }
+            var request = URLRequest(url: url)
+            request.httpMethod = "HEAD"
+            request.timeoutInterval = 1.0
+            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                return nil
+            }
+            return Date().timeIntervalSince(start) * 1000.0
+        } catch {
+            return nil
+        }
     }
 
     /// Resolve o nome comercial do provedor com um timeout dedicado, isolado do
