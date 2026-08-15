@@ -39,7 +39,7 @@ enum AssistContainer {
         return NetworkDiagnosticsConfiguration(
             rulesEndpoint: rulesURL,
             aiEndpoint: aiURL,
-            requestTimeout: 8,
+            requestTimeout: 30,
             appVersion: appVersion,
             platformIdentifier: platformID
         )

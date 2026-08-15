@@ -6,13 +6,22 @@ import NetworkAssist
 struct ChatMessage: Identifiable {
     let id = UUID()
     let text: String
+    let longText: String?
     let isUser: Bool
+
+    init(text: String, longText: String? = nil, isUser: Bool) {
+        self.text = text
+        self.longText = longText
+        self.isUser = isUser
+    }
 }
 
 struct AssistSheet: View {
     @Environment(\.dismiss) var dismiss
     @State private var messages: [ChatMessage] = []
     @State private var isTyping: Bool = false
+    @State private var expandedMessages: Set<UUID> = []
+    @State private var selectedDetent: PresentationDetent = .medium
     @State private var availableQuestions: [String] = [
         "Serve para uma chamada de vídeo?",
         "Como está comparado aos meus últimos testes?",
@@ -59,26 +68,8 @@ struct AssistSheet: View {
                 ScrollView {
                     VStack(spacing: 12) {
                         ForEach(messages) { msg in
-                            HStack {
-                                if msg.isUser {
-                                    Spacer(minLength: 40)
-                                    Text(msg.text)
-                                        .font(.bodyRegular)
-                                        .padding()
-                                        .background(Color.textPrimary.opacity(0.04))
-                                        .cornerRadius(16)
-                                        .foregroundColor(.textPrimary)
-                                } else {
-                                    Text(msg.text)
-                                        .font(.bodyRegular)
-                                        .padding()
-                                        .background(Color.brandAccentWarm.opacity(0.1))
-                                        .cornerRadius(16)
-                                        .foregroundColor(.textPrimary)
-                                    Spacer(minLength: 40)
-                                }
-                            }
-                            .id(msg.id)
+                            bubble(for: msg)
+                                .id(msg.id)
                         }
 
                         if isTyping {
@@ -91,9 +82,7 @@ struct AssistSheet: View {
                         } else if !availableQuestions.isEmpty {
                             VStack(spacing: 8) {
                                 ForEach(availableQuestions, id: \.self) { q in
-                                    Button(action: {
-                                        submitQuestion(q)
-                                    }) {
+                                    Button(action: { submitQuestion(q) }) {
                                         HStack {
                                             Text(q)
                                                 .font(.system(size: 14, weight: .semibold))
@@ -132,6 +121,62 @@ struct AssistSheet: View {
             }
         }
         .background(Color.surfacePage)
+        .presentationDetents([.medium, .large], selection: $selectedDetent)
+        .presentationDragIndicator(.visible)
+    }
+
+    @ViewBuilder
+    private func bubble(for msg: ChatMessage) -> some View {
+        HStack {
+            if msg.isUser {
+                Spacer(minLength: 40)
+                Text(msg.text)
+                    .font(.bodyRegular)
+                    .padding()
+                    .background(Color.textPrimary.opacity(0.04))
+                    .cornerRadius(16)
+                    .foregroundColor(.textPrimary)
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(msg.text)
+                        .font(.bodyRegular)
+                        .foregroundColor(.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if let long = msg.longText, expandedMessages.contains(msg.id) {
+                        Text(long)
+                            .font(.bodySmall)
+                            .foregroundColor(.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+
+                    if msg.longText != nil {
+                        Button(action: { toggleExpansion(for: msg) }) {
+                            Text(expandedMessages.contains(msg.id) ? "Ver menos" : "Ver mais")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.brandAccentWarm)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding()
+                .background(Color.brandAccentWarm.opacity(0.1))
+                .cornerRadius(16)
+                Spacer(minLength: 40)
+            }
+        }
+    }
+
+    private func toggleExpansion(for msg: ChatMessage) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            if expandedMessages.contains(msg.id) {
+                expandedMessages.remove(msg.id)
+            } else {
+                expandedMessages.insert(msg.id)
+                selectedDetent = .large
+            }
+        }
     }
 
     private func submitQuestion(_ q: String) {
@@ -142,20 +187,20 @@ struct AssistSheet: View {
         isTyping = true
 
         Task {
-            let responseText = await answer(for: q)
+            let (short, long) = await answer(for: q)
             await MainActor.run {
                 self.isTyping = false
-                self.messages.append(ChatMessage(text: responseText, isUser: false))
+                self.messages.append(ChatMessage(text: short, longText: long, isUser: false))
             }
         }
     }
 
-    private func answer(for question: String) async -> String {
+    private func answer(for question: String) async -> (String, String?) {
         guard let currentMeasurement else {
-            return "Ainda não há medições suficientes para responder. Faça seu primeiro teste."
+            return ("Ainda não há medições suficientes para responder. Faça seu primeiro teste.", nil)
         }
         guard assistIsRemote else {
-            return "O Assist ainda não está configurado neste build."
+            return ("O Assist ainda não está configurado neste build.", nil)
         }
 
         let context = NetworkAssistContext(
@@ -170,24 +215,26 @@ struct AssistSheet: View {
             let response = try await assistProvider.answer(context)
             switch response.disposition {
             case .answered:
-                return response.text
+                return (response.text, response.longText)
             case .insufficientEvidence:
-                return response.text.isEmpty
+                let text = response.text.isEmpty
                     ? "Não tenho dados suficientes para responder isso agora."
                     : response.text
+                return (text, response.longText)
             case .requiresDiagnosis:
-                return response.text.isEmpty
+                let text = response.text.isEmpty
                     ? "Esse caso precisa de um diagnóstico mais completo."
                     : response.text
+                return (text, response.longText)
             case .unsupported:
-                return "Ainda não sei responder esse tipo de pergunta."
+                return ("Ainda não sei responder esse tipo de pergunta.", nil)
             }
         } catch NetworkAssistError.notConfigured {
-            return "O Assist ainda não está configurado neste build."
+            return ("O Assist ainda não está configurado neste build.", nil)
         } catch NetworkAssistError.emptyQuestion {
-            return "Por favor, escreva uma pergunta."
+            return ("Por favor, escreva uma pergunta.", nil)
         } catch {
-            return "Não foi possível consultar o Assist agora. Tente novamente em instantes."
+            return ("Não foi possível consultar o Assist agora. Tente novamente em instantes.", nil)
         }
     }
 }

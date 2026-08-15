@@ -214,8 +214,10 @@ final class SignallqDiagnosticTransportTests: XCTestCase {
         ))
 
         XCTAssertEqual(response.disposition, .answered)
-        XCTAssertTrue(response.text.contains("Sua velocidade está boa"))
-        XCTAssertTrue(response.text.contains("Se possível, use a rede de 5 GHz"))
+        XCTAssertEqual(response.text, "Sua velocidade está boa, mas a latência oscila.")
+        XCTAssertNotNil(response.longText)
+        XCTAssertTrue(response.longText?.contains("Aproxime-se do roteador") ?? false)
+        XCTAssertTrue(response.longText?.contains("Se possível, use a rede de 5 GHz") ?? false)
         XCTAssertFalse(response.evidenceIDs.isEmpty)
         XCTAssertEqual(client.lastURL, config.rulesEndpoint)
     }
@@ -264,7 +266,7 @@ final class SignallqDiagnosticTransportTests: XCTestCase {
 }
 
 final class SignallqAiDiagnosticTransportTests: XCTestCase {
-    func testAiResponseConcatenatesTextoLaudoEResumo() async throws {
+    func testAiResponseSplitsResumoAsShortAndTextoLaudoAsLong() async throws {
         let json = """
         {
           "schemaVersion": "2",
@@ -288,8 +290,51 @@ final class SignallqAiDiagnosticTransportTests: XCTestCase {
             currentMeasurement: makeValidMeasurement()
         ))
         XCTAssertEqual(response.disposition, .answered)
-        XCTAssertTrue(response.text.contains("Sua conexão está oscilando"))
-        XCTAssertTrue(response.text.contains("A velocidade está boa"))
+        XCTAssertEqual(response.text, "A velocidade está boa, mas a conexão oscila.")
+        XCTAssertEqual(response.longText, "Sua conexão está oscilando e isso pode causar travamentos em chamadas.")
+    }
+
+    func testAiResponseFallsBackToResumoWhenTextoLaudoMissing() async throws {
+        let json = """
+        {"schemaVersion":"2","status":"bom","titulo":"Resposta","resumo":"Conexão ok pra vídeo."}
+        """.data(using: .utf8)!
+        let transport = SignallqAiDiagnosticTransport(
+            configuration: NetworkDiagnosticsConfiguration(
+                rulesEndpoint: NetworkDiagnosticsConfiguration.defaultRulesEndpoint,
+                aiEndpoint: NetworkDiagnosticsConfiguration.defaultAiEndpoint,
+                platformIdentifier: "ios"
+            ),
+            httpClient: MockHTTPClient(responseData: json)
+        )
+        let service = NetworkAssistService(transport: transport)
+        let response = try await service.answer(NetworkAssistContext(
+            question: "Serve para vídeo?",
+            currentMeasurement: makeValidMeasurement()
+        ))
+        XCTAssertEqual(response.text, "Conexão ok pra vídeo.")
+        XCTAssertNil(response.longText)
+        XCTAssertFalse(response.text.contains("Resposta"), "título genérico do modo chat não deve aparecer")
+    }
+
+    func testAiResponseUsesTextoLaudoAsShortWhenResumoMissing() async throws {
+        let json = """
+        {"schemaVersion":"2","status":"bom","textoLaudo":"Sua conexão está saudável."}
+        """.data(using: .utf8)!
+        let transport = SignallqAiDiagnosticTransport(
+            configuration: NetworkDiagnosticsConfiguration(
+                rulesEndpoint: NetworkDiagnosticsConfiguration.defaultRulesEndpoint,
+                aiEndpoint: NetworkDiagnosticsConfiguration.defaultAiEndpoint,
+                platformIdentifier: "ios"
+            ),
+            httpClient: MockHTTPClient(responseData: json)
+        )
+        let service = NetworkAssistService(transport: transport)
+        let response = try await service.answer(NetworkAssistContext(
+            question: "Como está?",
+            currentMeasurement: makeValidMeasurement()
+        ))
+        XCTAssertEqual(response.text, "Sua conexão está saudável.")
+        XCTAssertNil(response.longText)
     }
 
     func testInconclusiveStatusBecomesInsufficientEvidence() async throws {

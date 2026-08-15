@@ -10,37 +10,19 @@ public struct AiDiagnosisResult: Codable, Equatable, Sendable {
     public var titulo: String?
     public var resumo: String?
     public var textoLaudo: String?
-    public var acoesRecomendadas: [Acao]?
-    public var limitesDaAnalise: [String]?
 
     public init(
         schemaVersion: String? = nil,
         status: String? = nil,
         titulo: String? = nil,
         resumo: String? = nil,
-        textoLaudo: String? = nil,
-        acoesRecomendadas: [Acao]? = nil,
-        limitesDaAnalise: [String]? = nil
+        textoLaudo: String? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.status = status
         self.titulo = titulo
         self.resumo = resumo
         self.textoLaudo = textoLaudo
-        self.acoesRecomendadas = acoesRecomendadas
-        self.limitesDaAnalise = limitesDaAnalise
-    }
-
-    public struct Acao: Codable, Equatable, Sendable {
-        public var titulo: String?
-        public var descricao: String?
-        public var prioridade: String?
-
-        public init(titulo: String? = nil, descricao: String? = nil, prioridade: String? = nil) {
-            self.titulo = titulo
-            self.descricao = descricao
-            self.prioridade = prioridade
-        }
     }
 }
 
