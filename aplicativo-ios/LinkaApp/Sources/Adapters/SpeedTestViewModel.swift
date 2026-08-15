@@ -64,6 +64,24 @@ public class SpeedTestViewModel: ObservableObject {
     private let engine = SpeedTestCore()
     private var testTask: Task<Void, Never>?
 
+    /// Geração monotônica da task de teste atual (issue #47, rodada 3 —
+    /// achado de Marcelo). `Task<Void, Never>` não é `Equatable`, então não
+    /// dá pra comparar identidade de task diretamente; um contador simples
+    /// resolve o mesmo problema. Incrementado sincronamente no início de
+    /// `startTest()`, antes da nova `Task` ser criada — cada execução
+    /// captura o valor da geração que lhe pertence (`myGeneration`) e só
+    /// aplica seu próprio cleanup (`isTesting = false`, etc.) se a geração
+    /// ainda for a corrente quando ela terminar. Cobre a corrida: T1 é
+    /// cancelada por `skipOrCancel()`, que (sem snapshot pra restaurar)
+    /// chama `startTest()` de novo sincronamente — isso já criou T2 e
+    /// avançado a geração antes de T1 perceber o cancelamento no próprio
+    /// loop. Sem esta guarda, o `catch` de T1 fazia `self.isTesting = false`
+    /// incondicionalmente, sobrescrevendo o `true` que T2 acabou de setar;
+    /// se o usuário navegasse Histórico→voltar nesse instante, `.onAppear`
+    /// via `isTesting == false` e chamava `startTest()` de novo, criando T3
+    /// e cancelando T2 sem pedido do usuário.
+    private var testGeneration: Int = 0
+
     /// Snapshot do último resultado `.done` alcançado nesta sessão do view
     /// model (issue #47) — capturado em `startTest()` no instante em que um
     /// teste chega a `.done`, antes que um `startTest()` seguinte zere os
@@ -140,6 +158,8 @@ public class SpeedTestViewModel: ObservableObject {
         uiPhase = .connecting
 
         testTask?.cancel()
+        testGeneration += 1
+        let myGeneration = testGeneration
         testTask = Task {
             // Amostra o tipo de interface no início do teste, em paralelo à
             // subida do motor (não soma latência) — independente do
@@ -167,6 +187,14 @@ public class SpeedTestViewModel: ObservableObject {
                     }
                 }
 
+                // Guarda por geração (issue #47, rodada 3): se outra
+                // `startTest()` já avançou `testGeneration` — via
+                // `skipOrCancel()` reiniciando o loop sem snapshot pra
+                // restaurar —, esta execução (T1) não é mais a corrente e
+                // não deve tocar nenhum `@Published` nem salvar no
+                // histórico por baixo de T2.
+                guard self.testGeneration == myGeneration else { return }
+
                 // `!Task.isCancelled` além do `uiPhase == .done` (issue #47):
                 // `skipOrCancel()` chama `testTask?.cancel()` antes de
                 // qualquer outra coisa, então essa checagem cobre até a
@@ -180,6 +208,14 @@ public class SpeedTestViewModel: ObservableObject {
                     // tipo específico nesse caso (nil é o estado neutro).
                     let startingKind = await startingKindTask
                     let endingKind = await Self.sampleConnectionKind()
+
+                    // Re-checa a geração depois dos dois `await` acima
+                    // (issue #47, rodada 3): a amostragem final leva ~100ms,
+                    // tempo suficiente pra um `skipOrCancel()` cancelar T1 e
+                    // iniciar T2 no meio do caminho. Sem isto, T1 ainda
+                    // gravaria snapshot/histórico por baixo do teste que já
+                    // está em andamento.
+                    guard self.testGeneration == myGeneration else { return }
 
                     self.connectionKind = NetworkConnectionKind.resolve(start: startingKind, end: endingKind)
                     self.wifiBandGHz = self.connectionKind == .wifi
@@ -218,6 +254,12 @@ public class SpeedTestViewModel: ObservableObject {
                 
                 self.isTesting = false
             } catch {
+                // Mesma guarda por geração do caminho de sucesso acima: uma
+                // T1 cancelada que só percebe isso aqui (via
+                // `Task.checkCancellation()` dentro do loop) não pode
+                // sobrescrever `isTesting`/`uiPhase` de uma T2 que já está
+                // rodando (issue #47, rodada 3 — achado de Marcelo).
+                guard self.testGeneration == myGeneration else { return }
                 self.isTesting = false
             }
         }
