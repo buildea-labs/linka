@@ -29,7 +29,6 @@ public class SpeedTestViewModel: ObservableObject {
     @Published public var lastTestSpeedString: String? = nil
     
     // UI states
-    @Published public var showSettings: Bool = false
     @Published public var showPurchase: Bool = false
     
     private let engine = SpeedTestCore()

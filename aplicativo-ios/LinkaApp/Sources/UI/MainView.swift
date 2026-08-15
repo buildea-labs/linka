@@ -11,7 +11,6 @@ struct MainView: View {
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
     @State private var ringScale: CGFloat = 1.0
-    @State private var showSettings: Bool = false
     @Namespace private var animation
 
     private var currentMeasurement: NetworkMeasurement? {
@@ -258,9 +257,7 @@ struct MainView: View {
                                 .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
                         }
                         
-                        Button(action: {
-                            showSettings = true
-                        }) {
+                        NavigationLink(destination: SettingsSheet()) {
                             Image(systemName: "slider.horizontal.3")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.textPrimary)
@@ -278,9 +275,6 @@ struct MainView: View {
         }
         .onAppear {
             viewModel.startTest()
-        }
-        .sheet(isPresented: $showSettings) {
-            SettingsSheet()
         }
         .sheet(isPresented: $showAssist) {
             AssistSheet(currentMeasurement: currentMeasurement, entitlements: entitlements)
