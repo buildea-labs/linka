@@ -1,15 +1,39 @@
 import SwiftUI
 import MeasurementHistory
+import NetworkCore
 
 struct MainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
     @AppStorage("appAppearance") private var appAppearance: String = "system"
     @AppStorage("isPro") private var isPro: Bool = false
     @State private var detailsOpen: Bool = false
+    @State private var showAssist: Bool = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
     @State private var showOnboarding: Bool = false
     @State private var showSettings: Bool = false
     @Namespace private var animation
+
+    private var currentMeasurement: NetworkMeasurement? {
+        guard viewModel.uiPhase == .done else { return nil }
+        return NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: viewModel.downloadSpeed,
+            uploadMbps: viewModel.uploadSpeed,
+            latencyMs: Double(viewModel.ping),
+            jitterMs: viewModel.jitter,
+            packetLossPercent: viewModel.packetLossPercent,
+            connectionKind: connectionKind(for: viewModel.networkType),
+            networkIdentifier: viewModel.provider.isEmpty ? nil : viewModel.provider
+        )
+    }
+
+    private func connectionKind(for networkType: String) -> NetworkConnectionKind? {
+        switch networkType {
+        case "Wi-Fi": return .wifi
+        case "": return nil
+        default: return .cellular
+        }
+    }
     var body: some View {
         NavigationStack {
             ZStack {
@@ -96,24 +120,44 @@ struct MainView: View {
                             }
                             .padding(.bottom, 24)
                             
-                            Button(action: {
-                                withAnimation(LinkaMotion.spring) {
-                                    detailsOpen.toggle()
+                            HStack(spacing: 12) {
+                                Button(action: {
+                                    withAnimation(LinkaMotion.spring) {
+                                        detailsOpen.toggle()
+                                    }
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Text("Ver detalhes")
+                                            .font(.bodySmall)
+
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 10, weight: .semibold))
+                                            .rotationEffect(.degrees(detailsOpen ? 180 : 0))
+                                    }
+                                    .foregroundColor(.textPrimary)
                                 }
-                            }) {
-                                HStack(spacing: 6) {
-                                    Text("Ver detalhes")
-                                        .font(.bodySmall)
-                                    
-                                    Image(systemName: "chevron.down")
-                                        .font(.system(size: 10, weight: .semibold))
-                                        .rotationEffect(.degrees(detailsOpen ? 180 : 0))
+                                .buttonStyle(.plain)
+
+                                Text("·")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+
+                                Button(action: {
+                                    showAssist = true
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Text("Perguntar ao Assist")
+                                            .font(.bodySmall)
+
+                                        Image(systemName: "sparkles")
+                                            .font(.system(size: 10, weight: .semibold))
+                                    }
+                                    .foregroundColor(.textPrimary)
                                 }
-                                .foregroundColor(.textPrimary)
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 16)
-                                .background(Color.clear)
+                                .buttonStyle(.plain)
                             }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
                             
                             if detailsOpen {
                                 DetailsDisclosure(
@@ -234,6 +278,9 @@ struct MainView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet()
+        }
+        .sheet(isPresented: $showAssist) {
+            AssistSheet(currentMeasurement: currentMeasurement)
         }
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
     }
