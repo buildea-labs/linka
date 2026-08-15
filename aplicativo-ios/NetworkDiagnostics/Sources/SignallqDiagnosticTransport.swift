@@ -72,20 +72,26 @@ public struct SignallqDiagnosticTransport: NetworkAssistTransport {
             )
         }
 
-        var parts: [String] = [decisao.mensagemUsuario]
-        if let recomendacao = decisao.recomendacao, !recomendacao.isEmpty {
-            parts.append(recomendacao)
+        // Divulgação progressiva: a `mensagemUsuario` da decisão é o texto
+        // principal. A recomendação e cards secundários vão para o "Ver mais".
+        let primary = decisao.mensagemUsuario.trimmingCharacters(in: .whitespacesAndNewlines)
+        var longParts: [String] = []
+        if let recomendacao = decisao.recomendacao?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !recomendacao.isEmpty {
+            longParts.append(recomendacao)
         }
-        for card in report.recomendacoes ?? [] where !card.mensagemUsuario.isEmpty {
-            parts.append(card.mensagemUsuario)
+        for card in report.recomendacoes ?? [] {
+            let msg = card.mensagemUsuario.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !msg.isEmpty { longParts.append(msg) }
         }
-        let text = parts.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+        let long = longParts.isEmpty ? nil : longParts.joined(separator: "\n\n")
 
         let disposition = mapDisposition(status: decisao.status, podeConcluir: decisao.podeConcluir)
         let evidenceIDs = defaultEvidenceIDs(for: request, disposition: disposition)
 
         return NetworkAssistResponse(
-            text: text.isEmpty ? decisao.titulo : text,
+            text: primary.isEmpty ? decisao.titulo : primary,
+            longText: long,
             disposition: disposition,
             evidenceIDs: evidenceIDs
         )

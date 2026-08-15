@@ -60,23 +60,41 @@ public struct SignallqAiDiagnosticTransport: NetworkAssistTransport {
         result: AiDiagnosisResult,
         request: NetworkAssistRequest
     ) -> NetworkAssistResponse {
-        let text = pickPrimary([
-            result.textoLaudo,
-            result.resumo,
-            usefulTitle(result.titulo)
-        ])
+        // Divulgação progressiva: `resumo` (1 frase) é o texto default do card.
+        // `textoLaudo` (3-5 linhas, mais técnico) vai atrás de "Ver mais".
+        // Se só um dos campos veio, usa como texto principal sem "Ver mais".
+        let resumo = trimmed(result.resumo)
+        let laudo = trimmed(result.textoLaudo)
+        let titulo = trimmed(usefulTitle(result.titulo))
+
+        let short: String?
+        let long: String?
+        switch (resumo, laudo) {
+        case (.some(let r), .some(let l)) where r != l:
+            short = r
+            long = l
+        case (.some(let r), _):
+            short = r
+            long = nil
+        case (_, .some(let l)):
+            short = l
+            long = nil
+        default:
+            short = titulo
+            long = nil
+        }
 
         let disposition: NetworkAssistDisposition
         switch (result.status ?? "").lowercased() {
         case "inconclusivo":
             disposition = .insufficientEvidence
         case "":
-            disposition = text.isEmpty ? .insufficientEvidence : .answered
+            disposition = (short?.isEmpty ?? true) ? .insufficientEvidence : .answered
         default:
             disposition = .answered
         }
 
-        if text.isEmpty {
+        guard let primary = short, !primary.isEmpty else {
             return NetworkAssistResponse(
                 text: "Não consegui gerar uma resposta agora.",
                 disposition: .insufficientEvidence,
@@ -89,19 +107,16 @@ public struct SignallqAiDiagnosticTransport: NetworkAssistTransport {
             : []
 
         return NetworkAssistResponse(
-            text: text,
+            text: primary,
+            longText: long,
             disposition: disposition,
             evidenceIDs: evidenceIDs
         )
     }
 
-    /// Escolhe o primeiro campo não vazio. Não concatena — evita duplicar
-    /// conteúdo (`textoLaudo` já é a resposta cheia; `resumo` é a versão de
-    /// 1 frase; `titulo` costuma ser genérico em modo chat).
-    private func pickPrimary(_ parts: [String?]) -> String {
-        parts
-            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .first { !$0.isEmpty } ?? ""
+    private func trimmed(_ s: String?) -> String? {
+        guard let s = s?.trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty else { return nil }
+        return s
     }
 
     /// Descarta títulos genéricos que o worker devolve como placeholder do

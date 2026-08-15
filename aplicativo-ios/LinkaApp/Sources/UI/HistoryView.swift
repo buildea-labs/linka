@@ -122,8 +122,6 @@ struct HistoryView: View {
                 currentMeasurement: measurements.first,
                 recentMeasurements: Array(measurements.dropFirst().prefix(19))
             )
-            .presentationDetents([.fraction(0.6), .large])
-            .presentationDragIndicator(.visible)
         }
         .onAppear {
             loadData()

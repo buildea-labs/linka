@@ -125,15 +125,18 @@ public struct NetworkAssistRequest: Codable, Equatable, Sendable {
 
 public struct NetworkAssistResponse: Codable, Equatable, Sendable {
     public let text: String
+    public let longText: String?
     public let disposition: NetworkAssistDisposition
     public let evidenceIDs: [String]
 
     public init(
         text: String,
+        longText: String? = nil,
         disposition: NetworkAssistDisposition = .answered,
         evidenceIDs: [String] = []
     ) {
         self.text = text
+        self.longText = longText
         self.disposition = disposition
         self.evidenceIDs = evidenceIDs
     }
@@ -195,8 +198,10 @@ public struct NetworkAssistService<Transport: NetworkAssistTransport>: NetworkAs
         let request = NetworkAssistRequest(validated: context)
         let response = try await transport.answer(request)
         try validate(response, against: request)
+        let trimmedLong = response.longText?.trimmingCharacters(in: .whitespacesAndNewlines)
         return NetworkAssistResponse(
             text: response.text.trimmingCharacters(in: .whitespacesAndNewlines),
+            longText: (trimmedLong?.isEmpty == false) ? trimmedLong : nil,
             disposition: response.disposition,
             evidenceIDs: response.evidenceIDs
         )
