@@ -150,6 +150,15 @@ public class SpeedTestViewModel: ObservableObject {
                 var lastUpdateTime = Date()
 
                 for try await state in await engine.runTest() {
+                    // Checa cancelamento a cada yield (issue #47, rodada 2):
+                    // sem isto, uma `skipOrCancel()` que chegue entre dois
+                    // yields do motor só é percebida no próximo `state`, em
+                    // vez de interromper o consumo imediatamente — agora que
+                    // `SpeedTestCore.runTest()` cancela o próprio Task
+                    // interno via `continuation.onTermination`, este loop
+                    // também precisa parar de consumir assim que percebe.
+                    try Task.checkCancellation()
+
                     let now = Date()
                     // Throttle updates to ~30fps
                     if now.timeIntervalSince(lastUpdateTime) >= 0.033 || state.progress >= 1.0 || state.progress == 0.0 {
@@ -220,9 +229,12 @@ public class SpeedTestViewModel: ObservableObject {
     /// separados. Cancela a task/stream do motor e nunca deixa o teste
     /// interrompido entrar no histórico (ver guarda `!Task.isCancelled` em
     /// `startTest()`). Restaura integralmente o último resultado válido
-    /// desta sessão quando existir; senão volta a `.idle` sem fabricar
-    /// valores zerados como se fossem um resultado (`MainView` já trata
-    /// `.idle`/`.connecting` como "Preparando", sem número).
+    /// desta sessão quando existir ("Cancelar"); senão reinicia um teste
+    /// novo automaticamente ("Pular" — bug reportado por Marcelo na rodada
+    /// 2 do PR #91: sem um snapshot pra restaurar, `uiPhase = .idle` sozinho
+    /// é beco sem saída, porque nenhum botão em `MainView` no branch
+    /// `.idle` chama `startTest()`; "Pular" sem resultado precisa, ele
+    /// mesmo, reiniciar o loop natural do produto).
     public func skipOrCancel() {
         testTask?.cancel()
         testTask = nil
@@ -244,18 +256,7 @@ public class SpeedTestViewModel: ObservableObject {
             progress = 1.0
             uiPhase = .done
         } else {
-            downloadSpeed = 0.0
-            uploadSpeed = 0.0
-            ping = 0
-            jitter = 0.0
-            provider = ""
-            networkType = ""
-            testDuration = ""
-            packetLossPercent = nil
-            connectionKind = nil
-            wifiBandGHz = nil
-            progress = 0.0
-            uiPhase = .idle
+            startTest()
         }
     }
     

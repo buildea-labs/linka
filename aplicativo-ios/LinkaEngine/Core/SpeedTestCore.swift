@@ -159,7 +159,7 @@ public actor SpeedTestCore {
     /// Starts the speed test and yields updates via an AsyncThrowingStream
     public func runTest() -> AsyncThrowingStream<MeasurementState, Error> {
         return AsyncThrowingStream { continuation in
-            Task {
+            let innerTask = Task {
                 do {
                     var state = MeasurementState(progress: 0.0, phase: .ping)
 
@@ -213,6 +213,15 @@ public actor SpeedTestCore {
 
                     // Measure Ping and Packet Loss
                     let (pingMs, jitterMs, lossPercent) = await performPingTest()
+
+                    // `performPingTest()` roda 10 sondagens sequenciais sem
+                    // checar cancelamento internamente — sem este ponto de
+                    // corte, um cancelamento chegado durante o ping só seria
+                    // percebido depois de entrar na fase de download (issue
+                    // #47, rodada 2). `runPhaseTimeBased` já checa
+                    // `Task.isCancelled` no próprio loop de amostragem, mas
+                    // esta é a única lacuna real anterior a ele.
+                    try Task.checkCancellation()
 
                     state.ping = pingMs
                     state.jitter = jitterMs
@@ -305,6 +314,21 @@ public actor SpeedTestCore {
                 } catch {
                     continuation.finish(throwing: error)
                 }
+            }
+
+            // Propaga o cancelamento da consumidora até o motor (issue #47,
+            // rodada 2 — bug real reportado por Marcelo no PR #91):
+            // `AsyncThrowingStream` por padrão não cancela sozinho a Task que
+            // produz os valores quando a Task que consome (`for try await`
+            // em `SpeedTestViewModel.startTest()`) é cancelada — a stream só
+            // recebe `onTermination`, e sem este handler `innerTask`
+            // continuava batendo download/upload reais mesmo depois de
+            // "Cancelar"/"Pular". `onTermination` dispara tanto quando a
+            // consumidora cancela quanto quando a stream termina normalmente
+            // (`.finished`) — cancelar `innerTask` numa Task já finalizada é
+            // no-op seguro, então não precisa distinguir os dois casos aqui.
+            continuation.onTermination = { @Sendable _ in
+                innerTask.cancel()
             }
         }
     }
