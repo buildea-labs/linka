@@ -98,3 +98,125 @@ final class SpeedTestCoreTests: XCTestCase {
     }
 
 }
+
+/// Cobre o critério de convergência de vazão adaptativa por fase (issue #62):
+/// `hasConverged` e `shouldStopPhase` são `nonisolated static` — puras, sem
+/// `Date()` ao vivo nem `URLSession` — então exercitáveis com arrays
+/// sintéticos de amostras mbps, sem bater em rede real.
+final class SpeedTestCorePhaseStabilityTests: XCTestCase {
+
+    // MARK: - hasConverged
+
+    func test_hasConverged_stableSamples_returnsTrue() {
+        // Últimas 5 amostras bem próximas (variação < 8%) — vazão estabilizou.
+        let samples: [Double] = [40.0, 95.0, 98.0, 100.0, 99.0, 101.0, 100.0]
+
+        XCTAssertTrue(SpeedTestCore.hasConverged(samples: samples))
+    }
+
+    func test_hasConverged_stillRamping_returnsFalse() {
+        // Vazão claramente ainda subindo — sem plateau nas últimas amostras.
+        let samples: [Double] = [10.0, 20.0, 35.0, 50.0, 70.0, 90.0, 110.0]
+
+        XCTAssertFalse(SpeedTestCore.hasConverged(samples: samples))
+    }
+
+    func test_hasConverged_noisyUnstableSamples_returnsFalse() {
+        // Conexão instável — grandes variações entre amostras consecutivas,
+        // nunca assenta num plateau.
+        let samples: [Double] = [50.0, 120.0, 30.0, 140.0, 20.0, 150.0, 25.0]
+
+        XCTAssertFalse(SpeedTestCore.hasConverged(samples: samples))
+    }
+
+    func test_hasConverged_notEnoughSamplesYet_returnsFalse() {
+        // Menos amostras do que a janela padrão (5) — não há dado suficiente
+        // ainda para decidir estabilidade, mesmo que os valores sejam iguais.
+        let samples: [Double] = [100.0, 100.0, 100.0]
+
+        XCTAssertFalse(SpeedTestCore.hasConverged(samples: samples))
+    }
+
+    func test_hasConverged_ignoresLeadingZeroSamples() {
+        // Zeros no início representam ausência de dado na janela (não vazão
+        // real, ver `runPhaseTimeBased`) e não devem contar para o tamanho
+        // da janela nem distorcer a média.
+        let samples: [Double] = [0.0, 0.0, 100.0, 99.0, 101.0, 100.0, 100.0]
+
+        XCTAssertTrue(SpeedTestCore.hasConverged(samples: samples))
+    }
+
+    // MARK: - shouldStopPhase
+
+    func test_shouldStopPhase_convergesEarly_stopsAfterMinDuration() {
+        let stableSamples: [Double] = [40.0, 95.0, 98.0, 100.0, 99.0, 101.0, 100.0]
+
+        let result = SpeedTestCore.shouldStopPhase(
+            samples: stableSamples,
+            elapsed: 7.0,
+            minDuration: 6.0,
+            maxDuration: 18.0
+        )
+
+        XCTAssertTrue(result)
+    }
+
+    func test_shouldStopPhase_staysUnstable_doesNotStopBeforeMaxDuration() {
+        let noisySamples: [Double] = [50.0, 120.0, 30.0, 140.0, 20.0, 150.0, 25.0]
+
+        let result = SpeedTestCore.shouldStopPhase(
+            samples: noisySamples,
+            elapsed: 12.0,
+            minDuration: 6.0,
+            maxDuration: 18.0
+        )
+
+        XCTAssertFalse(result)
+    }
+
+    func test_shouldStopPhase_respectsMinDuration_evenWithApparentConvergence() {
+        // Amostras perfeitamente estáveis, mas `elapsed` ainda não alcançou
+        // `minDuration` — não deve encerrar cedo demais (evita convergência
+        // espúria por poucas amostras durante o warmup TCP/TLS).
+        let stableSamples: [Double] = [100.0, 100.0, 100.0, 100.0, 100.0, 100.0]
+
+        let result = SpeedTestCore.shouldStopPhase(
+            samples: stableSamples,
+            elapsed: 3.0,
+            minDuration: 6.0,
+            maxDuration: 18.0
+        )
+
+        XCTAssertFalse(result)
+    }
+
+    func test_shouldStopPhase_respectsMaxDuration_evenWithoutConvergence() {
+        // Amostras nunca convergem, mas `elapsed` já alcançou `maxDuration`
+        // — o teto sempre vence, preservando o pior caso de tempo/consumo de
+        // dados do comportamento anterior (18s fixos).
+        let noisySamples: [Double] = [50.0, 120.0, 30.0, 140.0, 20.0, 150.0, 25.0]
+
+        let result = SpeedTestCore.shouldStopPhase(
+            samples: noisySamples,
+            elapsed: 18.0,
+            minDuration: 6.0,
+            maxDuration: 18.0
+        )
+
+        XCTAssertTrue(result)
+    }
+
+    func test_shouldStopPhase_beforeMinAndMax_neverStopsRegardlessOfSamples() {
+        let anySamples: [Double] = [10.0, 200.0, 5.0]
+
+        let result = SpeedTestCore.shouldStopPhase(
+            samples: anySamples,
+            elapsed: 1.0,
+            minDuration: 6.0,
+            maxDuration: 18.0
+        )
+
+        XCTAssertFalse(result)
+    }
+
+}

@@ -35,6 +35,31 @@ public struct IPInfoOrgLookup: ProviderOrgLookup {
 
 public actor SpeedTestCore {
 
+    // ----------------------------------------------------------------
+    // Duração adaptativa por fase (issue #62).
+    //
+    // O preset anterior usava 18s fixos em download e upload, herdados do
+    // preset "pesado" do SignallQ — adequado para métodos de diagnóstico
+    // mais profundos, desnecessário para o objetivo do Linka (medir rápido
+    // e mostrar resultado). Em vez de um teto fixo, cada fase roda até a
+    // vazão amostrada convergir (ver `hasConverged`/`shouldStopPhase`),
+    // respeitando sempre um piso (`phaseMinDuration`) e um teto
+    // (`phaseMaxDuration`) conhecidos:
+    //
+    //   - `phaseMinDuration` (6s) garante amostras suficientes após o
+    //     warmup de conexão TCP/TLS antes de sequer considerar encerrar —
+    //     evita "convergência" espúria por poucas amostras iniciais.
+    //   - `phaseMaxDuration` (18s) preserva o teto de hoje: em conexões
+    //     instáveis que nunca convergem, o consumo de dados e o tempo
+    //     total no pior caso não pioram em relação ao comportamento atual.
+    //
+    // Mesmos valores para download e upload — nenhuma evidência coletada
+    // (ver PR #62) justifica um piso/teto assimétrico entre as duas fases;
+    // ambas usam os mesmos 4 streams e a mesma técnica de amostragem.
+    // ----------------------------------------------------------------
+    private static let phaseMinDuration: TimeInterval = 6.0
+    private static let phaseMaxDuration: TimeInterval = 18.0
+
     private let providerLookup: ProviderOrgLookup
     private let providerEnrichmentTimeout: TimeInterval
 
@@ -104,19 +129,20 @@ public actor SpeedTestCore {
 
                     // ----------------------------------------------------
                     // Measure Download
-                    // 18s duration, 4 streams, 10MB chunk. Chunks menores +
-                    // menos streams reduzem drasticamente a chance de tomar
-                    // 429 do Cloudflare em uso real (cada request pesa 60%
-                    // menos e a rajada por segundo cai pela metade).
+                    // 6s–18s adaptativo (issue #62), 4 streams, 10MB chunk.
+                    // Chunks menores + menos streams reduzem drasticamente a
+                    // chance de tomar 429 do Cloudflare em uso real (cada
+                    // request pesa 60% menos e a rajada por segundo cai pela
+                    // metade).
                     // ----------------------------------------------------
                     let downloadSpeed = try await runPhaseTimeBased(
                         phase: .download,
-                        duration: 18.0,
+                        minDuration: Self.phaseMinDuration,
+                        maxDuration: Self.phaseMaxDuration,
                         streams: 4,
                         bytes: 10_000_000, // 10 MB
                         state: &state,
-                        continuation: continuation,
-                        testStart: testStart
+                        continuation: continuation
                     )
 
                     state.downloadSpeed = downloadSpeed
@@ -129,17 +155,18 @@ public actor SpeedTestCore {
 
                     // ----------------------------------------------------
                     // Measure Upload
-                    // 18s duration, 4 streams, 5MB chunk. Mesmo motivo do
-                    // download: agressividade reduzida pra fugir de 429.
+                    // 6s–18s adaptativo (issue #62), 4 streams, 5MB chunk.
+                    // Mesmo motivo do download: agressividade reduzida pra
+                    // fugir de 429.
                     // ----------------------------------------------------
                     let uploadSpeed = try await runPhaseTimeBased(
                         phase: .upload,
-                        duration: 18.0,
+                        minDuration: Self.phaseMinDuration,
+                        maxDuration: Self.phaseMaxDuration,
                         streams: 4,
                         bytes: 5_000_000, // 5 MB
                         state: &state,
-                        continuation: continuation,
-                        testStart: testStart
+                        continuation: continuation
                     )
 
                     state.uploadSpeed = uploadSpeed
@@ -168,12 +195,12 @@ public actor SpeedTestCore {
 
     private func runPhaseTimeBased(
         phase: Phase,
-        duration: TimeInterval,
+        minDuration: TimeInterval,
+        maxDuration: TimeInterval,
         streams: Int,
         bytes: Int,
         state: inout MeasurementState,
-        continuation: AsyncThrowingStream<MeasurementState, Error>.Continuation,
-        testStart: Date
+        continuation: AsyncThrowingStream<MeasurementState, Error>.Continuation
     ) async throws -> Double {
 
         let phaseStart = Date()
@@ -201,7 +228,7 @@ public actor SpeedTestCore {
                         // Cloudflare rate-limita agressivamente esses endpoints
                         // sob rajada. Começa em 100ms e cresce até 2s.
                         var backoffMs: UInt64 = 100
-                        while Date().timeIntervalSince(phaseStart) < duration && !Task.isCancelled {
+                        while Date().timeIntervalSince(phaseStart) < maxDuration && !Task.isCancelled {
                             do {
                                 let bytesGained: Int64
                                 let statusCode: Int
@@ -240,7 +267,7 @@ public actor SpeedTestCore {
         var smoothedMbps: Double = 0.0
         var lastTotal: Int64 = 0
 
-        while Date().timeIntervalSince(phaseStart) < duration {
+        while Date().timeIntervalSince(phaseStart) < maxDuration {
             try? await Task.sleep(nanoseconds: UInt64(sampleInterval * 1_000_000_000))
             if Task.isCancelled { break }
 
@@ -260,14 +287,34 @@ public actor SpeedTestCore {
                 }
             }
 
-            // Progress interpolation
+            // Progress interpolation — baseado em maxDuration (teto), não na
+            // duração real da fase. Como a fase pode encerrar antes por
+            // convergência (ver `shouldStopPhase` abaixo), isso evita que o
+            // progresso "estoure" 1.0 sempre que termina cedo e evita um
+            // salto visual brusco quando a próxima fase assume seu
+            // baseProgress — motion continua só transmitindo estado, sem
+            // chamar atenção pra si (AGENTS.md §6).
             let elapsed = Date().timeIntervalSince(phaseStart)
-            let phaseProgress = min(elapsed / duration, 1.0)
+            let phaseProgress = min(elapsed / maxDuration, 1.0)
             let baseProgress = phase == .download ? 0.1 : 0.5
             let totalPhaseRange = phase == .download ? 0.4 : 0.5
             state.progress = baseProgress + (phaseProgress * totalPhaseRange)
 
             continuation.yield(state)
+
+            // Encerra a fase cedo quando a vazão amostrada já convergiu e o
+            // piso mínimo já foi respeitado (issue #62) — conexões estáveis
+            // terminam antes de `maxDuration`, economizando tempo, franquia
+            // e bateria. Conexões instáveis seguem até `maxDuration`, igual
+            // ao comportamento anterior.
+            if Self.shouldStopPhase(
+                samples: mbpsSamples,
+                elapsed: elapsed,
+                minDuration: minDuration,
+                maxDuration: maxDuration
+            ) {
+                break
+            }
         }
 
         workersTask.cancel()
@@ -291,6 +338,70 @@ public actor SpeedTestCore {
         let stableAvg = stable.isEmpty ? 0.0 : stable.reduce(0, +) / Double(stable.count)
 
         return stableAvg > 0 ? stableAvg : averageMbps
+    }
+
+    /// Critério de convergência de vazão (issue #62): decide se uma janela
+    /// recente de amostras de mbps já está "estável o suficiente" para
+    /// considerar a medição da fase concluída.
+    ///
+    /// `nonisolated static` de propósito — igual a `resolveProviderName`:
+    /// não toca `Date()` ao vivo, não toca URLSession, não toca o estado do
+    /// ator. Recebe só o array de amostras já coletadas, o que a torna
+    /// inteiramente exercitável em teste com arrays sintéticos.
+    ///
+    /// - Parameters:
+    ///   - samples: amostras de mbps instantâneo coletadas na fase até agora,
+    ///     em ordem cronológica (uma por `sampleInterval`, hoje 300ms).
+    ///   - window: quantas das amostras mais recentes considerar. 5 amostras
+    ///     a 300ms cobre 1.5s de janela — sensível o bastante para detectar
+    ///     estabilização sem reagir a um único pico/vale isolado.
+    ///   - tolerance: variação relativa máxima, como fração da média da
+    ///     janela, para considerar a vazão estável. 0.08 (8%) tolera o ruído
+    ///     normal de uma conexão saudável sem aceitar como "estável" uma
+    ///     vazão que ainda está subindo ou caindo de forma clara.
+    /// - Returns: `true` quando há amostras válidas suficientes (>= `window`,
+    ///   descartando zeros — que indicam ausência de dado na janela, não
+    ///   vazão real) e a variação relativa entre elas está dentro de
+    ///   `tolerance`. `false` quando não há amostras suficientes ainda ou a
+    ///   vazão segue variando além da tolerância.
+    nonisolated static func hasConverged(
+        samples: [Double],
+        window: Int = 5,
+        tolerance: Double = 0.08
+    ) -> Bool {
+        let valid = samples.filter { $0 > 0 }
+        guard valid.count >= window else { return false }
+
+        let recent = Array(valid.suffix(window))
+        let mean = recent.reduce(0, +) / Double(recent.count)
+        guard mean > 0 else { return false }
+
+        let maxRelativeDeviation = recent.map { abs($0 - mean) / mean }.max() ?? .infinity
+        return maxRelativeDeviation <= tolerance
+    }
+
+    /// Decisão completa de "encerrar a fase agora?" (issue #62): compõe o
+    /// critério de convergência (`hasConverged`) com o piso e o teto de
+    /// duração da fase. `nonisolated static` pela mesma razão de
+    /// `hasConverged` — sem `Date()` ao vivo, `elapsed` é passado pelo
+    /// chamador, então é inteiramente testável com valores sintéticos.
+    ///
+    /// - Returns: `true` se `elapsed` já alcançou `maxDuration` (teto —
+    ///   sempre encerra, convergindo ou não, preservando o pior caso de
+    ///   tempo/consumo de dados do comportamento anterior); ou se `elapsed`
+    ///   já alcançou `minDuration` **e** `hasConverged` é `true` (encerra
+    ///   cedo). Caso contrário `false` — a fase continua amostrando.
+    nonisolated static func shouldStopPhase(
+        samples: [Double],
+        elapsed: TimeInterval,
+        minDuration: TimeInterval,
+        maxDuration: TimeInterval,
+        window: Int = 5,
+        tolerance: Double = 0.08
+    ) -> Bool {
+        if elapsed >= maxDuration { return true }
+        guard elapsed >= minDuration else { return false }
+        return hasConverged(samples: samples, window: window, tolerance: tolerance)
     }
 
     private func generateRandomPayload(size: Int) -> Data {
