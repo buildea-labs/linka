@@ -25,6 +25,12 @@ public class SpeedTestViewModel: ObservableObject {
     @Published public var testDuration: String = ""
     @Published public var packetLossPercent: Double? = nil
     @Published public var uiPhase: SpeedTestUIPhase = .idle
+
+    /// Latência sob carga (issue #52) — motor-interna nesta entrega, sem
+    /// superfície própria na UI ainda; só alimenta o `NetworkMeasurement`
+    /// final. Não é `@Published` de propósito: não deve disparar re-render
+    /// nenhum, para não competir com o resultado (AGENTS.md §6).
+    private var loadedLatencyMs: Double? = nil
     
     @Published public var lastTestSpeedString: String? = nil
     
@@ -73,6 +79,7 @@ public class SpeedTestViewModel: ObservableObject {
         provider = ""
         networkType = ""
         testDuration = ""
+        loadedLatencyMs = nil
         uiPhase = .connecting
         
         testTask?.cancel()
@@ -97,6 +104,7 @@ public class SpeedTestViewModel: ObservableObject {
                         latencyMs: Double(self.ping),
                         jitterMs: self.jitter,
                         packetLossPercent: self.packetLossPercent,
+                        loadedLatencyMs: self.loadedLatencyMs,
                         connectionKind: self.networkType == "Wi-Fi" ? .wifi : (self.networkType.isEmpty ? .other : .cellular),
                         networkIdentifier: self.provider
                     )
@@ -128,7 +136,8 @@ public class SpeedTestViewModel: ObservableObject {
         if let net = state.networkType { self.networkType = net }
         if let dur = state.duration { self.testDuration = String(format: "%.1fs", dur).replacingOccurrences(of: ".", with: ",") }
         if let loss = state.packetLossPercent { self.packetLossPercent = loss }
-        
+        if let loadedLatency = state.loadedLatencyMs { self.loadedLatencyMs = loadedLatency }
+
         switch state.phase {
         case .idle: self.uiPhase = .idle
         case .ping: self.uiPhase = .connecting

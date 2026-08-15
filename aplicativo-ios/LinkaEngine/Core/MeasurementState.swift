@@ -11,8 +11,20 @@ public struct MeasurementState {
     public var provider: String?
     public var networkType: String?
     public var duration: Double?
-    
-    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: String? = nil, duration: Double? = nil) {
+    /// Latência sob carga (ms), amostrada durante a fase de download
+    /// (issue #52). `nil` quando a fase não produziu amostras válidas
+    /// suficientes — nunca um valor inventado. Espelha o campo homônimo já
+    /// existente no contrato canônico `NetworkMeasurement`.
+    public var loadedLatencyMs: Double?
+    /// Coeficiente de variação da vazão de download (desvio padrão relativo
+    /// à média, janela estável) — issue #52. Propriedade motor-interna
+    /// nesta primeira entrega, não faz parte do contrato canônico
+    /// `NetworkMeasurement`. `nil` quando não há amostras suficientes.
+    public var downloadThroughputVariation: Double?
+    /// Mesma medida de `downloadThroughputVariation`, para a fase de upload.
+    public var uploadThroughputVariation: Double?
+
+    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: String? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil) {
         self.ping = ping
         self.jitter = jitter
         self.packetLossPercent = packetLossPercent
@@ -23,5 +35,8 @@ public struct MeasurementState {
         self.provider = provider
         self.networkType = networkType
         self.duration = duration
+        self.loadedLatencyMs = loadedLatencyMs
+        self.downloadThroughputVariation = downloadThroughputVariation
+        self.uploadThroughputVariation = uploadThroughputVariation
     }
 }
