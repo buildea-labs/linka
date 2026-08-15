@@ -2,11 +2,12 @@ import SwiftUI
 import AudioToolbox
 import MeasurementHistory
 import NetworkCore
+import LinkaEntitlements
 
 struct MainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
     @AppStorage("appAppearance") private var appAppearance: String = "system"
-    @AppStorage("isPro") private var isPro: Bool = false
+    @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
     @State private var ringScale: CGFloat = 1.0
@@ -25,6 +26,21 @@ struct MainView: View {
             connectionKind: connectionKind(for: viewModel.networkType),
             networkIdentifier: viewModel.provider.isEmpty ? nil : viewModel.provider
         )
+    }
+
+    /// Suprime anúncios para quem tem Linka Plus ativo agora. "Sem anúncios"
+    /// não é uma `LinkaCapability` própria, mas a checagem de "Plus ativo
+    /// agora" precisa ser a mesma em todo o app — por isso delega para
+    /// `LinkaEntitlementPolicy.decision`, usando `.history` (capability
+    /// exclusiva do plano Plus) como proxy, em vez de reimplementar a
+    /// leitura de `status`/`validUntil` aqui. Ler `snapshot.status` sozinho
+    /// não revalida `validUntil` contra o relógio atual; `decision` faz isso.
+    private var isPlusActive: Bool {
+        LinkaEntitlementPolicy.decision(
+            for: .history,
+            snapshot: entitlements.snapshot,
+            at: Date()
+        ).isGranted
     }
 
     private func connectionKind(for networkType: String) -> NetworkConnectionKind? {
@@ -200,7 +216,7 @@ struct MainView: View {
                             
                             Spacer(minLength: 16)
 
-                            if !isPro {
+                            if !isPlusActive {
                                 BannerView()
                                     .padding(.bottom, 8)
                             }
@@ -267,7 +283,7 @@ struct MainView: View {
             SettingsSheet()
         }
         .sheet(isPresented: $showAssist) {
-            AssistSheet(currentMeasurement: currentMeasurement)
+            AssistSheet(currentMeasurement: currentMeasurement, entitlements: entitlements)
         }
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: viewModel.uiPhase) { newPhase in

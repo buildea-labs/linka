@@ -13,9 +13,15 @@ let package = Package(
             targets: ["LinkaAppIntents"]
         )
     ],
+    dependencies: [
+        .package(path: "../LinkaEntitlements")
+    ],
     targets: [
         .target(
             name: "LinkaAppIntents",
+            dependencies: [
+                .product(name: "LinkaEntitlements", package: "LinkaEntitlements")
+            ],
             path: "Sources"
         ),
         .testTarget(

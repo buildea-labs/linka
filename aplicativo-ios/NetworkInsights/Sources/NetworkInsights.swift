@@ -137,6 +137,12 @@ public struct NetworkInsightsConfiguration: Equatable, Sendable {
 
 public enum NetworkInsightsError: Error, Equatable, Sendable {
     case invalidMeasurement(UUID)
+
+    /// Não é lançado por `BasicNetworkInsightsAnalyzer` — este pacote é
+    /// cálculo puro e não conhece entitlement. Reservado para consumidores
+    /// que envolvem `NetworkInsightsAnalyzing` com uma checagem de acesso
+    /// (ver `LinkaModules.EntitlementGatedNetworkInsightsAnalyzer`).
+    case notEntitled
 }
 
 public protocol NetworkInsightsAnalyzing: Sendable {

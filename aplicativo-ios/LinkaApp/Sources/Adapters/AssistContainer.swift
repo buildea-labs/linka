@@ -1,6 +1,8 @@
 import Foundation
 import NetworkAssist
 import NetworkDiagnostics
+import LinkaEntitlements
+import LinkaModules
 
 /// Constrói o `NetworkAssistProviding` que a UI usa. Substitui a antiga
 /// resposta algorítmica (if/else PT-BR) por um transport HTTP real que fala
@@ -9,6 +11,12 @@ import NetworkDiagnostics
 /// A flag `assistUsesRemoteDiagnostic` (via `Info.plist` ou `UserDefaults`)
 /// controla se o Assist responde de verdade ou permanece "não configurado".
 /// Default: debug true, release false até validação de campo.
+///
+/// Esse flag é ortogonal ao entitlement de plano aplicado por
+/// `makeAssistProvider(entitlements:)`: um controla se o transport remoto
+/// está configurado neste build; o outro controla se o usuário tem direito
+/// ao Assist. O gate de entitlement roda primeiro — um usuário free nunca
+/// chega a observar se o transport remoto está ou não configurado.
 enum AssistContainer {
     static let assistFlagKey = "assistUsesRemoteDiagnostic"
 
@@ -46,7 +54,31 @@ enum AssistContainer {
     }
 
     /// Provider para responder pergunta do usuário (conversacional → AI worker).
-    static func makeAssistProvider() -> any NetworkAssistProviding {
+    ///
+    /// Envolve o provider real com `EntitlementGatedNetworkAssistProvider`:
+    /// o Assist consulta a mesma `LinkaEntitlementPolicy` usada pelo resto
+    /// do app antes de responder, em vez de ficar completamente aberto.
+    static func makeAssistProvider(
+        entitlements: StoreKitEntitlementProvider
+    ) -> any NetworkAssistProviding {
+        EntitlementGatedNetworkAssistProvider(
+            wrapping: makeRawAssistProvider(),
+            snapshot: { await entitlements.snapshot }
+        )
+    }
+
+    /// Provider para diagnóstico estruturado (Insight, "como está minha rede?").
+    /// Não usado no v1 além do AssistSheet; deixamos exposto para futuro uso.
+    static func makeRulesProvider(
+        entitlements: StoreKitEntitlementProvider
+    ) -> any NetworkAssistProviding {
+        EntitlementGatedNetworkAssistProvider(
+            wrapping: makeRawRulesProvider(),
+            snapshot: { await entitlements.snapshot }
+        )
+    }
+
+    private static func makeRawAssistProvider() -> any NetworkAssistProviding {
         guard isRemoteAssistEnabled() else {
             return NetworkAssistService(transport: UnconfiguredNetworkAssistTransport())
         }
@@ -57,9 +89,7 @@ enum AssistContainer {
         return NetworkAssistService(transport: transport)
     }
 
-    /// Provider para diagnóstico estruturado (Insight, "como está minha rede?").
-    /// Não usado no v1 além do AssistSheet; deixamos exposto para futuro uso.
-    static func makeRulesProvider() -> any NetworkAssistProviding {
+    private static func makeRawRulesProvider() -> any NetworkAssistProviding {
         guard isRemoteAssistEnabled() else {
             return NetworkAssistService(transport: UnconfiguredNetworkAssistTransport())
         }

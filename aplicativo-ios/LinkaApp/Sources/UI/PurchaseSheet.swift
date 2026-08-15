@@ -1,10 +1,13 @@
 import SwiftUI
+import LinkaEntitlements
 
 struct PurchaseSheet: View {
     @Environment(\.dismiss) var dismiss
-    @AppStorage("isPro") private var isPro: Bool = false
+    @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @State private var isPurchasing = false
-    
+    @State private var isRestoring = false
+    @State private var errorMessage: String?
+
     var body: some View {
         ZStack {
             Color.surfacePage.ignoresSafeArea()
@@ -100,30 +103,47 @@ struct PurchaseSheet: View {
                 
                 // Bottom CTA and Disclaimer
                 VStack(spacing: 0) {
-                    Button(action: {
-                        isPro = true
-                        dismiss()
-                    }) {
-                        Text("Comprar por R$ 6,90/ano")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color.surfacePage)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 18)
-                            .background(Color.textPrimary)
-                            .cornerRadius(12)
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.brandAccentWarm)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .padding(.bottom, 12)
+                            .transition(.opacity)
                     }
+
+                    Button(action: purchase) {
+                        Group {
+                            if isPurchasing {
+                                ProgressView()
+                                    .tint(Color.surfacePage)
+                            } else {
+                                Text("Comprar por R$ 6,90/ano")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
+                        }
+                        .foregroundColor(Color.surfacePage)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(Color.textPrimary)
+                        .cornerRadius(12)
+                    }
+                    .disabled(isPurchasing || isRestoring)
                     .padding(.horizontal, 24)
-                    
-                    Button(action: {
-                        isPro = true
-                        dismiss()
-                    }) {
-                        Text("Restaurar compra")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.textSecondary)
+
+                    Button(action: restore) {
+                        if isRestoring {
+                            ProgressView()
+                        } else {
+                            Text("Restaurar compra")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.textSecondary)
+                        }
                     }
+                    .disabled(isPurchasing || isRestoring)
                     .padding(.top, 16)
-                    
+
                     Text("Compra única de R$ 6,90, válida por um ano, sem renovação automática. Gerencie sua compra nos Ajustes do Apple ID.")
                         .font(.system(size: 10))
                         .foregroundColor(.textSecondary.opacity(0.6))
@@ -147,6 +167,61 @@ struct PurchaseSheet: View {
                     .padding(.bottom, 24)
                 }
                 .padding(.top, 16)
+            }
+        }
+    }
+
+    private func purchase() {
+        guard !isPurchasing, !isRestoring else { return }
+        isPurchasing = true
+        errorMessage = nil
+
+        Task {
+            do {
+                let outcome = try await entitlements.purchase()
+                await MainActor.run {
+                    isPurchasing = false
+                    switch outcome {
+                    case .purchased:
+                        dismiss()
+                    case .userCancelled:
+                        // Cancelamento silencioso: o usuário desistiu do
+                        // fluxo nativo da App Store, sem estado de erro.
+                        break
+                    case .pending:
+                        errorMessage = "Sua compra está pendente de aprovação (ex.: Compras Familiares). Você será avisado quando ela for concluída."
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isPurchasing = false
+                    errorMessage = "Não foi possível concluir a compra agora. Tente novamente em instantes."
+                }
+            }
+        }
+    }
+
+    private func restore() {
+        guard !isPurchasing, !isRestoring else { return }
+        isRestoring = true
+        errorMessage = nil
+
+        Task {
+            do {
+                let restored = try await entitlements.restore()
+                await MainActor.run {
+                    isRestoring = false
+                    if restored {
+                        dismiss()
+                    } else {
+                        errorMessage = "Nenhuma compra ativa foi encontrada para restaurar."
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isRestoring = false
+                    errorMessage = "Não foi possível restaurar sua compra agora. Tente novamente em instantes."
+                }
             }
         }
     }
