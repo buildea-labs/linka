@@ -56,36 +56,44 @@ struct HistoryView: View {
                 .background(Color.surfacePage)
             } else {
                 List {
-                    // Assist Insight Card — omit if we have nothing to say
-                    if let insightText {
-                        Section {
-                            HStack(alignment: .top, spacing: 16) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.brandAccentWarm)
+                    // Assist Insight Card — text only when we have something to say,
+                    // but the "Perguntar ao Assist" CTA is always available so the
+                    // user can reach the Assist even before enough data exists for
+                    // a weekly insight.
+                    Section {
+                        HStack(alignment: .top, spacing: 16) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 24))
+                                .foregroundColor(.brandAccentWarm)
 
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("Insight da Semana")
-                                        .font(Font.system(size: 15, weight: .semibold))
-                                        .foregroundColor(.textPrimary)
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Insight da Semana")
+                                    .font(Font.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.textPrimary)
 
+                                if let insightText {
                                     Text(insightText)
                                         .font(.bodySmall)
                                         .foregroundColor(.textSecondary)
                                         .fixedSize(horizontal: false, vertical: true)
-
-                                    Button(action: {
-                                        showAssist = true
-                                    }) {
-                                        Text("Perguntar ao Assist")
-                                            .font(Font.system(size: 11, weight: .bold))
-                                            .foregroundColor(.brandAccentWarm)
-                                    }
-                                    .padding(.top, 4)
+                                } else {
+                                    Text("Ainda não há dados suficientes para um resumo semanal — faça alguns testes ao longo dos dias.")
+                                        .font(.bodySmall)
+                                        .foregroundColor(.textSecondary)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
+
+                                Button(action: {
+                                    showAssist = true
+                                }) {
+                                    Text("Perguntar ao Assist")
+                                        .font(Font.system(size: 11, weight: .bold))
+                                        .foregroundColor(.brandAccentWarm)
+                                }
+                                .padding(.top, 4)
                             }
-                            .padding(.vertical, 4)
                         }
+                        .padding(.vertical, 4)
                     }
 
                     // History List
