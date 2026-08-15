@@ -264,7 +264,7 @@ final class SignallqDiagnosticTransportTests: XCTestCase {
 }
 
 final class SignallqAiDiagnosticTransportTests: XCTestCase {
-    func testAiResponseConcatenatesTextoLaudoEResumo() async throws {
+    func testAiResponsePrefersTextoLaudoAndDoesNotDuplicateWithResumo() async throws {
         let json = """
         {
           "schemaVersion": "2",
@@ -289,7 +289,29 @@ final class SignallqAiDiagnosticTransportTests: XCTestCase {
         ))
         XCTAssertEqual(response.disposition, .answered)
         XCTAssertTrue(response.text.contains("Sua conexão está oscilando"))
-        XCTAssertTrue(response.text.contains("A velocidade está boa"))
+        XCTAssertFalse(response.text.contains("A velocidade está boa"), "não deve duplicar com resumo")
+        XCTAssertFalse(response.text.contains("Conexão instável"), "titulo não entra quando há textoLaudo")
+    }
+
+    func testAiResponseFallsBackToResumoWhenTextoLaudoMissing() async throws {
+        let json = """
+        {"schemaVersion":"2","status":"bom","titulo":"Resposta","resumo":"Conexão ok pra vídeo."}
+        """.data(using: .utf8)!
+        let transport = SignallqAiDiagnosticTransport(
+            configuration: NetworkDiagnosticsConfiguration(
+                rulesEndpoint: NetworkDiagnosticsConfiguration.defaultRulesEndpoint,
+                aiEndpoint: NetworkDiagnosticsConfiguration.defaultAiEndpoint,
+                platformIdentifier: "ios"
+            ),
+            httpClient: MockHTTPClient(responseData: json)
+        )
+        let service = NetworkAssistService(transport: transport)
+        let response = try await service.answer(NetworkAssistContext(
+            question: "Serve para vídeo?",
+            currentMeasurement: makeValidMeasurement()
+        ))
+        XCTAssertEqual(response.text, "Conexão ok pra vídeo.")
+        XCTAssertFalse(response.text.contains("Resposta"), "título genérico do modo chat não deve aparecer")
     }
 
     func testInconclusiveStatusBecomesInsufficientEvidence() async throws {

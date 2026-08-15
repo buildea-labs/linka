@@ -60,10 +60,10 @@ public struct SignallqAiDiagnosticTransport: NetworkAssistTransport {
         result: AiDiagnosisResult,
         request: NetworkAssistRequest
     ) -> NetworkAssistResponse {
-        let text = joinNonEmpty([
+        let text = pickPrimary([
             result.textoLaudo,
             result.resumo,
-            result.titulo
+            usefulTitle(result.titulo)
         ])
 
         let disposition: NetworkAssistDisposition
@@ -95,10 +95,21 @@ public struct SignallqAiDiagnosticTransport: NetworkAssistTransport {
         )
     }
 
-    private func joinNonEmpty(_ parts: [String?]) -> String {
+    /// Escolhe o primeiro campo não vazio. Não concatena — evita duplicar
+    /// conteúdo (`textoLaudo` já é a resposta cheia; `resumo` é a versão de
+    /// 1 frase; `titulo` costuma ser genérico em modo chat).
+    private func pickPrimary(_ parts: [String?]) -> String {
         parts
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n\n")
+            .first { !$0.isEmpty } ?? ""
+    }
+
+    /// Descarta títulos genéricos que o worker devolve como placeholder do
+    /// schema em modo chat (ex.: literalmente "Resposta").
+    private func usefulTitle(_ titulo: String?) -> String? {
+        guard let trimmed = titulo?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty else { return nil }
+        let genericTitles: Set<String> = ["resposta", "diagnostico", "diagnóstico"]
+        return genericTitles.contains(trimmed.lowercased()) ? nil : trimmed
     }
 }
