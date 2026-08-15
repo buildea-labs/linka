@@ -1,9 +1,16 @@
 import SwiftUI
+import GoogleMobileAds
 
 @main
 struct LinkaApp: App {
     @State private var showSplash = true
     @AppStorage("appAppearance") private var appAppearance: String = "system"
+
+    init() {
+        // Native ads exigem inicialização explícita do SDK antes do primeiro
+        // GADAdLoader.load(). Sem isso o carregamento falha silenciosamente.
+        GADMobileAds.sharedInstance().start(completionHandler: nil)
+    }
     
     var colorScheme: ColorScheme? {
         if appAppearance == "light" { return .light }
