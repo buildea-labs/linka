@@ -1,14 +1,14 @@
 # Linka Free e Linka Plus
 
-Este documento define a fronteira de produto e a arquitetura inicial dos módulos opcionais do Linka no ecossistema Apple.
+Este documento define a divisão de produto Free/Plus e a arquitetura inicial dos módulos opcionais do Linka no ecossistema Apple.
 
 `AGENTS.md` continua sendo a autoridade de governança do repositório.
 
 ## Princípio
 
-O Linka mede. O SignallQ diagnostica.
+O Linka é, no núcleo, um SpeedTest minimalista. Sobre esse núcleo, pode absorver capacidades vindas do SignallQ (que virou produto Android/Web-only) desde que sejam viáveis no ecossistema Apple e passem pela curadoria de minimalismo — protagonismo do resultado, divulgação progressiva, base em dado real ([`AGENTS.md`](../../AGENTS.md) §1 e §9).
 
-O Linka Plus pode acompanhar, comparar e explicar os dados que o próprio Linka mediu. Ele não deve evoluir para investigação de causa-raiz, diagnóstico de roteador/Wi-Fi, reparo ou recomendação técnica profunda.
+O Linka Plus é o pacote pago que habilita as capacidades adicionais: acompanhar, comparar, interpretar e responder perguntas sobre os dados que o próprio Linka mediu ou que a Apple expõe ao aplicativo. O que ele evita é virar central de reparo — sem instruir troca de canal Wi-Fi específico do vizinho, saúde do modem do provedor ou qualquer dado que a Apple não permita observar de dentro do app.
 
 ## Free
 
@@ -106,7 +106,7 @@ Exemplos adequados:
 - "Esse resultado é diferente dos últimos testes?"
 - "Meu ping aumentou?"
 
-O Assist não deve receber autorização para virar o motor de diagnóstico do SignallQ.
+O Assist opera sobre medição e dado do sistema exposto pela Apple. Ele não deve fabricar diagnóstico sem base — nada de inferir causa raiz a partir de dado que a Apple não expõe ao app.
 
 ## Integração ao projeto Xcode
 

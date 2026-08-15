@@ -1,13 +1,13 @@
 ---
 name: arquitetarModulo
-description: Guia do Giam para desenhar mudanças modulares no Linka sem ampliar o escopo por acidente, respeitando a separação Engine/Adapter/UI e a fronteira Linka/SignallQ.
+description: Guia do Giam para desenhar mudanças modulares no Linka sem ampliar o escopo por acidente, respeitando a separação Engine/Adapter/UI e a curadoria de minimalismo.
 ---
 
 # Skill: arquitetarModulo
 
 Procedimento do **Giam** para desenhar uma mudança antes do Guinho implementar.
 
-A saída desta skill é a **parte técnica** do plano exigido em [`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 0: arquitetura decidida, recorte da implementação, prioridade e requisitos de aceite. Sem ele, nenhuma branch é aberta.
+A saída desta skill é a **parte técnica** do `plano.md` exigido pela Full‑flow em [`.agents/WORKFLOW.md`](../../WORKFLOW.md) (Passo 1 — Architect): arquitetura decidida, recorte da implementação, prioridade e requisitos de aceite. Sem ele, o Luiz não aprova a arquitetura e nenhuma branch é aberta.
 
 A parte de produto e desenho sai de [`desenharExperiencia`](../desenharExperiencia/SKILL.md), [`desenharInterface`](../desenharInterface/SKILL.md), [`pensarComoMedicao`](../pensarComoMedicao/SKILL.md) e [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md).
 
@@ -19,9 +19,9 @@ Leia [`AGENTS.md`](../../../AGENTS.md) §1-2 e [`documentacao/funcional/VISAO.md
 
 Pergunte:
 
-> Esta mudança é necessária para medir a conexão ou mostrar o resultado, ou é uma ideia tentando entrar pela porta da arquitetura?
+> Esta mudança melhora medir, entender ou acompanhar a conexão no Apple sem competir com o resultado, e é viável nas capacidades que a Apple expõe?
 
-Se estiver fora do escopo (diagnóstico, recomendação, análise Wi-Fi/modem/fibra, chatbot), **não desenhe pacote, contrato, estado ou abstração para ela nesta tarefa**. Abra issue e mande para o SignallQ ou para o backlog.
+Se a resposta for "não" (por curadoria de minimalismo ou por viabilidade Apple), **não desenhe pacote, contrato, estado ou abstração para ela nesta tarefa**. Abra issue no backlog. Se a resposta for "sim mas fica pesado", proponha entrega faseada.
 
 Depois leia, conforme o caso:
 
@@ -32,8 +32,8 @@ Depois leia, conforme o caso:
 
 ## Duas regras que o produto impõe à arquitetura
 
-1. **Motor separado da tela.** `LinkaEngine`, `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist` são pacotes Swift isolados — não conhecem `LinkaApp` (SwiftUI). É o que mantém o motor reutilizável pelo SignallQ.
-2. **Fronteira Linka/SignallQ é dura.** Diagnóstico, recomendação, análise avançada de rede, chatbot conversacional que dê opinião: não entram. Ver [`AGENTS.md`](../../../AGENTS.md) §1 e [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md).
+1. **Motor separado da tela.** `LinkaEngine`, `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist` são pacotes Swift isolados — não conhecem `LinkaApp` (SwiftUI). É o que mantém o motor evoluindo independente da UI e permite que múltiplas superfícies (SwiftUI, App Intents, Assist, Widgets) consumam o mesmo dado.
+2. **Interpretação vive fora do motor.** Diagnóstico, interpretação, Assist, histórico e recomendação são bem-vindos quando viáveis no Apple, mas moram em módulos separados (ex.: `LinkaModules`) — nunca dentro do motor de medição. Ver [`AGENTS.md`](../../../AGENTS.md) §1, §9 e [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md).
 
 ## 1. Comece pelo comportamento
 

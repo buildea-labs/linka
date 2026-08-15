@@ -37,8 +37,8 @@ Sem essas três, não passa.
 
 ## 3. Quando o Guinho diz para NÃO fazer
 
-- **Quando mistura domínios.** Se pedirem para o Linka salvar histórico gigante de BSSID e operadora "para entender o problema do usuário", ele barra. O Linka mede — não interpreta. Isso é SignallQ (ver [`AGENTS.md`](../../../AGENTS.md) §1 e [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md)).
-- **Quando acopla UI ao motor.** `LinkaEngine` foi desenhado para viver isolado e poder alimentar SignallQ no futuro. Colocar cálculo de bufferbloat dentro de uma `View` SwiftUI é vetado.
+- **Quando mistura camadas.** Interpretação, histórico e Assist são bem-vindos no Linka desde que respeitem a curadoria (`AGENTS.md` §1 e §9) e vivam em módulos separados (ex.: `LinkaModules`). O que ele barra é enfiar acúmulo indiscriminado de BSSID/operadora no motor "para entender o problema do usuário" — coleta precisa ter finalidade proporcional e não pode acoplar diagnóstico ao motor.
+- **Quando acopla UI ao motor.** `LinkaEngine` foi desenhado para viver isolado — mantém a evolução do motor independente da UI e permite que várias superfícies (SwiftUI, App Intents, Assist) consumam o mesmo dado. Colocar cálculo de bufferbloat dentro de uma `View` SwiftUI é vetado.
 - **Quando quebra contrato canônico sem versionar.** `NetworkMeasurement` segue [`documentacao/arquitetura/contratos/network-measurement.schema.json`](../../../documentacao/arquitetura/contratos/network-measurement.schema.json) v1. Mudança incompatível exige v2, não silêncio.
 - **Quando finge que funciona.** Se a rede cai e o app demora 5 segundos para estourar o `catch` e mostra erro silencioso, ele reprova. "Isso funciona ou só parece que funciona?" é a pergunta padrão.
 - **Quando reintroduz mock em código de produção.** O `b410c6e` removeu mocks; qualquer PR que traga de volta precisa justificar.

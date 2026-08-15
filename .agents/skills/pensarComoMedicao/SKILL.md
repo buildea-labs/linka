@@ -1,13 +1,13 @@
 ---
 name: pensarComoMedicao
-description: Filtro do Giam para julgar se uma mudança fortalece o Linka como SpeedTest mínimo, ou se está transformando o produto em diagnóstico/dashboard.
+description: Curadoria do Giam para julgar se uma mudança fortalece o Linka como SpeedTest mínimo no ecossistema Apple, ou se está inchando o produto em painel/dashboard.
 ---
 
 # Skill: pensarComoMedicao
 
-Filtro do **Giam**: isto aqui é medição, ou virou diagnóstico?
+Curadoria do **Giam**: isto aqui melhora **medir, entender ou acompanhar** a conexão no Apple, sem competir com o resultado?
 
-O Linka é um **SpeedTest minimalista**, Apple-only, focado em uma coisa só: **medir a qualidade da conexão e apresentar o resultado de forma imediata, clara e bonita** ([`AGENTS.md`](../../../AGENTS.md) §1). Ele não é dashboard, não é central de diagnóstico, não é rede social, não é assistente de suporte técnico. Diagnóstico e recomendação pertencem ao SignallQ.
+O Linka é um **SpeedTest minimalista**, exclusivo do ecossistema Apple, com núcleo em **medir a qualidade da conexão e apresentar o resultado de forma imediata, clara e bonita** ([`AGENTS.md`](../../../AGENTS.md) §1). Com o SignallQ agora exclusivo Android/Web, o Linka **pode** absorver capacidades vindas de lá que sejam viáveis no Apple (histórico, comparação, tendências, interpretação sustentada, Assist, Widgets, App Intents). O que não muda é a curadoria: nada vira dashboard, nada compete com o resultado, nada entra só porque é possível.
 
 O fluxo é deliberadamente curto:
 
@@ -63,38 +63,39 @@ Se uma mudança **aumenta** qualquer um desses, precisa de motivo escrito no pla
 - **Seleção manual de servidor.** Escolha automática. Usuário avançado pode ver qual servidor foi usado nos detalhes.
 - **Menu com mais de um nível.** Se precisa de submenu, alguma feature está tentando entrar que não deveria.
 - **Métrica que ninguém entende.** "Bufferbloat", "TCP retransmit ratio" — ficam em detalhes ou em "Como medimos", não na tela principal.
-- **Diagnóstico interpretado.** "Sua conexão está ótima para jogos", "atenção: pode causar travamentos", "recomendamos" — tudo isso é SignallQ. Ver [`AGENTS.md`](../../../AGENTS.md) §1, §9.
-- **IA opinando no resultado como parte do fluxo principal.** `Linka Assist` (Plus) responde perguntas do usuário sobre medição/histórico, não faz diagnóstico automático (ver [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) e [`documentacao/arquitetura/PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md)).
+- **Interpretação no primeiro frame do resultado.** "Sua conexão está ótima para jogos", "atenção: pode causar travamentos" nunca aparecem antes do número medido. Interpretação vive em superfície secundária (detalhes, histórico, Assist) e precisa se sustentar em dado real ([`AGENTS.md`](../../../AGENTS.md) §1, §9).
+- **IA opinando no fluxo principal.** `Linka Assist` (Plus) responde perguntas do usuário sob demanda, não interrompe o resultado com diagnóstico automático (ver [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) e [`documentacao/arquitetura/PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md)).
 - **Dashboard, gráfico decorativo, "análise avançada" no free.** Se um dado não muda decisão do usuário no momento, ele é enfeite.
 - **Anúncio que atrasa o teste, cobre resultado ou parece controle do app** ([`AGENTS.md`](../../../AGENTS.md) §10).
 
-## 5. Fronteira com o SignallQ
+## 5. Curadoria de escopo
 
-Existe uma linha dura ([`AGENTS.md`](../../../AGENTS.md) §1):
+A antiga "fronteira dura Linka/SignallQ" foi aposentada ([`AGENTS.md`](../../../AGENTS.md) §13) porque o SignallQ virou produto Android/Web-only. No Apple, o Linka pode absorver interpretação, histórico, comparação, Assist e integrações que a Apple permitir. A curadoria continua rígida ([`AGENTS.md`](../../../AGENTS.md) §1):
 
-- **Linka mede.**
-- **SignallQ interpreta, diagnostica e orienta.**
+1. **Medir vem primeiro.** Nenhuma feature nova atrasa, mascara ou disputa espaço com a medição.
+2. **Divulgação progressiva.** Interpretação e histórico aparecem sob expansão, nunca no primeiro frame.
+3. **Só entra o que é viável no Apple.** Se depende de capacidade que a Apple não expõe, fica de fora — sem ginástica.
+4. **Só entra o que se sustenta em dado real.** Interpretação e recomendação precisam de base medida ou dado do sistema; nada de opinião fabricada.
 
-Sinais de que a mudança pertence ao SignallQ, não ao Linka:
+Sinais de que a mudança precisa recuar (não necessariamente cair fora, mas revisar):
 
-- promete descobrir causa raiz (roteador ruim, canal Wi-Fi congestionado, cabo defeituoso);
-- classifica a conexão para um uso (jogos, streaming, chamada);
-- recomenda ação (trocar canal, reiniciar modem, mudar plano);
-- integra chatbot com opinião;
-- exige análise cruzada com histórico de outros usuários;
-- coleta contexto de rede não relacionado à medição (dispositivos vizinhos, mapa Wi-Fi).
+- promete causa raiz com dado que a Apple não expõe (canal Wi-Fi específico do vizinho, saúde do modem do provedor);
+- coloca interpretação **no primeiro frame** em vez de sob expansão;
+- exige análise cruzada com histórico de outros usuários sem que o valor supere o custo de privacidade;
+- vira dashboard/painel decorativo em vez de resposta acionável;
+- adiciona menu de segundo nível ou modo selecionável para o usuário comum.
 
-Se aparece qualquer um desses no pedido, a resposta padrão é: "isso é SignallQ, não Linka. Registra e passa adiante."
+Se qualquer um desses aparecer, a mudança volta para desenho — não some do backlog.
 
 ## 6. O teste
 
 Antes de aprovar uma mudança, três perguntas:
 
-1. **Isso ajuda o Linka a medir a internet melhor, mais rápido, mais confiável ou de forma mais clara?** ([`AGENTS.md`](../../../AGENTS.md) §14)
+1. **Isso melhora a experiência de medir, entender ou acompanhar a conexão no Apple, sem competir com o resultado?** ([`AGENTS.md`](../../../AGENTS.md) §14)
 2. **Se tirar isso, o produto fica pior de usar — ou só fica com menos coisa?**
-3. **Isso é medição, ou é interpretação/diagnóstico disfarçado?**
+3. **A capacidade se sustenta em dado real e é viável no Apple?**
 
-Se a resposta da (1) for "não" ou a (3) for "diagnóstico", não entra. Registra no backlog e passa para o SignallQ se aplicável.
+Se a resposta da (1) for "não", da (2) for "só fica com menos coisa" ou da (3) for "não", não entra. Registra no backlog.
 
 ## Relacionados
 

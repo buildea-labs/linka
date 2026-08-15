@@ -72,13 +72,13 @@ Nossa experiência minimalista foi criada para...
 Sua conexão está ótima para qualquer tarefa.
 ```
 
-## 4. O Linka não opina sobre o resultado
+## 4. O Linka não opina no primeiro frame do resultado
 
-Nunca escreva copy que interprete a medição para o usuário: "sua conexão está boa para jogos", "ideal para streaming", "recomendamos", "atenção: pode causar travamentos". Isso é diagnóstico, pertence ao SignallQ. Ver [`AGENTS.md`](../../../AGENTS.md) §1 e §9.
+Nunca escreva copy que interprete a medição **antes do número aparecer**: "sua conexão está boa para jogos", "ideal para streaming", "recomendamos", "atenção: pode causar travamentos" não abrem a tela de resultado. Interpretação vive em superfície secundária (detalhes, histórico, Assist) e precisa se sustentar em dado real — nada de opinião fabricada ([`AGENTS.md`](../../../AGENTS.md) §1 e §9).
 
-O Linka apresenta números. O usuário entende.
+O Linka apresenta números primeiro. Interpretação vem sob expansão, quando o usuário pedir.
 
-Exceção controlada: `Linka Assist` (feature Plus) pode responder perguntas do usuário sobre a medição atual ou o histórico. Mesmo lá, o Assist explica o que foi medido — não diagnostica causa raiz ("seu roteador está ruim") nem recomenda reparo. Escopo em [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) e [`documentacao/arquitetura/PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md).
+`Linka Assist` (feature Plus) pode responder perguntas do usuário sobre a medição atual ou o histórico e pode oferecer orientação sustentada nos dados que a Apple expõe ao app. O que não faz é substituir o número por opinião automática nem inventar causa raiz sem base. Escopo em [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) e [`documentacao/arquitetura/PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md).
 
 ## 5. Estados da medição
 

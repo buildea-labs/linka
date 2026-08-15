@@ -72,7 +72,7 @@ Quando houver duas implementações inevitáveis (ex.: Swift do motor + JavaScri
 
 Leia [`AGENTS.md`](../../../AGENTS.md) §1-2 e [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md).
 
-Não aprove refatoração que, para "organizar melhor", começa a construir infraestrutura de diagnóstico, recomendação, análise Wi-Fi ou chatbot — que estão fora do escopo do Linka (são SignallQ).
+Não aprove refatoração que, para "organizar melhor", **antecipa** infraestrutura de diagnóstico, Assist, análise Wi-Fi ou chatbot sem constar do `plano.md` aprovado. Interpretação e Assist são bem-vindos no Linka desde que passem pela Full‑flow com Architect (Giam) e aprovação do Luiz — não entram silenciosamente por dentro de uma refatoração.
 
 Refatoração boa reduz risco da fatia atual. Não usa limpeza como desculpa para reabrir o que foi fechado.
 
@@ -88,7 +88,7 @@ Refatoração boa reduz risco da fatia atual. Não usa limpeza como desculpa par
 - há abstração prematura para feature futura?
 - teste consegue atingir a regra sem montar o app inteiro?
 - arquivo grande tem justificativa de coesão?
-- a mudança não está trazendo escopo SignallQ de volta?
+- a mudança não está introduzindo capacidade nova (interpretação, Assist, diagnóstico) fora do `plano.md` aprovado?
 
 Se a resposta ruim for "mas ficou em menos de 200 linhas", continua ruim.
 

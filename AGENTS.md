@@ -8,9 +8,9 @@ Este arquivo é a **autoridade única de governança** do repositório `linka-sp
 
 ## 1. O que é o Linka
 
-**Linka é um SpeedTest minimalista, eficiente e visualmente refinado, Apple-first e também disponível na Web.**
+**Linka é um SpeedTest minimalista, eficiente e visualmente refinado, exclusivo do ecossistema Apple (iPhone, iPad, Mac).**
 
-Ele existe para fazer uma coisa muito bem:
+O núcleo do produto continua sendo:
 
 > **medir a qualidade da conexão e apresentar o resultado de forma imediata, clara e bonita.**
 
@@ -24,14 +24,18 @@ O usuário não escolhe modo de teste antes de começar. O teste inicia automati
 
 Minimalismo não significa motor simples: a complexidade técnica deve ficar por baixo da interface.
 
-### Fronteira com o SignallQ
+### Escopo estendido no ecossistema Apple
 
-- **Linka mede.**
-- **SignallQ interpreta, diagnostica e orienta.**
+O **SignallQ tornou-se um produto exclusivo Android e Web** por limitações impostas pela Apple à metodologia de diagnóstico dele. Como consequência, **o Linka pode absorver, dentro do ecossistema Apple, as capacidades do SignallQ que forem tecnicamente viáveis nas plataformas da Apple** — histórico, comparação, tendências, interpretação de medições, Assist, integrações Widgets/App Intents/Siri Shortcuts e qualquer outra capacidade análoga que a Apple permita.
 
-Diagnóstico avançado, recomendações, central de ferramentas, análise de Wi‑Fi, modem, fibra, dispositivos, contrato, chatbot e experiências equivalentes pertencem ao SignallQ, não ao Linka.
+Isso **não** transforma o Linka em painel, dashboard ou central de ferramentas. A curadoria continua rígida:
 
-Uma feature nova só entra no Linka se melhorar diretamente a experiência ou a confiabilidade de medir a conexão.
+1. **Medir a conexão vem primeiro.** Nenhuma feature nova pode atrasar, mascarar ou disputar espaço com a medição.
+2. **Divulgação progressiva.** Detalhe, interpretação e histórico aparecem sob expansão, nunca no primeiro frame do resultado.
+3. **Só entra o que é viável no Apple.** Se depende de capacidade que a Apple não expõe, não vira ginástica — fica de fora.
+4. **Só entra o que se sustenta em dado real.** Interpretação e recomendação precisam de base medida ou de dado do sistema; nada de opinião fabricada.
+
+Uma feature nova é aceita quando responde sim a: *isso melhora a experiência de medir, entender ou acompanhar a conexão no Apple, sem competir com o resultado?*
 
 ---
 
@@ -57,7 +61,7 @@ Uma feature nova só entra no Linka se melhorar diretamente a experiência ou a 
 
 O motor é uma capacidade separada da interface.
 
-Ele pode alimentar Linka SpeedTest, SignallQ, SignallQ PRO e SignallQ Agente, mas a UI do Linka continua deliberadamente mínima.
+No ecossistema Apple, ele pode alimentar múltiplas superfícies do próprio Linka (SwiftUI, App Intents, Widgets, Assist) sem que a UI principal deixe de ser deliberadamente mínima.
 
 Não reimplemente ou simule o motor apenas para reproduzir um protótipo visual. O comportamento real de medição vence mocks e demos.
 
@@ -87,7 +91,7 @@ A squad é enxuta e carrega personagens e relações humanas vindas do Auê, ago
 
 | Agente | Papel no Linka |
 |---|---|
-| **Giam** | **Produto, experiência e direção.** Conhece telecom por trabalhar com atendimento, reparo e produtos digitais. Define escopo, UX, UI, copy, arquitetura de produto, prioridade e aceite final. Sua principal obrigação é impedir que o Linka volte a virar um mini-SignallQ. |
+| **Giam** | **Produto, experiência e direção.** Conhece telecom por trabalhar com atendimento, reparo e produtos digitais. Define escopo, UX, UI, copy, arquitetura de produto, prioridade e aceite final. Sua principal obrigação é manter o Linka focado — protagonismo do resultado, divulgação progressiva e curadoria contra excesso de painel — mesmo enquanto o produto absorve capacidades vindas do SignallQ que sejam viáveis no Apple. |
 | **Guinho** | **Implementação, arquitetura e proteção do motor.** Constrói o que foi decidido, abre branch/PR quando aplicável, escreve código e testes. Também responde pelas decisões que tocam medição, contratos e separação UI/engine — mantém `LinkaEngine` e os pacotes Swift protegidos de simplificação apressada. Pode questionar complexidade desnecessária, mas não amplia escopo sozinho. |
 | **Marcelo** | **Qualidade.** Tenta quebrar o produto e o motor: typecheck, lint, testes, build, acessibilidade, fidelidade ao protótipo, estados ruins de rede e regressões. Não aprova a própria implementação. |
 
@@ -95,25 +99,40 @@ Luiz é o dono do produto e tem a decisão final de publicação, custo, exclus�
 
 ---
 
-## 5. Ordem de atuação
+## 5. Roteamento e trilhas de trabalho
 
-```text
-GIAM decide e planeja
-  → GUINHO implementa (e protege o motor quando a mudança toca ele)
-    → MARCELO tenta quebrar e valida qualidade
-      → GIAM dá aceite contra o requisito
-        → LUIZ aprova decisão final quando necessário
-```
+Toda demanda entra pelo **Roteador (Passo 0)** operado pelo Giam, que a classifica em uma de quatro classes:
 
-Regras:
+| Classe | Critério | Trilha |
+|---|---|---|
+| **Trivial** | copy, tweak visual, bug isolado com fix pequeno, sem tocar `LinkaEngine` nem contrato de módulo | **Fast‑lane** |
+| **Feature** | nova capacidade, mudança de fluxo, tocando UI + motor ou introduzindo novo módulo | **Full‑flow** |
+| **Hotfix** | quebrado em produção afetando usuário agora | **Hot‑lane** |
+| **Rejeitar** | não melhora medir/entender/acompanhar a conexão no Apple, ou depende de capacidade que a Apple não expõe | volta ao Luiz com "não" |
+
+### Fast‑lane
+Giam decide → Guinho implementa → Marcelo roda pipeline mínimo → Giam aceita → merge. Sem `plano.md`, sem release notes, sem passo de empacotamento.
+
+### Full‑flow
+1. **Architect (Giam)** — escreve `plano.md` curto (objetivo · mudança arquitetural · requisito de aceite · não‑objetivo). Luiz aprova a arquitetura antes de qualquer código.
+2. **Orchestrate (Guinho)** — implementa. Onde partes forem independentes, pode paralelizar em subagentes isolados. Protege o motor (`LinkaEngine`, `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaModules`) contra acoplamento e simplificação apressada.
+3. **Evaluate (Marcelo)** — pipeline + auditoria funcional. Devolve com verdict tipado: **BLOQUEIA** (impede merge), **AJUSTA** (Guinho corrige nesta entrega) ou **ISSUE_FUTURA** (registra e segue). Loop Guinho ↔ Marcelo tem teto de **2 rodadas**; a terceira escala para o Giam replanejar.
+4. **Approve (Giam + Luiz)** — Giam consolida contra o requisito e apresenta ao Luiz. Merge só com aprovação do Luiz quando a mudança for material.
+5. **Release (Giam propõe, Luiz aprova)** — quando aplicável, Giam propõe execução de `.agents/scripts/release.sh` e rascunho de `RELEASE_NOTES.md`. Nada é executado antes do sim explícito do Luiz.
+
+### Hot‑lane
+Giam nomeia severidade → Guinho corrige em branch de hotfix → Marcelo roda pipeline mínimo sobre o módulo tocado → Giam merge → **postmortem obrigatório em 48h** vira issue de retrabalho na Full‑flow.
+
+Regras que valem em todas as trilhas:
 
 - Não implemente antes de entender o problema e o impacto no produto.
-- Não crie feature só porque é tecnicamente possível.
+- Não crie feature só porque é tecnicamente possível — passa pela curadoria de minimalismo do §1.
 - Mudança visual relevante deve ser confrontada com protótipo e Design System.
 - Mudança no motor exige revisão de contratos, testes e impacto nos consumidores.
 - Um agente não declara a própria entrega aprovada por outro agente sem revisão real.
+- Estado vive em artefatos (`plano.md`, PR, verdict do Marcelo, `RELEASE_NOTES.md`), não na conversa.
 
-A esteira detalhada vive em `.agents/WORKFLOW.md`.
+A esteira detalhada, com artefatos e verdicts, vive em `.agents/WORKFLOW.md`.
 
 ---
 
@@ -196,15 +215,19 @@ Afirmações públicas em `Como medimos` precisam ser verificáveis no código. 
 
 ---
 
-## 9. IA e diagnóstico
+## 9. IA, interpretação e diagnóstico
 
-**O Linka não usa IA para interpretar o resultado para o usuário como parte do fluxo principal.**
+Com o SignallQ fora do ecossistema Apple, o Linka pode oferecer **interpretação, orientação e Assist** sobre as medições que ele mesmo fez e sobre dados que a Apple expõe ao aplicativo, respeitando a curadoria do §1:
 
-Frases como “sua conexão está ótima para jogos” ou “seu ping pode causar travamentos” pertencem ao SignallQ.
+- interpretação vive em superfície secundária (detalhes, histórico, Assist), **nunca no primeiro frame do resultado**;
+- toda afirmação sobre a conexão precisa se sustentar em dado medido ou em dado de sistema exposto pela Apple — nada de opinião fabricada;
+- Assist e recomendações não podem atrasar, mascarar ou substituir a medição;
+- nenhuma capacidade nova entra "de carona" no motor: `LinkaEngine` continua responsável exclusivamente pela medição, e camadas de interpretação vivem em módulos separados (ex.: `LinkaModules`);
+- se a capacidade depende de algo que a Apple não expõe, ela não entra — não vira ginástica.
 
-IA pode ser usada como ferramenta de desenvolvimento, revisão e operação, mas não deve transformar o Linka em produto de diagnóstico.
+IA continua permitida como ferramenta de desenvolvimento, revisão e operação.
 
-Nunca exponha segredo, token ou chave de API no bundle Web. Variáveis públicas de frontend não são cofre de segredo.
+Nunca exponha segredo, token ou chave de API no bundle Web (site institucional). Variáveis públicas de frontend não são cofre de segredo.
 
 ---
 
@@ -276,6 +299,9 @@ Estão **formalmente aposentados como governança**:
 - Cloudflare Pages como destino obrigatório;
 - dependências de caminhos absolutos do antigo workspace Windows `E:\Projetos\Linka`;
 - documentos antigos que descrevem o Linka como central de diagnóstico ou mini-SignallQ;
+- **fronteira dura "Linka mede, SignallQ diagnostica" no ecossistema Apple** — desde que o SignallQ passou a ser produto Android/Web-only, o Linka absorve, com curadoria, as capacidades viáveis no Apple (ver §1 e §9). A curadoria de minimalismo continua valendo; a proibição por domínio, não;
+- **esteira única linear "Giam → Guinho → Marcelo → Giam → Luiz"** — substituída pelo Roteador + Fast‑lane / Full‑flow / Hot‑lane (ver §5 e `.agents/WORKFLOW.md`);
+- **execução automática do release** (`release.sh` e `RELEASE_NOTES.md` sem aprovação do Luiz) — release agora é proposta, não ato autônomo (ver §5 e §12);
 - regra de trabalhar sempre diretamente em `main`;
 - qualquer segundo conjunto de regras em `CLAUDE.md`.
 
@@ -287,6 +313,6 @@ O código legado pode continuar existindo até ser removido conscientemente. **L
 
 Antes de construir qualquer coisa, faça a pergunta:
 
-> **Isso ajuda o Linka a medir a internet melhor, mais rápido, mais confiável ou de forma mais clara?**
+> **Isso melhora a experiência de medir, entender ou acompanhar a conexão no Apple, sem competir com o resultado?**
 
 Se a resposta for não, provavelmente não pertence ao Linka.

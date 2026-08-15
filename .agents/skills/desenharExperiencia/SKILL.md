@@ -44,7 +44,7 @@ Estados principais (na prática):
 - **resultado** — download + upload lado a lado, opção de detalhes, ação "testar novamente";
 - **erro/parcial** — se uma fase falhou, mostrar o que foi possível medir com honestidade.
 
-Não invente "tela nova". Se a mudança precisa de um sexto estado, provavelmente é feature de SignallQ, não de Linka.
+Não invente "tela nova". Se a mudança precisa de um sexto estado, questiona: dá para caber sob expansão de um estado existente ou é uma superfície secundária separada (histórico, Assist, detalhes)? Antes de aumentar a máquina de estados principal, pense em divulgação progressiva.
 
 ## 2. As perguntas
 
@@ -65,7 +65,7 @@ Para cada mudança, responda por escrito:
 - **Estado nunca fica preso.** Sempre existe caminho de cancelar ou tentar de novo.
 - **Recurso sensível tem começo e fim visíveis.** `URLSession`, `Task`, timer: usuário entende que o app está trabalhando e entende quando parou.
 - **Erro conta a verdade.** Se a medição de upload falhou mas o download foi bom, o resultado é `partial` e a UI reflete isso, sem inventar valor.
-- **Resultado é medida, não interpretação.** Nunca "sua conexão está boa para X" (isso é SignallQ). Ver [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md).
+- **Resultado é medida antes de interpretação.** No primeiro frame do resultado, o usuário vê o número. Interpretação ("sua conexão está boa para X") existe se sustentada em dado real, mas vive em superfície secundária (detalhes, histórico, Assist) e nunca substitui o número. Ver [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md).
 - **A tela de medição não é feed.** Sem cards, sem histórico visível no meio, sem gráfico decorativo. Histórico é background acessível, não é hero.
 
 ## 4. Sem fricção antes da medição
