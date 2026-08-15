@@ -208,6 +208,7 @@ struct HistoryView_Previews: PreviewProvider {
 struct HistoryRow: View {
     let measurement: NetworkMeasurement
     @State private var isExpanded = false
+    @State private var showShareSheet = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -321,6 +322,18 @@ struct HistoryRow: View {
                 .padding(.top, 4)
             }
         }
+        // Compartilhar esta medição do Histórico (issue #54) — ação por
+        // linha, sem afetar o resto da lista nem competir com o toque que
+        // expande/recolhe os detalhes.
+        .swipeActions(edge: .trailing) {
+            Button {
+                showShareSheet = true
+            } label: {
+                Label("Compartilhar", systemImage: "square.and.arrow.up")
+            }
+            .tint(Color.brandAccentWarm)
+        }
+        .shareMeasurementSheet(isPresented: $showShareSheet, measurement: measurement)
     }
 
     private func formatDate(_ date: Date) -> String {
