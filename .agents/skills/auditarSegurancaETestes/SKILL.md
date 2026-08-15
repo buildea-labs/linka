@@ -1,19 +1,24 @@
 ---
 name: auditarSegurancaETestes
-description: Runbook do Marcelo para validar robustez do LinkaEngine, comportamento em rede real e integridade da fronteira Linka/SignallQ.
+description: Runbook do Marcelo para validar robustez do LinkaEngine, comportamento em rede real e integridade da separação motor/interpretação.
 ---
 
 # Skill: auditarSegurancaETestes
 
-Runbook do **Marcelo (Qualidade)** antes de aprovar uma entrega do Linka.
+Runbook do **Marcelo (Qualidade)** antes de responder com verdict tipado (`BLOQUEIA` / `AJUSTA` / `ISSUE_FUTURA`) para uma entrega do Linka.
 
-Marcelo aprova qualidade e garante que ninguém está sendo enganado pelo próprio código. O **aceite** contra os requisitos é do Giam ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 3).
+Marcelo aprova qualidade e garante que ninguém está sendo enganado pelo próprio código. O **aceite** contra os requisitos é do Giam na Full‑flow ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 4).
 
 Teste verde é necessário, não suficiente. Não prova que o produto funciona num iPhone 12 no 4G, dentro do metrô, no fim do dia útil.
 
 ## 0. Leia o escopo
 
-Marcelo barra expansão silenciosa. Se alguém enfiar "Diagnóstico de DNS" ou "Análise de canal Wi-Fi" no Linka (que só mede banda, latência e jitter/perda quando disponível), ele barra. Diagnóstico é SignallQ, per [`AGENTS.md`](../../../AGENTS.md) §1.
+Marcelo barra **expansão silenciosa** e **cheiro de painel**. Interpretação, histórico e Assist são bem-vindos quando viáveis no Apple ([`AGENTS.md`](../../../AGENTS.md) §1 e §9), mas ele reprova se:
+
+- capacidade nova aparece no PR sem constar no `plano.md` aprovado;
+- interpretação subiu ao primeiro frame do resultado em vez de ficar em superfície secundária;
+- diagnóstico foi acoplado ao motor em vez de viver em módulo separado (ex.: `LinkaModules`);
+- afirmação sobre a conexão não se sustenta em dado medido ou dado de sistema exposto pela Apple.
 
 Confira também [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) para saber se a mudança pertence ao Free, ao Plus, ou está fora.
 
@@ -73,13 +78,14 @@ O Linka é distribuído exclusivamente para o ecossistema Apple ([`AGENTS.md`](.
 - acessibilidade básica (VoiceOver lê o resultado, foco visível);
 - contraste em sol direto e em ambiente escuro.
 
-## 5. Fronteira Linka/SignallQ
+## 5. Curadoria de minimalismo
 
 Marcelo é a última linha antes do aceite do Giam. Confere:
 
-- copy da entrega não interpreta resultado (ver [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md));
-- nenhum tela nova diz "sua conexão está boa para X";
-- `NetworkAssist`, se tocado, continua respondendo apenas sobre medição/histórico e não sobre diagnóstico causal ([`documentacao/arquitetura/PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md));
+- copy da entrega não interpreta o resultado **no primeiro frame** (ver [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md));
+- nenhuma tela nova coloca "sua conexão está boa para X" antes do número medido;
+- interpretação nova (se houver) se sustenta em dado real e vive em superfície secundária, não competindo com o resultado ([`AGENTS.md`](../../../AGENTS.md) §9);
+- `NetworkAssist`, se tocado, continua fora do motor de medição e opera sobre dado medido/exposto pelo sistema — nada de opinião fabricada ([`documentacao/arquitetura/PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md));
 - nenhum segredo de API ficou no bundle (busca por `sk-ant-`, `AIza`, chaves de fornecedor).
 
 ## 6. Formato do relatório

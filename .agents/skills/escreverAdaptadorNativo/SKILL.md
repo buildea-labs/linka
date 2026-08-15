@@ -55,7 +55,7 @@ Se você precisou importar SwiftUI num pacote fora de `LinkaApp`, o desenho est�
 O contrato do pacote não muda de significado só porque a `View` quer:
 
 - **mesmo tipo de retorno, mesmos casos de erro.** Se o pacote devolve `.partial(reason: .cancelled)`, o adapter não vira isso em "sucesso silencioso" para a UI ficar bonita. O contrato canônico `NetworkMeasurement` (v1) define os estados possíveis — respeite.
-- **nada de capacidade nova entrando de carona.** Adapter que expõe medição não deve, no meio do caminho, começar a inferir "sua conexão está boa" — isso é escopo SignallQ ([`AGENTS.md`](../../../AGENTS.md) §1).
+- **nada de capacidade nova entrando de carona.** Adapter que expõe medição não deve, no meio do caminho, começar a inferir "sua conexão está boa" — interpretação é bem-vinda no Linka, mas vive em módulo separado (ex.: `LinkaModules`) e no `plano.md` da entrega, não escondida dentro de um adapter de medição ([`AGENTS.md`](../../../AGENTS.md) §1 e §9).
 - **falha continua sendo falha.** Task cancelada não é sucesso. Timeout não é sucesso vazio. Se o pacote retorna `Result.failure`, a `View` recebe estado de erro — não uma medida zerada.
 
 ## 5. Recurso sensível tem dono e tem parada

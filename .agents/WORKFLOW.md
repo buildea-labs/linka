@@ -1,51 +1,128 @@
 # Workflow da Squad — Linka SpeedTest
 
-Este documento descreve a esteira de produção oficial do Linka SpeedTest. É aqui que definimos como uma ideia sai da cabeça do Luiz (Dono do Produto) e vira código em produção, com o Antigravity (Giam) orquestrando o trabalho.
+Este documento descreve a esteira de produção oficial do Linka. Ele opera em **três trilhas** com um **Roteador na entrada**, seguindo o modelo consolidado em [`AGENTS.md`](../AGENTS.md) §5.
 
 A voz do produto é definida em [`documentacao/produto/VOZ.md`](../documentacao/produto/VOZ.md).
 
 > **Direção de voz:** o Linka fala menos e se posiciona mais. Se uma frase puder ser removida sem prejudicar o entendimento, remova.
 
-## O Ciclo de Vida de uma Feature
+---
 
-### Passo 0: Plano e Escudo (Giam)
-A primeira barreira do Linka é o **produto**.
-Quando uma nova demanda surge, o Giam avalia: *"Isso ajuda a medir a internet ou é firula de SignallQ?"*
-Se a ideia passar no filtro de minimalismo, o Giam:
-- Mastiga as opções técnicas;
-- Decide a arquitetura;
-- Desenha o impacto visual na UX;
-- Define os requisitos de aceite;
-- Garante que a copy siga a voz canônica do Linka.
+## Passo 0 — Roteador (Giam)
 
-> **Regra de Ouro:** Ninguém escreve uma linha de código antes do acordo de produto estar fechado nesta etapa.
+Toda demanda entra por aqui. O Giam classifica em 30 segundos:
 
-### Passo 1: Implementação e Proteção do Motor (Guinho)
-Com o plano selado e aprovado pelo Luiz, o sub-agente **Guinho** é invocado.
-O Guinho atua no bastidor para:
-- Criar uma branch isolada;
-- Implementar a lógica e os componentes seguindo o Design System do Linka;
-- Escrever os testes iniciais;
-- **Proteger o motor** — quando a mudança toca `LinkaEngine` ou os pacotes Swift (`NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`), garantir que UI e medição permaneçam desacopladas e que nenhum atalho prejudique precisão, contratos ou evolução do motor;
-- Executar sem ampliar escopo por conta própria.
+| Classe | Critério | Trilha |
+|---|---|---|
+| **Trivial** | copy, tweak visual, bug isolado com fix pequeno, sem tocar motor nem contrato de módulo | Fast‑lane |
+| **Feature** | nova capacidade, mudança de fluxo, tocando UI + motor ou introduzindo novo módulo | Full‑flow |
+| **Hotfix** | quebrado em produção afetando usuário agora | Hot‑lane |
+| **Rejeitar** | não melhora medir/entender/acompanhar a conexão no Apple, ou depende de capacidade que a Apple não expõe | volta ao Luiz com "não" |
 
-### Passo 2: A Marreta da Qualidade (Marcelo)
-Antes de declarar o código pronto, o sub-agente **Marcelo** tenta quebrar a solução:
-- Executa a pipeline aplicável (`typecheck`, `lint`, `test`, `build`, `swift test` nos pacotes);
-- Audita falhas e mudanças bruscas de rede;
-- Confere acessibilidade e fidelidade visual;
-- Verifica se a copy fala mais do que precisa;
-- Garante que segurança e privacidade não foram comprometidas.
+O filtro de curadoria ([`AGENTS.md`](../AGENTS.md) §1) roda aqui: minimalismo, divulgação progressiva, protagonismo do resultado. O Linka pode absorver capacidades vindas do SignallQ **quando forem viáveis no Apple**, mas passa pela mesma curadoria — nada entra só porque é possível.
 
-### Passo 3: Aceite e Merge (Giam + Luiz)
-O Giam consolida as revisões, confronta a entrega com o objetivo original e apresenta a conclusão ao Luiz.
-Com a aprovação necessária, o código é mergeado na `main` e as branches temporárias são limpas.
+---
 
-### Passo 4: Lançamento Automático e Release Notes (Giam)
-A partir da versão 1.0.0-beta, o Giam assumiu a automação completa do ciclo final. Sem que o dono do produto precise pedir, o Giam DEVE:
-- Executar o script `.agents/scripts/release.sh` para atualizar o *Build Number* no XcodeGen.
-- Escrever automaticamente o documento `RELEASE_NOTES.md` traduzindo a entrega técnica da sprint em um texto comercial para o usuário.
-- Preparar o commit final de empacotamento.
+## Fast‑lane
+
+Para mudanças triviais.
+
+1. **Giam** decide, escreve uma linha de intenção no PR/commit.
+2. **Guinho** implementa em branch curta.
+3. **Marcelo** roda pipeline mínimo (`swift test` do módulo tocado + build).
+4. **Giam** aceita e mergeia.
+
+Sem `plano.md`, sem release notes, sem passo de empacotamento.
+
+---
+
+## Full‑flow
+
+Para feature ou mudança material.
+
+### 1. Architect (Giam)
+
+- Escreve `plano.md` curto: **objetivo · mudança arquitetural · requisito de aceite · não‑objetivo**.
+- Confronta com protótipo ([`documentacao/design/prototipo/`](../documentacao/design/prototipo/)) e Design System ([`documentacao/design/design_system/`](../documentacao/design/design_system/)).
+- **Luiz aprova a arquitetura antes de qualquer código.**
+
+### 2. Orchestrate (Guinho)
+
+- Cria branch isolada.
+- Implementa seguindo o Design System.
+- Escreve testes junto com a implementação.
+- **Protege o motor** — quando toca `LinkaEngine`, `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist` ou `LinkaModules`, mantém UI e medição desacopladas, preserva contratos e evolui com versionamento quando necessário.
+- Onde partes são independentes (ex.: componente + adaptador nativo + teste), pode paralelizar em subagentes isolados.
+- Não amplia escopo por conta própria — descoberta relevante vira nota no `plano.md` para o Giam decidir.
+
+### 3. Evaluate (Marcelo)
+
+Marcelo tenta quebrar e responde com **verdict tipado**:
+
+| Verdict | Significado | Ação |
+|---|---|---|
+| **BLOQUEIA** | impede merge (regressão real, motor comprometido, quebra de contrato, mentira visual, vazamento de segredo) | volta pro Guinho |
+| **AJUSTA** | corrigir agora, ainda nesta entrega (bug isolado, cheiro de IA na copy, fidelidade visual, teste faltando) | volta pro Guinho |
+| **ISSUE_FUTURA** | registra e segue (melhoria oportunista, débito conhecido, ideia adjacente) | Giam abre issue |
+
+Cobertura do Marcelo:
+
+- pipeline aplicável (`typecheck`, `lint`, `test`, `build`, `swift test` nos pacotes);
+- estados ruins de rede, cancelamento, resultado parcial;
+- acessibilidade e fidelidade ao protótipo;
+- copy contra a voz canônica e cheiro de IA;
+- segurança, privacidade e fronteira UI/motor.
+
+**Teto de rodadas:** loop Guinho ↔ Marcelo termina em **2 rodadas**. A terceira rodada escala para o Giam replanejar — o problema deixa de ser execução e vira arquitetura.
+
+### 4. Approve (Giam + Luiz)
+
+- Giam consolida as revisões contra o requisito original do `plano.md`.
+- Apresenta ao Luiz.
+- Merge só com aprovação do Luiz quando a mudança for material.
+- Branches temporárias são limpas.
+
+### 5. Release (Giam propõe, Luiz aprova)
+
+Quando a entrega justifica novo build:
+
+- Giam **propõe** execução de `.agents/scripts/release.sh`.
+- Giam **propõe** rascunho de `RELEASE_NOTES.md` traduzindo a entrega técnica para o usuário.
+- **Nada é executado antes do sim explícito do Luiz.** Isso substitui a antiga automação sem gate humano e alinha o passo com [`AGENTS.md`](../AGENTS.md) §12.
+
+---
+
+## Hot‑lane
+
+Para produção quebrada.
+
+1. **Giam** nomeia severidade e escopo.
+2. **Guinho** corrige em branch de hotfix — mudança cirúrgica, sem refatoração oportunista.
+3. **Marcelo** roda pipeline mínimo sobre o módulo tocado.
+4. **Giam** aceita e mergeia; Luiz é avisado.
+5. **Postmortem em 48h** — vira issue de retrabalho na Full‑flow (teste faltando, refatoração, guarda nova).
+
+---
+
+## Comunicação por artefato
+
+Estado vive em artefatos, não em conversa. Se um agente não estiver na sessão, outro deve conseguir retomar lendo:
+
+- `plano.md` — plano da entrega (Full‑flow).
+- PR/commit — decisão e escopo executado.
+- Verdict do Marcelo — texto tipado com **BLOQUEIA / AJUSTA / ISSUE_FUTURA** e evidência.
+- `RELEASE_NOTES.md` — o que muda para o usuário, sem jargão técnico.
+
+---
+
+## Regras que valem em todas as trilhas
+
+- Um agente não declara a própria entrega aprovada por outro sem revisão real.
+- Não implemente antes de entender o problema.
+- Não crie feature só porque é tecnicamente possível — passa pela curadoria de minimalismo ([`AGENTS.md`](../AGENTS.md) §1).
+- Mudança visual relevante é confrontada com protótipo e Design System.
+- Mudança no motor exige revisão de contratos, testes e impacto nos consumidores.
+- Commit, push, deploy e publicação em loja seguem [`AGENTS.md`](../AGENTS.md) §12.
 
 ---
 

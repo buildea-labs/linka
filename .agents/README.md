@@ -6,13 +6,13 @@ Tudo que a squad usa mora aqui dentro. Nenhuma fonte externa é necessária para
 
 Definida em [`AGENTS.md`](../AGENTS.md) §4:
 
-- **Giam** — Produto, experiência e direção. Define escopo, UX, UI, copy, arquitetura de produto, prioridade e aceite final. Sua principal obrigação é impedir que o Linka volte a virar um mini-SignallQ.
+- **Giam** — Produto, experiência e direção. Define escopo, UX, UI, copy, arquitetura de produto, prioridade e aceite final. Sua principal obrigação é manter o Linka focado — protagonismo do resultado, divulgação progressiva e curadoria contra excesso de painel — mesmo enquanto o produto absorve capacidades vindas do SignallQ viáveis no Apple.
 - **Guinho** — Implementação, arquitetura e proteção do motor. Constrói o que foi decidido, escreve código e testes, mantém `LinkaEngine` e os pacotes Swift protegidos de simplificação apressada.
-- **Marcelo** — Qualidade. Tenta quebrar o produto e o motor: `swift test`, build, acessibilidade, fidelidade ao protótipo, estados ruins de rede, regressões.
+- **Marcelo** — Qualidade. Tenta quebrar o produto e o motor: `swift test`, build, acessibilidade, fidelidade ao protótipo, estados ruins de rede, regressões. Responde com verdict tipado (**BLOQUEIA / AJUSTA / ISSUE_FUTURA**).
 
 Luiz é o dono do produto e tem a decisão final de publicação, custo, exclusão, monetização e mudança estratégica.
 
-Ordem de atuação (Giam → Guinho → Marcelo → aceite do Giam → aprovação do Luiz) está em [`AGENTS.md`](../AGENTS.md) §5 e detalhada em [`.agents/WORKFLOW.md`](WORKFLOW.md). Skill nenhuma dispensa essa ordem.
+O trabalho opera em três trilhas atrás de um **Roteador**: Fast‑lane (trivial), Full‑flow (feature), Hot‑lane (produção quebrada). O modelo está em [`AGENTS.md`](../AGENTS.md) §5 e detalhado em [`.agents/WORKFLOW.md`](WORKFLOW.md). Skill nenhuma dispensa o Roteador nem os gates humanos (arquitetura pelo Luiz, aceite pelo Giam, release aprovado pelo Luiz).
 
 ## Skills
 
@@ -21,7 +21,7 @@ Ordem de atuação (Giam → Guinho → Marcelo → aceite do Giam → aprovaç�
 │
 │   GIAM — produto, desenho e entrega
 ├── conversarComOLuiz/        falar com o dono do produto, direto e mastigado
-├── pensarComoMedicao/        filtro: isso é medição ou virou diagnóstico?
+├── pensarComoMedicao/        curadoria: melhora medir/entender/acompanhar no Apple sem competir com o resultado?
 ├── desenharExperiencia/      UX: fluxo do abrir → medir → mostrar → repetir
 ├── desenharInterface/        UI: spec a partir do protótipo e do Design System
 ├── aplicarVozLinka/          voz canônica do produto aplicada à copy
@@ -48,6 +48,43 @@ O aceite da entrega, papel do Giam, não tem skill — o procedimento é [`.agen
 
 Cada skill é um `SKILL.md` com frontmatter (`name`, `description`) e um procedimento. **Skill é procedimento, não fonte de verdade** — cada uma aponta para a fonte canônica do assunto e não repete a regra.
 
+## Evolução planejada da squad
+
+A squad atual (Giam / Guinho / Marcelo) é o **mínimo viável multi‑agente** — planner, implementer, reviewer — recomendado pela literatura como ponto de partida. **Não crie papel novo por intuição.** Divida quando o loop reclamar.
+
+Três candidatos legítimos a acréscimo, em ordem de prioridade, cada um com **gatilho objetivo**:
+
+### 1. Ceci — Design / UI / Copy
+
+Tira do Giam: fidelidade ao protótipo, aplicação do Design System, curadoria da voz, cheiro de IA na copy.  
+Giam mantém: roteador, produto, prioridade, aceite, conversa com o Luiz.
+
+Skills que migrariam para a Ceci: [`desenharInterface`](skills/desenharInterface/SKILL.md), [`aplicarVozLinka`](skills/aplicarVozLinka/SKILL.md), [`matarCheiroDeIA`](skills/matarCheiroDeIA/SKILL.md). [`desenharExperiencia`](skills/desenharExperiencia/SKILL.md) fica dividida (fluxo com Giam, geometria com Ceci).
+
+**Gatilho:** duas Full‑flows seguidas em que o Marcelo devolveu **AJUSTA** ou **BLOQUEIA** por `fidelidade visual` **ou** `cheiro de IA na copy`. Antes disso, o Giam dá conta e a divisão só adiciona handoff.
+
+### 2. Sinal — feedback externo para o roteador
+
+Papel leve, responsabilidade única: **transformar App Store review, ticket de suporte e telemetria em issues candidatas** para o Roteador do Giam. Não implementa, não decide — filtra, traduz e prioriza sinal.
+
+Sem skill nova por enquanto — reaproveita [`registrarIssue`](skills/registrarIssue/SKILL.md).
+
+**Gatilho:** produto fora da beta pública **e** volume de sinal externo passar a chegar mais rápido do que o Giam consegue triar sem atrasar o roteador (proxy: mais de 5 pedaços de sinal externo não triados na semana). Enquanto o produto está em beta ou o volume é zero, o papel fica vazio.
+
+### 3. Web — dono do `aplicacao-web/`
+
+Guinho hoje carrega SwiftUI + Swift packages + React do site. O site é o único ponto onde o stack diverge. Papel novo só se o site passar a receber mudanças frequentes.
+
+**Gatilho:** três PRs no `aplicacao-web/` em um único mês **e** ao menos um deles ter travado uma Full‑flow do app por conflito de agenda.
+
+## O que **não** deve ser reintroduzido por hábito
+
+- **Camillo como papel formal** — arquitetura protegida pelo Guinho colada ao código funciona; separar volta a introduzir handoff sem ganho comprovado.
+- **Security specialist separado do Marcelo** — superfície de ataque do Linka é baixa (sem backend próprio, sem login obrigatório). Especializar hoje é ceremônia.
+- **Release manager separado do Giam** — release é proposta com gate humano do Luiz; ato mecânico pequeno, não justifica papel dedicado.
+
+Reabra a discussão se **a realidade** mudar (backend próprio, monetização recorrente com risco financeiro, publicação frequente em múltiplas lojas). Enquanto não mudar, mantém enxuto.
+
 ## Fontes canônicas
 
 Ordem de precedência ([`AGENTS.md`](../AGENTS.md) §3):
@@ -62,7 +99,7 @@ Ordem de precedência ([`AGENTS.md`](../AGENTS.md) §3):
 
 ## Histórico
 
-As personas Giam/Guinho/Marcelo/Camillo vieram do produto irmão Auê, um jogo mobile — [`AGENTS.md`](../AGENTS.md) §4 registra isso. As skills desta pasta foram **adaptadas** para o Linka em 2026-08-14, deixando de descrever Arena/arroto/carioca e passando a descrever medição, `LinkaEngine`, Apple-first e a fronteira Linka/SignallQ. A skill `regrasDoAndroid` foi removida na adaptação (o Linka não tem versão Android per [`AGENTS.md`](../AGENTS.md) §2), e quatro skills foram renomeadas:
+As personas Giam/Guinho/Marcelo/Camillo vieram do produto irmão Auê, um jogo mobile — [`AGENTS.md`](../AGENTS.md) §4 registra isso. As skills desta pasta foram **adaptadas** para o Linka em 2026-08-14, deixando de descrever Arena/arroto/carioca e passando a descrever medição, `LinkaEngine`, Apple-first e a fronteira Linka/SignallQ (que era dura naquele momento). A skill `regrasDoAndroid` foi removida na adaptação (o Linka não tem versão Android per [`AGENTS.md`](../AGENTS.md) §2), e quatro skills foram renomeadas:
 
 - `conversarComOPrimo` → `conversarComOLuiz`
 - `aplicarTomOgro` → `aplicarVozLinka`
@@ -70,3 +107,8 @@ As personas Giam/Guinho/Marcelo/Camillo vieram do produto irmão Auê, um jogo m
 - `garantirMobileReal` → `garantirIphoneReal`
 
 Ainda em 2026-08-14, a squad foi enxugada: o **Camillo** deixou de ser papel formal da squad e suas responsabilidades (arquitetura e proteção do motor) foram absorvidas pelo **Guinho**, e o **Marcelinho** passou a ser chamado apenas de **Marcelo** dentro dos documentos da squad. O Camillo continua sendo pessoa real e ainda aparece em [`documentacao/funcional/HISTORIA.md`](../documentacao/funcional/HISTORIA.md) como parte da origem do produto.
+
+Em 2026-08-15, duas mudanças estruturais entraram em vigor:
+
+1. **Esteira única linear** foi substituída pelo modelo **Roteador + Fast‑lane / Full‑flow / Hot‑lane**, com verdict tipado do Marcelo (**BLOQUEIA / AJUSTA / ISSUE_FUTURA**), teto de 2 rodadas no loop Guinho ↔ Marcelo, e release virou proposta com gate humano do Luiz (ver [`AGENTS.md`](../AGENTS.md) §5 e [`WORKFLOW.md`](WORKFLOW.md)).
+2. **Fronteira dura Linka/SignallQ** foi aposentada: como o SignallQ passou a ser produto exclusivo Android/Web por limitações da Apple, o Linka pode absorver capacidades vindas do SignallQ que forem viáveis no ecossistema Apple, sujeitas à curadoria de minimalismo (ver [`AGENTS.md`](../AGENTS.md) §1, §9 e §13). As skills desta pasta foram atualizadas para refletir a nova postura.
