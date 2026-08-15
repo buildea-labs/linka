@@ -10,6 +10,10 @@ public enum SpeedTestUIPhase {
     case downloading
     case uploading
     case done
+    /// Falha fatal do motor (issue #66) — motor parou e cancelou sozinho.
+    /// Copy e ação de "Tentar novamente" vivem só na UI (`MainView`); aqui é
+    /// só o estado.
+    case error
 }
 
 @MainActor
@@ -25,6 +29,9 @@ public class SpeedTestViewModel: ObservableObject {
     @Published public var testDuration: String = ""
     @Published public var packetLossPercent: Double? = nil
     @Published public var uiPhase: SpeedTestUIPhase = .idle
+    /// Fato tipado da falha fatal (issue #66) — não-`nil` só quando
+    /// `uiPhase == .error`. Mapeamento pra mensagem amigável vive só na UI.
+    @Published public var failureReason: EngineFailureReason? = nil
 
     /// Latência sob carga (issue #52) — motor-interna nesta entrega, sem
     /// superfície própria na UI ainda; só alimenta o `NetworkMeasurement`
@@ -79,6 +86,7 @@ public class SpeedTestViewModel: ObservableObject {
         networkType = ""
         testDuration = ""
         loadedLatencyMs = nil
+        failureReason = nil
         uiPhase = .connecting
         
         testTask?.cancel()
@@ -136,6 +144,7 @@ public class SpeedTestViewModel: ObservableObject {
         if let dur = state.duration { self.testDuration = String(format: "%.1fs", dur).replacingOccurrences(of: ".", with: ",") }
         if let loss = state.packetLossPercent { self.packetLossPercent = loss }
         if let loadedLatency = state.loadedLatencyMs { self.loadedLatencyMs = loadedLatency }
+        if let reason = state.failureReason { self.failureReason = reason }
 
         switch state.phase {
         case .idle: self.uiPhase = .idle
@@ -143,6 +152,7 @@ public class SpeedTestViewModel: ObservableObject {
         case .download: self.uiPhase = .downloading
         case .upload: self.uiPhase = .uploading
         case .result: self.uiPhase = .done
+        case .error: self.uiPhase = .error
         }
     }
 }
