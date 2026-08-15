@@ -23,7 +23,14 @@ struct MainView: View {
             latencyMs: Double(viewModel.ping),
             jitterMs: viewModel.jitter,
             packetLossPercent: viewModel.packetLossPercent,
-            connectionKind: connectionKind(for: viewModel.networkType),
+            // Issue #51: usa a amostra real do próprio `viewModel` (início vs.
+            // fim do teste, via `NWPathMonitor` independente do motor) em vez
+            // de rederivar de `networkType` (string legada de exibição). Os
+            // dois caminhos divergiam antes — este era o único que mapeava
+            // qualquer string desconhecida para `.cellular`, mesmo num Mac
+            // cabeado (Ethernet nunca era produzido).
+            connectionKind: viewModel.connectionKind,
+            wifiBandGHz: viewModel.wifiBandGHz,
             networkIdentifier: viewModel.provider.isEmpty ? nil : viewModel.provider
         )
     }
@@ -43,13 +50,6 @@ struct MainView: View {
         ).isGranted
     }
 
-    private func connectionKind(for networkType: String) -> NetworkConnectionKind? {
-        switch networkType {
-        case "Wi-Fi": return .wifi
-        case "": return nil
-        default: return .cellular
-        }
-    }
     var body: some View {
         NavigationStack {
             ZStack {
@@ -218,7 +218,8 @@ struct MainView: View {
                                     operatorName: viewModel.networkType.isEmpty ? "--" : viewModel.networkType,
                                     provider: viewModel.provider.isEmpty ? "--" : viewModel.provider,
                                     duration: viewModel.testDuration.isEmpty ? "--" : viewModel.testDuration,
-                                    ping: viewModel.ping
+                                    ping: viewModel.ping,
+                                    wifiBandGHz: viewModel.wifiBandGHz
                                 )
                                 .padding(.top, 14)
                                 .transition(.opacity.combined(with: .move(edge: .top)))

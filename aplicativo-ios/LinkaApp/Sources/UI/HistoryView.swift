@@ -219,7 +219,7 @@ struct HistoryRow: View {
                             .foregroundColor(.textPrimary)
 
                         HStack(spacing: 4) {
-                            Image(systemName: measurement.connectionKind == .wifi ? "wifi" : "cellularbars")
+                            Image(systemName: connectionIconName(for: measurement.connectionKind))
                                 .font(.system(size: 10))
                             Text(connectionLabel(for: measurement.connectionKind))
                                 .font(.monoCaption)
@@ -271,6 +271,13 @@ struct HistoryRow: View {
                     HStack {
                         DetailItem(label: "SERVIDOR", value: measurement.serverIdentifier ?? "Automático")
                         Spacer()
+                        // Banda Wi-Fi confirmada pelo sistema (issue #51) —
+                        // só aparece quando a plataforma realmente informou
+                        // (hoje, Mac via CoreWLAN); ausência é normal e não
+                        // renderiza nada, sem competir por espaço.
+                        if let wifiBandGHz = measurement.wifiBandGHz {
+                            DetailItem(label: "BANDA WI-FI", value: formatBand(wifiBandGHz))
+                        }
                     }
                 }
                 .padding(.bottom, 8)
@@ -304,6 +311,25 @@ struct HistoryRow: View {
         case .ethernet: return "ETHERNET"
         case .other, .none: return "OUTRA"
         }
+    }
+
+    /// Issue #51: antes disso, Ethernet nunca era produzido de fato — o
+    /// ícone caía sempre no `else` de celular. Agora que Ethernet é uma
+    /// amostra real (`SpeedTestViewModel`), o ícone precisa refletir isso.
+    private func connectionIconName(for kind: NetworkConnectionKind?) -> String {
+        switch kind {
+        case .wifi: return "wifi"
+        case .cellular: return "cellularbars"
+        case .ethernet: return "cable.connector"
+        case .other, .none: return "questionmark.circle"
+        }
+    }
+
+    private func formatBand(_ ghz: Double) -> String {
+        let value = ghz.truncatingRemainder(dividingBy: 1) == 0
+            ? String(format: "%.0f", ghz)
+            : String(format: "%.1f", ghz)
+        return "\(value)GHz"
     }
 }
 

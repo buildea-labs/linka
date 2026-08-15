@@ -17,6 +17,12 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
     public let loadedLatencyMs: Double?
     public let durationMs: Int?
     public let connectionKind: NetworkConnectionKind?
+    /// Banda Wi-Fi confirmada pelo sistema, em GHz (ex.: `2.4`, `5`) —
+    /// issue #51. Só é preenchida quando a plataforma realmente informa a
+    /// banda (hoje, `CoreWLAN` no Mac); nunca inferida por SSID/BSSID. `nil`
+    /// é o estado normal quando a plataforma não expõe essa informação
+    /// (sempre o caso no iPhone) ou quando `connectionKind` não é `.wifi`.
+    public let wifiBandGHz: Double?
     public let networkIdentifier: String?
     public let serverIdentifier: String?
     public let engineVersion: String?
@@ -34,6 +40,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         loadedLatencyMs: Double? = nil,
         durationMs: Int? = nil,
         connectionKind: NetworkConnectionKind? = nil,
+        wifiBandGHz: Double? = nil,
         networkIdentifier: String? = nil,
         serverIdentifier: String? = nil,
         engineVersion: String? = nil
@@ -50,6 +57,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         self.loadedLatencyMs = loadedLatencyMs
         self.durationMs = durationMs
         self.connectionKind = connectionKind
+        self.wifiBandGHz = wifiBandGHz
         self.networkIdentifier = networkIdentifier
         self.serverIdentifier = serverIdentifier
         self.engineVersion = engineVersion
@@ -104,6 +112,17 @@ public enum NetworkMeasurementContract {
 
         if let durationMs = measurement.durationMs, durationMs < 0 {
             result.append("durationMs")
+        }
+
+        if let wifiBandGHz = measurement.wifiBandGHz {
+            if !wifiBandGHz.isFinite || wifiBandGHz <= 0 {
+                result.append("wifiBandGHz")
+            }
+            // Banda Wi-Fi só faz sentido junto de `connectionKind == .wifi` —
+            // caso contrário seria um metadado enganoso (issue #51).
+            if measurement.connectionKind != .wifi {
+                result.append("wifiBandGHz")
+            }
         }
 
         switch measurement.outcome {
