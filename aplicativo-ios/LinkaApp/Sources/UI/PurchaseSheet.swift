@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 import LinkaEntitlements
 
 struct PurchaseSheet: View {
@@ -60,34 +61,73 @@ struct PurchaseSheet: View {
                             .padding(.top, 8)
                             .padding(.horizontal, 32)
                             
-                        // Features List
+                        // Grátis: o que já funciona sem Plus
+                        PurchaseSectionHeader(text: "No Linka, sempre grátis")
+                            .padding(.top, 32)
+
                         VStack(spacing: 0) {
-                            PurchaseFeatureRow(text: "Nenhum anúncio, em nenhuma tela", showDivider: true)
-                            PurchaseFeatureRow(text: "Acesso antecipado a novos recursos", showDivider: true)
-                            PurchaseFeatureRow(text: "Widget de velocidade na tela de início", showDivider: false)
+                            PurchaseFeatureRow(
+                                text: "Medição de velocidade, sem limite",
+                                showDivider: false
+                            )
                         }
                         .padding(.vertical, 8)
                         .background(Color.surfaceCard)
                         .cornerRadius(16)
-                        .padding(.top, 32)
+                        .padding(.top, 8)
                         .padding(.horizontal, 24)
-                        
+
+                        // Plus: capacidades hoje gateadas por LinkaCapability
+                        PurchaseSectionHeader(text: "Com o Linka Plus")
+                            .padding(.top, 24)
+
+                        VStack(spacing: 0) {
+                            PurchaseFeatureRow(
+                                text: "Histórico de todas as suas medições",
+                                showDivider: true
+                            )
+                            PurchaseFeatureRow(
+                                text: "Comparação de desempenho entre períodos",
+                                showDivider: true
+                            )
+                            PurchaseFeatureRow(
+                                text: "Assist: orientação sobre a sua conexão",
+                                showDivider: false
+                            )
+                        }
+                        .padding(.vertical, 8)
+                        .background(Color.surfaceCard)
+                        .cornerRadius(16)
+                        .padding(.top, 8)
+                        .padding(.horizontal, 24)
+
                         // Price Card
                         VStack(spacing: 8) {
-                            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                Text("R$")
-                                    .font(.system(size: 24, weight: .bold))
-                                Text("6,90")
+                            if let product = entitlements.product {
+                                Text(product.displayPrice)
                                     .font(.system(size: 36, weight: .bold))
-                                Text("/ ano")
-                                    .font(.system(size: 14))
+                                    .foregroundColor(.textPrimary)
+
+                                Text("Válido por 1 ano · sem renovação automática")
+                                    .font(.system(size: 12))
                                     .foregroundColor(.textSecondary)
+                            } else if entitlements.isLoadingProduct {
+                                ProgressView()
+                                    .padding(.vertical, 6)
+                            } else {
+                                Text("Não foi possível carregar o preço agora")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.textSecondary)
+
+                                Button(action: {
+                                    Task { await entitlements.loadProduct() }
+                                }) {
+                                    Text("Tentar novamente")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(.textPrimary)
+                                }
+                                .padding(.top, 4)
                             }
-                            .foregroundColor(.textPrimary)
-                            
-                            Text("Compra única · sem renovação automática")
-                                .font(.system(size: 12))
-                                .foregroundColor(.textSecondary)
                         }
                         .padding(.vertical, 24)
                         .frame(maxWidth: .infinity)
@@ -118,8 +158,11 @@ struct PurchaseSheet: View {
                             if isPurchasing {
                                 ProgressView()
                                     .tint(Color.surfacePage)
+                            } else if let product = entitlements.product {
+                                Text("Comprar por \(product.displayPrice)/ano")
+                                    .font(.system(size: 16, weight: .semibold))
                             } else {
-                                Text("Comprar por R$ 6,90/ano")
+                                Text("Carregando preço…")
                                     .font(.system(size: 16, weight: .semibold))
                             }
                         }
@@ -129,7 +172,7 @@ struct PurchaseSheet: View {
                         .background(Color.textPrimary)
                         .cornerRadius(12)
                     }
-                    .disabled(isPurchasing || isRestoring)
+                    .disabled(isPurchasing || isRestoring || entitlements.product == nil)
                     .padding(.horizontal, 24)
 
                     Button(action: restore) {
@@ -144,7 +187,7 @@ struct PurchaseSheet: View {
                     .disabled(isPurchasing || isRestoring)
                     .padding(.top, 16)
 
-                    Text("Compra única de R$ 6,90, válida por um ano, sem renovação automática. Gerencie sua compra nos Ajustes do Apple ID.")
+                    Text(disclaimerText)
                         .font(.system(size: 10))
                         .foregroundColor(.textSecondary.opacity(0.6))
                         .multilineTextAlignment(.center)
@@ -169,6 +212,17 @@ struct PurchaseSheet: View {
                 .padding(.top, 16)
             }
         }
+    }
+
+    /// Descreve corretamente a Non-Renewing Subscription — valor anual,
+    /// sem renovação automática — sem chamá-la de "compra única" (o produto
+    /// permanece disponível para recompra a cada ano) nem de assinatura
+    /// auto-renovável (não é renovada automaticamente).
+    private var disclaimerText: String {
+        if let product = entitlements.product {
+            return "Valor de \(product.displayPrice), válido por um ano, sem renovação automática. Gerencie sua compra nos Ajustes do Apple ID."
+        }
+        return "Valor anual, sem renovação automática. Gerencie sua compra nos Ajustes do Apple ID."
     }
 
     private func purchase() {
@@ -224,6 +278,24 @@ struct PurchaseSheet: View {
                 }
             }
         }
+    }
+}
+
+/// Cabeçalho que separa visualmente o que é grátis do que é Plus — os dois
+/// nunca aparecem misturados numa lista única.
+struct PurchaseSectionHeader: View {
+    var text: String
+
+    var body: some View {
+        HStack {
+            Text(text.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.textSecondary)
+                .tracking(0.5)
+
+            Spacer()
+        }
+        .padding(.horizontal, 28)
     }
 }
 

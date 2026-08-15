@@ -249,6 +249,35 @@ final class StoreKitEntitlementProviderTests: XCTestCase {
         XCTAssertEqual(provider.snapshot, .free)
     }
 
+    // MARK: product / loadProduct() — exposição de preço real para a UI
+    //
+    // `Product` do StoreKit não é mockável num `swift test` headless (sem
+    // `.storekit` Configuration file — mesma PENDÊNCIA da issue #60), então
+    // não simulamos um `Product` resolvido aqui. O que é testável sem
+    // depender de rede/App Store é o estado publicado ao redor da carga:
+    // nenhum produto inventado antes da resolução, e nenhum fallback de
+    // preço hardcoded quando ela falha — a `PurchaseSheet` precisa desses
+    // dois sinais (`product == nil`, `isLoadingProduct`) para desenhar
+    // loading/erro em vez de um preço fixo.
+
+    func testProductStartsNilBeforeAnyLoadResolves() {
+        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
+        XCTAssertNil(provider.product)
+    }
+
+    func testLoadProductWithAnUnknownIDResolvesToNilProductAndStopsLoading() async {
+        let unknownProductID = "com.linka.does.not.exist.\(UUID().uuidString)"
+        let provider = StoreKitEntitlementProvider(
+            productID: unknownProductID,
+            defaults: makeDefaults()
+        )
+
+        await provider.loadProduct()
+
+        XCTAssertNil(provider.product)
+        XCTAssertFalse(provider.isLoadingProduct)
+    }
+
     func testInitRestoresPlusSnapshotFromCachedPurchaseDate() {
         let defaults = makeDefaults()
         defaults.set(Date(), forKey: "com.linka.plus.lastKnownPurchaseDate")
