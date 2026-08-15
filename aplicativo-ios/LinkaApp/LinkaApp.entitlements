@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<!--
+		PENDÊNCIA (issue #71): placeholder até o container ser
+		provisionado no Apple Developer Portal por Luiz/Giam — mesma
+		natureza de pendência de conta que os IDs de produto StoreKit
+		documentados em
+		LinkaEntitlements/Sources/StoreKitEntitlementProvider.swift
+		para o Linka Plus. Precisa bater exatamente com
+		LinkaCloudKitContainer.identifier em
+		MeasurementHistoryCloudKit/Sources/CloudKitMeasurementSync.swift.
+		-->
+		<string>iCloud.com.linka.speedtest</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+</dict>
+</plist>

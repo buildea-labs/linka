@@ -13,6 +13,7 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "2"
+        CODE_SIGN_ENTITLEMENTS: LinkaApp/LinkaApp.entitlements
     info:
       path: LinkaApp/Info.plist
       properties:
@@ -32,12 +33,15 @@ targets:
     dependencies:
       - package: LinkaEngine
       - package: LinkaModules
+      - package: MeasurementHistoryCloudKit
       - package: GoogleMobileAds
 packages:
   LinkaEngine:
     path: LinkaEngine
   LinkaModules:
     path: LinkaModules
+  MeasurementHistoryCloudKit:
+    path: MeasurementHistoryCloudKit
   GoogleMobileAds:
     url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
     exactVersion: 11.8.0

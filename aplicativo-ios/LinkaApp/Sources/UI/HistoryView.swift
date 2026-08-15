@@ -13,9 +13,13 @@ struct HistoryView: View {
     @State private var showAssist = false
     @State private var insightText: String?
 
-    let repository = FileMeasurementHistoryRepository(
-        fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json")
-    )
+    // Computada (não `let`) de propósito: `entitlements` vem de
+    // `@EnvironmentObject` e ainda não está disponível no momento em que
+    // as outras propriedades armazenadas desta `View` seriam inicializadas
+    // — uma `let` aqui referenciando `entitlements` não compilaria.
+    private var repository: SyncingHistoryRepository {
+        LinkaMeasurementHistory.makeRepository(entitlements: entitlements)
+    }
 
     @ViewBuilder
     var body: some View {
