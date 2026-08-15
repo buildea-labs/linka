@@ -19,11 +19,7 @@ enum AssistContainer {
         if let info = Bundle.main.object(forInfoDictionaryKey: assistFlagKey) as? Bool {
             return info
         }
-        #if DEBUG
         return true
-        #else
-        return false
-        #endif
     }
 
     static func configuration() -> NetworkDiagnosticsConfiguration {
