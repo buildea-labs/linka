@@ -55,7 +55,16 @@ public class SpeedTestViewModel: ObservableObject {
     /// final. Não é `@Published` de propósito: não deve disparar re-render
     /// nenhum, para não competir com o resultado (AGENTS.md §6).
     private var loadedLatencyMs: Double? = nil
-    
+
+    /// Duração bruta do teste em segundos (issue #50), do jeito que o motor
+    /// entrega em `MeasurementState.duration` — mesmo padrão de
+    /// `loadedLatencyMs`: não-`@Published` para não competir com o
+    /// resultado por re-render. `testDuration` (string formatada) já existe
+    /// só para exibição ao vivo; este valor bruto é o que alimenta
+    /// `NetworkMeasurement.durationMs` no registro salvo, convertido para
+    /// milissegundos só no momento da construção final.
+    private var rawTestDuration: Double? = nil
+
     @Published public var lastTestSpeedString: String? = nil
     
     // UI states
@@ -103,6 +112,7 @@ public class SpeedTestViewModel: ObservableObject {
         networkType = ""
         testDuration = ""
         loadedLatencyMs = nil
+        rawTestDuration = nil
         failureReason = nil
         connectionKind = nil
         wifiBandGHz = nil
@@ -148,6 +158,7 @@ public class SpeedTestViewModel: ObservableObject {
                         jitterMs: self.jitter,
                         packetLossPercent: self.packetLossPercent,
                         loadedLatencyMs: self.loadedLatencyMs,
+                        durationMs: self.rawTestDuration.map { Int(($0 * 1000).rounded()) },
                         connectionKind: self.connectionKind,
                         wifiBandGHz: self.wifiBandGHz,
                         networkIdentifier: self.provider
@@ -178,7 +189,10 @@ public class SpeedTestViewModel: ObservableObject {
         if let u = state.uploadSpeed { self.uploadSpeed = u }
         if let prov = state.provider { self.provider = prov }
         if let net = state.networkType { self.networkType = net }
-        if let dur = state.duration { self.testDuration = String(format: "%.1fs", dur).replacingOccurrences(of: ".", with: ",") }
+        if let dur = state.duration {
+            self.testDuration = String(format: "%.1fs", dur).replacingOccurrences(of: ".", with: ",")
+            self.rawTestDuration = dur
+        }
         if let loss = state.packetLossPercent { self.packetLossPercent = loss }
         if let loadedLatency = state.loadedLatencyMs { self.loadedLatencyMs = loadedLatency }
         if let reason = state.failureReason { self.failureReason = reason }
