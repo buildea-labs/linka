@@ -260,7 +260,7 @@ struct HistoryRow: View {
                         .background(Color.borderDefault)
                         .padding(.top, 4)
 
-                    HStack {
+                    HStack(alignment: .top) {
                         DetailItem(
                             label: "PING",
                             value: formatPing(measurement.latencyMs),
