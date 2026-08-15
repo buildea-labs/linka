@@ -10,8 +10,6 @@ struct MainView: View {
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
     @State private var ringScale: CGFloat = 1.0
-    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
-    @State private var showOnboarding: Bool = false
     @State private var showSettings: Bool = false
     @Namespace private var animation
 
@@ -263,20 +261,7 @@ struct MainView: View {
             .toolbar(.hidden, for: .navigationBar)
         }
         .onAppear {
-            if !hasSeenOnboarding {
-                showOnboarding = true
-            } else {
-                viewModel.startTest()
-            }
-        }
-        .onChange(of: showOnboarding) { newValue in
-            if !newValue && !hasSeenOnboarding {
-                hasSeenOnboarding = true
-                viewModel.startTest()
-            }
-        }
-        .fullScreenCover(isPresented: $showOnboarding) {
-            OnboardingSheet(isPresented: $showOnboarding)
+            viewModel.startTest()
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet()
