@@ -3,8 +3,10 @@ import MeasurementHistory
 import NetworkCore
 import NetworkInsights
 import LinkaEntitlements
+import LinkaModules
 
 struct HistoryView: View {
+    @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @State private var measurements: [NetworkMeasurement] = []
     @State private var isLoading = true
     @State private var hasPlus = false
@@ -14,8 +16,6 @@ struct HistoryView: View {
     let repository = FileMeasurementHistoryRepository(
         fileURL: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("measurements.json")
     )
-
-    private let insightsAnalyzer: NetworkInsightsAnalyzing = BasicNetworkInsightsAnalyzer()
 
     @ViewBuilder
     var body: some View {
@@ -120,7 +120,8 @@ struct HistoryView: View {
         .sheet(isPresented: $showAssist) {
             AssistSheet(
                 currentMeasurement: measurements.first,
-                recentMeasurements: Array(measurements.dropFirst().prefix(19))
+                recentMeasurements: Array(measurements.dropFirst().prefix(19)),
+                entitlements: entitlements
             )
         }
         .onAppear {
@@ -130,13 +131,13 @@ struct HistoryView: View {
 
     private func loadData() {
         Task {
-            let policy = LinkaEntitlementPolicy.decision(
+            let decision = LinkaEntitlementPolicy.decision(
                 for: .history,
-                snapshot: .plus(status: .active, source: .subscription),
+                snapshot: entitlements.snapshot,
                 at: Date()
             )
 
-            hasPlus = policy.isGranted
+            hasPlus = decision.isGranted
 
             if hasPlus {
                 let query = MeasurementQuery(limit: 50, sortOrder: .newestFirst)
@@ -157,6 +158,14 @@ struct HistoryView: View {
         let baseline = measurements.filter { $0.measuredAt >= cutoff14d && $0.measuredAt < cutoff7d }
 
         guard last7.count >= 2, baseline.count >= 2 else { return nil }
+
+        // Insights (comparação de períodos) é uma capacidade Plus própria,
+        // separada de `.history` — consulta a mesma fonte de entitlement
+        // antes de calcular, sem duplicar a regra de acesso aqui.
+        let insightsAnalyzer = EntitlementGatedNetworkInsightsAnalyzer(
+            wrapping: BasicNetworkInsightsAnalyzer(),
+            snapshot: entitlements.snapshot
+        )
 
         let comparison: NetworkPeriodComparison
         do {

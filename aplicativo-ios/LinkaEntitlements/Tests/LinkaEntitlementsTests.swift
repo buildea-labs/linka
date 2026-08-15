@@ -166,3 +166,133 @@ final class LinkaEntitlementsTests: XCTestCase {
         XCTAssertFalse(expiredAccess)
     }
 }
+
+// MARK: - StoreKitEntitlementProvider
+
+@MainActor
+final class StoreKitEntitlementProviderTests: XCTestCase {
+    private let now = Date(timeIntervalSince1970: 100_000)
+
+    private func makeDefaults() -> UserDefaults {
+        let suiteName = "StoreKitEntitlementProviderTests.\(UUID().uuidString)"
+        return UserDefaults(suiteName: suiteName)!
+    }
+
+    // MARK: computeSnapshot (puro)
+
+    func testComputeSnapshotIsFreeWithoutAKnownPurchase() {
+        let snapshot = StoreKitEntitlementProvider.computeSnapshot(
+            purchaseDate: nil,
+            validityInterval: LinkaStoreEntitlementWindow.annualValidityInterval,
+            now: now
+        )
+
+        XCTAssertEqual(snapshot, .free)
+    }
+
+    func testComputeSnapshotIsActivePlusWithinTheValidityWindow() {
+        let purchaseDate = now.addingTimeInterval(-10)
+        let snapshot = StoreKitEntitlementProvider.computeSnapshot(
+            purchaseDate: purchaseDate,
+            validityInterval: LinkaStoreEntitlementWindow.annualValidityInterval,
+            now: now
+        )
+
+        XCTAssertEqual(snapshot.plan, .plus)
+        XCTAssertEqual(snapshot.status, .active)
+        XCTAssertEqual(snapshot.source, .subscription)
+        XCTAssertEqual(
+            snapshot.validUntil,
+            purchaseDate.addingTimeInterval(LinkaStoreEntitlementWindow.annualValidityInterval)
+        )
+
+        XCTAssertTrue(
+            LinkaEntitlementPolicy.hasAccess(to: .history, snapshot: snapshot, at: now)
+        )
+    }
+
+    func testComputeSnapshotIsExpiredPlusPastTheValidityWindow() {
+        let validityInterval: TimeInterval = 365 * 24 * 60 * 60
+        let purchaseDate = now.addingTimeInterval(-(validityInterval + 1))
+        let snapshot = StoreKitEntitlementProvider.computeSnapshot(
+            purchaseDate: purchaseDate,
+            validityInterval: validityInterval,
+            now: now
+        )
+
+        XCTAssertEqual(snapshot.plan, .plus)
+        XCTAssertEqual(snapshot.status, .expired)
+
+        XCTAssertFalse(
+            LinkaEntitlementPolicy.hasAccess(to: .history, snapshot: snapshot, at: now)
+        )
+    }
+
+    func testIsEntitledOnlyForActivePlus() {
+        XCTAssertFalse(StoreKitEntitlementProvider.isEntitled(.free))
+        XCTAssertFalse(
+            StoreKitEntitlementProvider.isEntitled(
+                .plus(status: .expired, source: .subscription, validUntil: now)
+            )
+        )
+        XCTAssertTrue(
+            StoreKitEntitlementProvider.isEntitled(
+                .plus(status: .active, source: .subscription, validUntil: now.addingTimeInterval(60))
+            )
+        )
+    }
+
+    // MARK: init a partir de cache local
+
+    func testInitRestoresFreeSnapshotWhenNoPurchaseIsCached() {
+        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
+        XCTAssertEqual(provider.snapshot, .free)
+    }
+
+    func testInitRestoresPlusSnapshotFromCachedPurchaseDate() {
+        let defaults = makeDefaults()
+        defaults.set(Date(), forKey: "com.linka.plus.lastKnownPurchaseDate")
+
+        let provider = StoreKitEntitlementProvider(defaults: defaults)
+
+        XCTAssertEqual(provider.snapshot.plan, .plus)
+        XCTAssertEqual(provider.snapshot.status, .active)
+    }
+
+    // MARK: handle(_:) — cancelamento e pendência (sem transação assinada real)
+
+    func testHandleUserCancelledKeepsFreeSnapshotAndReportsCancellation() async throws {
+        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
+
+        let outcome = try await provider.handle(.userCancelled)
+
+        XCTAssertEqual(outcome, .userCancelled)
+        XCTAssertEqual(provider.snapshot, .free)
+    }
+
+    func testHandlePendingKeepsFreeSnapshotAndReportsPending() async throws {
+        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
+
+        let outcome = try await provider.handle(.pending)
+
+        XCTAssertEqual(outcome, .pending)
+        XCTAssertEqual(provider.snapshot, .free)
+    }
+
+    // MARK: DEBUG-only overrides
+
+    #if DEBUG
+    func testDebugForcePlusAndResetRoundTrip() {
+        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
+        XCTAssertEqual(provider.snapshot, .free)
+
+        provider.debugForcePlus()
+        XCTAssertEqual(provider.snapshot.plan, .plus)
+        XCTAssertEqual(provider.snapshot.status, .active)
+        XCTAssertEqual(provider.snapshot.source, .promotion)
+
+        provider.debugResetToFree()
+        XCTAssertEqual(provider.snapshot, .free)
+    }
+    #endif
+}

@@ -2,6 +2,7 @@ import SwiftUI
 import MeasurementHistory
 import NetworkCore
 import NetworkAssist
+import LinkaEntitlements
 
 struct ChatMessage: Identifiable {
     let id = UUID()
@@ -35,15 +36,28 @@ struct AssistSheet: View {
     private let assistProvider: any NetworkAssistProviding
     private let assistIsRemote: Bool
 
+    /// `entitlements` é obrigatório para montar o provider padrão porque o
+    /// Assist agora consulta a mesma fonte de entitlement do app
+    /// (`AssistContainer.makeAssistProvider(entitlements:)`) — não pode
+    /// mais ser construído sem saber o plano do usuário. Testes/previews
+    /// que já injetam `assistProvider` explicitamente não precisam de
+    /// `entitlements`.
     init(
         currentMeasurement: NetworkMeasurement?,
         recentMeasurements: [NetworkMeasurement] = [],
+        entitlements: StoreKitEntitlementProvider? = nil,
         assistProvider: (any NetworkAssistProviding)? = nil,
         assistIsRemote: Bool = AssistContainer.isRemoteAssistEnabled()
     ) {
         self.currentMeasurement = currentMeasurement
         self.recentMeasurements = recentMeasurements
-        self.assistProvider = assistProvider ?? AssistContainer.makeAssistProvider()
+        if let assistProvider {
+            self.assistProvider = assistProvider
+        } else if let entitlements {
+            self.assistProvider = AssistContainer.makeAssistProvider(entitlements: entitlements)
+        } else {
+            self.assistProvider = NetworkAssistService(transport: UnconfiguredNetworkAssistTransport())
+        }
         self.assistIsRemote = assistIsRemote
     }
 

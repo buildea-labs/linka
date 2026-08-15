@@ -2,11 +2,12 @@ import SwiftUI
 import AudioToolbox
 import MeasurementHistory
 import NetworkCore
+import LinkaEntitlements
 
 struct MainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
     @AppStorage("appAppearance") private var appAppearance: String = "system"
-    @AppStorage("isPro") private var isPro: Bool = false
+    @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
     @State private var ringScale: CGFloat = 1.0
@@ -27,6 +28,13 @@ struct MainView: View {
             connectionKind: connectionKind(for: viewModel.networkType),
             networkIdentifier: viewModel.provider.isEmpty ? nil : viewModel.provider
         )
+    }
+
+    /// Suprime anúncios para quem tem Linka Plus ativo agora. Não usa
+    /// `LinkaEntitlementPolicy` porque "sem anúncios" não é uma
+    /// `LinkaCapability` — é um benefício de plano, lido direto do snapshot.
+    private var isPlusActive: Bool {
+        entitlements.snapshot.plan == .plus && entitlements.snapshot.status == .active
     }
 
     private func connectionKind(for networkType: String) -> NetworkConnectionKind? {
@@ -202,7 +210,7 @@ struct MainView: View {
                             
                             Spacer(minLength: 16)
 
-                            if !isPro {
+                            if !isPlusActive {
                                 BannerView()
                                     .padding(.bottom, 8)
                             }
@@ -282,7 +290,7 @@ struct MainView: View {
             SettingsSheet()
         }
         .sheet(isPresented: $showAssist) {
-            AssistSheet(currentMeasurement: currentMeasurement)
+            AssistSheet(currentMeasurement: currentMeasurement, entitlements: entitlements)
         }
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: viewModel.uiPhase) { newPhase in

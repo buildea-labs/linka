@@ -1,5 +1,6 @@
 import XCTest
 @testable import LinkaAppIntents
+import LinkaEntitlements
 
 final class LinkaAppIntentsTests: XCTestCase {
     func testExecutorRoutesRequestedAction() async throws {
@@ -97,5 +98,78 @@ final class LinkaAppIntentsTests: XCTestCase {
         XCTAssertTrue(OpenLatestMeasurementIntent.openAppWhenRun)
         XCTAssertTrue(OpenHistoryIntent.openAppWhenRun)
         XCTAssertFalse(GetLatestResultIntent.openAppWhenRun)
+    }
+
+    // MARK: - entitlementGated
+
+    func testEntitlementGatedExecutorDeniesFreePlanWithoutCallingTheWrappedExecutor() async {
+        let wrappedWasCalled = CallFlag()
+        let wrapped = LinkaAppIntentExecutor { action in
+            await wrappedWasCalled.markCalled()
+            return LinkaSystemActionResponse(action: action)
+        }
+        let gated = LinkaAppIntentExecutor.entitlementGated(
+            wrapping: wrapped,
+            snapshot: { .free }
+        )
+
+        do {
+            _ = try await gated.execute(.startSpeedTest)
+            XCTFail("Expected LinkaAppIntentExecutionError.notEntitled")
+        } catch let error as LinkaAppIntentExecutionError {
+            XCTAssertEqual(error, .notEntitled(action: .startSpeedTest))
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+
+        let wasCalled = await wrappedWasCalled.value
+        XCTAssertFalse(wasCalled, "O executor real não deve rodar sem entitlement.")
+    }
+
+    func testEntitlementGatedExecutorDelegatesForActivePlus() async throws {
+        let wrapped = LinkaAppIntentExecutor { action in
+            LinkaSystemActionResponse(action: action)
+        }
+        let gated = LinkaAppIntentExecutor.entitlementGated(
+            wrapping: wrapped,
+            snapshot: { .plus(status: .active, source: .subscription) }
+        )
+
+        let response = try await gated.execute(.openHistory)
+
+        XCTAssertEqual(response.action, .openHistory)
+    }
+
+    func testEntitlementGatedExecutorDeniesExpiredPlus() async {
+        let wrapped = LinkaAppIntentExecutor { action in
+            LinkaSystemActionResponse(action: action)
+        }
+        let gated = LinkaAppIntentExecutor.entitlementGated(
+            wrapping: wrapped,
+            snapshot: {
+                .plus(
+                    status: .active,
+                    source: .subscription,
+                    validUntil: Date(timeIntervalSince1970: 0)
+                )
+            }
+        )
+
+        do {
+            _ = try await gated.execute(.openHistory)
+            XCTFail("Expected LinkaAppIntentExecutionError.notEntitled")
+        } catch let error as LinkaAppIntentExecutionError {
+            XCTAssertEqual(error, .notEntitled(action: .openHistory))
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+}
+
+private actor CallFlag {
+    private(set) var value = false
+
+    func markCalled() {
+        value = true
     }
 }

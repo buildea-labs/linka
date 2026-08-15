@@ -1,10 +1,11 @@
 import SwiftUI
 import MeasurementHistory
+import LinkaEntitlements
 
 struct SettingsSheet: View {
     @Environment(\.dismiss) var dismiss
     @AppStorage("appAppearance") private var appAppearance: String = "system"
-    @AppStorage("isPro") private var isPro: Bool = false
+    @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @State private var showPurchase = false
     @State private var testCount: Int = 0
     
@@ -57,7 +58,7 @@ struct SettingsSheet: View {
                             Text("Linka")
                                 .foregroundColor(.textPrimary)
                             Spacer()
-                            Text("R$ 6,90/ano")
+                            Text(subscriptionStatusText)
                                 .foregroundColor(.textSecondary)
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 14, weight: .semibold))
@@ -101,20 +102,33 @@ struct SettingsSheet: View {
                 }
                 .listRowBackground(Color.surfaceCard)
                 
-                if isPro {
-                    Section(header: Text("DEBUG INTERNO").font(.monoCaption).foregroundColor(.brandAccentWarm)) {
-                        Button(action: { isPro = false }) {
-                            HStack {
-                                Image(systemName: "trash.fill")
-                                    .foregroundColor(.brandAccentWarm)
-                                Text("Resetar Compra Mockada")
-                                    .foregroundColor(.textPrimary)
-                            }
+                #if DEBUG
+                // Atalhos de desenvolvimento para exercitar a UI Plus sem
+                // depender de um StoreKit Configuration file. Compilados
+                // apenas em builds DEBUG — não existem no binário de
+                // Release (issue #60, requisito de aceite 5).
+                Section(header: Text("DEBUG INTERNO").font(.monoCaption).foregroundColor(.brandAccentWarm)) {
+                    Button(action: { entitlements.debugForcePlus() }) {
+                        HStack {
+                            Image(systemName: "bolt.fill")
+                                .foregroundColor(.brandAccentWarm)
+                            Text("Forçar Linka Plus (DEBUG)")
+                                .foregroundColor(.textPrimary)
                         }
                     }
-                    .listRowBackground(Color.surfaceCard)
+
+                    Button(action: { entitlements.debugResetToFree() }) {
+                        HStack {
+                            Image(systemName: "trash.fill")
+                                .foregroundColor(.brandAccentWarm)
+                            Text("Resetar Compra Mockada")
+                                .foregroundColor(.textPrimary)
+                        }
+                    }
                 }
-                
+                .listRowBackground(Color.surfaceCard)
+                #endif
+
                 Section {
                     EmptyView()
                 } footer: {
@@ -153,6 +167,15 @@ struct SettingsSheet: View {
         .preferredColorScheme(colorScheme)
     }
     
+    private var subscriptionStatusText: String {
+        switch entitlements.snapshot.plan {
+        case .free:
+            return "R$ 6,90/ano"
+        case .plus:
+            return entitlements.snapshot.status == .active ? "Ativo" : "Expirado"
+        }
+    }
+
     private func loadTestCount() {
         Task { @MainActor in
             let repo = FileMeasurementHistoryRepository(

@@ -171,6 +171,13 @@ public enum NetworkAssistError: Error, Equatable, Sendable {
     case emptyResponse
     case unknownResponseEvidenceID(String)
     case answeredWithoutEvidence
+
+    /// Não é lançado por `NetworkAssistService` — este pacote não conhece
+    /// entitlement. Reservado para consumidores que envolvem
+    /// `NetworkAssistProviding` com uma checagem de acesso (ver
+    /// `LinkaModules.EntitlementGatedNetworkAssistProvider`). Ortogonal a
+    /// `.notConfigured`, que representa transport ausente, não falta de direito.
+    case notEntitled
 }
 
 public protocol NetworkAssistProviding: Sendable {

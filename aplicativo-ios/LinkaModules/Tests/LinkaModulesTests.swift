@@ -1,5 +1,8 @@
 import XCTest
 @testable import LinkaModules
+import LinkaEntitlements
+import NetworkAssist
+import NetworkInsights
 
 final class LinkaModulesTests: XCTestCase {
     func testFreeTierOnlyIncludesSpeedTest() {
@@ -99,5 +102,83 @@ final class LinkaModulesTests: XCTestCase {
     func testPartialMeasurementNeedsAtLeastOneMeasuredMetric() {
         XCTAssertFalse(NetworkMeasurementContract.isValid(NetworkMeasurement()))
         XCTAssertTrue(NetworkMeasurementContract.isValid(NetworkMeasurement(latencyMs: 18)))
+    }
+
+    // MARK: - EntitlementGatedNetworkInsightsAnalyzer
+
+    func testEntitlementGatedInsightsDeniesFreePlan() {
+        let gated = EntitlementGatedNetworkInsightsAnalyzer(
+            wrapping: BasicNetworkInsightsAnalyzer(),
+            snapshot: .free
+        )
+
+        XCTAssertThrowsError(
+            try gated.summarize([NetworkMeasurement(downloadMbps: 100)])
+        ) { error in
+            XCTAssertEqual(error as? NetworkInsightsError, .notEntitled)
+        }
+    }
+
+    func testEntitlementGatedInsightsDelegatesForActivePlus() throws {
+        let gated = EntitlementGatedNetworkInsightsAnalyzer(
+            wrapping: BasicNetworkInsightsAnalyzer(),
+            snapshot: .plus(status: .active, source: .subscription)
+        )
+
+        let summary = try gated.summarize([
+            NetworkMeasurement(downloadMbps: 100),
+            NetworkMeasurement(downloadMbps: 120)
+        ])
+
+        XCTAssertEqual(summary.measurementCount, 2)
+    }
+
+    // MARK: - EntitlementGatedNetworkAssistProvider
+
+    func testEntitlementGatedAssistDeniesFreePlanWithoutCallingTheWrappedProvider() async {
+        let gated = EntitlementGatedNetworkAssistProvider(
+            wrapping: NetworkAssistService(transport: UnconfiguredNetworkAssistTransport()),
+            snapshot: { .free }
+        )
+
+        let context = NetworkAssistContext(
+            question: "Minha conexão está boa?",
+            currentMeasurement: NetworkMeasurement(downloadMbps: 100)
+        )
+
+        do {
+            _ = try await gated.answer(context)
+            XCTFail("Expected NetworkAssistError.notEntitled")
+        } catch let error as NetworkAssistError {
+            // .notEntitled, não .notConfigured — o gate de plano roda antes
+            // do transport, então a ausência de transport nunca é observada
+            // para um usuário sem direito ao Assist.
+            XCTAssertEqual(error, .notEntitled)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    func testEntitlementGatedAssistDelegatesForActivePlus() async {
+        let gated = EntitlementGatedNetworkAssistProvider(
+            wrapping: NetworkAssistService(transport: UnconfiguredNetworkAssistTransport()),
+            snapshot: { .plus(status: .active, source: .subscription) }
+        )
+
+        let context = NetworkAssistContext(
+            question: "Minha conexão está boa?",
+            currentMeasurement: NetworkMeasurement(downloadMbps: 100)
+        )
+
+        do {
+            _ = try await gated.answer(context)
+            XCTFail("Expected NetworkAssistError.notConfigured (delegated to the wrapped transport)")
+        } catch let error as NetworkAssistError {
+            // Plano Plus passa pelo gate; o erro observado é o do transport
+            // real (não configurado neste teste), confirmando delegação.
+            XCTAssertEqual(error, .notConfigured)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
     }
 }
