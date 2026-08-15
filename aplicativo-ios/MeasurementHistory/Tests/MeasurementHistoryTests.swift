@@ -260,6 +260,35 @@ final class MeasurementHistoryTests: XCTestCase {
         XCTAssertEqual(restored?.connectionKind, .wifi)
     }
 
+    /// Issue #50 — `durationMs` é fato genuinamente disponível-e-descartado
+    /// antes desta issue: comprova que sobrevive ao ciclo completo de
+    /// persistência em disco (`FileMeasurementHistoryRepository`), mesmo
+    /// padrão de `testFileRepositoryPersistsAcrossInstances`. Não muda
+    /// nada na persistência em si — `Codable` sintetizado já preserva
+    /// qualquer campo opcional novo; este teste só comprova isso
+    /// explicitamente para `durationMs`.
+    func testFileRepositoryPersistsDurationMs() async throws {
+        let fileURL = temporaryFileURL()
+        defer { try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent()) }
+
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 512,
+            uploadMbps: 100,
+            latencyMs: 12,
+            durationMs: 12_300,
+            connectionKind: .wifi
+        )
+        let writer = FileMeasurementHistoryRepository(fileURL: fileURL)
+        try await writer.save(measurement)
+
+        let reader = FileMeasurementHistoryRepository(fileURL: fileURL)
+        let restored = try await reader.measurement(id: measurement.id)
+
+        XCTAssertEqual(restored, measurement)
+        XCTAssertEqual(restored?.durationMs, 12_300)
+    }
+
     private func makeMeasurement(
         id: UUID = UUID(),
         measuredAt: Date = Date(),

@@ -271,6 +271,13 @@ struct HistoryRow: View {
                     HStack {
                         DetailItem(label: "SERVIDOR", value: measurement.serverIdentifier ?? "Automático")
                         Spacer()
+                        // Duração real do teste (issue #50) — fato que o
+                        // motor já media e a ViewModel descartava antes de
+                        // chegar ao registro salvo. `nil` continua `nil`
+                        // (registro legado ou teste sem duração reportada),
+                        // nunca inferido.
+                        DetailItem(label: "DURAÇÃO", value: formatDuration(measurement.durationMs))
+                        Spacer()
                         // Banda Wi-Fi confirmada pelo sistema (issue #51) —
                         // só aparece quando a plataforma realmente informou
                         // (hoje, Mac via CoreWLAN); ausência é normal e não
@@ -323,6 +330,14 @@ struct HistoryRow: View {
         case .ethernet: return "cable.connector"
         case .other, .none: return "questionmark.circle"
         }
+    }
+
+    /// Issue #50: `durationMs` só existe em registros salvos depois da
+    /// correção — `nil` é o estado normal para histórico antigo e continua
+    /// exibindo "--", sem inventar valor.
+    private func formatDuration(_ durationMs: Int?) -> String {
+        guard let durationMs = durationMs else { return "--" }
+        return String(format: "%.1fs", Double(durationMs) / 1000.0).replacingOccurrences(of: ".", with: ",")
     }
 
     private func formatBand(_ ghz: Double) -> String {
