@@ -62,13 +62,19 @@ Exemplo:
 Se contexto adicional for necessário:
 > Download, upload e latência. Sem cadastro.
 
-## O produto não dá opinião sobre o resultado
+## O resultado vem antes de qualquer interpretação
 
-O Linka apresenta medidas.
+O primeiro frame do resultado é só a medida. Número, clareza, imediatismo — nada de julgamento qualitativo competindo com o dado.
 
-Não interpreta se a conexão é boa para jogos, streaming, chamadas ou trabalho. Não recomenda ações e não usa IA para produzir julgamento qualitativo no resultado.
+Interpretação, orientação e Assist podem existir no ecossistema Apple, mas só:
 
-Isso pertence ao SignallQ.
+- em superfície secundária (detalhes, histórico, Assist), nunca no primeiro frame do resultado;
+- quando sustentadas por medição feita pelo próprio Linka ou por dado público exposto pela plataforma Apple — nunca opinião fabricada;
+- sem atrasar, mascarar ou substituir a medição.
+
+Isso não faz do Linka um painel de diagnóstico. A voz continua curta mesmo quando o produto explica: uma frase, não um parágrafo. Se a conclusão não tem dado real por trás, ela não é escrita.
+
+Histórico: até 2026, essa responsabilidade era descrita como pertencente inteiramente ao SignallQ, produto irmão. Com o SignallQ tornando-se exclusivo Android/Web, o Linka passou a poder absorver, com curadoria, as capacidades de interpretação viáveis no Apple — ver `AGENTS.md` §1 e §9.
 
 ## Estados da medição
 
@@ -124,6 +130,6 @@ Antes de publicar qualquer texto, verificar:
 2. Dá para dizer com menos palavras?
 3. Estamos afirmando um fato ou tentando parecer modernos?
 4. Existe promessa que o código não comprova?
-5. Estamos interpretando algo que deveria apenas ser medido?
+5. Se o texto interpreta ou orienta, ele está no lugar certo (superfície secundária, nunca no primeiro frame) e sustentado por dado real?
 
 Se falhar em qualquer ponto, reescreva ou remova.

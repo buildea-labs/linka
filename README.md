@@ -4,12 +4,9 @@
 
 Ele existe para fazer uma coisa muito bem: medir a qualidade da conexão e apresentar o resultado de forma imediata, clara e bonita — sem login, sem onboarding, sem escolha de modo. Abre, mede, mostra, repete.
 
-A fronteira com o produto irmão SignallQ é deliberada:
+Medir vem sempre primeiro. No ecossistema Apple, o Linka também pode interpretar e orientar sobre a própria medição — em superfície secundária, nunca no primeiro frame do resultado, e sempre sustentado por dado medido ou exposto pela plataforma. (Histórico: até 2026, essa fronteira era rígida — "Linka mede, SignallQ interpreta" — porque o SignallQ era o mesmo produto em outra plataforma. Com o SignallQ tornando-se exclusivo Android/Web, o Linka passou a absorver, com curadoria, as capacidades de interpretação viáveis no Apple.)
 
-- **Linka mede.**
-- **SignallQ interpreta, diagnostica e orienta.**
-
-Governança completa em [`AGENTS.md`](AGENTS.md) na raiz — este README é só a porta de entrada.
+Governança completa em [`AGENTS.md`](AGENTS.md) na raiz (ver especialmente §1 e §9) — este README é só a porta de entrada.
 
 ## Onde vive cada coisa
 
