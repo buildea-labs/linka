@@ -15,7 +15,15 @@ let package = Package(
     targets: [
         .target(
             name: "LinkaEngine",
-            path: "Core"
+            path: "Core",
+            resources: [
+                .process("Resources")
+            ]
+        ),
+        .testTarget(
+            name: "LinkaEngineTests",
+            dependencies: ["LinkaEngine"],
+            path: "Tests"
         )
     ]
 )

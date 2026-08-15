@@ -24,7 +24,7 @@ public actor SpeedTestCore {
                     if monitor.currentPath.usesInterfaceType(.wifi) {
                         state.networkType = "Wi-Fi"
                     } else if monitor.currentPath.usesInterfaceType(.cellular) {
-                        state.networkType = "5G/4G Cellular"
+                        state.networkType = "Rede móvel"
                     } else {
                         state.networkType = "Desconhecido"
                     }
@@ -36,8 +36,7 @@ public actor SpeedTestCore {
                             request.timeoutInterval = 2.0
                             let (data, _) = try await URLSession.shared.data(for: request)
                             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any], let org = json["org"] as? String {
-                                let parts = org.split(separator: " ", maxSplits: 1)
-                                state.provider = parts.count > 1 ? String(parts[1]) : org
+                                state.provider = ProviderNormalizer.shared.displayName(for: org)
                             }
                         }
                     } catch {
