@@ -75,10 +75,10 @@ jobs:
         working-directory: aplicativo-ios/LinkaEngine
         run: swift test
 
-  xcodebuild-app:
-    name: LinkaApp build (iOS + macOS)
+  xcodebuild-app-ios:
+    name: LinkaApp build (iOS)
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -95,6 +95,18 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO
+
+  xcodebuild-app-macos:
+    name: LinkaApp build (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
 
       - name: Build LinkaApp for macOS
         run: |
