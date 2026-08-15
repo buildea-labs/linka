@@ -219,7 +219,10 @@ struct MainView: View {
                                     provider: viewModel.provider.isEmpty ? "--" : viewModel.provider,
                                     duration: viewModel.testDuration.isEmpty ? "--" : viewModel.testDuration,
                                     ping: viewModel.ping,
-                                    wifiBandGHz: viewModel.wifiBandGHz
+                                    wifiBandGHz: viewModel.wifiBandGHz,
+                                    jitter: viewModel.jitter,
+                                    packetLossPercent: viewModel.packetLossPercent,
+                                    loadedLatencyMs: viewModel.loadedLatencyMs
                                 )
                                 .padding(.top, 14)
                                 .transition(.opacity.combined(with: .move(edge: .top)))
