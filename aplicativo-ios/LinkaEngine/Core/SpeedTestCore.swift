@@ -18,6 +18,24 @@ actor DoubleSampleCollector {
     func all() -> [Double] { values }
 }
 
+/// Contador thread-safe de falhas fatais de transporte consecutivas por fase
+/// (issue #66) — mesmo padrão ator de `ByteCounter`. Compartilhado entre os
+/// `streams` concorrentes de uma fase: cada falha classificada como fatal
+/// por `SpeedTestCore.isFatalTransportError` incrementa; qualquer sucesso de
+/// qualquer stream zera, porque um sucesso concorrente já prova que a
+/// conexão de transporte não está de fato perdida.
+actor FatalErrorTracker {
+    private var consecutiveCount: Int = 0
+    func recordFailure() -> Int {
+        consecutiveCount += 1
+        return consecutiveCount
+    }
+    func recordSuccess() {
+        consecutiveCount = 0
+    }
+    func currentCount() -> Int { consecutiveCount }
+}
+
 /// Abstrai a origem do dado bruto de provedor (hoje ipinfo.io) para permitir
 /// injeção em teste, sem acoplar `SpeedTestCore` a `URLSession` diretamente.
 public protocol ProviderOrgLookup: Sendable {
@@ -39,6 +57,52 @@ public struct IPInfoOrgLookup: ProviderOrgLookup {
             return nil
         }
         return json["org"] as? String
+    }
+}
+
+/// Abstrai a checagem de conectividade de rede (issue #66) para permitir
+/// injeção em teste, no mesmo padrão de `ProviderOrgLookup`/`IPInfoOrgLookup`
+/// — sem essa abstração, testar o caminho "offline" exigiria desligar a
+/// rede de verdade durante o teste.
+public protocol PathStatusProvider: Sendable {
+    /// `true` quando há conectividade de rede no momento da checagem.
+    func hasConnectivity() async -> Bool
+}
+
+/// Guarda thread-safe de resumo único (issue #66): `NWPathMonitor` pode
+/// disparar `pathUpdateHandler` mais de uma vez antes de `cancel()` surtir
+/// efeito — sem isso, a segunda chamada resumiria a continuation duas vezes
+/// e provocaria crash em runtime.
+private final class ResumeOnceGuard: @unchecked Sendable {
+    private let lock = NSLock()
+    private var didResume = false
+
+    /// `true` na primeira chamada; `false` em qualquer chamada seguinte.
+    func tryResume() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !didResume else { return false }
+        didResume = true
+        return true
+    }
+}
+
+/// Implementação real: consulta o `NWPathMonitor` do sistema.
+public struct NWPathStatusProvider: PathStatusProvider {
+    public init() {}
+
+    public func hasConnectivity() async -> Bool {
+        let monitor = NWPathMonitor()
+        let queue = DispatchQueue(label: "PathStatusProvider")
+        let resumeGuard = ResumeOnceGuard()
+        return await withCheckedContinuation { continuation in
+            monitor.pathUpdateHandler = { path in
+                guard resumeGuard.tryResume() else { return }
+                monitor.cancel()
+                continuation.resume(returning: path.status == .satisfied)
+            }
+            monitor.start(queue: queue)
+        }
     }
 }
 
@@ -71,6 +135,7 @@ public actor SpeedTestCore {
 
     private let providerLookup: ProviderOrgLookup
     private let providerEnrichmentTimeout: TimeInterval
+    private let pathStatusProvider: PathStatusProvider
 
     /// - Parameters:
     ///   - providerLookup: fonte do dado bruto de provedor. Injetável para testes;
@@ -78,12 +143,17 @@ public actor SpeedTestCore {
     ///   - providerEnrichmentTimeout: teto de tempo, em segundos, dedicado exclusivamente
     ///     ao enriquecimento de provedor. Roda em paralelo à medição, nunca soma ao
     ///     tempo de nenhuma fase (ping/download/upload).
+    ///   - pathStatusProvider: fonte da checagem de conectividade prévia ao ping
+    ///     (issue #66). Injetável para testes; produção usa `NWPathStatusProvider()`
+    ///     por padrão.
     public init(
         providerLookup: ProviderOrgLookup = IPInfoOrgLookup(),
-        providerEnrichmentTimeout: TimeInterval = 2.0
+        providerEnrichmentTimeout: TimeInterval = 2.0,
+        pathStatusProvider: PathStatusProvider = NWPathStatusProvider()
     ) {
         self.providerLookup = providerLookup
         self.providerEnrichmentTimeout = providerEnrichmentTimeout
+        self.pathStatusProvider = pathStatusProvider
     }
 
     /// Starts the speed test and yields updates via an AsyncThrowingStream
@@ -110,6 +180,21 @@ public actor SpeedTestCore {
                         state.networkType = "Desconhecido"
                     }
                     monitor.cancel()
+
+                    // ----------------------------------------------------
+                    // Checagem de conectividade prévia ao ping (issue #66).
+                    // Sem rede desde o início não é uma falha transitória
+                    // de fase — é um estado explícito: pára aqui, antes de
+                    // gastar qualquer request, e devolve o fato tipado
+                    // (`.offline`) em vez de deixar ping/download/upload
+                    // falharem silenciosamente um a um.
+                    // ----------------------------------------------------
+                    guard await pathStatusProvider.hasConnectivity() else {
+                        let errored = Self.errorState(preserving: state, reason: .offline)
+                        continuation.yield(errored)
+                        continuation.finish()
+                        return
+                    }
 
                     // Descoberta de provedor (ipinfo.io) desacoplada do caminho crítico:
                     // dispara como Task detached em paralelo ao ping/download/upload e
@@ -144,7 +229,7 @@ public actor SpeedTestCore {
                     // request pesa 60% menos e a rajada por segundo cai pela
                     // metade).
                     // ----------------------------------------------------
-                    let downloadSpeed = try await runPhaseTimeBased(
+                    let downloadOutcome = try await runPhaseTimeBased(
                         phase: .download,
                         minDuration: Self.phaseMinDuration,
                         maxDuration: Self.phaseMaxDuration,
@@ -154,7 +239,19 @@ public actor SpeedTestCore {
                         continuation: continuation
                     )
 
-                    state.downloadSpeed = downloadSpeed
+                    switch downloadOutcome {
+                    case .measured(let speed):
+                        state.downloadSpeed = speed
+                    case .fatalFailure(let reason):
+                        // Preserva ping/jitter/packetLoss já capturados nesta
+                        // fase anterior — só marca o fato tipado, sem
+                        // descartar dado real já medido (AGENTS.md §8).
+                        let errored = Self.errorState(preserving: state, reason: reason)
+                        continuation.yield(errored)
+                        continuation.finish()
+                        return
+                    }
+
                     state.phase = .upload
                     state.progress = 0.5
                     continuation.yield(state)
@@ -168,7 +265,7 @@ public actor SpeedTestCore {
                     // Mesmo motivo do download: agressividade reduzida pra
                     // fugir de 429.
                     // ----------------------------------------------------
-                    let uploadSpeed = try await runPhaseTimeBased(
+                    let uploadOutcome = try await runPhaseTimeBased(
                         phase: .upload,
                         minDuration: Self.phaseMinDuration,
                         maxDuration: Self.phaseMaxDuration,
@@ -178,7 +275,17 @@ public actor SpeedTestCore {
                         continuation: continuation
                     )
 
-                    state.uploadSpeed = uploadSpeed
+                    switch uploadOutcome {
+                    case .measured(let speed):
+                        state.uploadSpeed = speed
+                    case .fatalFailure(let reason):
+                        // Preserva o download já medido (e ping/jitter) —
+                        // mesma regra do aborto na fase de download acima.
+                        let errored = Self.errorState(preserving: state, reason: reason)
+                        continuation.yield(errored)
+                        continuation.finish()
+                        return
+                    }
 
                     // Anexa o provedor somente aqui, na virada para o resultado final.
                     // A essa altura download (18s) + upload (18s) já consumiram muito
@@ -202,6 +309,14 @@ public actor SpeedTestCore {
         }
     }
 
+    /// Resultado de uma fase de transferência (issue #66): ou ela produziu
+    /// uma vazão medida normalmente, ou abortou por falha fatal de
+    /// transporte (`shouldAbortPhase`) antes de conseguir medir nada.
+    private enum PhaseOutcome {
+        case measured(Double)
+        case fatalFailure(EngineFailureReason)
+    }
+
     private func runPhaseTimeBased(
         phase: Phase,
         minDuration: TimeInterval,
@@ -210,11 +325,12 @@ public actor SpeedTestCore {
         bytes: Int,
         state: inout MeasurementState,
         continuation: AsyncThrowingStream<MeasurementState, Error>.Continuation
-    ) async throws -> Double {
+    ) async throws -> PhaseOutcome {
 
         let phaseStart = Date()
         let sampleInterval = 0.3 // 300ms
         let counter = ByteCounter()
+        let fatalErrorTracker = FatalErrorTracker()
 
         // Random payload for upload to avoid compression caching at network level.
         let payload = phase == .upload ? generateRandomPayload(size: bytes) : nil
@@ -283,11 +399,22 @@ public actor SpeedTestCore {
                                 if bytesGained > 0 {
                                     await counter.add(bytesGained)
                                     backoffMs = 100  // sucesso — reseta backoff
+                                    // Sucesso concorrente prova que o transporte não está
+                                    // de fato perdido — zera a sequência de falhas fatais
+                                    // acumulada por qualquer outro stream (issue #66).
+                                    await fatalErrorTracker.recordSuccess()
                                 } else if statusCode == 429 || statusCode >= 500 {
                                     // Rate-limit ou erro upstream — recua antes de tentar de novo.
                                     try? await Task.sleep(nanoseconds: backoffMs * 1_000_000)
                                     backoffMs = min(backoffMs * 2, 2_000)
                                 }
+                            } catch let urlError as URLError where SpeedTestCore.isFatalTransportError(urlError) {
+                                // Falha fatal de transporte (issue #66) — distinta de erro
+                                // transitório isolado. Conta pra decisão de aborto
+                                // (`shouldAbortPhase`, checada no loop principal); uma
+                                // pausa curta evita busy-loop batendo num host inacessível.
+                                _ = await fatalErrorTracker.recordFailure()
+                                try? await Task.sleep(nanoseconds: 200_000_000)
                             } catch {
                                 // Erros transientes de rede — segue tentando até a fase terminar.
                             }
@@ -335,6 +462,21 @@ public actor SpeedTestCore {
             state.progress = baseProgress + (phaseProgress * totalPhaseRange)
 
             continuation.yield(state)
+
+            // Aborto por falha fatal persistente (issue #66): só quando a
+            // fase ainda não entregou nenhum byte real (`total == 0`) — um
+            // erro isolado numa fase que já está fluindo throughput nunca
+            // aborta, mesmo que a sequência de falhas fatais acumule (ver
+            // `shouldAbortPhase`).
+            let fatalCount = await fatalErrorTracker.currentCount()
+            if Self.shouldAbortPhase(consecutiveFatalErrors: fatalCount, bytesTransferred: total) {
+                workersTask.cancel()
+                _ = await workersTask.result
+                session.invalidateAndCancel()
+                latencySamplingTask?.cancel()
+                _ = await latencySamplingTask?.value
+                return .fatalFailure(.connectionLost(phase: phase))
+            }
 
             // Encerra a fase cedo quando a vazão amostrada já convergiu e o
             // piso mínimo já foi respeitado (issue #62) — conexões estáveis
@@ -395,7 +537,7 @@ public actor SpeedTestCore {
             state.uploadThroughputVariation = variation
         }
 
-        return stableAvg > 0 ? stableAvg : averageMbps
+        return .measured(stableAvg > 0 ? stableAvg : averageMbps)
     }
 
     /// Critério de convergência de vazão (issue #62): decide se uma janela
@@ -460,6 +602,75 @@ public actor SpeedTestCore {
         if elapsed >= maxDuration { return true }
         guard elapsed >= minDuration else { return false }
         return hasConverged(samples: samples, window: window, tolerance: tolerance)
+    }
+
+    /// Classifica um `URLError` como falha fatal de transporte ou falha
+    /// transitória recuperável (issue #66).
+    ///
+    /// `nonisolated static` de propósito — puro, exercitável diretamente com
+    /// instâncias sintéticas de `URLError`, sem precisar disparar uma
+    /// request de verdade.
+    ///
+    /// - Returns: `true` para códigos que indicam perda de conectividade de
+    ///   transporte (`notConnectedToInternet`, `networkConnectionLost`,
+    ///   `cannotConnectToHost`, `cannotFindHost`, `dataNotAllowed`) — nenhum
+    ///   deles se recupera tentando de novo no mesmo caminho de rede.
+    ///   `false` para os demais (ex.: `timedOut`), que o motor já trata como
+    ///   recuperáveis (junto com HTTP 429/5xx, tratados à parte por
+    ///   status code em `runPhaseTimeBased`).
+    nonisolated static func isFatalTransportError(_ error: URLError) -> Bool {
+        switch error.code {
+        case .notConnectedToInternet, .networkConnectionLost, .cannotConnectToHost, .cannotFindHost, .dataNotAllowed:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Decide se uma fase deve abortar por falha fatal de transporte
+    /// persistente (issue #66).
+    ///
+    /// `nonisolated static` de propósito — mesmo padrão de `shouldStopPhase`:
+    /// puro, sem tocar o estado do ator, exercitável com valores sintéticos.
+    ///
+    /// - Parameters:
+    ///   - consecutiveFatalErrors: contagem corrente de falhas fatais
+    ///     consecutivas (`FatalErrorTracker.currentCount()`), zerada por
+    ///     qualquer sucesso concorrente de qualquer stream da fase.
+    ///   - bytesTransferred: bytes acumulados na fase até agora (mesmo
+    ///     `total` já lido de `ByteCounter` no loop de amostragem).
+    ///   - threshold: piso de falhas fatais consecutivas exigido antes de
+    ///     sequer considerar abortar — um valor isolado nunca aborta.
+    /// - Returns: `true` somente quando **ambas** as condições valem: já
+    ///   houve `threshold` falhas fatais seguidas **e** a fase ainda não
+    ///   entregou nenhum byte real (`bytesTransferred == 0`). Uma fase que
+    ///   já está entregando throughput real nunca aborta por erro isolado,
+    ///   mesmo que a sequência de falhas fatais atinja o piso — dado real já
+    ///   medido vale mais que uma sondagem de erro (AGENTS.md §8).
+    nonisolated static func shouldAbortPhase(
+        consecutiveFatalErrors: Int,
+        bytesTransferred: Int64,
+        threshold: Int = 6
+    ) -> Bool {
+        consecutiveFatalErrors >= threshold && bytesTransferred == 0
+    }
+
+    /// Constrói o `MeasurementState` final de uma falha fatal (issue #66):
+    /// preserva integralmente o estado já capturado nas fases anteriores
+    /// (ping, jitter, packetLoss, downloadSpeed, provider, networkType…) e
+    /// só marca `phase` como `.error` e anota o motivo tipado — nunca perde
+    /// dado real já medido por causa de uma falha posterior (AGENTS.md §8).
+    ///
+    /// `nonisolated static` de propósito — puro, sem tocar o estado do ator,
+    /// exercitável diretamente com um `MeasurementState` sintético.
+    nonisolated static func errorState(
+        preserving state: MeasurementState,
+        reason: EngineFailureReason
+    ) -> MeasurementState {
+        var errored = state
+        errored.phase = .error
+        errored.failureReason = reason
+        return errored
     }
 
     /// Agregação da latência sob carga (issue #52): reduz as sondagens

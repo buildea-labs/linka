@@ -23,8 +23,12 @@ public struct MeasurementState {
     public var downloadThroughputVariation: Double?
     /// Mesma medida de `downloadThroughputVariation`, para a fase de upload.
     public var uploadThroughputVariation: Double?
+    /// Motivo tipado de falha fatal (issue #66) — não-`nil` somente quando
+    /// `phase == .error`. Só fato, sem copy: mensagem amigável é decisão da
+    /// UI (ver `EngineFailureReason`).
+    public var failureReason: EngineFailureReason?
 
-    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: String? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil) {
+    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: String? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil, failureReason: EngineFailureReason? = nil) {
         self.ping = ping
         self.jitter = jitter
         self.packetLossPercent = packetLossPercent
@@ -38,5 +42,6 @@ public struct MeasurementState {
         self.loadedLatencyMs = loadedLatencyMs
         self.downloadThroughputVariation = downloadThroughputVariation
         self.uploadThroughputVariation = uploadThroughputVariation
+        self.failureReason = failureReason
     }
 }

@@ -1,5 +1,6 @@
 import SwiftUI
 import AudioToolbox
+import LinkaEngine
 import MeasurementHistory
 import NetworkCore
 import LinkaEntitlements
@@ -59,7 +60,44 @@ struct MainView: View {
                     Color.clear.frame(height: 80)
                     Spacer()
                     
-                    if viewModel.uiPhase != .done {
+                    if viewModel.uiPhase == .error {
+                        // Error UI (issue #66) — motor parou e cancelou
+                        // sozinho. Sem ring/PhaseDots animando: o estado é
+                        // "parado", não "medindo". Copy curta mapeada de
+                        // `failureReason` vive só aqui; motor só expõe fato
+                        // tipado (AGENTS.md §8).
+                        VStack(spacing: 20) {
+                            Image(systemName: "exclamationmark.circle")
+                                .font(.system(size: 36, weight: .medium))
+                                .foregroundColor(.textSecondary)
+
+                            VStack(spacing: 8) {
+                                Text(errorTitle)
+                                    .font(Font.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.textPrimary)
+
+                                Text(errorMessage)
+                                    .font(.bodyRegular)
+                                    .foregroundColor(.textSecondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.horizontal, 32)
+
+                            Button(action: {
+                                viewModel.startTest()
+                            }) {
+                                Text("Tentar novamente")
+                                    .font(Font.system(size: 16, weight: .semibold))
+                                    .foregroundColor(Color.surfacePage)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 18)
+                                    .background(Color.textPrimary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 4)
+                        }
+                    } else if viewModel.uiPhase != .done {
                         // Measuring UI
                         VStack(spacing: 0) {
                             MetricRing(
@@ -245,7 +283,7 @@ struct MainView: View {
             }
             .overlay(alignment: .topTrailing) {
                 // Settings & History Glass Pills
-                if viewModel.uiPhase == .idle || viewModel.uiPhase == .connecting || viewModel.uiPhase == .done {
+                if viewModel.uiPhase == .idle || viewModel.uiPhase == .connecting || viewModel.uiPhase == .done || viewModel.uiPhase == .error {
                     HStack(spacing: 12) {
                         NavigationLink(destination: HistoryView()) {
                             Image(systemName: "clock")
@@ -311,9 +349,13 @@ struct MainView: View {
             return String(format: "%.1f", viewModel.downloadSpeed).replacingOccurrences(of: ".", with: ",")
         case .uploading, .done:
             return String(format: "%.1f", viewModel.uploadSpeed).replacingOccurrences(of: ".", with: ",")
+        case .error:
+            // Não exibido: a fase `.error` usa seu próprio branch visual,
+            // sem `MetricRing` (ver `body`). Caso nunca chegue a alcançar.
+            return ""
         }
     }
-    
+
     private var phaseLabel: String {
         switch viewModel.uiPhase {
         case .idle, .connecting:
@@ -322,9 +364,11 @@ struct MainView: View {
             return "Medindo velocidade de download…"
         case .uploading, .done:
             return "Medindo velocidade de upload…"
+        case .error:
+            return ""
         }
     }
-    
+
     private var activePhaseKey: String {
         switch viewModel.uiPhase {
         case .idle, .connecting:
@@ -333,6 +377,34 @@ struct MainView: View {
             return "downloading"
         case .uploading, .done:
             return "uploading"
+        case .error:
+            return ""
+        }
+    }
+
+    /// Título curto da falha fatal (issue #66). Copy vive só aqui — o motor
+    /// só expõe `EngineFailureReason`, um fato tipado, nunca texto
+    /// (AGENTS.md §8). Nunca culpa Wi-Fi ou provedor: descreve o fato
+    /// (sem rede / conexão caiu), não a causa.
+    private var errorTitle: String {
+        switch viewModel.failureReason {
+        case .offline:
+            return "Sem conexão"
+        case .connectionLost:
+            return "Conexão perdida"
+        case nil:
+            return "Não foi possível medir"
+        }
+    }
+
+    private var errorMessage: String {
+        switch viewModel.failureReason {
+        case .offline:
+            return "Verifique sua conexão com a internet e tente novamente."
+        case .connectionLost:
+            return "A conexão foi interrompida durante o teste."
+        case nil:
+            return "Algo interrompeu a medição. Tente novamente."
         }
     }
 }
