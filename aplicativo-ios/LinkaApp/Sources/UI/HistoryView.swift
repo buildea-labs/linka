@@ -197,6 +197,7 @@ struct HistoryView_Previews: PreviewProvider {
         NavigationView {
             HistoryView()
         }
+        .environmentObject(StoreKitEntitlementProvider())
     }
 }
 

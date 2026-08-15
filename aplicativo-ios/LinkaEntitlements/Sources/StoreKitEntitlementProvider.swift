@@ -46,7 +46,8 @@ public enum LinkaStoreError: Error, Equatable, Sendable {
 /// Provider real de entitlement do Linka Plus, baseado em StoreKit 2.
 ///
 /// É o único ponto de escrita do snapshot de produção: consulta
-/// `Transaction.currentEntitlements`, escuta `Transaction.updates` e publica
+/// `Transaction.all` (não `Transaction.currentEntitlements`, que não cobre
+/// non-renewing subscriptions), escuta `Transaction.updates` e publica
 /// o snapshot resultante via `@Published` para a UI observar (`ObservableObject`).
 ///
 /// Non-renewing subscriptions não têm validade rastreada pela App Store —
@@ -124,15 +125,26 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
 
     // MARK: - Estado interno
 
-    /// Recalcula o snapshot a partir de `Transaction.currentEntitlements`.
+    /// Recalcula o snapshot a partir de `Transaction.all`.
+    ///
+    /// Deliberadamente NÃO usa `Transaction.currentEntitlements`: essa API
+    /// só cobre non-consumables, auto-renewable subscriptions e
+    /// consumables não finalizados — ela **não inclui non-renewing
+    /// subscriptions**, que é o tipo de produto do Linka Plus (ver
+    /// `LinkaStoreEntitlementWindow`). Por isso iteramos `Transaction.all`
+    /// e filtramos manualmente por `productID` e `revocationDate == nil`
+    /// (uma transação revogada — reembolso, chargeback — não conta como
+    /// compra válida mesmo estando no histórico).
+    ///
     /// Exposto (não `private`) para permitir refresh manual (ex.: ao abrir
     /// a `SettingsSheet`) sem duplicar a lógica de leitura do StoreKit.
     public func refreshSnapshot() async {
         var latestPurchaseDate: Date?
 
-        for await result in Transaction.currentEntitlements {
+        for await result in Transaction.all {
             guard let transaction = try? Self.checkVerified(result),
-                  transaction.productID == productID else { continue }
+                  transaction.productID == productID,
+                  transaction.revocationDate == nil else { continue }
 
             if latestPurchaseDate == nil || transaction.purchaseDate > latestPurchaseDate! {
                 latestPurchaseDate = transaction.purchaseDate

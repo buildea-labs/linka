@@ -30,11 +30,19 @@ struct MainView: View {
         )
     }
 
-    /// Suprime anúncios para quem tem Linka Plus ativo agora. Não usa
-    /// `LinkaEntitlementPolicy` porque "sem anúncios" não é uma
-    /// `LinkaCapability` — é um benefício de plano, lido direto do snapshot.
+    /// Suprime anúncios para quem tem Linka Plus ativo agora. "Sem anúncios"
+    /// não é uma `LinkaCapability` própria, mas a checagem de "Plus ativo
+    /// agora" precisa ser a mesma em todo o app — por isso delega para
+    /// `LinkaEntitlementPolicy.decision`, usando `.history` (capability
+    /// exclusiva do plano Plus) como proxy, em vez de reimplementar a
+    /// leitura de `status`/`validUntil` aqui. Ler `snapshot.status` sozinho
+    /// não revalida `validUntil` contra o relógio atual; `decision` faz isso.
     private var isPlusActive: Bool {
-        entitlements.snapshot.plan == .plus && entitlements.snapshot.status == .active
+        LinkaEntitlementPolicy.decision(
+            for: .history,
+            snapshot: entitlements.snapshot,
+            at: Date()
+        ).isGranted
     }
 
     private func connectionKind(for networkType: String) -> NetworkConnectionKind? {

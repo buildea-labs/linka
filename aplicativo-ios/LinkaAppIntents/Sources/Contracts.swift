@@ -75,6 +75,14 @@ public extension LinkaAppIntentExecutor {
     /// acioná-lo via Siri/Shortcuts é parte da integração Apple ofertada
     /// no Linka Plus.
     ///
+    /// TODO(luiz): decisão de produto — startSpeedTest deve ser gate Plus ou
+    /// livre? Medir pelo app é gratuito por princípio (`AGENTS.md` §6,
+    /// "sem fricção antes da medição"); gatear o mesmo disparo via Siri
+    /// atrás do Plus é uma leitura possível, mas não confirmada, de que
+    /// "acionar via integração Apple" é diferente de "medir". Revisão
+    /// #79/#60 (Marcelo, AJUSTA item 5) sinalizou isso — não mudar a
+    /// lógica aqui sem decisão explícita do Luiz.
+    ///
     /// `snapshot` é síncrona porque o snapshot de produção
     /// (`StoreKitEntitlementProvider.snapshot`) já é um valor publicado
     /// disponível sem round-trip de rede.
