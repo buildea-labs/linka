@@ -122,6 +122,11 @@ struct HistoryView: View {
         .navigationTitle("Histórico")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showAssist) {
+            // `onRetry` fica de fora deliberadamente (issue #58): esta tela
+            // só olha medições passadas, sem caminho de início de teste
+            // disponível no contexto. Sem esse closure, `AssistSheet` nem
+            // calcula a sugestão `.retryMeasurement` — decisão explícita no
+            // adapter, não um botão escondido depois de calculado.
             AssistSheet(
                 currentMeasurement: measurements.first,
                 recentMeasurements: Array(measurements.dropFirst().prefix(19)),

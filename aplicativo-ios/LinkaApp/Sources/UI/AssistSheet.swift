@@ -38,6 +38,14 @@ struct AssistSheet: View {
     /// Chamadores atuais (`MainView`, `HistoryView`) não passam esse
     /// parâmetro ainda; o valor default preserva o comportamento existente.
     let failureSignal: NetworkAssistFailureSignal?
+    /// Dispara uma nova medição pelo caminho de início de teste já
+    /// existente do chamador — `nil` quando o chamador não tem esse
+    /// caminho disponível no contexto atual (ex.: `HistoryView`, que só
+    /// olha medições passadas). A sugestão `.retryMeasurement` (issue #58)
+    /// só é calculada/exibida quando este closure existe (ver `body`);
+    /// sem ele, o botão nunca aparece, em vez de aparecer e falhar
+    /// silenciosamente.
+    let onRetry: (() -> Void)?
 
     private let assistProvider: any NetworkAssistProviding
     private let assistIsRemote: Bool
@@ -52,6 +60,7 @@ struct AssistSheet: View {
         currentMeasurement: NetworkMeasurement?,
         recentMeasurements: [NetworkMeasurement] = [],
         failureSignal: NetworkAssistFailureSignal? = nil,
+        onRetry: (() -> Void)? = nil,
         entitlements: StoreKitEntitlementProvider? = nil,
         assistProvider: (any NetworkAssistProviding)? = nil,
         assistIsRemote: Bool = AssistContainer.isRemoteAssistEnabled()
@@ -59,6 +68,7 @@ struct AssistSheet: View {
         self.currentMeasurement = currentMeasurement
         self.recentMeasurements = recentMeasurements
         self.failureSignal = failureSignal
+        self.onRetry = onRetry
         if let assistProvider {
             self.assistProvider = assistProvider
         } else if let entitlements {
@@ -82,6 +92,21 @@ struct AssistSheet: View {
                 recentMeasurements: recentMeasurements
             )
         )
+    }
+
+    /// Próxima ação sugerida (issue #58), calculada a partir da mesma
+    /// `investigation` acima — nunca aparece sem gatilho objetivo vindo
+    /// dela (`AssistContainer.suggestedAction` devolve `nil` quando não há
+    /// evidência suficiente). `.retryMeasurement` é descartado quando
+    /// `onRetry` não foi injetado: sem caminho de reteste disponível no
+    /// contexto atual, a UI não calcula nem mostra o botão, em vez de
+    /// mostrar algo que não pode executar (ver nota do init/`onRetry`).
+    private var suggestedAction: NetworkAssistActionSuggestion? {
+        let suggestion = AssistContainer.suggestedAction(for: investigation)
+        if case .retryMeasurement = suggestion, onRetry == nil {
+            return nil
+        }
+        return suggestion
     }
 
     var body: some View {
@@ -115,6 +140,16 @@ struct AssistSheet: View {
                         if let investigation {
                             investigationSection(investigation)
                                 .id("investigation")
+
+                            // Botão secundário de próxima ação (issue #58) —
+                            // sempre abaixo da seção de investigação, nunca
+                            // a substitui nem compete com ela. Só existe
+                            // quando `suggestedAction` tem gatilho objetivo;
+                            // sem sugestão, esta view nem aparece.
+                            if let suggestedAction {
+                                actionSuggestionSection(suggestedAction)
+                                    .id("suggestedAction")
+                            }
                         }
 
                         ForEach(messages) { msg in
@@ -255,6 +290,138 @@ struct AssistSheet: View {
             if investigationExpanded {
                 selectedDetent = .large
             }
+        }
+    }
+
+    /// Botão secundário de próxima ação (issue #58) — sempre abaixo de
+    /// `investigationSection`, nunca no lugar dela. `.retryMeasurement` e
+    /// `.openAppSettings` viram botão (com a confirmação do próprio
+    /// sistema no caso de Ajustes, via `.open`); `.manualGuidance` vira
+    /// só uma lista curta de passos em texto — sem botão que prometa
+    /// automação que não existe (AGENTS.md §9, requisito de aceite #58).
+    @ViewBuilder
+    private func actionSuggestionSection(_ suggestion: NetworkAssistActionSuggestion) -> some View {
+        switch suggestion {
+        case .retryMeasurement, .openAppSettings:
+            HStack {
+                Button(action: { performActionSuggestion(suggestion) }) {
+                    HStack(spacing: 6) {
+                        Text(actionSuggestionLabel(for: suggestion))
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.textPrimary)
+                        Image(systemName: actionSuggestionSymbol(for: suggestion))
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.textSecondary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color.textPrimary.opacity(0.04))
+                    .cornerRadius(12)
+                }
+                .buttonStyle(.plain)
+                Spacer(minLength: 0)
+            }
+        case .manualGuidance(let topic):
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(actionSuggestionManualGuidanceTitle(for: topic))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.textSecondary)
+                    ForEach(Array(actionSuggestionManualGuidanceSteps(for: topic).enumerated()), id: \.offset) { _, step in
+                        Text("• \(step)")
+                            .font(.bodySmall)
+                            .foregroundColor(.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.horizontal, 4)
+                Spacer(minLength: 40)
+            }
+        }
+    }
+
+    /// Executa a sugestão. `.openAppSettings` delega a
+    /// `AssistContainer.openAppSettings()` (a única API pública que existe
+    /// para isso — AGENTS.md §9); `.retryMeasurement` delega ao closure do
+    /// chamador, nunca dispara uma medição diretamente (AssistSheet não
+    /// duplica o caminho de início de teste). `.manualGuidance` nunca
+    /// chega aqui — não tem botão associado.
+    private func performActionSuggestion(_ suggestion: NetworkAssistActionSuggestion) {
+        switch suggestion {
+        case .retryMeasurement:
+            onRetry?()
+            dismiss()
+        case .openAppSettings:
+            AssistContainer.openAppSettings()
+        case .manualGuidance:
+            break
+        }
+    }
+
+    /// Copy do botão de ação vive na UI, mesmo padrão de
+    /// `investigationShortText`/`investigationLongText`: o motor
+    /// (`NetworkAssistActionEngine`) só expõe o tipo de sugestão, nunca
+    /// texto (AGENTS.md §8).
+    private func actionSuggestionLabel(for suggestion: NetworkAssistActionSuggestion) -> String {
+        switch suggestion {
+        case .retryMeasurement:
+            return "Testar novamente"
+        case .openAppSettings:
+            return "Abrir Ajustes do app"
+        case .manualGuidance:
+            return ""
+        }
+    }
+
+    private func actionSuggestionSymbol(for suggestion: NetworkAssistActionSuggestion) -> String {
+        switch suggestion {
+        case .retryMeasurement:
+            return "arrow.clockwise"
+        case .openAppSettings:
+            return "gear"
+        case .manualGuidance:
+            return ""
+        }
+    }
+
+    /// Título curto do guia manual. Deixa explícito que é orientação em
+    /// texto, sem prometer um botão que abra a tela diretamente — não
+    /// existe API pública da Apple para isso (requisito de aceite #58).
+    private func actionSuggestionManualGuidanceTitle(for topic: NetworkAssistManualGuidanceTopic) -> String {
+        switch topic {
+        case .wifiConnectivity:
+            return "Passos para verificar manualmente:"
+        case .dnsConnectivity:
+            return "Passos para verificar o DNS manualmente:"
+        }
+    }
+
+    /// Passos considerando diferença de plataforma (iPhone/iPad vs. Mac,
+    /// requisito de aceite #58) — Ajustes Rápidos existe só no
+    /// iPhone/iPad; no Mac a Central de Controle/menu de Wi-Fi na barra de
+    /// menus é o caminho equivalente.
+    private func actionSuggestionManualGuidanceSteps(for topic: NetworkAssistManualGuidanceTopic) -> [String] {
+        switch topic {
+        case .wifiConnectivity:
+            #if os(macOS)
+            return [
+                "Verifique o ícone de Wi-Fi na barra de menus e confirme que está conectado à rede certa.",
+                "Confirme se os dados móveis (quando aplicável) estão ativos.",
+                "Depois de checar, teste novamente."
+            ]
+            #else
+            return [
+                "Abra a Central de Controle e confirme que o Wi-Fi está ativado e conectado à rede certa.",
+                "Confirme se os Dados Móveis estão ativados e o Modo Avião está desligado.",
+                "Depois de checar, teste novamente."
+            ]
+            #endif
+        case .dnsConnectivity:
+            return [
+                "Em Ajustes > Wi-Fi, toque na rede conectada e confira a configuração de DNS.",
+                "Se o DNS foi configurado manualmente, tente voltar para \"Automático\".",
+                "Depois de checar, teste novamente."
+            ]
         }
     }
 

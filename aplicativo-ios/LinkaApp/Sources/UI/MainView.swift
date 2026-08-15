@@ -338,7 +338,19 @@ struct MainView: View {
             viewModel.startTest()
         }
         .sheet(isPresented: $showAssist) {
-            AssistSheet(currentMeasurement: currentMeasurement, entitlements: entitlements)
+            // `onRetry` reusa o mesmo `viewModel.startTest()` do botão
+            // "Testar novamente"/"Tentar novamente" (issue #58) — nunca uma
+            // nova chamada ao motor. `failureSignal` ainda não é passado
+            // aqui (fiação ponta-a-ponta pendente de outro passo da cadeia,
+            // ver comentário em `AssistSheet.failureSignal`); sem ele, a
+            // sugestão `.retryMeasurement` nunca chega a ser calculada por
+            // falta de `investigation`, então este closure fica pronto sem
+            // efeito colateral até essa fiação fechar.
+            AssistSheet(
+                currentMeasurement: currentMeasurement,
+                onRetry: { viewModel.startTest() },
+                entitlements: entitlements
+            )
         }
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: viewModel.uiPhase) { newPhase in
