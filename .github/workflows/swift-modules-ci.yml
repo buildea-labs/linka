@@ -13,6 +13,8 @@ on:
       - 'aplicativo-ios/LinkaAppIntents/**'
       - 'aplicativo-ios/LinkaModules/**'
       - 'aplicativo-ios/LinkaEngine/**'
+      - 'aplicativo-ios/LinkaWidgetShared/**'
+      - 'aplicativo-ios/LinkaWidget/**'
       - 'aplicativo-ios/LinkaApp/**'
       - 'aplicativo-ios/LinkaApp.xcodeproj/**'
       - '.github/workflows/swift-modules-ci.yml'
@@ -26,6 +28,8 @@ on:
       - 'aplicativo-ios/LinkaAppIntents/**'
       - 'aplicativo-ios/LinkaModules/**'
       - 'aplicativo-ios/LinkaEngine/**'
+      - 'aplicativo-ios/LinkaWidgetShared/**'
+      - 'aplicativo-ios/LinkaWidget/**'
       - 'aplicativo-ios/LinkaApp/**'
       - 'aplicativo-ios/LinkaApp.xcodeproj/**'
       - '.github/workflows/swift-modules-ci.yml'
@@ -75,6 +79,10 @@ jobs:
         working-directory: aplicativo-ios/LinkaEngine
         run: swift test
 
+      - name: Test LinkaWidgetShared
+        working-directory: aplicativo-ios/LinkaWidgetShared
+        run: swift test
+
   xcodebuild-app-ios:
     name: LinkaApp build (iOS)
     runs-on: macos-latest
@@ -92,6 +100,15 @@ jobs:
           xcodebuild build \
             -project aplicativo-ios/LinkaApp.xcodeproj \
             -scheme LinkaApp_iOS \
+            -destination 'generic/platform=iOS Simulator' \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build LinkaWidgetExtension for iOS Simulator
+        run: |
+          xcodebuild build \
+            -project aplicativo-ios/LinkaApp.xcodeproj \
+            -scheme LinkaWidgetExtension \
             -destination 'generic/platform=iOS Simulator' \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO
