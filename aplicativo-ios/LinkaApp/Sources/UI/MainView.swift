@@ -15,6 +15,7 @@ struct MainView: View {
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
     @State private var showShareSheet: Bool = false
+    @State private var showPurchase: Bool = false
     @State private var ringScale: CGFloat = 1.0
     @Namespace private var animation
     // Sinal de ciclo de vida (issue #65) — `@Environment(\.scenePhase)` é
@@ -242,7 +243,20 @@ struct MainView: View {
                                     .foregroundColor(.textSecondary)
 
                                 Button(action: {
-                                    showAssist = true
+                                    // Assist é feature Plus. Usuário Free vai
+                                    // direto para a tela de assinatura em vez
+                                    // de abrir o sheet e receber mensagem
+                                    // "faz parte do Plus" no meio da conversa.
+                                    let assistDecision = LinkaEntitlementPolicy.decision(
+                                        for: .assist,
+                                        snapshot: entitlements.snapshot,
+                                        at: Date()
+                                    )
+                                    if assistDecision.isGranted {
+                                        showAssist = true
+                                    } else {
+                                        showPurchase = true
+                                    }
                                 }) {
                                     HStack(spacing: 6) {
                                         Text("Perguntar ao Assist")
@@ -418,6 +432,10 @@ struct MainView: View {
         // `currentMeasurement` que já alimenta o Assist, sem remontar
         // campos (AGENTS.md §8).
         .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
+        .sheet(isPresented: $showPurchase) {
+            PurchaseSheet()
+                .environmentObject(entitlements)
+        }
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: scenePhase) { newPhase in
             // Mesmo padrão de `.onChange` de parâmetro único já usado neste
