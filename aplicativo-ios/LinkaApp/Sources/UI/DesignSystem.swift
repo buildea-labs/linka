@@ -1,14 +1,30 @@
 import SwiftUI
+
+#if canImport(UIKit)
 import UIKit
+private typealias PlatformColor = UIColor
+#elseif canImport(AppKit)
+import AppKit
+private typealias PlatformColor = NSColor
+#endif
 
 public extension Color {
-    private static func dynamicColor(light: UIColor, dark: UIColor) -> Color {
+    private static func dynamicColor(light: PlatformColor, dark: PlatformColor) -> Color {
+        #if canImport(UIKit)
         return Color(UIColor { traitCollection in
             return traitCollection.userInterfaceStyle == .dark ? dark : light
         })
+        #elseif canImport(AppKit)
+        // Fallback trivial pro macOS nativo (issue #75): sem trait
+        // collection de UIKit, usa o provider dinâmico equivalente do
+        // AppKit — mesma lógica de claro/escuro, sem nova UX no Mac.
+        return Color(NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+        })
+        #endif
     }
-    
-    private static func hex(_ hexString: String) -> UIColor {
+
+    private static func hex(_ hexString: String) -> PlatformColor {
         let hex = hexString.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
@@ -23,9 +39,9 @@ public extension Color {
         default:
             (a, r, g, b) = (255, 0, 0, 0)
         }
-        return UIColor(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: CGFloat(a) / 255)
+        return PlatformColor(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: CGFloat(a) / 255)
     }
-    
+
     private static let lightBg = hex("#FCFCFD")
     private static let lightSurface = hex("#FFFFFF")
     private static let lightInk = hex("#102245")
