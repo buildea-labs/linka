@@ -396,7 +396,12 @@ struct MainView: View {
                     .padding(.top, 16)
                 }
             }
+            #if os(iOS)
+            // `for: .navigationBar` é iOS-only (issue #112) — no macOS a
+            // navigation bar tem semântica diferente (titlebar da janela) e
+            // este overload de `.toolbar(.hidden, for:)` não existe.
             .toolbar(.hidden, for: .navigationBar)
+            #endif
         }
         .onAppear {
             viewModel.startTest()
@@ -457,7 +462,12 @@ struct MainView: View {
             case .uploading:
                 // Momento de transição download→upload: haptic médio + tick +
                 // pulse rápido do ring pra tornar a mudança de fase perceptível.
+                #if canImport(UIKit)
+                // `UIImpactFeedbackGenerator` é iOS-only (issue #112); o
+                // macOS não tem haptics de toque — o tick sonoro abaixo
+                // já sinaliza a transição de fase lá.
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                #endif
                 AudioServicesPlaySystemSound(1104)
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
                     ringScale = 1.05
@@ -468,7 +478,13 @@ struct MainView: View {
                     }
                 }
             case .downloading, .done:
+                #if canImport(UIKit)
+                // Mesmo motivo do haptic médio acima (issue #112): sem
+                // equivalente no macOS.
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                #else
+                break
+                #endif
             default:
                 break
             }
