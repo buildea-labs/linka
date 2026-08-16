@@ -30,6 +30,13 @@ public final class AppIntentCoordinator: ObservableObject {
     /// recomposição de view.
     @Published public private(set) var pendingStartSpeedTest: Bool = false
 
+    /// Alterna para `true` quando o widget/Siri/Shortcuts é acionado por
+    /// usuário Free — `MainView` abre `PurchaseSheet` em vez de rodar
+    /// medição. Decisão do Luiz (2026-08-15): Widget/Siri/App Intents são
+    /// exclusivos do Linka Plus, incluindo o disparo de `startSpeedTest`
+    /// por essas superfícies.
+    @Published public private(set) var pendingPurchasePrompt: Bool = false
+
     private init() {}
 
     public func requestStartSpeedTest() {
@@ -38,5 +45,13 @@ public final class AppIntentCoordinator: ObservableObject {
 
     public func consumeStartSpeedTestRequest() {
         pendingStartSpeedTest = false
+    }
+
+    public func requestPurchasePrompt() {
+        pendingPurchasePrompt = true
+    }
+
+    public func consumePurchasePrompt() {
+        pendingPurchasePrompt = false
     }
 }

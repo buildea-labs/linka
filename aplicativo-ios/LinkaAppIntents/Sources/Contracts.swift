@@ -72,16 +72,14 @@ public extension LinkaAppIntentExecutor {
     /// regra aqui. Toda a superfície de App Intents é tratada como a
     /// capacidade `.appleIntegrations` — inclusive `startSpeedTest`, já que
     /// medir pelo app continua livre (`LinkaCapability.speedTest`), mas
-    /// acioná-lo via Siri/Shortcuts é parte da integração Apple ofertada
-    /// no Linka Plus.
+    /// acioná-lo via Siri/Shortcuts/Widget é parte da integração Apple
+    /// ofertada no Linka Plus.
     ///
-    /// TODO(luiz): decisão de produto — startSpeedTest deve ser gate Plus ou
-    /// livre? Medir pelo app é gratuito por princípio (`AGENTS.md` §6,
-    /// "sem fricção antes da medição"); gatear o mesmo disparo via Siri
-    /// atrás do Plus é uma leitura possível, mas não confirmada, de que
-    /// "acionar via integração Apple" é diferente de "medir". Revisão
-    /// #79/#60 (Marcelo, AJUSTA item 5) sinalizou isso — não mudar a
-    /// lógica aqui sem decisão explícita do Luiz.
+    /// **Decisão do Luiz (2026-08-15)**: Widget/Siri/App Intents são
+    /// exclusivos do Linka Plus, incluindo o disparo de `startSpeedTest`
+    /// por essas superfícies. Usuário Free continua medindo pelo app
+    /// (grátis por princípio, `AGENTS.md` §6), mas acionar via integração
+    /// Apple exige assinatura. Gate uniforme atrás de `.appleIntegrations`.
     ///
     /// `snapshot` é síncrona porque o snapshot de produção
     /// (`StoreKitEntitlementProvider.snapshot`) já é um valor publicado
