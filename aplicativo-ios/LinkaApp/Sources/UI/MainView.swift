@@ -14,7 +14,6 @@ struct MainView: View {
     @ObservedObject private var intentCoordinator = AppIntentCoordinator.shared
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
-    @State private var showShareSheet: Bool = false
     @State private var showPurchase: Bool = false
     @State private var ringScale: CGFloat = 1.0
     @Namespace private var animation
@@ -269,27 +268,6 @@ struct MainView: View {
                                 }
                                 .buttonStyle(.plain)
 
-                                Text("·")
-                                    .font(.bodySmall)
-                                    .foregroundColor(.textSecondary)
-
-                                // Compartilhar o resultado atual (issue #54)
-                                // — mesmo padrão visual secundário das duas
-                                // ações ao lado, sem competir com o
-                                // MetricRing acima.
-                                Button(action: {
-                                    showShareSheet = true
-                                }) {
-                                    HStack(spacing: 6) {
-                                        Text("Compartilhar")
-                                            .font(.bodySmall)
-
-                                        Image(systemName: "square.and.arrow.up")
-                                            .font(.system(size: 10, weight: .semibold))
-                                    }
-                                    .foregroundColor(.textPrimary)
-                                }
-                                .buttonStyle(.plain)
                             }
                             .padding(.vertical, 8)
                             .padding(.horizontal, 16)
@@ -441,10 +419,9 @@ struct MainView: View {
                 entitlements: entitlements
             )
         }
-        // Compartilhar o resultado atual (issue #54) — mesma
-        // `currentMeasurement` que já alimenta o Assist, sem remontar
-        // campos (AGENTS.md §8).
-        .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
+        // Compartilhar continua disponível como swipe-action no Histórico
+        // (feedback do Luiz: tela de resultado carregada demais). A UX de
+        // compartilhar por medição individual vive só lá agora.
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet()
                 .environmentObject(entitlements)
