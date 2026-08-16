@@ -168,6 +168,26 @@ public class SpeedTestViewModel: ObservableObject {
                         formatter.dateFormat = "dd/MM"
                         self.lastTestSpeedString = "\(formattedSpeed) Mbps · \(formatter.string(from: last.measuredAt))"
                     }
+
+                    // Hidrata snapshot em memória a partir da última medição
+                    // persistida — Pular passa a restaurar o último resultado
+                    // (mesmo de sessão anterior), não só quando o usuário mede
+                    // dentro desta sessão. Sem isto, o usuário perde a
+                    // referência do último teste entre relançamentos do app.
+                    if self.lastValidResultSnapshot == nil {
+                        self.lastValidResultSnapshot = ResultSnapshot(
+                            downloadSpeed: dl,
+                            uploadSpeed: last.uploadMbps ?? 0,
+                            ping: Int((last.latencyMs ?? 0).rounded()),
+                            jitter: last.jitterMs ?? 0,
+                            provider: last.networkIdentifier ?? "",
+                            networkType: last.connectionKind?.rawValue ?? "",
+                            testDuration: last.durationMs.map { "\($0 / 1000)s" } ?? "",
+                            packetLossPercent: last.packetLossPercent,
+                            connectionKind: last.connectionKind,
+                            wifiBandGHz: last.wifiBandGHz
+                        )
+                    }
                 }
             }
         }
@@ -343,9 +363,20 @@ public class SpeedTestViewModel: ObservableObject {
         isTesting = false
 
         if let snapshot = lastValidResultSnapshot {
+            // Reteste cancelado: restaura o último resultado válido — usuário
+            // volta a ver exatamente o que estava vendo antes de tocar em
+            // "Testar novamente".
             restoreLastValidSnapshot(snapshot)
         } else {
-            startTest()
+            // Primeira medição pulada: sem snapshot para restaurar, volta ao
+            // estado pronto-para-medir. Não fabrica valores zerados (issue #47
+            // aceite: "sem resultado anterior, a interface não fabrica valores").
+            // A saída do beco sem saída fica na UI: MainView mostra um botão
+            // "Testar" quando uiPhase == .idle e não há resultado — o
+            // auto-restart do R3 confundia o usuário ("botão Pular não faz
+            // nada porque o teste reinicia imediatamente").
+            progress = 0.0
+            uiPhase = .idle
         }
     }
 

@@ -11,6 +11,7 @@ struct HistoryView: View {
     @State private var isLoading = true
     @State private var hasPlus = false
     @State private var showAssist = false
+    @State private var showPurchase = false
     @State private var insightText: String?
 
     // Computada (não `let`) de propósito: `entitlements` vem de
@@ -46,7 +47,7 @@ struct HistoryView: View {
                         .padding(.horizontal, 32)
 
                     Button("Conhecer o Linka") {
-                        // Action for Plus purchase flow
+                        showPurchase = true
                     }
                     .font(Font.system(size: 15, weight: .semibold))
                     .foregroundColor(.white)
@@ -88,7 +89,18 @@ struct HistoryView: View {
                                 }
 
                                 Button(action: {
-                                    showAssist = true
+                                    // Assist é Plus. Free vai direto pra
+                                    // tela de assinatura em vez de sheet.
+                                    let assistDecision = LinkaEntitlementPolicy.decision(
+                                        for: .assist,
+                                        snapshot: entitlements.snapshot,
+                                        at: Date()
+                                    )
+                                    if assistDecision.isGranted {
+                                        showAssist = true
+                                    } else {
+                                        showPurchase = true
+                                    }
                                 }) {
                                     Text("Perguntar ao Assist")
                                         .font(Font.system(size: 11, weight: .bold))
@@ -133,6 +145,10 @@ struct HistoryView: View {
                 entitlements: entitlements
             )
         }
+        .sheet(isPresented: $showPurchase) {
+            PurchaseSheet()
+                .environmentObject(entitlements)
+        }
         .onAppear {
             loadData()
         }
@@ -147,6 +163,15 @@ struct HistoryView: View {
             )
 
             hasPlus = decision.isGranted
+
+            // Usuário Free tentando acessar Histórico: abre a tela de
+            // assinatura direto em cima do upsell — evita fricção de dois
+            // toques ("entrei em Histórico, agora leio o texto, agora aperto
+            // o botão"). O upsell continua embaixo como fallback caso o
+            // usuário feche o sheet e queira voltar.
+            if !hasPlus {
+                showPurchase = true
+            }
 
             if hasPlus {
                 let query = MeasurementQuery(limit: 50, sortOrder: .newestFirst)
