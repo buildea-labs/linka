@@ -212,20 +212,36 @@ public actor SpeedTestCore {
                     continuation.yield(state)
 
                     // Measure Ping and Packet Loss
-                    let (pingMs, jitterMs, lossPercent) = await performPingTest()
+                    let pingOutcome = await performPingTest()
 
-                    // `performPingTest()` roda 10 sondagens sequenciais sem
-                    // checar cancelamento internamente — sem este ponto de
-                    // corte, um cancelamento chegado durante o ping só seria
-                    // percebido depois de entrar na fase de download (issue
-                    // #47, rodada 2). `runPhaseTimeBased` já checa
+                    // `performPingTest()` roda até 10 sondagens sequenciais
+                    // sem checar cancelamento internamente — sem este ponto
+                    // de corte, um cancelamento chegado durante o ping só
+                    // seria percebido depois de entrar na fase de download
+                    // (issue #47, rodada 2). `runPhaseTimeBased` já checa
                     // `Task.isCancelled` no próprio loop de amostragem, mas
                     // esta é a única lacuna real anterior a ele.
                     try Task.checkCancellation()
 
-                    state.ping = pingMs
-                    state.jitter = jitterMs
-                    state.packetLossPercent = lossPercent
+                    switch pingOutcome {
+                    case .measured(let pingMs, let jitterMs, let lossPercent):
+                        state.ping = pingMs
+                        state.jitter = jitterMs
+                        state.packetLossPercent = lossPercent
+                    case .fatalFailure(let reason):
+                        // Falha fatal já durante o ping (issue #85) — antes
+                        // desta correção, uma conexão morta gastava os ~11s
+                        // completos de `performPingTest` antes de a fase de
+                        // download sequer conseguir detectar a perda de
+                        // transporte. Nenhum dado real foi medido ainda
+                        // nesta fase, então não há nada além do offline check
+                        // anterior para preservar.
+                        let errored = Self.errorState(preserving: state, reason: reason)
+                        continuation.yield(errored)
+                        continuation.finish()
+                        return
+                    }
+
                     state.phase = .download
                     state.progress = 0.1
                     continuation.yield(state)
@@ -338,6 +354,14 @@ public actor SpeedTestCore {
     /// transporte (`shouldAbortPhase`) antes de conseguir medir nada.
     private enum PhaseOutcome {
         case measured(Double)
+        case fatalFailure(EngineFailureReason)
+    }
+
+    /// Resultado da fase de ping (issue #85) — mesmo espírito de
+    /// `PhaseOutcome`, mas carregando os três valores que `performPingTest`
+    /// produz (latência, jitter, perda de pacote) em vez de uma vazão única.
+    private enum PingOutcome {
+        case measured(latency: Double, jitter: Double, packetLossPercent: Double)
         case fatalFailure(EngineFailureReason)
     }
 
@@ -679,6 +703,40 @@ public actor SpeedTestCore {
         consecutiveFatalErrors >= threshold && bytesTransferred == 0
     }
 
+    /// Decide se a fase de ping deve abortar cedo por falha fatal de
+    /// transporte persistente (issue #85) — mesma lógica de
+    /// `shouldAbortPhase`, adaptada ao laço sequencial de `performPingTest`
+    /// (que não tem `ByteCounter`, só a contagem de sondagens que já
+    /// obtiveram uma resposta 200).
+    ///
+    /// `nonisolated static` de propósito — mesmo padrão de `shouldAbortPhase`
+    /// e `hasConverged`: puro, sem tocar estado do ator, exercitável com
+    /// valores sintéticos em teste.
+    ///
+    /// - Parameters:
+    ///   - consecutiveFatalErrors: contagem corrente de falhas fatais
+    ///     (`isFatalTransportError`) consecutivas — zerada por qualquer
+    ///     sondagem bem-sucedida (ver `performPingTest`).
+    ///   - successCount: quantas sondagens já tiveram sucesso (200) nesta
+    ///     fase até agora.
+    ///   - threshold: piso de falhas fatais consecutivas exigido antes de
+    ///     considerar abortar. 3 é menor que o piso de 6 usado em
+    ///     `shouldAbortPhase` — o ping é sequencial (uma sondagem por vez,
+    ///     não `streams` concorrentes), então o mesmo sinal de conexão morta
+    ///     leva menos sondagens para se acumular.
+    /// - Returns: `true` somente quando **ambas** as condições valem: já
+    ///   houve `threshold` falhas fatais seguidas **e** nenhuma sondagem
+    ///   desta fase teve sucesso ainda. Uma perda isolada intercalada com
+    ///   sucesso nunca aborta — sucesso zera o contador antes de chegar ao
+    ///   piso (AGENTS.md §8: preserva throughput/latência real já medido).
+    nonisolated static func shouldAbortPingTest(
+        consecutiveFatalErrors: Int,
+        successCount: Int,
+        threshold: Int = 3
+    ) -> Bool {
+        consecutiveFatalErrors >= threshold && successCount == 0
+    }
+
     /// Constrói o `MeasurementState` final de uma falha fatal (issue #66):
     /// preserva integralmente o estado já capturado nas fases anteriores
     /// (ping, jitter, packetLoss, downloadSpeed, provider, networkType…) e
@@ -775,9 +833,10 @@ public actor SpeedTestCore {
         return data
     }
 
-    private func performPingTest() async -> (latency: Double, jitter: Double, packetLoss: Double) {
+    private func performPingTest() async -> PingOutcome {
         var latencies: [Double] = []
         var failures = 0
+        var consecutiveFatalErrors = 0
         let totalPings = 10
 
         for _ in 0..<totalPings {
@@ -792,10 +851,32 @@ public actor SpeedTestCore {
                 if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
                     let latency = Date().timeIntervalSince(start) * 1000.0
                     latencies.append(latency)
+                    // Sondagem bem-sucedida prova que o transporte não está
+                    // de fato perdido — zera a sequência de falhas fatais
+                    // (issue #85, mesmo padrão de `FatalErrorTracker.recordSuccess`
+                    // usado em `runPhaseTimeBased`).
+                    consecutiveFatalErrors = 0
                 } else {
                     failures += 1
                 }
+            } catch let urlError as URLError where SpeedTestCore.isFatalTransportError(urlError) {
+                // Falha fatal de transporte (issue #85, extensão do #66 para
+                // a fase de ping) — distinta de timeout/erro isolado.
+                failures += 1
+                consecutiveFatalErrors += 1
+                if Self.shouldAbortPingTest(
+                    consecutiveFatalErrors: consecutiveFatalErrors,
+                    successCount: latencies.count
+                ) {
+                    // Aborta cedo: numa conexão morta, sem isto o laço
+                    // gastaria os ~11s completos das 10 sondagens antes de a
+                    // fase de download sequer ter chance de detectar a perda
+                    // de transporte.
+                    return .fatalFailure(.connectionLost(phase: .ping))
+                }
             } catch {
+                // Erro transiente (ex.: timeout isolado) — segue tentando as
+                // sondagens restantes, igual ao comportamento anterior.
                 failures += 1
             }
             // Small delay between pings
@@ -805,7 +886,7 @@ public actor SpeedTestCore {
         let lossPercent = (Double(failures) / Double(totalPings)) * 100.0
 
         guard !latencies.isEmpty else {
-            return (0.0, 0.0, lossPercent) // 100% loss
+            return .measured(latency: 0.0, jitter: 0.0, packetLossPercent: lossPercent) // 100% loss
         }
 
         let avgLatency = latencies.reduce(0, +) / Double(latencies.count)
@@ -817,10 +898,10 @@ public actor SpeedTestCore {
                 jitterSum += abs(latencies[i] - latencies[i-1])
             }
             let avgJitter = jitterSum / Double(latencies.count - 1)
-            return (avgLatency, avgJitter, lossPercent)
+            return .measured(latency: avgLatency, jitter: avgJitter, packetLossPercent: lossPercent)
         }
 
-        return (avgLatency, 0.0, lossPercent)
+        return .measured(latency: avgLatency, jitter: 0.0, packetLossPercent: lossPercent)
     }
 
     /// Uma única sondagem de latência sob carga (issue #52): HEAD leve
