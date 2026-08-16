@@ -1,6 +1,11 @@
 import SwiftUI
 import LinkaEntitlements
 import LinkaModules
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 struct SettingsSheet: View {
     @AppStorage("appAppearance") private var appAppearance: String = "system"
@@ -61,7 +66,7 @@ struct SettingsSheet: View {
                             .foregroundColor(.textSecondary)
                         Image(systemName: "chevron.right")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(UIColor.tertiaryLabel))
+                            .foregroundColor(.chevronAffordance)
                     }
                 }
                 .listRowBackground(Color.surfaceCard)
@@ -88,7 +93,7 @@ struct SettingsSheet: View {
                             .foregroundColor(.textSecondary)
                         Image(systemName: "chevron.right")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(UIColor.tertiaryLabel))
+                            .foregroundColor(.chevronAffordance)
                     }
                 }
                 .listRowBackground(Color.surfaceCard)
@@ -137,12 +142,26 @@ struct SettingsSheet: View {
                     .frame(maxWidth: .infinity, alignment: .center)
             }
         }
+        #if canImport(UIKit)
         .listStyle(.insetGrouped)
+        #else
+        // `.insetGrouped` é iOS-only (issue #114); o estilo padrão da
+        // `List` no macOS já se comporta como sidebar/inset nativo, sem
+        // equivalente 1:1 que valha a pena forçar aqui (mesmo raciocínio
+        // de HistoryView, issue #108).
+        .listStyle(.automatic)
+        #endif
         .scrollContentBackground(.hidden)
         .background(Color.surfacePage.ignoresSafeArea())
         .navigationTitle("Ajustes")
+        #if canImport(UIKit)
+        // `navigationBarTitleDisplayMode` e o placement `.navigationBar`
+        // do toolbar não existem no macOS — lá a titlebar não tem os
+        // modos large/inline do UIKit, nem uma navigation bar separada
+        // pra colorir (issue #114, mesmo padrão de HistoryView/#108).
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(Color.surfacePage, for: .navigationBar)
+        #endif
         .onAppear {
             loadTestCount()
         }
@@ -169,6 +188,22 @@ struct SettingsSheet: View {
                 self.testCount = count
             }
         }
+    }
+}
+
+private extension Color {
+    /// Cor de baixa ênfase para o chevron de navegação/afordance.
+    /// `UIColor.tertiaryLabel` é iOS-only (issue #114); `NSColor
+    /// .tertiaryLabelColor` é o equivalente semântico direto no AppKit,
+    /// mesmo papel de "texto terciário" que o macOS já expõe nativamente.
+    static var chevronAffordance: Color {
+        #if canImport(UIKit)
+        Color(UIColor.tertiaryLabel)
+        #elseif canImport(AppKit)
+        Color(NSColor.tertiaryLabelColor)
+        #else
+        Color.textSecondary
+        #endif
     }
 }
 
@@ -202,7 +237,7 @@ struct SettingsRow: View {
                 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(UIColor.tertiaryLabel))
+                    .foregroundColor(.chevronAffordance)
             }
         }
     }
