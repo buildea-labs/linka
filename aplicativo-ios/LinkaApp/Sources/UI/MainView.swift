@@ -15,6 +15,7 @@ struct MainView: View {
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
     @State private var showShareSheet: Bool = false
+    @State private var showPurchase: Bool = false
     @State private var ringScale: CGFloat = 1.0
     @Namespace private var animation
     // Sinal de ciclo de vida (issue #65) — `@Environment(\.scenePhase)` é
@@ -143,15 +144,38 @@ struct MainView: View {
                             // derivado de `hasValidResult`. Secundário de
                             // propósito: texto pequeno, sem fundo, sem
                             // competir com o MetricRing.
-                            Button(action: {
-                                viewModel.skipOrCancel()
-                            }) {
-                                Text(viewModel.hasValidResult ? "Cancelar" : "Pular")
-                                    .font(.bodySmall)
-                                    .foregroundColor(.textSecondary)
+                            //
+                            // Quando o teste já foi pulado e uiPhase caiu em
+                            // `.idle` sem snapshot para restaurar, o botão
+                            // vira "Testar" acionando startTest() — dá a saída
+                            // explícita que o R3 tinha tentado resolver com
+                            // auto-restart (que confundia: parecia que Pular
+                            // não fazia nada porque o teste reiniciava sozinho).
+                            if viewModel.uiPhase == .idle && !viewModel.hasValidResult && !viewModel.isTesting {
+                                Button(action: {
+                                    viewModel.startTest()
+                                }) {
+                                    Text("Testar")
+                                        .font(Font.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color.surfacePage)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 18)
+                                        .background(Color.textPrimary)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.top, 20)
+                            } else {
+                                Button(action: {
+                                    viewModel.skipOrCancel()
+                                }) {
+                                    Text(viewModel.hasValidResult ? "Cancelar" : "Pular")
+                                        .font(.bodySmall)
+                                        .foregroundColor(.textSecondary)
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.top, 20)
                             }
-                            .buttonStyle(.plain)
-                            .padding(.top, 20)
                         }
                         // removed transition to allow fluid geometry effect
                     } else {
@@ -219,7 +243,20 @@ struct MainView: View {
                                     .foregroundColor(.textSecondary)
 
                                 Button(action: {
-                                    showAssist = true
+                                    // Assist é feature Plus. Usuário Free vai
+                                    // direto para a tela de assinatura em vez
+                                    // de abrir o sheet e receber mensagem
+                                    // "faz parte do Plus" no meio da conversa.
+                                    let assistDecision = LinkaEntitlementPolicy.decision(
+                                        for: .assist,
+                                        snapshot: entitlements.snapshot,
+                                        at: Date()
+                                    )
+                                    if assistDecision.isGranted {
+                                        showAssist = true
+                                    } else {
+                                        showPurchase = true
+                                    }
                                 }) {
                                     HStack(spacing: 6) {
                                         Text("Perguntar ao Assist")
@@ -395,6 +432,10 @@ struct MainView: View {
         // `currentMeasurement` que já alimenta o Assist, sem remontar
         // campos (AGENTS.md §8).
         .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
+        .sheet(isPresented: $showPurchase) {
+            PurchaseSheet()
+                .environmentObject(entitlements)
+        }
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: scenePhase) { newPhase in
             // Mesmo padrão de `.onChange` de parâmetro único já usado neste

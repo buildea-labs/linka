@@ -316,6 +316,8 @@ final class AssistChatController: ObservableObject {
             text = "O Assist ainda não está configurado neste build."
         case NetworkAssistError.emptyQuestion:
             text = "Por favor, escreva uma pergunta."
+        case NetworkAssistError.notEntitled:
+            text = "O Assist faz parte do Linka Plus. Assine para conversar sobre seus testes."
         default:
             text = "Não foi possível consultar o Assist agora. Tente novamente em instantes."
         }
