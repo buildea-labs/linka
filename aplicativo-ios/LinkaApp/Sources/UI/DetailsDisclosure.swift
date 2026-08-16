@@ -104,8 +104,8 @@ struct DetailsDisclosure: View {
     }
 
     var body: some View {
-        VStack(alignment: .center, spacing: 20) {
-            VStack(alignment: .center, spacing: 6) {
+        VStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .center, spacing: 4) {
                 Text("Rede **\(networkLabel)** · Provedor **\(provider)**")
                 Text("Duração **\(duration)**")
             }
@@ -119,18 +119,18 @@ struct DetailsDisclosure: View {
                 .multilineTextAlignment(.center)
                 .accessibilityLabel(usageSuitabilitySentence)
 
-            // Grid 2 colunas com cards de métrica (padrão Apple — mesmo
-            // estilo de detalhes das apps Health/Weather). Cada card agrupa
-            // rótulo, valor e explicação como um único elemento de
-            // acessibilidade (issue #53). Padding horizontal padrão do app
-            // (24pt) fica no root pra não colar nas bordas (issue #110).
+            // Grid 2 colunas compacto (padrão Apple — Health/Weather em
+            // sumário). Cada card: label + valor inline, explicação em
+            // caption pequena embaixo. Cabe sem scroll na mesma dobra do
+            // resultado (issues #53/#110). Padding horizontal padrão do
+            // app (24pt) fica no root pra não colar nas bordas.
             LazyVGrid(
                 columns: [
-                    GridItem(.flexible(), spacing: 10),
-                    GridItem(.flexible(), spacing: 10)
+                    GridItem(.flexible(), spacing: 8),
+                    GridItem(.flexible(), spacing: 8)
                 ],
                 alignment: .leading,
-                spacing: 10
+                spacing: 6
             ) {
                 ForEach(availableMetrics) { model in
                     MetricCard(model: model)
@@ -206,10 +206,10 @@ enum UsageSuitabilityCopy {
     }
 }
 
-/// Card de métrica em grid 2 colunas (padrão Apple — Health/Weather).
-/// Rótulo pequeno em cima, valor grande em destaque, explicação curta
-/// embaixo. Agrupado como um único elemento de acessibilidade (issue #53)
-/// para o VoiceOver ler de forma compreensível.
+/// Card de métrica compacto em grid 2 colunas (padrão Apple —
+/// Health/Weather em sumário). Label e valor inline no topo (nome à esq,
+/// número à dir), explicação em caption pequena embaixo. Agrupado como
+/// um único elemento de acessibilidade (issue #53).
 private struct MetricCard: View {
     struct Model: Identifiable {
         let label: String
@@ -223,28 +223,28 @@ private struct MetricCard: View {
     let model: Model
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(model.label)
-                .font(.system(size: 11, weight: .semibold))
-                .textCase(.uppercase)
-                .foregroundColor(.textSecondary)
-
-            Text(model.valueText)
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-                .foregroundColor(.textPrimary)
-                .padding(.top, 2)
-
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(model.label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .textCase(.uppercase)
+                    .foregroundColor(.textSecondary)
+                Spacer(minLength: 0)
+                Text(model.valueText)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundColor(.textPrimary)
+            }
             Text(model.explanation)
-                .font(.system(size: 11))
+                .font(.system(size: 10))
                 .foregroundColor(.textSecondary)
+                .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .background(Color.textPrimary.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(model.label): \(model.accessibleValue). \(model.explanation)")
     }
