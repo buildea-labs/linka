@@ -35,6 +35,28 @@ targets:
       - package: LinkaModules
       - package: MeasurementHistoryCloudKit
       - package: GoogleMobileAds
+  # Único target XCTest que alcança o módulo do app (issue #65) — o resto
+  # do repo é pacotes SPM com `Tests/` próprios, mas `SpeedTestViewModel`
+  # vive dentro do target Xcode `LinkaApp`, que não tinha nenhum target de
+  # teste até aqui. Hospedado só por `LinkaApp_iOS`: a lógica coberta
+  # (`SpeedTestViewModel.handleScenePhaseChange`) é Swift/SwiftUI puro, sem
+  # nenhum branch condicional de plataforma, então testar via um host basta
+  # — tentar espelhar como target multiplataforma (`LinkaAppTests_macOS`
+  # hospedado por `LinkaApp_macOS`) produziu wiring de dependência quebrado
+  # nesta versão do XcodeGen (`platformFilter` incorreto nos dois target
+  # dependency edges gerados). Ver nota no PR desta issue.
+  LinkaAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget:
+      iOS: 16.0
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    sources:
+      - path: LinkaApp/Tests
+    dependencies:
+      - target: LinkaApp_iOS
 packages:
   LinkaEngine:
     path: LinkaEngine
