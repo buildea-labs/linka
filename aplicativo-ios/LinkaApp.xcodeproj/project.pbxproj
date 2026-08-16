@@ -51,6 +51,10 @@
 		E4B904926847BAFFF4BCD8EC /* AssistSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988979889EF4E4AC03B8A21D /* AssistSheet.swift */; };
 		E8738446F6E9EC9EAF2DFDE5 /* ApplePlatformSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */; };
 		EFE90B32EE9F3C3441921A5D /* LinkaModules in Frameworks */ = {isa = PBXBuildFile; productRef = F9AA1524670AA76CD25C8EE7 /* LinkaModules */; };
+		3F62FF12789349D3B5B6AB3E /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9948BBAFD29A4750A107745E /* ShareCardView.swift */; };
+		5E9F8F7F122E4C2ABE6A636F /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9948BBAFD29A4750A107745E /* ShareCardView.swift */; };
+		A84232BD3A2649AB9918F8D5 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA78EA813A0F4BC48F294580 /* ShareSheet.swift */; };
+		920A2756E4EB443FB0230CA2 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA78EA813A0F4BC48F294580 /* ShareSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -77,6 +81,8 @@
 		E86E6389194D1938B09BEE51 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseDots.swift; sourceTree = "<group>"; };
 		F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePlatformSignalProvider.swift; sourceTree = "<group>"; };
+		9948BBAFD29A4750A107745E /* ShareCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardView.swift; sourceTree = "<group>"; };
+		AA78EA813A0F4BC48F294580 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,6 +136,8 @@
 				F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */,
 				1056216026BABB240C8AC371 /* PurchaseSheet.swift */,
 				736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */,
+				9948BBAFD29A4750A107745E /* ShareCardView.swift */,
+				AA78EA813A0F4BC48F294580 /* ShareSheet.swift */,
 				3234D1B179CE201E17961385 /* SplashView.swift */,
 				240C677AB8218C3DE05600FB /* StatDisplay.swift */,
 			);
@@ -299,6 +307,8 @@
 				50C85316B3E53EB821D140B2 /* PhaseDots.swift in Sources */,
 				45C0F482F56FF0A25084CBD1 /* PurchaseSheet.swift in Sources */,
 				D1F96FFD9A366D9F61AD5F96 /* SettingsSheet.swift in Sources */,
+				3F62FF12789349D3B5B6AB3E /* ShareCardView.swift in Sources */,
+				A84232BD3A2649AB9918F8D5 /* ShareSheet.swift in Sources */,
 				E1CC58942197732477D20D52 /* SpeedTestViewModel.swift in Sources */,
 				882B1F2E429EE217B08C34B6 /* SplashView.swift in Sources */,
 				080B674A908A6C5DA086E6FB /* StatDisplay.swift in Sources */,
@@ -323,6 +333,8 @@
 				7F7970BA85081796F66C73DB /* PhaseDots.swift in Sources */,
 				2F7AC1D0FB4C81453B1B1EC7 /* PurchaseSheet.swift in Sources */,
 				6F17598AD7C151721E54AB92 /* SettingsSheet.swift in Sources */,
+				5E9F8F7F122E4C2ABE6A636F /* ShareCardView.swift in Sources */,
+				920A2756E4EB443FB0230CA2 /* ShareSheet.swift in Sources */,
 				910814D6D49CF4D31DF32FC1 /* SpeedTestViewModel.swift in Sources */,
 				58AAEC10AB55272DF16453E3 /* SplashView.swift in Sources */,
 				8F43FE7424FB03B9F36897E9 /* StatDisplay.swift in Sources */,

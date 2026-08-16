@@ -11,6 +11,7 @@ struct MainView: View {
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
+    @State private var showShareSheet: Bool = false
     @State private var ringScale: CGFloat = 1.0
     @Namespace private var animation
 
@@ -226,6 +227,28 @@ struct MainView: View {
                                     .foregroundColor(.textPrimary)
                                 }
                                 .buttonStyle(.plain)
+
+                                Text("·")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+
+                                // Compartilhar o resultado atual (issue #54)
+                                // — mesmo padrão visual secundário das duas
+                                // ações ao lado, sem competir com o
+                                // MetricRing acima.
+                                Button(action: {
+                                    showShareSheet = true
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Text("Compartilhar")
+                                            .font(.bodySmall)
+
+                                        Image(systemName: "square.and.arrow.up")
+                                            .font(.system(size: 10, weight: .semibold))
+                                    }
+                                    .foregroundColor(.textPrimary)
+                                }
+                                .buttonStyle(.plain)
                             }
                             .padding(.vertical, 8)
                             .padding(.horizontal, 16)
@@ -352,6 +375,10 @@ struct MainView: View {
                 entitlements: entitlements
             )
         }
+        // Compartilhar o resultado atual (issue #54) — mesma
+        // `currentMeasurement` que já alimenta o Assist, sem remontar
+        // campos (AGENTS.md §8).
+        .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: viewModel.uiPhase) { newPhase in
             switch newPhase {
