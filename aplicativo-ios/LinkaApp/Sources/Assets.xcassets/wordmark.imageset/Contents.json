@@ -3,6 +3,16 @@
     {
       "filename" : "wordmark.svg",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "wordmark-dark.svg",
+      "idiom" : "universal"
     }
   ],
   "info" : {
