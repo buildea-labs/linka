@@ -14,8 +14,16 @@ struct MainView: View {
     @ObservedObject private var intentCoordinator = AppIntentCoordinator.shared
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
+    @State private var showShareSheet: Bool = false
     @State private var ringScale: CGFloat = 1.0
     @Namespace private var animation
+    // Sinal de ciclo de vida (issue #65) — `@Environment(\.scenePhase)` é
+    // cross-platform SwiftUI e cobre iPhone, iPad e Mac com o mesmo código,
+    // sem `#if os(iOS)` espalhado (AGENTS.md §2: Mac é destino de primeira
+    // classe, não Catalyst-gambiarra). Toda a decisão do que fazer com a
+    // mudança de fase vive em `viewModel.handleScenePhaseChange(_:)` — esta
+    // view só repassa o valor.
+    @Environment(\.scenePhase) private var scenePhase
 
     private var currentMeasurement: NetworkMeasurement? {
         guard viewModel.uiPhase == .done else { return nil }
@@ -113,14 +121,8 @@ struct MainView: View {
                                 matchedId: "downloadValue"
                             )
                             .scaleEffect(ringScale)
-                            
-                            Text("LINKA SPEEDTEST")
-                                .font(.monoEyebrow)
-                                .foregroundColor(.textSecondary)
-                                .tracking(1.0)
-                                .padding(.top, 24)
-                                .padding(.bottom, 12)
-                            
+                            .padding(.bottom, 28)
+
                             Text(phaseLabel)
                                 .font(.bodyRegular)
                                 .foregroundColor(.textSecondary)
@@ -224,6 +226,28 @@ struct MainView: View {
                                             .font(.bodySmall)
 
                                         Image(systemName: "sparkles")
+                                            .font(.system(size: 10, weight: .semibold))
+                                    }
+                                    .foregroundColor(.textPrimary)
+                                }
+                                .buttonStyle(.plain)
+
+                                Text("·")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+
+                                // Compartilhar o resultado atual (issue #54)
+                                // — mesmo padrão visual secundário das duas
+                                // ações ao lado, sem competir com o
+                                // MetricRing acima.
+                                Button(action: {
+                                    showShareSheet = true
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Text("Compartilhar")
+                                            .font(.bodySmall)
+
+                                        Image(systemName: "square.and.arrow.up")
                                             .font(.system(size: 10, weight: .semibold))
                                     }
                                     .foregroundColor(.textPrimary)
@@ -367,7 +391,18 @@ struct MainView: View {
                 entitlements: entitlements
             )
         }
+        // Compartilhar o resultado atual (issue #54) — mesma
+        // `currentMeasurement` que já alimenta o Assist, sem remontar
+        // campos (AGENTS.md §8).
+        .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
+        .onChange(of: scenePhase) { newPhase in
+            // Mesmo padrão de `.onChange` de parâmetro único já usado neste
+            // arquivo (issue #65) — mantém compatibilidade com o
+            // deployment target atual, sem migrar para a assinatura de dois
+            // parâmetros do iOS 17.
+            viewModel.handleScenePhaseChange(newPhase)
+        }
         .onChange(of: viewModel.uiPhase) { newPhase in
             switch newPhase {
             case .uploading:
