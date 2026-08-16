@@ -252,4 +252,55 @@ final class LinkaModulesTests: XCTestCase {
             XCTFail("Unexpected error: \(error)")
         }
     }
+
+    // MARK: - EntitlementGatedNetworkAssistProvider.streamAnswer (issue #69)
+
+    func testEntitlementGatedStreamAnswerDeniesFreePlanWithoutObservingAnyEvent() async {
+        let gated = EntitlementGatedNetworkAssistProvider(
+            wrapping: NetworkAssistService(transport: UnconfiguredNetworkAssistTransport()),
+            snapshot: { .free }
+        )
+
+        let context = NetworkAssistContext(
+            question: "Minha conexão está boa?",
+            currentMeasurement: NetworkMeasurement(downloadMbps: 100)
+        )
+
+        do {
+            // O gate roda antes de qualquer evento (`.progress`/
+            // `.textDelta`/`.completed`) — um plano free nunca observa
+            // sequer o bridge não-streaming do transport por baixo.
+            for try await _ in gated.streamAnswer(context) {
+                XCTFail("No event expected for a plan without Assist access")
+            }
+            XCTFail("Expected NetworkAssistError.notEntitled")
+        } catch let error as NetworkAssistError {
+            XCTAssertEqual(error, .notEntitled)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    func testEntitlementGatedStreamAnswerDelegatesForActivePlus() async {
+        let gated = EntitlementGatedNetworkAssistProvider(
+            wrapping: NetworkAssistService(transport: UnconfiguredNetworkAssistTransport()),
+            snapshot: { .plus(status: .active, source: .subscription) }
+        )
+
+        let context = NetworkAssistContext(
+            question: "Minha conexão está boa?",
+            currentMeasurement: NetworkMeasurement(downloadMbps: 100)
+        )
+
+        do {
+            for try await _ in gated.streamAnswer(context) {
+                XCTFail("Unconfigured transport should never yield an event")
+            }
+            XCTFail("Expected NetworkAssistError.notConfigured (delegated to the wrapped provider)")
+        } catch let error as NetworkAssistError {
+            XCTAssertEqual(error, .notConfigured)
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
 }

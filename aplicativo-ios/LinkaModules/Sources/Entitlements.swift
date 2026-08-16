@@ -131,10 +131,44 @@ public struct EntitlementGatedNetworkAssistProvider: NetworkAssistProviding {
     }
 
     public func answer(_ context: NetworkAssistContext) async throws -> NetworkAssistResponse {
+        try await requireAccess()
+        return try await provider.answer(context)
+    }
+
+    /// Caminho de streaming (issue #69) — o gate de entitlement roda uma
+    /// única vez, antes de qualquer evento (`.progress`/`.textDelta`/
+    /// `.completed`) ser observado pelo chamador, nunca no meio do stream.
+    /// Repassa para `provider.streamAnswer` (e não para o bridge default do
+    /// protocolo) para preservar streaming real quando o provider envolvido
+    /// sabe streamar de verdade — usar o bridge aqui perderia esse
+    /// comportamento mesmo quando o provider por baixo transmite eventos
+    /// progressivos de verdade.
+    public func streamAnswer(_ context: NetworkAssistContext) -> AsyncThrowingStream<NetworkAssistStreamEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    try await requireAccess()
+                } catch {
+                    continuation.finish(throwing: error)
+                    return
+                }
+                do {
+                    for try await event in provider.streamAnswer(context) {
+                        continuation.yield(event)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private func requireAccess() async throws {
         let decision = LinkaEntitlementPolicy.decision(for: .assist, snapshot: await snapshot())
         guard decision.isGranted else {
             throw NetworkAssistError.notEntitled
         }
-        return try await provider.answer(context)
     }
 }

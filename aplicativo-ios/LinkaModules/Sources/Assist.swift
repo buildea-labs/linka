@@ -9,3 +9,8 @@ public typealias AssistTransport = NetworkAssist.NetworkAssistTransport
 public typealias AssistError = NetworkAssist.NetworkAssistError
 public typealias UnconfiguredAssistTransport = NetworkAssist.UnconfiguredNetworkAssistTransport
 public typealias TransportBackedAssistProvider<Transport: NetworkAssistTransport> = NetworkAssist.NetworkAssistService<Transport>
+
+// Issue #69 — resposta progressiva do Assist.
+public typealias AssistStreamingTransport = NetworkAssist.NetworkAssistStreamingTransport
+public typealias AssistStreamEvent = NetworkAssist.NetworkAssistStreamEvent
+public typealias AssistProgressStep = NetworkAssist.NetworkAssistProgressStep

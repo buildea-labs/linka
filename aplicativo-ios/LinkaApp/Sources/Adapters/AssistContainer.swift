@@ -61,6 +61,12 @@ enum AssistContainer {
     /// Envolve o provider real com `EntitlementGatedNetworkAssistProvider`:
     /// o Assist consulta a mesma `LinkaEntitlementPolicy` usada pelo resto
     /// do app antes de responder, em vez de ficar completamente aberto.
+    ///
+    /// O provider devolvido também responde a `streamAnswer` (issue #69) —
+    /// `AssistSheet` usa esse único call-site independente de o transport
+    /// remoto de hoje (`SignallqAiDiagnosticTransport`) saber streamar de
+    /// verdade ou não; sem streaming real no transport, a resposta revela
+    /// de uma vez via o bridge não-streaming de `NetworkAssistService`.
     static func makeAssistProvider(
         entitlements: StoreKitEntitlementProvider
     ) -> any NetworkAssistProviding {
