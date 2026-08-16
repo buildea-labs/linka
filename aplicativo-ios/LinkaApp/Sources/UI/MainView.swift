@@ -413,6 +413,14 @@ struct MainView: View {
             viewModel.startTest()
             intentCoordinator.consumeStartSpeedTestRequest()
         }
+        .onChange(of: intentCoordinator.pendingPurchasePrompt) { pending in
+            guard pending else { return }
+            // Widget/Siri disparado por usuário Free (decisão do Luiz
+            // 2026-08-15: acionar via integração Apple é Plus-only) — abre
+            // paywall em vez de rodar medição.
+            showPurchase = true
+            intentCoordinator.consumePurchasePrompt()
+        }
         .sheet(isPresented: $showAssist) {
             // `onRetry` reusa o mesmo `viewModel.startTest()` do botão
             // "Testar novamente"/"Tentar novamente" (issue #58) — nunca uma

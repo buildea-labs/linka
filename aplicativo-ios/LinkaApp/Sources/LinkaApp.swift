@@ -64,26 +64,36 @@ struct LinkaApp: App {
     /// `SpeedTestViewModel.startTest()` real — nenhuma medição roda dentro
     /// da extensão de widget nem é duplicada aqui.
     ///
-    /// Deliberadamente **não** envolvido em
-    /// `LinkaAppIntentExecutor.entitlementGated`: o TODO em
-    /// `LinkaAppIntents/Sources/Contracts.swift` marca como decisão
-    /// pendente do Luiz se disparar `startSpeedTest` via
-    /// Siri/Shortcuts/Widget deve exigir Linka Plus. Medir pelo app é
-    /// grátis por princípio (AGENTS.md §6, "sem fricção antes da
-    /// medição") e o requisito de aceite do widget (issue #55) exige que
-    /// "Testar" funcione sem fricção — gatear aqui sem decisão explícita
-    /// quebraria isso para quem toca o widget sem Plus. Não resolvido por
-    /// conta própria; sinalizado no PR para Giam/Luiz decidirem.
+    /// **Decisão do Luiz (2026-08-15)**: Widget/Siri/App Intents são
+    /// exclusivos do Linka Plus. Usuário Free tocando "Testar" no widget
+    /// abre o app e cai direto na tela de assinatura (via
+    /// `AppIntentCoordinator.requestPurchasePrompt`), NÃO roda medição —
+    /// medir pelo app continua grátis por princípio (AGENTS.md §6), só o
+    /// acionamento via integração Apple é gate Plus.
     ///
     /// `openLatestMeasurement`, `openHistory` e `getLatestResult`
     /// continuam fora do escopo desta issue — nenhuma superfície real os
     /// aciona ainda — e seguem falhando fechado com `.notConfigured`, em
     /// vez de travar sem erro tipado como antes.
     private func registerAppIntentExecutor() async {
+        let entitlements = self.entitlements
         let executor = LinkaAppIntentExecutor { action in
             switch action {
             case .startSpeedTest:
-                await AppIntentCoordinator.shared.requestStartSpeedTest()
+                let decision = await MainActor.run {
+                    LinkaEntitlementPolicy.decision(
+                        for: .appleIntegrations,
+                        snapshot: entitlements.snapshot,
+                        at: Date()
+                    )
+                }
+                if decision.isGranted {
+                    await AppIntentCoordinator.shared.requestStartSpeedTest()
+                } else {
+                    // Free: app abre (openAppWhenRun=true) e cai direto no
+                    // paywall. Não roda medição — decisão Plus-only do Luiz.
+                    await AppIntentCoordinator.shared.requestPurchasePrompt()
+                }
                 return LinkaSystemActionResponse(action: .startSpeedTest)
             case .openLatestMeasurement, .openHistory, .getLatestResult:
                 throw LinkaAppIntentExecutionError.notConfigured
