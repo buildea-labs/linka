@@ -20,7 +20,12 @@ struct SplashView: View {
                 .opacity(opacity)
         }
         .onAppear {
-            if #available(iOS 17.0, *) {
+            // `#available(iOS 17.0, *)` sozinho não protege o macOS: o `*`
+            // cai no deployment target mínimo do target (macOS 13.0), e
+            // `withAnimation(_:completion:)` só existe a partir do macOS
+            // 14.0 — sem o `macOS 14.0` explícito aqui, o build macOS falha
+            // (issue #108).
+            if #available(iOS 17.0, macOS 14.0, *) {
                 withAnimation(.easeIn(duration: splashFadeInDuration)) {
                     opacity = 1.0
                 } completion: {
@@ -30,9 +35,9 @@ struct SplashView: View {
                 withAnimation(.easeIn(duration: splashFadeInDuration)) {
                     opacity = 1.0
                 }
-                // iOS 16 não expõe completion handler para withAnimation;
-                // aguarda exatamente a duração da própria animação, sem
-                // acrescentar espera decorativa além dela.
+                // iOS 16 / macOS < 14 não expõem completion handler para
+                // withAnimation; aguarda exatamente a duração da própria
+                // animação, sem acrescentar espera decorativa além dela.
                 DispatchQueue.main.asyncAfter(deadline: .now() + splashFadeInDuration) {
                     onComplete()
                 }

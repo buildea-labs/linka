@@ -126,13 +126,24 @@ struct HistoryView: View {
                         }
                     }
                 }
+                #if canImport(UIKit)
                 .listStyle(.insetGrouped)
+                #else
+                // `.insetGrouped` é iOS-only (issue #108); no macOS o estilo
+                // padrão da `List` já se comporta como sidebar/inset nativo,
+                // sem equivalente 1:1 que valha a pena forçar aqui.
+                .listStyle(.automatic)
+                #endif
                 .scrollContentBackground(.hidden)
                 .background(Color.surfacePage)
             }
         }
         .navigationTitle("Histórico")
+        #if canImport(UIKit)
+        // `navigationBarTitleDisplayMode` não existe no macOS — lá a
+        // titlebar não tem os modos large/inline do UIKit (issue #108).
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .sheet(isPresented: $showAssist) {
             // `onRetry` fica de fora deliberadamente (issue #58): esta tela
             // só olha medições passadas, sem caminho de início de teste
