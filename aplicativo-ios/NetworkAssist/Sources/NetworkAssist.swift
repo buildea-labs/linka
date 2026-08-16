@@ -142,6 +142,34 @@ public struct NetworkAssistResponse: Codable, Equatable, Sendable {
     }
 }
 
+/// Etapa de progresso que um transporte de streaming pode sinalizar
+/// enquanto monta a resposta (issue #69). Enum tipado e fechado — o motor
+/// só emite a etapa que o transporte de fato conhece, nunca inventa uma
+/// (`NetworkAssistService.streamAnswer` nunca gera `.progress` sozinho).
+/// Sem copy aqui: texto de apresentação vive na UI, mesmo padrão de
+/// `investigationShortText` em `AssistSheet`.
+public enum NetworkAssistProgressStep: String, Codable, Equatable, Sendable, CaseIterable {
+    /// Lendo a medição atual/histórico recente antes de responder.
+    case readingMeasurement
+    /// Comparando a medição atual com o histórico.
+    case comparingHistory
+    /// Montando o texto final da resposta.
+    case composingAnswer
+}
+
+/// Evento emitido por um caminho de streaming do Assist (issue #69).
+/// `.progress` só existe quando o transporte real sinaliza aquela etapa —
+/// nunca fabricado client-side. `.textDelta` é um fragmento de texto que
+/// chegou de verdade (ex.: token de um SSE real), nunca um recorte
+/// artificial de uma resposta que já chegou inteira. `.completed` carrega
+/// a resposta final, já validada contra a política de evidência do Assist
+/// (mesma validação de `NetworkAssistService.answer(_:)`).
+public enum NetworkAssistStreamEvent: Equatable, Sendable {
+    case progress(NetworkAssistProgressStep)
+    case textDelta(String)
+    case completed(NetworkAssistResponse)
+}
+
 public struct NetworkAssistConfiguration: Equatable, Sendable {
     public let maximumQuestionLength: Int
     public let maximumRecentMeasurements: Int
@@ -182,10 +210,60 @@ public enum NetworkAssistError: Error, Equatable, Sendable {
 
 public protocol NetworkAssistProviding: Sendable {
     func answer(_ context: NetworkAssistContext) async throws -> NetworkAssistResponse
+
+    /// Caminho único de streaming (issue #69) — a UI chama só este método,
+    /// independente de o provider por baixo saber streamar de verdade ou
+    /// não. Ver extensão abaixo para o bridge default. Aditivo: nenhum
+    /// conformer existente precisa implementar isto para continuar
+    /// compilando.
+    func streamAnswer(_ context: NetworkAssistContext) -> AsyncThrowingStream<NetworkAssistStreamEvent, Error>
+}
+
+public extension NetworkAssistProviding {
+    /// Bridge default usado por qualquer conformer que não sobrescreve este
+    /// método (ou seja, que não sabe streamar de verdade): chama
+    /// `answer(_:)` uma única vez e emite um único `.completed` — sem
+    /// `.textDelta`, sem `.progress` fabricado. É assim que uma resposta
+    /// que já chegou inteira (caminho local instantâneo, ou transporte
+    /// remoto não-streaming) revela de uma vez, sem reveal artificial
+    /// (AGENTS.md — não invente espetáculo sobre uma resposta que já
+    /// chegou pronta).
+    ///
+    /// Cancelamento: `continuation.onTermination` cancela a `Task` interna
+    /// assim que o consumidor para de iterar o stream (inclusive quando a
+    /// `Task` do chamador é cancelada) — propaga cancelamento cooperativo
+    /// até `answer(_:)`.
+    func streamAnswer(_ context: NetworkAssistContext) -> AsyncThrowingStream<NetworkAssistStreamEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let response = try await self.answer(context)
+                    continuation.yield(.completed(response))
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
 }
 
 public protocol NetworkAssistTransport: Sendable {
     func answer(_ request: NetworkAssistRequest) async throws -> NetworkAssistResponse
+}
+
+/// Transporte que expõe eventos reais de streaming (issue #69) — chunks de
+/// texto ou etapas de progresso que o backend de fato sinaliza, nunca
+/// fabricados client-side. Estritamente aditivo a `NetworkAssistTransport`:
+/// nenhum transporte hoje conforma a este protocolo, incluindo
+/// `SignallqAiDiagnosticTransport` (`NetworkDiagnostics`) — o
+/// `ai-diagnosis-worker` ainda responde em um único round-trip HTTP, não em
+/// SSE/chunked/NDJSON. `NetworkAssistService.streamAnswer` cai no bridge
+/// não-streaming (`NetworkAssistProviding.streamAnswer` default) para
+/// qualquer transporte que não conforme a este protocolo.
+public protocol NetworkAssistStreamingTransport: NetworkAssistTransport {
+    func streamAnswer(_ request: NetworkAssistRequest) -> AsyncThrowingStream<NetworkAssistStreamEvent, Error>
 }
 
 public struct NetworkAssistService<Transport: NetworkAssistTransport>: NetworkAssistProviding {
@@ -205,6 +283,63 @@ public struct NetworkAssistService<Transport: NetworkAssistTransport>: NetworkAs
         let request = NetworkAssistRequest(validated: context)
         let response = try await transport.answer(request)
         try validate(response, against: request)
+        return normalized(response)
+    }
+
+    /// Consome o transporte via streaming quando ele expõe eventos reais
+    /// (`Transport: NetworkAssistStreamingTransport`); caso contrário, cai
+    /// no bridge default de `NetworkAssistProviding` — um único round-trip
+    /// via `answer(_:)`, emitido como `.completed` sem `.progress`/
+    /// `.textDelta` fabricados. Isso dá à UI um único call-site
+    /// (`streamAnswer`) independente da capacidade do transporte injetado
+    /// (issue #69).
+    ///
+    /// Aplica a MESMA validação de entrada (`validate(context)`) e de
+    /// resposta final (`validate(response:against:)`) usada por
+    /// `answer(_:)` — a política de evidência do Assist vale também para o
+    /// caminho streaming, inclusive quando o transporte é não-streaming.
+    ///
+    /// Cancelamento: `continuation.onTermination` cancela a `Task` interna
+    /// assim que o consumidor para de iterar o stream — isso propaga
+    /// cancelamento cooperativo até `transport.answer`/
+    /// `transport.streamAnswer`, que por sua vez propaga até a requisição
+    /// HTTP em voo quando o transporte é cancellation-aware (ver
+    /// `URLSessionDiagnosticHTTPClient` em `NetworkDiagnostics`).
+    public func streamAnswer(_ context: NetworkAssistContext) -> AsyncThrowingStream<NetworkAssistStreamEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    try validate(context)
+                    let request = NetworkAssistRequest(validated: context)
+
+                    if let streamingTransport = transport as? NetworkAssistStreamingTransport {
+                        for try await event in streamingTransport.streamAnswer(request) {
+                            try Task.checkCancellation()
+                            switch event {
+                            case .progress(let step):
+                                continuation.yield(.progress(step))
+                            case .textDelta(let delta):
+                                continuation.yield(.textDelta(delta))
+                            case .completed(let response):
+                                try validate(response, against: request)
+                                continuation.yield(.completed(normalized(response)))
+                            }
+                        }
+                    } else {
+                        let response = try await transport.answer(request)
+                        try validate(response, against: request)
+                        continuation.yield(.completed(normalized(response)))
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private func normalized(_ response: NetworkAssistResponse) -> NetworkAssistResponse {
         let trimmedLong = response.longText?.trimmingCharacters(in: .whitespacesAndNewlines)
         return NetworkAssistResponse(
             text: response.text.trimmingCharacters(in: .whitespacesAndNewlines),

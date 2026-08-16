@@ -357,6 +357,75 @@ final class SignallqAiDiagnosticTransportTests: XCTestCase {
         XCTAssertEqual(response.disposition, .insufficientEvidence)
         XCTAssertTrue(response.evidenceIDs.isEmpty)
     }
+
+    // MARK: - streamAnswer bridge (issue #69)
+
+    /// `SignallqAiDiagnosticTransport` não conforma a
+    /// `NetworkAssistStreamingTransport` (o `ai-diagnosis-worker` não
+    /// streama de verdade hoje) — `NetworkAssistService.streamAnswer` cai
+    /// no bridge não-streaming: um único round-trip HTTP, um único
+    /// `.completed`, sem `.progress`/`.textDelta` fabricados. A resposta
+    /// aparece de uma vez, porque já chegou inteira.
+    func testStreamAnswerBridgesTheAiTransportToASingleCompletedEvent() async throws {
+        let json = """
+        {"schemaVersion":"2","status":"regular","resumo":"A velocidade está boa.","textoLaudo":"Sem oscilações relevantes."}
+        """.data(using: .utf8)!
+        let client = MockHTTPClient(responseData: json)
+        let transport = SignallqAiDiagnosticTransport(
+            configuration: NetworkDiagnosticsConfiguration(
+                rulesEndpoint: NetworkDiagnosticsConfiguration.defaultRulesEndpoint,
+                aiEndpoint: NetworkDiagnosticsConfiguration.defaultAiEndpoint,
+                platformIdentifier: "ios"
+            ),
+            httpClient: client
+        )
+        let service = NetworkAssistService(transport: transport)
+
+        var events: [NetworkAssistStreamEvent] = []
+        for try await event in service.streamAnswer(NetworkAssistContext(
+            question: "Serve para vídeo?",
+            currentMeasurement: makeValidMeasurement()
+        )) {
+            events.append(event)
+        }
+
+        XCTAssertEqual(events.count, 1)
+        guard case .completed(let response) = events[0] else {
+            return XCTFail("Expected a single .completed event, got \(events)")
+        }
+        XCTAssertEqual(response.text, "A velocidade está boa.")
+        XCTAssertEqual(response.longText, "Sem oscilações relevantes.")
+        XCTAssertEqual(client.lastURL, NetworkDiagnosticsConfiguration.defaultAiEndpoint, "um único round-trip HTTP")
+    }
+}
+
+// MARK: - URLSessionDiagnosticHTTPClient cancellation (issue #69)
+
+final class URLSessionDiagnosticHTTPClientCancellationTests: XCTestCase {
+    /// Não testa cancelamento de uma requisição de rede real em voo (exige
+    /// um servidor de teste controlável, fora do escopo deste ambiente) —
+    /// cobre a garantia mínima e determinística: uma `Task` já cancelada
+    /// antes de `postJSON` nunca chega a abrir conexão nenhuma.
+    func testPostJSONThrowsImmediatelyWhenTaskIsAlreadyCancelled() async {
+        let client = URLSessionDiagnosticHTTPClient()
+        let task = Task {
+            try await client.postJSON(
+                url: URL(string: "https://example.invalid/never-called")!,
+                body: Data(),
+                timeout: 5
+            )
+        }
+        task.cancel()
+
+        do {
+            _ = try await task.value
+            XCTFail("Expected CancellationError")
+        } catch is CancellationError {
+            // esperado
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
 }
 
 private func makeValidMeasurement() -> NetworkMeasurement {

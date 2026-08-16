@@ -5,6 +5,16 @@ import NetworkCore
 /// Transporte conversacional: envia `question` como `feedbackUsuario` para o
 /// `ai-diagnosis-worker` e monta uma `NetworkAssistResponse` com o texto
 /// gerado (`resumo` + `textoLaudo`).
+///
+/// Não conforma a `NetworkAssistStreamingTransport` (issue #69): o
+/// `ai-diagnosis-worker` responde hoje em um único round-trip HTTP
+/// (`postJSON`/`answer` abaixo), sem SSE, chunked transfer nem NDJSON.
+/// `NetworkAssistService.streamAnswer` cai no bridge não-streaming — a
+/// resposta completa vira um único `.completed`, sem `.textDelta`/
+/// `.progress` fabricados. Confirmar com quem cuida do
+/// `ai-diagnosis-worker` (endpoint `NDAiEndpoint`) se/quando o backend
+/// passar a expor streaming real é issue futura; não simular streaming
+/// client-side sobre uma resposta que chega inteira (AGENTS.md §1, §9).
 public struct SignallqAiDiagnosticTransport: NetworkAssistTransport {
     public let configuration: NetworkDiagnosticsConfiguration
     public let httpClient: DiagnosticHTTPClient
