@@ -39,12 +39,7 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
         let band: String? = {
             let channel = iface.wlanChannel()
             guard let band = channel?.channelBand else { return nil }
-            switch band {
-            case .band2GHz: return "2.4GHz"
-            case .band5GHz: return "5GHz"
-            case .bandUnknown: return nil
-            @unknown default: return nil
-            }
+            return Self.bandLabel(forGHz: Self.mapCWChannelBand(band))
         }()
 
         let wifi = PlatformHints.Wifi(
@@ -80,8 +75,9 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
 
     /// Banda Wi-Fi confirmada pelo sistema, em GHz — issue #51. Reaproveita
     /// a mesma leitura de `CWChannel.channelBand` que já alimenta
-    /// `PlatformHints.Wifi.band` (linha ~44), mas devolve `Double` (2.4/5)
-    /// em vez de `String`, para `NetworkMeasurement.wifiBandGHz`.
+    /// `PlatformHints.Wifi.band` (via `mapCWChannelBand(_:)`), mas devolve
+    /// `Double` (2.4/5) em vez de `String`, para
+    /// `NetworkMeasurement.wifiBandGHz`.
     ///
     /// Só macOS: no iPhone não há fonte pública de banda sem
     /// `NEHotspotHelper` (entitlement) nem sem localização — `nil` é o
@@ -92,16 +88,39 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
               let band = iface.wlanChannel()?.channelBand else {
             return nil
         }
+        return mapCWChannelBand(band)
+        #else
+        return nil
+        #endif
+    }
+
+    #if canImport(CoreWLAN) && os(macOS)
+    /// Única tradução de `CWChannelBand` do arquivo — issue #89. Antes,
+    /// `currentWifi()` (produzindo `String?`) e `currentWifiBandGHz()`
+    /// (produzindo `Double?`) reimplementavam este switch de forma
+    /// independente, correndo o risco de divergir silenciosamente se um
+    /// novo case fosse tratado diferente nos dois lugares. Agora os dois
+    /// call sites delegam pra cá; a tradução `Double -> String` em
+    /// `bandLabel(forGHz:)` é conversão de formato, não uma segunda fonte
+    /// de verdade sobre o significado de cada `CWChannelBand` case.
+    static func mapCWChannelBand(_ band: CWChannelBand) -> Double? {
         switch band {
         case .band2GHz: return 2.4
         case .band5GHz: return 5.0
         case .bandUnknown: return nil
         @unknown default: return nil
         }
-        #else
-        return nil
-        #endif
     }
+
+    /// Rótulo textual da banda a partir do `Double?` já mapeado por
+    /// `mapCWChannelBand(_:)` — não reabre o switch sobre `CWChannelBand`.
+    static func bandLabel(forGHz ghz: Double?) -> String? {
+        guard let ghz else { return nil }
+        if ghz == 2.4 { return "2.4GHz" }
+        if ghz == 5.0 { return "5GHz" }
+        return nil
+    }
+    #endif
 
     #if canImport(CoreTelephony) && os(iOS)
     private func mapTechnology(_ raw: String) -> String? {
