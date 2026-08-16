@@ -35,6 +35,7 @@ targets:
       - package: LinkaModules
       - package: MeasurementHistoryCloudKit
       - package: GoogleMobileAds
+        platforms: [iOS]
       - package: LinkaAppIntents
       - package: LinkaWidgetShared
       - target: LinkaWidgetExtension

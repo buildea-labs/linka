@@ -5,7 +5,10 @@ import NetworkCore
 import NetworkDiagnostics
 import LinkaEntitlements
 import LinkaModules
+
+#if canImport(UIKit)
 import UIKit
+#endif
 
 /// Constrói o `NetworkAssistProviding` que a UI usa. Substitui a antiga
 /// resposta algorítmica (if/else PT-BR) por um transport HTTP real que fala
@@ -155,9 +158,16 @@ enum AssistContainer {
     /// em `NetworkAssist`). `.retryMeasurement` é deliberadamente ausente
     /// aqui: quem dispara reteste é o closure do chamador (`AssistSheet`),
     /// nunca este adapter reimplementando o caminho de início de teste.
+    ///
+    /// No macOS nativo (issue #75) não existe `UIApplication`/
+    /// `openSettingsURLString` — `NetworkAssistManualGuidanceTopic` já cobre
+    /// a orientação textual equivalente; este adapter só perde o atalho
+    /// direto de deep-link, sem inventar um caminho novo no Mac.
     @MainActor
     static func openAppSettings() {
+        #if canImport(UIKit)
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
+        #endif
     }
 }

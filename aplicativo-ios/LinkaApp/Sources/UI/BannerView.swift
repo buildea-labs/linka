@@ -1,4 +1,6 @@
 import SwiftUI
+
+#if canImport(UIKit)
 import UIKit
 import GoogleMobileAds
 
@@ -218,3 +220,20 @@ struct NativeAdCard: UIViewRepresentable {
         container.nativeAd = nativeAd
     }
 }
+
+#else
+
+// MARK: - macOS stub
+
+/// Ads são iOS-only por decisão de produto (issue #75) — `GoogleMobileAds`
+/// só tem slice iOS. No macOS nativo (não Mac Catalyst) o espaço do banner
+/// simplesmente não existe: sem placeholder decorativo, `BannerView()`
+/// continua type-checking nos call sites (ex.: `MainView`) como uma view
+/// vazia, sem reservar altura nem competir com o resultado.
+struct BannerView: View {
+    var body: some View {
+        EmptyView()
+    }
+}
+
+#endif

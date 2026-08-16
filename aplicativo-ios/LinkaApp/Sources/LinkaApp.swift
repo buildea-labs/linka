@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
 import GoogleMobileAds
+#endif
 import LinkaEntitlements
 import AppIntents
 import LinkaAppIntents
@@ -15,9 +17,13 @@ struct LinkaApp: App {
     @StateObject private var entitlements = StoreKitEntitlementProvider()
 
     init() {
+        #if canImport(UIKit)
         // Native ads exigem inicialização explícita do SDK antes do primeiro
         // GADAdLoader.load(). Sem isso o carregamento falha silenciosamente.
+        // `GoogleMobileAds` é iOS-only (issue #75): sem ads no macOS nativo,
+        // não há SDK para inicializar.
         GADMobileAds.sharedInstance().start(completionHandler: nil)
+        #endif
     }
 
     var colorScheme: ColorScheme? {
