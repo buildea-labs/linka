@@ -283,24 +283,60 @@ public protocol MeasurementRemoteStore: Sendable {
 /// produto/plataforma que fica para Giam/Luiz decidirem separadamente, não
 /// algo resolvido "de carona" nesta implementação (issue #71).
 public final class CloudKitMeasurementRemoteStore: MeasurementRemoteStore, @unchecked Sendable {
-    private let container: CKContainer
-    private let database: CKDatabase
+    private let container: CKContainer?
+    private let database: CKDatabase?
     private let zoneID: CKRecordZone.ID
 
     public init(
         containerIdentifier: String = LinkaCloudKitContainer.identifier,
         zoneID: CKRecordZone.ID = MeasurementRecordZone.zoneID
     ) {
-        self.container = CKContainer(identifier: containerIdentifier)
-        self.database = container.privateCloudDatabase
+        // Hotfix pós-#71: `CKContainer(identifier:)` crasha com `os_crash`
+        // duro (SIGTRAP) quando o entitlement
+        // `com.apple.developer.icloud-container-identifiers` não está
+        // embarcado no binário. Isso acontece hoje em qualquer build sem
+        // code-signing (simulador, CI) e enquanto o container
+        // `iCloud.com.linka.speedtest` não estiver provisionado no Apple
+        // Developer Portal. Detectamos a ausência via `SecTaskCopyValueFor
+        // Entitlement` e degradamos silenciosamente para no-op — sync
+        // CloudKit fica desabilitado até o provisionamento acontecer, mas
+        // o app não crasha e todo o fluxo local continua funcionando.
+        if Self.hasICloudContainerEntitlement(for: containerIdentifier) {
+            let c = CKContainer(identifier: containerIdentifier)
+            self.container = c
+            self.database = c.privateCloudDatabase
+        } else {
+            self.container = nil
+            self.database = nil
+        }
         self.zoneID = zoneID
     }
 
+    private static func hasICloudContainerEntitlement(for id: String) -> Bool {
+        #if targetEnvironment(simulator)
+        // Simulator sem code signing não carrega entitlements no processo.
+        // Enquanto o container `iCloud.com.linka.speedtest` não estiver
+        // provisionado no Apple Developer Portal e o app assinado com esse
+        // perfil, CloudKit fica desabilitado no simulador para não crashar.
+        return false
+        #else
+        // Em device, presença de embedded.mobileprovision indica binário
+        // assinado com perfil que inclui os entitlements declarados no
+        // arquivo `.entitlements` — o container precisa estar listado lá
+        // e provisionado no Apple Developer Portal para que
+        // `CKContainer(identifier:)` sobreviva. Se faltar, degradar para
+        // no-op é melhor que crashar duro via os_crash.
+        return Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision") != nil
+        #endif
+    }
+
     public func accountStatus() async -> CKAccountStatus {
-        (try? await container.accountStatus()) ?? .couldNotDetermine
+        guard let container else { return .couldNotDetermine }
+        return (try? await container.accountStatus()) ?? .couldNotDetermine
     }
 
     public func ensureZoneExists() async throws {
+        guard let database else { return }
         _ = try await database.modifyRecordZones(
             saving: [CKRecordZone(zoneID: zoneID)],
             deleting: []
@@ -309,6 +345,7 @@ public final class CloudKitMeasurementRemoteStore: MeasurementRemoteStore, @unch
 
     public func upload(_ records: [CKRecord]) async throws {
         guard !records.isEmpty else { return }
+        guard let database else { return }
         _ = try await database.modifyRecords(
             saving: records,
             deleting: [],
@@ -319,6 +356,7 @@ public final class CloudKitMeasurementRemoteStore: MeasurementRemoteStore, @unch
 
     public func deleteRemote(recordIDs: [CKRecord.ID]) async throws {
         guard !recordIDs.isEmpty else { return }
+        guard let database else { return }
         _ = try await database.modifyRecords(
             saving: [],
             deleting: recordIDs,
@@ -328,6 +366,13 @@ public final class CloudKitMeasurementRemoteStore: MeasurementRemoteStore, @unch
     }
 
     public func fetchChanges(since token: Data?) async throws -> MeasurementRemoteChangeSet {
+        guard let database else {
+            return MeasurementRemoteChangeSet(
+                changedRecords: [],
+                deletedRecordIDs: [],
+                newChangeToken: token
+            )
+        }
         let previousToken = token.flatMap(Self.decodeToken)
 
         let result = try await database.recordZoneChanges(
