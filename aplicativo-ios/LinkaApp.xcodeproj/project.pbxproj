@@ -30,10 +30,12 @@
 		4C677DE785ED6352129A9839 /* AssistSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988979889EF4E4AC03B8A21D /* AssistSheet.swift */; };
 		50C85316B3E53EB821D140B2 /* PhaseDots.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */; };
 		58AAEC10AB55272DF16453E3 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3234D1B179CE201E17961385 /* SplashView.swift */; };
+		5D1E17CBC21B000A5F40B33F /* AssistChatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 147B2B29EC829C1E43D39787 /* AssistChatController.swift */; };
 		5D7BDF1FC123A9F789F0B323 /* LinkaAppIntents in Frameworks */ = {isa = PBXBuildFile; productRef = 4010F854F0753756FEF0C5F0 /* LinkaAppIntents */; };
 		5DA4E299822FB8F13A83E605 /* LinkaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 328D0AC42D7699A0B421F1F3 /* LinkaWidgetExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		6F17598AD7C151721E54AB92 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */; };
 		704E919D0F63C3C6A5971FF6 /* LinkaSpeedTestWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66CBF1A76A2700A86FB6D257 /* LinkaSpeedTestWidget.swift */; };
+		74AFA6D2267B31585A019142 /* AssistChatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 147B2B29EC829C1E43D39787 /* AssistChatController.swift */; };
 		7D5ACB59AE3B1D2BE7DAE683 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */; };
 		7E4521DEE028B6E2786623C9 /* AssistContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD4A980DC574793818E97A1 /* AssistContainer.swift */; };
 		7F7970BA85081796F66C73DB /* PhaseDots.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */; };
@@ -41,6 +43,7 @@
 		847E859C6B4B4BC90D19D8BE /* LinkaEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 86760C16968147ADE1D36961 /* LinkaEngine */; };
 		882B1F2E429EE217B08C34B6 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3234D1B179CE201E17961385 /* SplashView.swift */; };
 		8A98ED69419E179DC57A582C /* AssistFailureSignalMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E2413E81B1C0AF7D31BBC0 /* AssistFailureSignalMapping.swift */; };
+		8CAF30B54B3BBF0B7190B11E /* AssistSheetStreamCancellationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1283367C65869F518D3B7E /* AssistSheetStreamCancellationTests.swift */; };
 		8D66BEE737572D8CC731228A /* DetailsDisclosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEF366EB2385DC20D0757E43 /* DetailsDisclosure.swift */; };
 		8EDC61449DB6F193BE332F11 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */; };
 		8F43FE7424FB03B9F36897E9 /* StatDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240C677AB8218C3DE05600FB /* StatDisplay.swift */; };
@@ -104,6 +107,7 @@
 
 /* Begin PBXFileReference section */
 		1056216026BABB240C8AC371 /* PurchaseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseSheet.swift; sourceTree = "<group>"; };
+		147B2B29EC829C1E43D39787 /* AssistChatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistChatController.swift; sourceTree = "<group>"; };
 		17341010AD6A54D297DD1469 /* MeasurementHistoryCloudKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MeasurementHistoryCloudKit; path = MeasurementHistoryCloudKit; sourceTree = SOURCE_ROOT; };
 		179DA64F9C7059B7A140B92E /* MetricRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricRing.swift; sourceTree = "<group>"; };
 		240C677AB8218C3DE05600FB /* StatDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatDisplay.swift; sourceTree = "<group>"; };
@@ -122,6 +126,7 @@
 		72C35725E79C96780D745AB7 /* LinkaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaApp.swift; sourceTree = "<group>"; };
 		736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		8041784263895147F69C02D2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		8A1283367C65869F518D3B7E /* AssistSheetStreamCancellationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistSheetStreamCancellationTests.swift; sourceTree = "<group>"; };
 		8DD4A980DC574793818E97A1 /* AssistContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistContainer.swift; sourceTree = "<group>"; };
 		988979889EF4E4AC03B8A21D /* AssistSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistSheet.swift; sourceTree = "<group>"; };
 		A955FDE679C032C5443EEF5D /* SpeedTestViewModelScenePhaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestViewModelScenePhaseTests.swift; sourceTree = "<group>"; };
@@ -214,6 +219,7 @@
 		24BB651090AE1FE408377D7B /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				8A1283367C65869F518D3B7E /* AssistSheetStreamCancellationTests.swift */,
 				A955FDE679C032C5443EEF5D /* SpeedTestViewModelScenePhaseTests.swift */,
 			);
 			name = Tests;
@@ -270,6 +276,7 @@
 			children = (
 				B7921F180B5C7EC49B0B1D48 /* AppIntentCoordinator.swift */,
 				F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */,
+				147B2B29EC829C1E43D39787 /* AssistChatController.swift */,
 				8DD4A980DC574793818E97A1 /* AssistContainer.swift */,
 				D0E2413E81B1C0AF7D31BBC0 /* AssistFailureSignalMapping.swift */,
 				E816515881C246C6E28B0653 /* SpeedTestViewModel.swift */,
@@ -448,6 +455,7 @@
 			files = (
 				A4D9495502DC4C4CEF2BEF0F /* AppIntentCoordinator.swift in Sources */,
 				BB664E873410EAC7F101D24B /* ApplePlatformSignalProvider.swift in Sources */,
+				5D1E17CBC21B000A5F40B33F /* AssistChatController.swift in Sources */,
 				7E4521DEE028B6E2786623C9 /* AssistContainer.swift in Sources */,
 				8A98ED69419E179DC57A582C /* AssistFailureSignalMapping.swift in Sources */,
 				4C677DE785ED6352129A9839 /* AssistSheet.swift in Sources */,
@@ -473,6 +481,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8CAF30B54B3BBF0B7190B11E /* AssistSheetStreamCancellationTests.swift in Sources */,
 				3780733E2BDF1FB538D9CC35 /* SpeedTestViewModelScenePhaseTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -483,6 +492,7 @@
 			files = (
 				44C648122F593A279BF4190E /* AppIntentCoordinator.swift in Sources */,
 				E8738446F6E9EC9EAF2DFDE5 /* ApplePlatformSignalProvider.swift in Sources */,
+				74AFA6D2267B31585A019142 /* AssistChatController.swift in Sources */,
 				B49CE021825E80DC95B954AA /* AssistContainer.swift in Sources */,
 				9FFFA7A4330D0D605C30667E /* AssistFailureSignalMapping.swift in Sources */,
 				E4B904926847BAFFF4BCD8EC /* AssistSheet.swift in Sources */,

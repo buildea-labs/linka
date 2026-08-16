@@ -23,32 +23,20 @@ struct ChatMessage: Identifiable {
 
 struct AssistSheet: View {
     @Environment(\.dismiss) var dismiss
-    @State private var messages: [ChatMessage] = []
-    @State private var isTyping: Bool = false
+    /// Estado e máquina de streaming da conversa (mensagens, digitando,
+    /// geração/cancelamento) — extraído para `AssistChatController`
+    /// (PR #101, R2). `@StateObject`, não `@State`, de propósito: é um
+    /// `ObservableObject` comum, testável por construção direta
+    /// (`@testable import LinkaApp`) sem depender da `View` estar
+    /// instalada na hierarquia real do SwiftUI — ver doc do tipo pro
+    /// racional completo (achado de Marcelo: `@State` não é confiável
+    /// fora de um grafo de View real).
+    @StateObject private var chat: AssistChatController
     @State private var expandedMessages: Set<UUID> = []
     @State private var investigationExpanded: Bool = false
     @State private var selectedDetent: PresentationDetent = .medium
-    /// `Task` do stream de resposta em andamento (issue #69) — guardada
-    /// para poder cancelar de verdade quando uma nova pergunta é enviada
-    /// ou o sheet é fechado, em vez de só parar de atualizar a UI.
-    @State private var streamTask: Task<Void, Never>?
-    /// `id` da `ChatMessage` sendo construída via `.textDelta` — `nil`
-    /// quando nenhuma resposta está em streaming no momento (inclusive
-    /// durante todo o bridge não-streaming, já que ele nunca emite
-    /// `.textDelta`). Também usado para esconder a bolha parcial da
-    /// acessibilidade enquanto ela ainda está sendo montada.
-    @State private var streamingMessageID: UUID?
-    /// Etapa sinalizada pelo transporte via `.progress` — só existe quando
-    /// o transporte real emite o evento; nunca inferida client-side.
-    @State private var progressStep: NetworkAssistProgressStep?
     /// Alterna a opacidade do indicador discreto pré-primeiro-trecho.
     @State private var progressPulse: Bool = false
-    @State private var availableQuestions: [String] = [
-        "Serve para uma chamada de vídeo?",
-        "Como está comparado aos meus últimos testes?",
-        "Minha conexão variou muito esta semana?",
-        "Esse resultado está melhor ou pior que o anterior?"
-    ]
 
     let currentMeasurement: NetworkMeasurement?
     let recentMeasurements: [NetworkMeasurement]
@@ -65,9 +53,6 @@ struct AssistSheet: View {
     /// sem ele, o botão nunca aparece, em vez de aparecer e falhar
     /// silenciosamente.
     let onRetry: (() -> Void)?
-
-    private let assistProvider: any NetworkAssistProviding
-    private let assistIsRemote: Bool
 
     /// `entitlements` é obrigatório para montar o provider padrão porque o
     /// Assist agora consulta a mesma fonte de entitlement do app
@@ -88,14 +73,21 @@ struct AssistSheet: View {
         self.recentMeasurements = recentMeasurements
         self.failureSignal = failureSignal
         self.onRetry = onRetry
+
+        let resolvedProvider: any NetworkAssistProviding
         if let assistProvider {
-            self.assistProvider = assistProvider
+            resolvedProvider = assistProvider
         } else if let entitlements {
-            self.assistProvider = AssistContainer.makeAssistProvider(entitlements: entitlements)
+            resolvedProvider = AssistContainer.makeAssistProvider(entitlements: entitlements)
         } else {
-            self.assistProvider = NetworkAssistService(transport: UnconfiguredNetworkAssistTransport())
+            resolvedProvider = NetworkAssistService(transport: UnconfiguredNetworkAssistTransport())
         }
-        self.assistIsRemote = assistIsRemote
+        _chat = StateObject(wrappedValue: AssistChatController(
+            currentMeasurement: currentMeasurement,
+            recentMeasurements: recentMeasurements,
+            assistProvider: resolvedProvider,
+            assistIsRemote: assistIsRemote
+        ))
     }
 
     /// Investigação local determinística (issue #56) — calculada só quando
@@ -171,18 +163,18 @@ struct AssistSheet: View {
                             }
                         }
 
-                        ForEach(messages) { msg in
+                        ForEach(chat.messages) { msg in
                             bubble(for: msg)
                                 .id(msg.id)
                         }
 
-                        if isTyping {
+                        if chat.isTyping {
                             assistProgressIndicator
                                 .id("typing")
-                        } else if !availableQuestions.isEmpty {
+                        } else if !chat.availableQuestions.isEmpty {
                             VStack(spacing: 8) {
-                                ForEach(availableQuestions, id: \.self) { q in
-                                    Button(action: { submitQuestion(q) }) {
+                                ForEach(chat.availableQuestions, id: \.self) { q in
+                                    Button(action: { chat.submitQuestion(q) }) {
                                         HStack {
                                             Text(q)
                                                 .font(.system(size: 14, weight: .semibold))
@@ -201,17 +193,17 @@ struct AssistSheet: View {
                                     .buttonStyle(.plain)
                                 }
                             }
-                            .padding(.top, messages.isEmpty ? 0 : 16)
+                            .padding(.top, chat.messages.isEmpty ? 0 : 16)
                             .id("suggestions")
                         }
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 32)
                 }
-                .onChange(of: messages.count) { _ in
+                .onChange(of: chat.messages.count) { _ in
                     withAnimation { proxy.scrollTo("suggestions", anchor: .bottom) }
                 }
-                .onChange(of: isTyping) { typing in
+                .onChange(of: chat.isTyping) { typing in
                     if typing {
                         withAnimation { proxy.scrollTo("typing", anchor: .bottom) }
                     } else {
@@ -221,8 +213,8 @@ struct AssistSheet: View {
                 // Acompanha a bolha crescendo chunk a chunk (issue #69):
                 // `.textDelta` muda o texto da última mensagem sem mudar
                 // `messages.count`, então o `onChange` acima não dispara.
-                .onChange(of: messages.last?.text) { _ in
-                    guard let streamingMessageID else { return }
+                .onChange(of: chat.messages.last?.text) { _ in
+                    guard let streamingMessageID = chat.streamingMessageID else { return }
                     withAnimation { proxy.scrollTo(streamingMessageID, anchor: .bottom) }
                 }
             }
@@ -234,7 +226,7 @@ struct AssistSheet: View {
         // consumir client-side) quando o sheet é fechado — issue #69,
         // requisito de aceite de cancelamento.
         .onDisappear {
-            streamTask?.cancel()
+            chat.cancelStream()
         }
     }
 
@@ -256,7 +248,7 @@ struct AssistSheet: View {
                         progressPulse.toggle()
                     }
                 }
-            if let progressStep {
+            if let progressStep = chat.progressStep {
                 Text(progressStepLabel(for: progressStep))
                     .font(.bodySmall)
                     .foregroundColor(.textSecondary)
@@ -266,7 +258,7 @@ struct AssistSheet: View {
         }
         .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(progressStep.map { progressStepLabel(for: $0) } ?? "Preparando resposta")
+        .accessibilityLabel(chat.progressStep.map { progressStepLabel(for: $0) } ?? "Preparando resposta")
     }
 
     /// Copy da etapa vive na UI, não no motor (`NetworkAssist` só expõe o
@@ -326,7 +318,7 @@ struct AssistSheet: View {
                 // `.completed` chega (`streamingMessageID` volta a `nil`),
                 // volta a ser lida normalmente — leitura coerente com o
                 // texto final, nunca fragmento a fragmento.
-                .accessibilityHidden(msg.id == streamingMessageID)
+                .accessibilityHidden(msg.id == chat.streamingMessageID)
                 Spacer(minLength: 40)
             }
         }
@@ -592,179 +584,5 @@ struct AssistSheet: View {
                 selectedDetent = .large
             }
         }
-    }
-
-    /// Envia a pergunta. Os dois casos sem `currentMeasurement`/com Assist
-    /// desligado são caminhos locais/instantâneos (guard clauses, issue
-    /// #69): a resposta já existe por completo antes de qualquer
-    /// round-trip, então revela de uma vez e nunca passa pela máquina de
-    /// streaming — não fingir "pensamento" sobre algo que já está pronto.
-    /// Só quando há de fato uma pergunta a consultar é que
-    /// `consumeAssistStream` (via `streamAnswer`) entra em cena.
-    private func submitQuestion(_ q: String) {
-        streamTask?.cancel()
-        streamTask = nil
-        streamingMessageID = nil
-        progressStep = nil
-
-        if let index = availableQuestions.firstIndex(of: q) {
-            availableQuestions.remove(at: index)
-        }
-        messages.append(ChatMessage(text: q, isUser: true))
-
-        guard let currentMeasurement else {
-            isTyping = false
-            messages.append(ChatMessage(
-                text: "Ainda não há medições suficientes para responder. Faça seu primeiro teste.",
-                isUser: false
-            ))
-            return
-        }
-        guard assistIsRemote else {
-            isTyping = false
-            messages.append(ChatMessage(
-                text: "O Assist ainda não está configurado neste build.",
-                isUser: false
-            ))
-            return
-        }
-
-        isTyping = true
-
-        let context = NetworkAssistContext(
-            question: q,
-            currentMeasurement: currentMeasurement,
-            recentMeasurements: recentMeasurements,
-            evidence: [],
-            locale: "pt-BR"
-        )
-
-        streamTask = Task { @MainActor in
-            await consumeAssistStream(for: context)
-        }
-    }
-
-    /// Consome `assistProvider.streamAnswer(_:)` (issue #69) — único
-    /// call-site independente de o provider por baixo saber streamar de
-    /// verdade ou não: `.textDelta` acumula na bolha em construção,
-    /// `.progress` atualiza o indicador só quando o transporte de fato
-    /// sinaliza aquela etapa, e `.completed` finaliza. Contra o bridge
-    /// não-streaming de hoje (`SignallqAiDiagnosticTransport`), isto se
-    /// reduz a um único `.completed` — a resposta aparece de uma vez,
-    /// porque já chegou inteira.
-    @MainActor
-    private func consumeAssistStream(for context: NetworkAssistContext) async {
-        do {
-            for try await event in assistProvider.streamAnswer(context) {
-                switch event {
-                case .progress(let step):
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        progressStep = step
-                    }
-                case .textDelta(let delta):
-                    appendStreamedDelta(delta)
-                case .completed(let response):
-                    finishStream(with: response)
-                }
-            }
-        } catch {
-            handleStreamFailure(error)
-        }
-        isTyping = false
-        progressStep = nil
-        streamingMessageID = nil
-    }
-
-    /// O primeiro `.textDelta` cria a bolha do assistente (e esconde o
-    /// indicador pré-primeiro-trecho, já que agora há conteúdo real para
-    /// mostrar); deltas seguintes só se acumulam nela, sem nenhum delay
-    /// artificial entre chunks — coalescing/throttle de chunks reais que
-    /// chegam granulares demais é legítimo, atraso decorativo sobre texto
-    /// já recebido não é (não-objetivo explícito da issue #69).
-    @MainActor
-    private func appendStreamedDelta(_ delta: String) {
-        guard !delta.isEmpty else { return }
-        if let id = streamingMessageID, let index = messages.firstIndex(where: { $0.id == id }) {
-            messages[index].text += delta
-        } else {
-            let message = ChatMessage(text: delta, isUser: false)
-            streamingMessageID = message.id
-            messages.append(message)
-            isTyping = false
-            progressStep = nil
-        }
-    }
-
-    /// `.completed` carrega o texto final já validado/normalizado por
-    /// `NetworkAssistService` — é a fonte da verdade, então sobrescreve
-    /// (não concatena sobre) qualquer acúmulo de `.textDelta` anterior.
-    /// Quando não houve nenhum `.textDelta` antes (bridge não-streaming,
-    /// 100% do tráfego real hoje), esta é a primeira e única vez que o
-    /// texto aparece — de uma vez.
-    @MainActor
-    private func finishStream(with response: NetworkAssistResponse) {
-        let (short, long) = presentableText(for: response)
-        if let id = streamingMessageID, let index = messages.firstIndex(where: { $0.id == id }) {
-            messages[index].text = short
-            messages[index].longText = long
-        } else {
-            messages.append(ChatMessage(text: short, longText: long, isUser: false))
-        }
-    }
-
-    /// Mesmo mapeamento de disposição→texto de antes de #69 (issue #53).
-    private func presentableText(for response: NetworkAssistResponse) -> (String, String?) {
-        switch response.disposition {
-        case .answered:
-            return (response.text, response.longText)
-        case .insufficientEvidence:
-            let text = response.text.isEmpty
-                ? "Não tenho dados suficientes para responder isso agora."
-                : response.text
-            return (text, response.longText)
-        case .requiresDiagnosis:
-            let text = response.text.isEmpty
-                ? "Esse caso precisa de um diagnóstico mais completo."
-                : response.text
-            return (text, response.longText)
-        case .unsupported:
-            return ("Ainda não sei responder esse tipo de pergunta.", nil)
-        }
-    }
-
-    /// Erro no meio do stream recebe o mesmo mapeamento humano/PT-BR de
-    /// antes de #69. Cancelamento deliberado (nova pergunta enviada,
-    /// dismiss do sheet) não é um erro para o usuário: some
-    /// silenciosamente, removendo a bolha parcial em vez de deixá-la
-    /// quebrada pela metade.
-    @MainActor
-    private func handleStreamFailure(_ error: Error) {
-        if error is CancellationError {
-            removeStreamingMessageIfPartial()
-            return
-        }
-
-        let text: String
-        switch error {
-        case NetworkAssistError.notConfigured:
-            text = "O Assist ainda não está configurado neste build."
-        case NetworkAssistError.emptyQuestion:
-            text = "Por favor, escreva uma pergunta."
-        default:
-            text = "Não foi possível consultar o Assist agora. Tente novamente em instantes."
-        }
-
-        if let id = streamingMessageID, let index = messages.firstIndex(where: { $0.id == id }) {
-            messages[index].text = text
-            messages[index].longText = nil
-        } else {
-            messages.append(ChatMessage(text: text, isUser: false))
-        }
-    }
-
-    private func removeStreamingMessageIfPartial() {
-        guard let id = streamingMessageID,
-              let index = messages.firstIndex(where: { $0.id == id }) else { return }
-        messages.remove(at: index)
     }
 }
