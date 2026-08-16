@@ -221,9 +221,7 @@ struct MainView: View {
                             
                             HStack(spacing: 12) {
                                 Button(action: {
-                                    withAnimation(LinkaMotion.spring) {
-                                        detailsOpen.toggle()
-                                    }
+                                    detailsOpen = true
                                 }) {
                                     HStack(spacing: 6) {
                                         Text("Ver detalhes")
@@ -272,22 +270,7 @@ struct MainView: View {
                             .padding(.vertical, 8)
                             .padding(.horizontal, 16)
                             
-                            if detailsOpen {
-                                DetailsDisclosure(
-                                    operatorName: viewModel.networkType.isEmpty ? "--" : viewModel.networkType,
-                                    provider: viewModel.provider.isEmpty ? "--" : viewModel.provider,
-                                    duration: viewModel.testDuration.isEmpty ? "--" : viewModel.testDuration,
-                                    ping: viewModel.ping,
-                                    wifiBandGHz: viewModel.wifiBandGHz,
-                                    jitter: viewModel.jitter,
-                                    packetLossPercent: viewModel.packetLossPercent,
-                                    loadedLatencyMs: viewModel.loadedLatencyMs,
-                                    downloadMbps: viewModel.downloadSpeed,
-                                    uploadMbps: viewModel.uploadSpeed
-                                )
-                                .padding(.top, 14)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                            }
+
                             
                             // Último teste Glass Pill
                             NavigationLink(destination: HistoryView()) {
@@ -425,6 +408,23 @@ struct MainView: View {
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet()
                 .environmentObject(entitlements)
+        }
+        .sheet(isPresented: $detailsOpen) {
+            DetailsDisclosure(
+                operatorName: viewModel.networkType.isEmpty ? "--" : viewModel.networkType,
+                provider: viewModel.provider.isEmpty ? "--" : viewModel.provider,
+                duration: viewModel.testDuration.isEmpty ? "--" : viewModel.testDuration,
+                ping: viewModel.ping,
+                wifiBandGHz: viewModel.wifiBandGHz,
+                jitter: viewModel.jitter,
+                packetLossPercent: viewModel.packetLossPercent,
+                loadedLatencyMs: viewModel.loadedLatencyMs,
+                downloadMbps: viewModel.downloadSpeed,
+                uploadMbps: viewModel.uploadSpeed
+            )
+            #if os(iOS)
+            .presentationDetents([.medium, .large])
+            #endif
         }
         .animation(LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: scenePhase) { newPhase in

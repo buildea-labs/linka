@@ -173,61 +173,6 @@ final class LinkaEntitlementsTests: XCTestCase {
 final class StoreKitEntitlementProviderTests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 100_000)
 
-    private func makeDefaults() -> UserDefaults {
-        let suiteName = "StoreKitEntitlementProviderTests.\(UUID().uuidString)"
-        return UserDefaults(suiteName: suiteName)!
-    }
-
-    // MARK: computeSnapshot (puro)
-
-    func testComputeSnapshotIsFreeWithoutAKnownPurchase() {
-        let snapshot = StoreKitEntitlementProvider.computeSnapshot(
-            purchaseDate: nil,
-            validityInterval: LinkaStoreEntitlementWindow.annualValidityInterval,
-            now: now
-        )
-
-        XCTAssertEqual(snapshot, .free)
-    }
-
-    func testComputeSnapshotIsActivePlusWithinTheValidityWindow() {
-        let purchaseDate = now.addingTimeInterval(-10)
-        let snapshot = StoreKitEntitlementProvider.computeSnapshot(
-            purchaseDate: purchaseDate,
-            validityInterval: LinkaStoreEntitlementWindow.annualValidityInterval,
-            now: now
-        )
-
-        XCTAssertEqual(snapshot.plan, .plus)
-        XCTAssertEqual(snapshot.status, .active)
-        XCTAssertEqual(snapshot.source, .subscription)
-        XCTAssertEqual(
-            snapshot.validUntil,
-            purchaseDate.addingTimeInterval(LinkaStoreEntitlementWindow.annualValidityInterval)
-        )
-
-        XCTAssertTrue(
-            LinkaEntitlementPolicy.hasAccess(to: .history, snapshot: snapshot, at: now)
-        )
-    }
-
-    func testComputeSnapshotIsExpiredPlusPastTheValidityWindow() {
-        let validityInterval: TimeInterval = 365 * 24 * 60 * 60
-        let purchaseDate = now.addingTimeInterval(-(validityInterval + 1))
-        let snapshot = StoreKitEntitlementProvider.computeSnapshot(
-            purchaseDate: purchaseDate,
-            validityInterval: validityInterval,
-            now: now
-        )
-
-        XCTAssertEqual(snapshot.plan, .plus)
-        XCTAssertEqual(snapshot.status, .expired)
-
-        XCTAssertFalse(
-            LinkaEntitlementPolicy.hasAccess(to: .history, snapshot: snapshot, at: now)
-        )
-    }
-
     func testIsEntitledOnlyForActivePlus() {
         XCTAssertFalse(StoreKitEntitlementProvider.isEntitled(.free))
         XCTAssertFalse(
@@ -242,34 +187,15 @@ final class StoreKitEntitlementProviderTests: XCTestCase {
         )
     }
 
-    // MARK: init a partir de cache local
-
-    func testInitRestoresFreeSnapshotWhenNoPurchaseIsCached() {
-        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
-        XCTAssertEqual(provider.snapshot, .free)
-    }
-
-    // MARK: product / loadProduct() — exposição de preço real para a UI
-    //
-    // `Product` do StoreKit não é mockável num `swift test` headless (sem
-    // `.storekit` Configuration file — mesma PENDÊNCIA da issue #60), então
-    // não simulamos um `Product` resolvido aqui. O que é testável sem
-    // depender de rede/App Store é o estado publicado ao redor da carga:
-    // nenhum produto inventado antes da resolução, e nenhum fallback de
-    // preço hardcoded quando ela falha — a `PurchaseSheet` precisa desses
-    // dois sinais (`product == nil`, `isLoadingProduct`) para desenhar
-    // loading/erro em vez de um preço fixo.
-
     func testProductStartsNilBeforeAnyLoadResolves() {
-        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
+        let provider = StoreKitEntitlementProvider()
         XCTAssertNil(provider.product)
     }
 
     func testLoadProductWithAnUnknownIDResolvesToNilProductAndStopsLoading() async {
         let unknownProductID = "com.linka.does.not.exist.\(UUID().uuidString)"
         let provider = StoreKitEntitlementProvider(
-            productID: unknownProductID,
-            defaults: makeDefaults()
+            productID: unknownProductID
         )
 
         await provider.loadProduct()
@@ -278,20 +204,8 @@ final class StoreKitEntitlementProviderTests: XCTestCase {
         XCTAssertFalse(provider.isLoadingProduct)
     }
 
-    func testInitRestoresPlusSnapshotFromCachedPurchaseDate() {
-        let defaults = makeDefaults()
-        defaults.set(Date(), forKey: "com.linka.plus.lastKnownPurchaseDate")
-
-        let provider = StoreKitEntitlementProvider(defaults: defaults)
-
-        XCTAssertEqual(provider.snapshot.plan, .plus)
-        XCTAssertEqual(provider.snapshot.status, .active)
-    }
-
-    // MARK: handle(_:) — cancelamento e pendência (sem transação assinada real)
-
     func testHandleUserCancelledKeepsFreeSnapshotAndReportsCancellation() async throws {
-        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
+        let provider = StoreKitEntitlementProvider()
 
         let outcome = try await provider.handle(.userCancelled)
 
@@ -300,7 +214,7 @@ final class StoreKitEntitlementProviderTests: XCTestCase {
     }
 
     func testHandlePendingKeepsFreeSnapshotAndReportsPending() async throws {
-        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
+        let provider = StoreKitEntitlementProvider()
 
         let outcome = try await provider.handle(.pending)
 
@@ -308,11 +222,9 @@ final class StoreKitEntitlementProviderTests: XCTestCase {
         XCTAssertEqual(provider.snapshot, .free)
     }
 
-    // MARK: DEBUG-only overrides
-
     #if DEBUG
     func testDebugForcePlusAndResetRoundTrip() {
-        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
+        let provider = StoreKitEntitlementProvider()
         XCTAssertEqual(provider.snapshot, .free)
 
         provider.debugForcePlus()
@@ -325,57 +237,14 @@ final class StoreKitEntitlementProviderTests: XCTestCase {
     }
     #endif
 
-    // MARK: restore() / refreshSnapshot() — sucesso e falha (revisão #79, item 1)
-    //
-    // `restore()` chama `AppStore.sync()` antes de tudo, que depende de
-    // conectividade real com a App Store. Num `swift test` headless (sem
-    // simulador, sem sessão de App Store, sem StoreKit Configuration
-    // file) essa chamada não falha rápido — ela trava, o que travaria a
-    // pipeline de CI se exercitada aqui. Essa é a mesma PENDÊNCIA já
-    // documentada no cabeçalho de `LinkaStoreProductID`: falta configurar
-    // um `.storekit` Configuration file + `SKTestSession`, o que exige um
-    // alvo de teste hospedado pelo Xcode — não um pacote SPM puro rodando
-    // via linha de comando. A PR (#79) já documentava isso como "não
-    // testado" nas validações locais.
-    //
-    // Por isso os testes abaixo exercitam `refreshSnapshot()` diretamente
-    // — o mesmo método que `restore()` chama internamente logo após
-    // `AppStore.sync()`, e onde vive a correção do item 1 (iterar
-    // `Transaction.all` filtrando `productID` + `revocationDate == nil`,
-    // em vez de `Transaction.currentEntitlements`, que não cobre
-    // non-renewing subscriptions). `Transaction.all` é um log local, não
-    // uma chamada de rede, e não trava neste ambiente.
-    //
-    // "Sucesso": nenhuma transação StoreKit real existe no ambiente de
-    // teste, então `refreshSnapshot()` cai para a data de compra em cache
-    // (`cachedPurchaseDate()`) — o mesmo fallback que `restore()` usaria
-    // se `Transaction.all` não repetisse uma compra já conhecida
-    // localmente. "Falha": sem cache e sem transação, o snapshot
-    // permanece `.free` e `isEntitled` retorna `false` — o mesmo par que
-    // `restore()` reportaria como "nenhuma entitlement Plus encontrada".
-
-    func testRefreshSnapshotSucceedsAndIsEntitledWhenAPurchaseIsKnown() async {
-        let defaults = makeDefaults()
-        defaults.set(Date(), forKey: "com.linka.plus.lastKnownPurchaseDate")
-        let provider = StoreKitEntitlementProvider(defaults: defaults)
-
-        await provider.refreshSnapshot()
-
-        XCTAssertEqual(provider.snapshot.plan, .plus)
-        XCTAssertEqual(provider.snapshot.status, .active)
-        XCTAssertTrue(StoreKitEntitlementProvider.isEntitled(provider.snapshot))
-    }
-
     func testRefreshSnapshotFailsAndIsNotEntitledWithoutAnyKnownPurchase() async {
-        let provider = StoreKitEntitlementProvider(defaults: makeDefaults())
+        let provider = StoreKitEntitlementProvider()
 
         await provider.refreshSnapshot()
 
         XCTAssertEqual(provider.snapshot, .free)
         XCTAssertFalse(StoreKitEntitlementProvider.isEntitled(provider.snapshot))
     }
-
-    // MARK: LinkaStoreError
 
     func testLinkaStoreErrorCasesAreEquatableAndCarryTheirProductID() {
         XCTAssertEqual(LinkaStoreError.productNotFound("a"), .productNotFound("a"))
@@ -384,15 +253,10 @@ final class StoreKitEntitlementProviderTests: XCTestCase {
         XCTAssertEqual(LinkaStoreError.verificationFailed, .verificationFailed)
     }
 
-    /// `Product.products(for:)` com um ID desconhecido não depende de
-    /// `AppStore.sync()` (não trava neste ambiente) — retorna uma lista
-    /// vazia, e `purchase()` traduz isso em `.productNotFound`. Cobre o
-    /// caminho de erro real de `purchase()`, exigido pelo aceite #6.
     func testPurchaseThrowsProductNotFoundForAnUnknownProductID() async {
         let unknownProductID = "com.linka.does.not.exist.\(UUID().uuidString)"
         let provider = StoreKitEntitlementProvider(
-            productID: unknownProductID,
-            defaults: makeDefaults()
+            productID: unknownProductID
         )
 
         do {

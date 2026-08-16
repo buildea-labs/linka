@@ -33,23 +33,17 @@ struct PurchaseSheet: View {
                 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        // Logo Box
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.textPrimary)
-                                .frame(width: 72, height: 72)
-                            
-                            Image("wordmark")
-                                .renderingMode(.template)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 18)
-                                .foregroundColor(Color.surfacePage)
-                        }
-                        .padding(.top, 40)
+                        // Brand Wordmark
+                        Image("wordmark")
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 32)
+                            .foregroundColor(.textPrimary)
+                            .padding(.top, 48)
                         
                         // Titles
-                        Text("Linka Pro")
+                        Text("Linka Plus")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.textPrimary)
                             .padding(.top, 24)
@@ -83,15 +77,23 @@ struct PurchaseSheet: View {
 
                         VStack(spacing: 0) {
                             PurchaseFeatureRow(
-                                text: "Histórico de todas as suas medições",
+                                text: "Histórico ilimitado de medições",
                                 showDivider: true
                             )
                             PurchaseFeatureRow(
-                                text: "Comparação de desempenho entre períodos",
+                                text: "Sincronização via iCloud",
                                 showDivider: true
                             )
                             PurchaseFeatureRow(
-                                text: "Assist: orientação sobre a sua conexão",
+                                text: "Comparação de desempenho e tendências",
+                                showDivider: true
+                            )
+                            PurchaseFeatureRow(
+                                text: "Assist: orientação IA sobre a conexão",
+                                showDivider: true
+                            )
+                            PurchaseFeatureRow(
+                                text: "Widgets e Atalhos da Siri",
                                 showDivider: false
                             )
                         }
@@ -108,7 +110,7 @@ struct PurchaseSheet: View {
                                     .font(.system(size: 36, weight: .bold))
                                     .foregroundColor(.textPrimary)
 
-                                Text("Válido por 1 ano · sem renovação automática")
+                                Text("Assinatura anual · renovação automática")
                                     .font(.system(size: 12))
                                     .foregroundColor(.textSecondary)
                             } else if entitlements.isLoadingProduct {
@@ -214,15 +216,12 @@ struct PurchaseSheet: View {
         }
     }
 
-    /// Descreve corretamente a Non-Renewing Subscription — valor anual,
-    /// sem renovação automática — sem chamá-la de "compra única" (o produto
-    /// permanece disponível para recompra a cada ano) nem de assinatura
-    /// auto-renovável (não é renovada automaticamente).
+    /// Descreve a assinatura auto-renovável.
     private var disclaimerText: String {
         if let product = entitlements.product {
-            return "Valor de \(product.displayPrice), válido por um ano, sem renovação automática. Gerencie sua compra nos Ajustes do Apple ID."
+            return "Valor de \(product.displayPrice) cobrado anualmente, com renovação automática. Você pode cancelar ou gerenciar sua assinatura nos Ajustes do Apple ID a qualquer momento."
         }
-        return "Valor anual, sem renovação automática. Gerencie sua compra nos Ajustes do Apple ID."
+        return "Valor anual cobrado com renovação automática. Você pode cancelar ou gerenciar sua assinatura nos Ajustes do Apple ID a qualquer momento."
     }
 
     private func purchase() {

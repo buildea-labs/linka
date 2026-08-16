@@ -3,6 +3,8 @@ import NetworkCore
 import NetworkInsights
 
 struct DetailsDisclosure: View {
+    @Environment(\.dismiss) var dismiss
+    
     var operatorName: String
     var provider: String
     var duration: String
@@ -66,56 +68,83 @@ struct DetailsDisclosure: View {
     }
 
     var body: some View {
-        VStack(alignment: .center, spacing: 14) {
-            VStack(alignment: .center, spacing: 6) {
-                Text("Rede **\(networkLabel)** · Provedor **\(provider)**")
-                Text("Duração **\(duration)**")
-            }
-            .font(.bodySmall)
-            .foregroundColor(.textSecondary)
-            .multilineTextAlignment(.center)
-
-            Text(usageSuitabilitySentence)
-                .font(.bodySmall.weight(.semibold))
-                .foregroundColor(.textPrimary)
-                .multilineTextAlignment(.center)
-                .accessibilityLabel(usageSuitabilitySentence)
-
-            VStack(alignment: .leading, spacing: 10) {
-                MetricExplanationRow(
-                    label: "Ping",
-                    valueText: "\(ping) ms",
-                    accessibleValue: "\(ping) milissegundos",
-                    explanation: MetricExplanation.ping
-                )
-
-                MetricExplanationRow(
-                    label: "Jitter",
-                    valueText: String(format: "%.0f ms", jitter),
-                    accessibleValue: String(format: "%.0f milissegundos", jitter),
-                    explanation: MetricExplanation.jitter
-                )
-
-                if let packetLossPercent {
-                    MetricExplanationRow(
-                        label: "Perda de pacotes",
-                        valueText: "\(Int(packetLossPercent))%",
-                        accessibleValue: "\(Int(packetLossPercent)) por cento",
-                        explanation: MetricExplanation.packetLoss
-                    )
+        ZStack {
+            Color.surfacePage.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Top Close Button
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.textSecondary)
+                            .frame(width: 30, height: 30)
+                            .background(Color.textSecondary.opacity(0.14))
+                            .clipShape(Circle())
+                    }
                 }
+                .padding(.trailing, 16)
+                .padding(.top, 16)
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .center, spacing: 14) {
+                        VStack(alignment: .center, spacing: 6) {
+                            Text("Rede **\(networkLabel)** · Provedor **\(provider)**")
+                            Text("Duração **\(duration)**")
+                        }
+                        .font(.bodySmall)
+                        .foregroundColor(.textSecondary)
+                        .multilineTextAlignment(.center)
 
-                if let loadedLatencyMs {
-                    MetricExplanationRow(
-                        label: "Latência sob carga",
-                        valueText: String(format: "%.0f ms", loadedLatencyMs),
-                        accessibleValue: String(format: "%.0f milissegundos", loadedLatencyMs),
-                        explanation: MetricExplanation.loadedLatency
-                    )
+                        Text(usageSuitabilitySentence)
+                            .font(.bodySmall.weight(.semibold))
+                            .foregroundColor(.textPrimary)
+                            .multilineTextAlignment(.center)
+                            .accessibilityLabel(usageSuitabilitySentence)
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            MetricExplanationRow(
+                                label: "Ping",
+                                valueText: "\(ping) ms",
+                                accessibleValue: "\(ping) milissegundos",
+                                explanation: MetricExplanation.ping
+                            )
+
+                            MetricExplanationRow(
+                                label: "Jitter",
+                                valueText: String(format: "%.0f ms", jitter),
+                                accessibleValue: String(format: "%.0f milissegundos", jitter),
+                                explanation: MetricExplanation.jitter
+                            )
+
+                            if let packetLossPercent {
+                                MetricExplanationRow(
+                                    label: "Perda de pacotes",
+                                    valueText: "\(Int(packetLossPercent))%",
+                                    accessibleValue: "\(Int(packetLossPercent)) por cento",
+                                    explanation: MetricExplanation.packetLoss
+                                )
+                            }
+
+                            if let loadedLatencyMs {
+                                MetricExplanationRow(
+                                    label: "Latência sob carga",
+                                    valueText: String(format: "%.0f ms", loadedLatencyMs),
+                                    accessibleValue: String(format: "%.0f milissegundos", loadedLatencyMs),
+                                    explanation: MetricExplanation.loadedLatency
+                                )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                    .padding(.bottom, 32)
                 }
             }
         }
-        .padding(.horizontal, 24)
     }
 }
 

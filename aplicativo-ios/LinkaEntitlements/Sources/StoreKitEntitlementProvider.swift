@@ -4,32 +4,18 @@ import StoreKit
 /// Identificadores de produto do Linka Plus na App Store Connect.
 ///
 /// PENDÊNCIA (issue #60): estes IDs são placeholders. Luiz precisa:
-/// 1. Criar o produto correspondente em App Store Connect. A copy atual da
-///    `PurchaseSheet` ("compra única de R$ 6,90, válida por um ano, sem
-///    renovação automática") descreve uma **Non-Renewing Subscription**, não
-///    uma assinatura auto-renovável nem um non-consumable — a App Store não
-///    rastreia validade desse tipo de produto, então este provider computa
-///    a janela de 1 ano a partir da data de compra (`LinkaStoreEntitlementWindow`).
+/// 1. Criar o produto correspondente em App Store Connect como uma
+///    **Auto-Renewable Subscription** com preço anual.
 /// 2. Configurar um StoreKit Configuration file local (`.storekit`) e
-///    associá-lo ao scheme de teste antes de qualquer TestFlight — sem ele,
-///    `Product.products(for:)` não encontra nenhum produto em desenvolvimento.
+///    associá-lo ao scheme de teste antes de qualquer TestFlight.
 public enum LinkaStoreProductID {
-    /// Produto ativo hoje na `PurchaseSheet`: "R$ 6,90/ano".
+    /// Produto ativo hoje na `PurchaseSheet`: "R$ 34,90/ano".
     public static let plusAnnual = "com.linka.plus.annual"
 
-    /// Reservado para uma futura oferta mensal. Não ofertado na UI atual —
-    /// não usar até existir copy e produto correspondentes em ASC.
+    /// Reservado para uma futura oferta mensal.
     public static let plusMonthly = "com.linka.plus.monthly"
 
     public static let all: Set<String> = [plusAnnual, plusMonthly]
-}
-
-/// Duração de validade do "Linka Plus" hoje: compra anual sem renovação
-/// automática (Non-Renewing Subscription). Como a App Store não rastreia a
-/// validade desse tipo de produto, o app precisa computar a janela a partir
-/// da data de compra e persistir esse estado localmente.
-public enum LinkaStoreEntitlementWindow {
-    public static let annualValidityInterval: TimeInterval = 365 * 24 * 60 * 60
 }
 
 public enum LinkaPurchaseOutcome: Equatable, Sendable {
@@ -45,59 +31,33 @@ public enum LinkaStoreError: Error, Equatable, Sendable {
 
 /// Provider real de entitlement do Linka Plus, baseado em StoreKit 2.
 ///
-/// É o único ponto de escrita do snapshot de produção: consulta
-/// `Transaction.all` (não `Transaction.currentEntitlements`, que não cobre
-/// non-renewing subscriptions), escuta `Transaction.updates` e publica
-/// o snapshot resultante via `@Published` para a UI observar (`ObservableObject`).
-///
-/// Non-renewing subscriptions não têm validade rastreada pela App Store —
-/// este provider computa a janela (compra + `validityInterval`) e persiste a
-/// última data de compra conhecida em `UserDefaults` para sobreviver a
-/// reinícios do app sem depender de round-trip de rede a cada abertura.
+/// Refatorado para lidar exclusivamente com assinaturas auto-renováveis.
+/// Ele consulta `Transaction.currentEntitlements` nativamente, e confia
+/// no próprio StoreKit para gerenciar a validade (expirationDate), sem
+/// necessidade de computar e salvar no UserDefaults a data de validade.
 @MainActor
 public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitlementProviding, @unchecked Sendable {
     @Published public private(set) var snapshot: LinkaEntitlementSnapshot = .free
 
-    /// `Product` real do StoreKit para `productID`, publicado para a UI
-    /// (`PurchaseSheet`) ler preço/moeda reais (`product.displayPrice`) em
-    /// vez de string hardcoded. `nil` até a primeira carga resolver ou se
-    /// ela falhar (ex.: sem `.storekit` Configuration file em dev — issue
-    /// #60 — ou sem rede). A UI trata esse `nil` como estado de
-    /// loading/erro, nunca como fallback para um preço inventado.
     @Published public private(set) var product: Product?
-
-    /// `true` enquanto a primeira carga (ou uma retentativa manual) de
-    /// `product` está em andamento. Permite a `PurchaseSheet` distinguir
-    /// "carregando" de "falhou e não há produto".
     @Published public private(set) var isLoadingProduct = false
 
     private let productID: String
-    private let validityInterval: TimeInterval
-    private let defaults: UserDefaults
-    private let purchaseDateKey = "com.linka.plus.lastKnownPurchaseDate"
     private var updatesTask: Task<Void, Never>?
     private var productTask: Task<Void, Never>?
 
     public init(
-        productID: String = LinkaStoreProductID.plusAnnual,
-        validityInterval: TimeInterval = LinkaStoreEntitlementWindow.annualValidityInterval,
-        defaults: UserDefaults = .standard
+        productID: String = LinkaStoreProductID.plusAnnual
     ) {
         self.productID = productID
-        self.validityInterval = validityInterval
-        self.defaults = defaults
-        self.snapshot = Self.computeSnapshot(
-            purchaseDate: defaults.object(forKey: purchaseDateKey) as? Date,
-            validityInterval: validityInterval,
-            now: Date()
-        )
-
+        
         updatesTask = Task { [weak self] in
             await self?.observeTransactionUpdates()
         }
 
         productTask = Task { [weak self] in
             await self?.loadProduct()
+            await self?.refreshSnapshot()
         }
     }
 
@@ -117,9 +77,6 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
 
     // MARK: - Compra
 
-    /// Inicia a compra do Linka Plus via StoreKit 2. Não escreve `isPro`
-    /// nem qualquer flag local diretamente — o snapshot só muda a partir de
-    /// uma transação real, verificada e persistida.
     @discardableResult
     public func purchase() async throws -> LinkaPurchaseOutcome {
         let products = try await Product.products(for: [productID])
@@ -131,16 +88,6 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
         return try await handle(result)
     }
 
-    /// Carrega (ou recarrega) o `Product` real de `productID` junto à App
-    /// Store e publica o resultado em `product` para a UI ler preço e
-    /// metadata reais. `nil` em caso de falha (produto não encontrado,
-    /// sem `.storekit` Configuration file em dev, sem rede) — não há
-    /// fallback local de preço: a UI deve tratar `product == nil` como
-    /// estado de loading/erro, nunca inventar um valor.
-    ///
-    /// Chamado automaticamente no `init`; exposto (não `private`) para
-    /// permitir retry manual pela `PurchaseSheet` quando a primeira carga
-    /// falhar (ex.: sheet aberta sem rede no momento do init).
     public func loadProduct() async {
         isLoadingProduct = true
         defer { isLoadingProduct = false }
@@ -153,10 +100,6 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
         }
     }
 
-    /// Restaura compras anteriores consultando o estado real da App Store
-    /// (`AppStore.sync()` + `Transaction.currentEntitlements`), não um
-    /// atalho local. Retorna `true` quando uma entitlement Plus ativa foi
-    /// encontrada.
     @discardableResult
     public func restore() async throws -> Bool {
         try await AppStore.sync()
@@ -166,47 +109,33 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
 
     // MARK: - Estado interno
 
-    /// Recalcula o snapshot a partir de `Transaction.all`.
-    ///
-    /// Deliberadamente NÃO usa `Transaction.currentEntitlements`: essa API
-    /// só cobre non-consumables, auto-renewable subscriptions e
-    /// consumables não finalizados — ela **não inclui non-renewing
-    /// subscriptions**, que é o tipo de produto do Linka Plus (ver
-    /// `LinkaStoreEntitlementWindow`). Por isso iteramos `Transaction.all`
-    /// e filtramos manualmente por `productID` e `revocationDate == nil`
-    /// (uma transação revogada — reembolso, chargeback — não conta como
-    /// compra válida mesmo estando no histórico).
-    ///
-    /// Exposto (não `private`) para permitir refresh manual (ex.: ao abrir
-    /// a `SettingsSheet`) sem duplicar a lógica de leitura do StoreKit.
+    /// Recalcula o snapshot a partir de `Transaction.currentEntitlements`.
+    /// Como o Linka Plus agora é uma Auto-Renewable Subscription, essa API
+    /// do StoreKit 2 é a fonte da verdade sobre se o usuário tem a assinatura
+    /// ativa, já lidando com revogações, renovações e carências.
     public func refreshSnapshot() async {
-        var latestPurchaseDate: Date?
+        var activeTransaction: Transaction?
 
-        for await result in Transaction.all {
+        for await result in Transaction.currentEntitlements {
             guard let transaction = try? Self.checkVerified(result),
-                  transaction.productID == productID,
-                  transaction.revocationDate == nil else { continue }
-
-            if latestPurchaseDate == nil || transaction.purchaseDate > latestPurchaseDate! {
-                latestPurchaseDate = transaction.purchaseDate
-            }
+                  transaction.productID == productID else { continue }
+            
+            // Com currentEntitlements, a transação que volta aqui
+            // representa um entitlement ativo neste exato momento.
+            activeTransaction = transaction
         }
 
-        if let latestPurchaseDate {
-            recordPurchase(at: latestPurchaseDate)
+        if let transaction = activeTransaction {
+            snapshot = .plus(
+                status: .active,
+                source: .subscription,
+                validUntil: transaction.expirationDate
+            )
+        } else {
+            snapshot = .free
         }
-
-        snapshot = Self.computeSnapshot(
-            purchaseDate: latestPurchaseDate ?? cachedPurchaseDate(),
-            validityInterval: validityInterval,
-            now: Date()
-        )
     }
 
-    /// Interpreta um `Product.PurchaseResult` do StoreKit e atualiza o
-    /// snapshot quando aplicável. Isolado do fetch de produto para permitir
-    /// cobertura de teste dos ramos `.userCancelled` e `.pending`, que não
-    /// exigem uma transação assinada real.
     func handle(_ result: Product.PurchaseResult) async throws -> LinkaPurchaseOutcome {
         switch result {
         case .success(let verification):
@@ -215,7 +144,6 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
                 await transaction.finish()
                 throw LinkaStoreError.productNotFound(productID)
             }
-            recordPurchase(at: transaction.purchaseDate)
             await transaction.finish()
             await refreshSnapshot()
             return .purchased
@@ -232,20 +160,8 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
         for await update in Transaction.updates {
             guard let transaction = try? Self.checkVerified(update),
                   transaction.productID == productID else { continue }
-            recordPurchase(at: transaction.purchaseDate)
             await transaction.finish()
             await refreshSnapshot()
-        }
-    }
-
-    private func cachedPurchaseDate() -> Date? {
-        defaults.object(forKey: purchaseDateKey) as? Date
-    }
-
-    private func recordPurchase(at date: Date) {
-        let current = cachedPurchaseDate()
-        if current == nil || date > current! {
-            defaults.set(date, forKey: purchaseDateKey)
         }
     }
 
@@ -258,40 +174,16 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
         }
     }
 
-    /// Pura e testável: deriva o snapshot de entitlement a partir de uma
-    /// data de compra conhecida (ou `nil`, quando não há compra registrada).
-    /// A checagem de expiração propriamente dita continua sendo feita por
-    /// `LinkaEntitlementPolicy.decision` (via `validUntil`); aqui apenas
-    /// refletimos o status observável no snapshot para leitura direta pela UI.
-    static func computeSnapshot(
-        purchaseDate: Date?,
-        validityInterval: TimeInterval,
-        now: Date
-    ) -> LinkaEntitlementSnapshot {
-        guard let purchaseDate else { return .free }
-        let validUntil = purchaseDate.addingTimeInterval(validityInterval)
-        let status: LinkaEntitlementStatus = validUntil > now ? .active : .expired
-        return .plus(status: status, source: .subscription, validUntil: validUntil)
-    }
-
-    /// Pura e testável: determina se um snapshot representa um Plus
-    /// utilizável agora (usado pelo retorno de `restore()`).
     static func isEntitled(_ snapshot: LinkaEntitlementSnapshot) -> Bool {
         snapshot.plan == .plus && snapshot.status == .active
     }
 
     #if DEBUG
-    /// Atalho de desenvolvimento para exercitar a UI Plus sem depender de um
-    /// StoreKit Configuration file. Compilado apenas em builds DEBUG — não
-    /// existe no binário de Release (issue #60, requisito de aceite 5).
     public func debugForcePlus() {
         snapshot = .plus(status: .active, source: .promotion)
     }
 
-    /// Reverte o override de desenvolvimento e limpa o registro local de
-    /// compra, voltando ao estado free. Também DEBUG-only.
     public func debugResetToFree() {
-        defaults.removeObject(forKey: purchaseDateKey)
         snapshot = .free
     }
     #endif

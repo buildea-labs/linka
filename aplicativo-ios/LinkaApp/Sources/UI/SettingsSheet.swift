@@ -175,7 +175,7 @@ struct SettingsSheet: View {
     private var subscriptionStatusText: String {
         switch entitlements.snapshot.plan {
         case .free:
-            return "R$ 6,90/ano"
+            return "R$ 34,90/ano"
         case .plus:
             return entitlements.snapshot.status == .active ? "Ativo" : "Expirado"
         }
