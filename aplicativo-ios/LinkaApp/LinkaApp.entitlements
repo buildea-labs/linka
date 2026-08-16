@@ -20,5 +20,17 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<!--
+		PENDÊNCIA (issue #55): mesma natureza da pendência do container
+		iCloud acima (issue #71) — precisa ser criado e provisionado no
+		Apple Developer Portal por Luiz/Giam. Compartilhado com a
+		extensão de Widget (LinkaWidget/LinkaWidget.entitlements) para o
+		espelho read-only do último resultado
+		(LinkaWidgetShared.appGroupIdentifier).
+		-->
+		<string>group.com.linka.speedtest</string>
+	</array>
 </dict>
 </plist>

@@ -9,6 +9,9 @@ struct MainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
     @AppStorage("appAppearance") private var appAppearance: String = "system"
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
+    // Ponte para o pedido de "Testar" vindo do Widget/Siri/Shortcuts via
+    // `StartSpeedTestIntent` (issue #55) — ver `AppIntentCoordinator`.
+    @ObservedObject private var intentCoordinator = AppIntentCoordinator.shared
     @State private var detailsOpen: Bool = false
     @State private var showAssist: Bool = false
     @State private var showShareSheet: Bool = false
@@ -360,6 +363,18 @@ struct MainView: View {
         }
         .onAppear {
             viewModel.startTest()
+        }
+        // Widget/Siri/Shortcuts pediram uma medição (issue #55): se o app
+        // já estava aberto (foreground), `.onAppear` acima não dispara de
+        // novo — é este `onChange` que garante que "Testar" no widget
+        // sempre inicia o teste. Se o app estava fechado, o cold launch já
+        // chama `.onAppear` → `startTest()`; `startTest()` é idempotente
+        // (`guard !isTesting`), então rodar os dois caminhos junto é
+        // inofensivo, nunca duplica o teste.
+        .onChange(of: intentCoordinator.pendingStartSpeedTest) { pending in
+            guard pending else { return }
+            viewModel.startTest()
+            intentCoordinator.consumeStartSpeedTestRequest()
         }
         .sheet(isPresented: $showAssist) {
             // `onRetry` reusa o mesmo `viewModel.startTest()` do botão
