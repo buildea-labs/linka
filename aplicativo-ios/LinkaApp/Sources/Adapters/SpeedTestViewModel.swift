@@ -343,9 +343,20 @@ public class SpeedTestViewModel: ObservableObject {
         isTesting = false
 
         if let snapshot = lastValidResultSnapshot {
+            // Reteste cancelado: restaura o último resultado válido — usuário
+            // volta a ver exatamente o que estava vendo antes de tocar em
+            // "Testar novamente".
             restoreLastValidSnapshot(snapshot)
         } else {
-            startTest()
+            // Primeira medição pulada: sem snapshot para restaurar, volta ao
+            // estado pronto-para-medir. Não fabrica valores zerados (issue #47
+            // aceite: "sem resultado anterior, a interface não fabrica valores").
+            // A saída do beco sem saída fica na UI: MainView mostra um botão
+            // "Testar" quando uiPhase == .idle e não há resultado — o
+            // auto-restart do R3 confundia o usuário ("botão Pular não faz
+            // nada porque o teste reinicia imediatamente").
+            progress = 0.0
+            uiPhase = .idle
         }
     }
 

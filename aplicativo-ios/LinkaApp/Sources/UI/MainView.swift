@@ -143,15 +143,38 @@ struct MainView: View {
                             // derivado de `hasValidResult`. Secundário de
                             // propósito: texto pequeno, sem fundo, sem
                             // competir com o MetricRing.
-                            Button(action: {
-                                viewModel.skipOrCancel()
-                            }) {
-                                Text(viewModel.hasValidResult ? "Cancelar" : "Pular")
-                                    .font(.bodySmall)
-                                    .foregroundColor(.textSecondary)
+                            //
+                            // Quando o teste já foi pulado e uiPhase caiu em
+                            // `.idle` sem snapshot para restaurar, o botão
+                            // vira "Testar" acionando startTest() — dá a saída
+                            // explícita que o R3 tinha tentado resolver com
+                            // auto-restart (que confundia: parecia que Pular
+                            // não fazia nada porque o teste reiniciava sozinho).
+                            if viewModel.uiPhase == .idle && !viewModel.hasValidResult && !viewModel.isTesting {
+                                Button(action: {
+                                    viewModel.startTest()
+                                }) {
+                                    Text("Testar")
+                                        .font(Font.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Color.surfacePage)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 18)
+                                        .background(Color.textPrimary)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.top, 20)
+                            } else {
+                                Button(action: {
+                                    viewModel.skipOrCancel()
+                                }) {
+                                    Text(viewModel.hasValidResult ? "Cancelar" : "Pular")
+                                        .font(.bodySmall)
+                                        .foregroundColor(.textSecondary)
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.top, 20)
                             }
-                            .buttonStyle(.plain)
-                            .padding(.top, 20)
                         }
                         // removed transition to allow fluid geometry effect
                     } else {
