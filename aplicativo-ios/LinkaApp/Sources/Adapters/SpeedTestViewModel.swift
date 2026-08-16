@@ -236,7 +236,33 @@ public class SpeedTestViewModel: ObservableObject {
                     let now = Date()
                     // Throttle updates to ~30fps
                     if now.timeIntervalSince(lastUpdateTime) >= 0.033 || state.progress >= 1.0 || state.progress == 0.0 {
-                        self.update(with: state)
+                        if state.phase == .result {
+                            // Fase terminal (sempre o último valor yield do
+                            // motor, sempre com progress = 1.0, então nunca
+                            // é pulado pelo throttle acima — ver
+                            // SpeedTestCore.swift linhas ~308-313). Resolve
+                            // connectionKind/wifiBandGHz finais ANTES de
+                            // publicar `uiPhase = .done` (issue #88): antes,
+                            // essa amostragem só acontecia DEPOIS que o loop
+                            // terminava, ou seja, depois de `.done` já ter
+                            // sido publicado num frame anterior — abrindo uma
+                            // janela de ~100-200ms em que a UI via `.done`
+                            // com os campos ainda `nil`. Se a interface mudou
+                            // no meio do teste (ex.: Wi-Fi → rede móvel), o
+                            // teste não rodou inteiro numa única rede — não
+                            // afirma nenhum tipo específico nesse caso (nil
+                            // continua sendo o estado neutro).
+                            let startingKind = await startingKindTask
+                            let endingKind = await Self.sampleConnectionKind()
+                            self.processResultState(
+                                state,
+                                startingKind: startingKind,
+                                endingKind: endingKind,
+                                generation: myGeneration
+                            )
+                        } else {
+                            self.update(with: state)
+                        }
                         lastUpdateTime = now
                     }
                 }
@@ -256,26 +282,6 @@ public class SpeedTestViewModel: ObservableObject {
                 // instante do cancelamento — um teste interrompido nunca
                 // vira snapshot válido nem entra no histórico.
                 if self.uiPhase == .done && !Task.isCancelled {
-                    // Amostra de novo ao final. Se a interface mudou no
-                    // meio do teste (ex.: Wi-Fi → rede móvel), o teste não
-                    // rodou inteiro numa única rede — não afirma nenhum
-                    // tipo específico nesse caso (nil é o estado neutro).
-                    let startingKind = await startingKindTask
-                    let endingKind = await Self.sampleConnectionKind()
-
-                    // Re-checa a geração depois dos dois `await` acima
-                    // (issue #47, rodada 3): a amostragem final leva ~100ms,
-                    // tempo suficiente pra um `skipOrCancel()` cancelar T1 e
-                    // iniciar T2 no meio do caminho. Sem isto, T1 ainda
-                    // gravaria snapshot/histórico por baixo do teste que já
-                    // está em andamento.
-                    guard self.testGeneration == myGeneration else { return }
-
-                    self.connectionKind = NetworkConnectionKind.resolve(start: startingKind, end: endingKind)
-                    self.wifiBandGHz = self.connectionKind == .wifi
-                        ? ApplePlatformSignalProvider.currentWifiBandGHz()
-                        : nil
-
                     self.lastValidResultSnapshot = ResultSnapshot(
                         downloadSpeed: self.downloadSpeed,
                         uploadSpeed: self.uploadSpeed,
@@ -480,6 +486,34 @@ public class SpeedTestViewModel: ObservableObject {
         wifiBandGHz = snapshot.wifiBandGHz
         progress = 1.0
         uiPhase = .done
+    }
+
+    /// Processa o state terminal do motor (`phase == .result`, issue #88):
+    /// resolve `connectionKind`/`wifiBandGHz` finais (só quando `generation`
+    /// ainda é a geração corrente — mesma guarda de sempre contra um
+    /// `skipOrCancel()`/novo `startTest()` que avance `testGeneration`
+    /// durante os ~100ms de amostragem final) e SÓ DEPOIS publica o state
+    /// via `update(with:)` — é essa chamada que marca `uiPhase = .done`.
+    /// Extraído num método próprio, com acesso `internal` (mesmo padrão de
+    /// `ResultSnapshot`/`lastValidResultSnapshot` acima), pra ser testável
+    /// via `@testable import` sem depender de uma medição de rede real
+    /// completa (`engine` não é injetável).
+    ///
+    /// `NetworkConnectionKind.resolve(start:end:)` continua a única fonte
+    /// que decide `connectionKind` — nenhuma lógica duplicada aqui.
+    func processResultState(
+        _ state: MeasurementState,
+        startingKind: NetworkConnectionKind,
+        endingKind: NetworkConnectionKind,
+        generation: Int
+    ) {
+        if self.testGeneration == generation {
+            self.connectionKind = NetworkConnectionKind.resolve(start: startingKind, end: endingKind)
+            self.wifiBandGHz = self.connectionKind == .wifi
+                ? ApplePlatformSignalProvider.currentWifiBandGHz()
+                : nil
+        }
+        self.update(with: state)
     }
 
     private func update(with state: MeasurementState) {
