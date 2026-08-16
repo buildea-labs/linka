@@ -65,8 +65,46 @@ struct DetailsDisclosure: View {
         )
     }
 
+    /// Métricas disponíveis nesta medição, na ordem de exibição. Ping e
+    /// Jitter sempre existem quando `DetailsDisclosure` abre (`uiPhase == .done`);
+    /// perda de pacotes e latência sob carga aparecem só quando o motor
+    /// reportou o valor (nada de "--" ou zero fabricado — issue #53).
+    private var availableMetrics: [MetricCard.Model] {
+        var metrics: [MetricCard.Model] = [
+            .init(
+                label: "Ping",
+                valueText: "\(ping) ms",
+                accessibleValue: "\(ping) milissegundos",
+                explanation: MetricExplanation.ping
+            ),
+            .init(
+                label: "Jitter",
+                valueText: String(format: "%.0f ms", jitter),
+                accessibleValue: String(format: "%.0f milissegundos", jitter),
+                explanation: MetricExplanation.jitter
+            )
+        ]
+        if let packetLossPercent {
+            metrics.append(.init(
+                label: "Perda",
+                valueText: "\(Int(packetLossPercent))%",
+                accessibleValue: "\(Int(packetLossPercent)) por cento",
+                explanation: MetricExplanation.packetLoss
+            ))
+        }
+        if let loadedLatencyMs {
+            metrics.append(.init(
+                label: "Sob carga",
+                valueText: String(format: "%.0f ms", loadedLatencyMs),
+                accessibleValue: String(format: "%.0f milissegundos", loadedLatencyMs),
+                explanation: MetricExplanation.loadedLatency
+            ))
+        }
+        return metrics
+    }
+
     var body: some View {
-        VStack(alignment: .center, spacing: 14) {
+        VStack(alignment: .center, spacing: 20) {
             VStack(alignment: .center, spacing: 6) {
                 Text("Rede **\(networkLabel)** · Provedor **\(provider)**")
                 Text("Duração **\(duration)**")
@@ -81,40 +119,25 @@ struct DetailsDisclosure: View {
                 .multilineTextAlignment(.center)
                 .accessibilityLabel(usageSuitabilitySentence)
 
-            VStack(alignment: .leading, spacing: 10) {
-                MetricExplanationRow(
-                    label: "Ping",
-                    valueText: "\(ping) ms",
-                    accessibleValue: "\(ping) milissegundos",
-                    explanation: MetricExplanation.ping
-                )
-
-                MetricExplanationRow(
-                    label: "Jitter",
-                    valueText: String(format: "%.0f ms", jitter),
-                    accessibleValue: String(format: "%.0f milissegundos", jitter),
-                    explanation: MetricExplanation.jitter
-                )
-
-                if let packetLossPercent {
-                    MetricExplanationRow(
-                        label: "Perda de pacotes",
-                        valueText: "\(Int(packetLossPercent))%",
-                        accessibleValue: "\(Int(packetLossPercent)) por cento",
-                        explanation: MetricExplanation.packetLoss
-                    )
-                }
-
-                if let loadedLatencyMs {
-                    MetricExplanationRow(
-                        label: "Latência sob carga",
-                        valueText: String(format: "%.0f ms", loadedLatencyMs),
-                        accessibleValue: String(format: "%.0f milissegundos", loadedLatencyMs),
-                        explanation: MetricExplanation.loadedLatency
-                    )
+            // Grid 2 colunas com cards de métrica (padrão Apple — mesmo
+            // estilo de detalhes das apps Health/Weather). Cada card agrupa
+            // rótulo, valor e explicação como um único elemento de
+            // acessibilidade (issue #53). Padding horizontal padrão do app
+            // (24pt) fica no root pra não colar nas bordas (issue #110).
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10)
+                ],
+                alignment: .leading,
+                spacing: 10
+            ) {
+                ForEach(availableMetrics) { model in
+                    MetricCard(model: model)
                 }
             }
         }
+        .padding(.horizontal, 24)
     }
 }
 
@@ -183,32 +206,46 @@ enum UsageSuitabilityCopy {
     }
 }
 
-/// Uma métrica com valor técnico + explicação curta, agrupada como um único
-/// elemento de acessibilidade (issue #53) para o VoiceOver ler de forma
-/// compreensível em vez de rótulo, valor e explicação como três leituras
-/// soltas.
-private struct MetricExplanationRow: View {
-    let label: String
-    let valueText: String
-    let accessibleValue: String
-    let explanation: String
+/// Card de métrica em grid 2 colunas (padrão Apple — Health/Weather).
+/// Rótulo pequeno em cima, valor grande em destaque, explicação curta
+/// embaixo. Agrupado como um único elemento de acessibilidade (issue #53)
+/// para o VoiceOver ler de forma compreensível.
+private struct MetricCard: View {
+    struct Model: Identifiable {
+        let label: String
+        let valueText: String
+        let accessibleValue: String
+        let explanation: String
+
+        var id: String { label }
+    }
+
+    let model: Model
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 6) {
-                Text(label)
-                    .font(.bodySmall.weight(.semibold))
-                    .foregroundColor(.textPrimary)
-                Text(valueText)
-                    .font(.bodySmall.weight(.semibold))
-                    .foregroundColor(.textPrimary)
-            }
-            Text(explanation)
-                .font(.bodySmall)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(model.label)
+                .font(.system(size: 11, weight: .semibold))
+                .textCase(.uppercase)
                 .foregroundColor(.textSecondary)
+
+            Text(model.valueText)
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundColor(.textPrimary)
+                .padding(.top, 2)
+
+            Text(model.explanation)
+                .font(.system(size: 11))
+                .foregroundColor(.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.textPrimary.opacity(0.04))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(label): \(accessibleValue). \(explanation)")
+        .accessibilityLabel("\(model.label): \(model.accessibleValue). \(model.explanation)")
     }
 }
