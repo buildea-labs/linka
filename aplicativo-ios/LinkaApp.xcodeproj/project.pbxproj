@@ -30,6 +30,7 @@
 		4C677DE785ED6352129A9839 /* AssistSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 988979889EF4E4AC03B8A21D /* AssistSheet.swift */; };
 		50C85316B3E53EB821D140B2 /* PhaseDots.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */; };
 		58AAEC10AB55272DF16453E3 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3234D1B179CE201E17961385 /* SplashView.swift */; };
+		5B0458DD58805571D30AC3EC /* SpeedTestViewModelResultTimingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB32ED976CC4BE668BB83D5C /* SpeedTestViewModelResultTimingTests.swift */; };
 		5D1E17CBC21B000A5F40B33F /* AssistChatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 147B2B29EC829C1E43D39787 /* AssistChatController.swift */; };
 		5D7BDF1FC123A9F789F0B323 /* LinkaAppIntents in Frameworks */ = {isa = PBXBuildFile; productRef = 4010F854F0753756FEF0C5F0 /* LinkaAppIntents */; };
 		5DA4E299822FB8F13A83E605 /* LinkaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 328D0AC42D7699A0B421F1F3 /* LinkaWidgetExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -144,6 +145,7 @@
 		F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhaseDots.swift; sourceTree = "<group>"; };
 		F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePlatformSignalProvider.swift; sourceTree = "<group>"; };
 		F6D72124FDD0CB4E07F4E7B5 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
+		FB32ED976CC4BE668BB83D5C /* SpeedTestViewModelResultTimingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestViewModelResultTimingTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -223,6 +225,7 @@
 			children = (
 				4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */,
 				8A1283367C65869F518D3B7E /* AssistSheetStreamCancellationTests.swift */,
+				FB32ED976CC4BE668BB83D5C /* SpeedTestViewModelResultTimingTests.swift */,
 				A955FDE679C032C5443EEF5D /* SpeedTestViewModelScenePhaseTests.swift */,
 			);
 			name = Tests;
@@ -486,6 +489,7 @@
 			files = (
 				EB421BFDB3D4D610383923F1 /* ApplePlatformSignalProviderCWChannelBandTests.swift in Sources */,
 				8CAF30B54B3BBF0B7190B11E /* AssistSheetStreamCancellationTests.swift in Sources */,
+				5B0458DD58805571D30AC3EC /* SpeedTestViewModelResultTimingTests.swift in Sources */,
 				3780733E2BDF1FB538D9CC35 /* SpeedTestViewModelScenePhaseTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
