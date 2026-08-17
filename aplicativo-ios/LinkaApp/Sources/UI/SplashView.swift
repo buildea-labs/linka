@@ -26,13 +26,13 @@ struct SplashView: View {
             // 14.0 — sem o `macOS 14.0` explícito aqui, o build macOS falha
             // (issue #108).
             if #available(iOS 17.0, macOS 14.0, *) {
-                withAnimation(.easeIn(duration: splashFadeInDuration)) {
+                withAnimation(.timingCurve(0.4, 0, 0.2, 1, duration: splashFadeInDuration)) {
                     opacity = 1.0
                 } completion: {
                     onComplete()
                 }
             } else {
-                withAnimation(.easeIn(duration: splashFadeInDuration)) {
+                withAnimation(.timingCurve(0.4, 0, 0.2, 1, duration: splashFadeInDuration)) {
                     opacity = 1.0
                 }
                 // iOS 16 / macOS < 14 não expõem completion handler para

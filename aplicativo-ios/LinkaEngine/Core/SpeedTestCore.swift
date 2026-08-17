@@ -136,6 +136,7 @@ public actor SpeedTestCore {
     private let providerLookup: ProviderOrgLookup
     private let providerEnrichmentTimeout: TimeInterval
     private let pathStatusProvider: PathStatusProvider
+    private let locationTracker: LocationTracker
 
     /// - Parameters:
     ///   - providerLookup: fonte do dado bruto de provedor. Injetável para testes;
@@ -154,6 +155,7 @@ public actor SpeedTestCore {
         self.providerLookup = providerLookup
         self.providerEnrichmentTimeout = providerEnrichmentTimeout
         self.pathStatusProvider = pathStatusProvider
+        self.locationTracker = LocationTracker()
     }
 
     /// Starts the speed test and yields updates via an AsyncThrowingStream
@@ -162,6 +164,10 @@ public actor SpeedTestCore {
             let innerTask = Task {
                 do {
                     var state = MeasurementState(progress: 0.0, phase: .ping)
+                    
+                    if let location = locationTracker.getCurrentLocationIfPermitted() {
+                        state.location = location
+                    }
 
                     let testStart = Date()
 

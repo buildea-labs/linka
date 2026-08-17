@@ -21,7 +21,7 @@ struct PurchaseSheet: View {
                         dismiss()
                     }) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.bodySmallStrong)
                             .foregroundColor(.textSecondary)
                             .frame(width: 30, height: 30)
                             .background(Color.textSecondary.opacity(0.14))
@@ -44,12 +44,12 @@ struct PurchaseSheet: View {
                         
                         // Titles
                         Text("Linka Plus")
-                            .font(.system(size: 28, weight: .bold))
+                            .font(.displayTitle)
                             .foregroundColor(.textPrimary)
                             .padding(.top, 24)
                         
                         Text("Uma medição limpa, sem interrupções, e tudo\no que vier depois.")
-                            .font(.system(size: 15))
+                            .font(.bodyRegular)
                             .foregroundColor(.textSecondary)
                             .multilineTextAlignment(.center)
                             .padding(.top, 8)
@@ -107,25 +107,25 @@ struct PurchaseSheet: View {
                         VStack(spacing: 8) {
                             if let product = entitlements.product {
                                 Text(product.displayPrice)
-                                    .font(.system(size: 36, weight: .bold))
+                                    .font(.displayLarge)
                                     .foregroundColor(.textPrimary)
 
                                 Text("Assinatura anual · renovação automática")
-                                    .font(.system(size: 12))
+                                    .font(.captionMedium)
                                     .foregroundColor(.textSecondary)
                             } else if entitlements.isLoadingProduct {
                                 ProgressView()
                                     .padding(.vertical, 6)
                             } else {
                                 Text("Não foi possível carregar o preço agora")
-                                    .font(.system(size: 14, weight: .medium))
+                                    .font(.bodySmallMedium)
                                     .foregroundColor(.textSecondary)
 
                                 Button(action: {
                                     Task { await entitlements.loadProduct() }
                                 }) {
                                     Text("Tentar novamente")
-                                        .font(.system(size: 13, weight: .semibold))
+                                        .font(.bodySmallStrong)
                                         .foregroundColor(.textPrimary)
                                 }
                                 .padding(.top, 4)
@@ -147,7 +147,7 @@ struct PurchaseSheet: View {
                 VStack(spacing: 0) {
                     if let errorMessage {
                         Text(errorMessage)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.captionMedium)
                             .foregroundColor(.brandAccentWarm)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
@@ -162,10 +162,10 @@ struct PurchaseSheet: View {
                                     .tint(Color.surfacePage)
                             } else if let product = entitlements.product {
                                 Text("Comprar por \(product.displayPrice)/ano")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(.buttonLabel)
                             } else {
                                 Text("Carregando preço…")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(.buttonLabel)
                             }
                         }
                         .foregroundColor(Color.surfacePage)
@@ -182,7 +182,7 @@ struct PurchaseSheet: View {
                             ProgressView()
                         } else {
                             Text("Restaurar compra")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.bodySmallMedium)
                                 .foregroundColor(.textSecondary)
                         }
                     }
@@ -190,7 +190,7 @@ struct PurchaseSheet: View {
                     .padding(.top, 16)
 
                     Text(disclaimerText)
-                        .font(.system(size: 10))
+                        .font(.captionSmall)
                         .foregroundColor(.textSecondary.opacity(0.6))
                         .multilineTextAlignment(.center)
                         .padding(.top, 16)
@@ -198,14 +198,14 @@ struct PurchaseSheet: View {
                         
                     HStack(spacing: 4) {
                         Link("Termos de Uso", destination: URL(string: "https://linka-speedtest.web.app/termos")!)
-                            .font(.system(size: 10))
+                            .font(.captionSmall)
                         
                         Text("e")
-                            .font(.system(size: 10))
+                            .font(.captionSmall)
                             .foregroundColor(.textSecondary.opacity(0.6))
                         
                         Link("Política de Privacidade", destination: URL(string: "https://linka-speedtest.web.app/privacidade")!)
-                            .font(.system(size: 10))
+                            .font(.captionSmall)
                     }
                     .foregroundColor(.brandSurface)
                     .padding(.top, 8)
@@ -288,7 +288,7 @@ struct PurchaseSectionHeader: View {
     var body: some View {
         HStack {
             Text(text.uppercased())
-                .font(.system(size: 11, weight: .semibold))
+                .font(.captionSmallStrong)
                 .foregroundColor(.textSecondary)
                 .tracking(0.5)
 
@@ -306,11 +306,11 @@ struct PurchaseFeatureRow: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.bodySmallStrong)
                     .foregroundColor(.textPrimary)
                 
                 Text(text)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.bodySmallMedium)
                     .foregroundColor(.textPrimary)
                 
                 Spacer()

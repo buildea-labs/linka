@@ -26,6 +26,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
     public let networkIdentifier: String?
     public let serverIdentifier: String?
     public let engineVersion: String?
+    public let location: MeasurementLocation?
 
     public init(
         schemaVersion: Int = NetworkMeasurementContract.currentSchemaVersion,
@@ -43,7 +44,8 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         wifiBandGHz: Double? = nil,
         networkIdentifier: String? = nil,
         serverIdentifier: String? = nil,
-        engineVersion: String? = nil
+        engineVersion: String? = nil,
+        location: MeasurementLocation? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.id = id
@@ -61,6 +63,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         self.networkIdentifier = networkIdentifier
         self.serverIdentifier = serverIdentifier
         self.engineVersion = engineVersion
+        self.location = location
     }
 }
 
@@ -74,6 +77,16 @@ public enum NetworkConnectionKind: String, Codable, Equatable, Hashable, Sendabl
     case cellular
     case ethernet
     case other
+}
+
+public struct MeasurementLocation: Codable, Equatable, Hashable, Sendable {
+    public let latitude: Double
+    public let longitude: Double
+    
+    public init(latitude: Double, longitude: Double) {
+        self.latitude = latitude
+        self.longitude = longitude
+    }
 }
 
 public extension NetworkConnectionKind {

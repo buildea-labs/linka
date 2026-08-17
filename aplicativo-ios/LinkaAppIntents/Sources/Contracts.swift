@@ -6,6 +6,7 @@ public enum LinkaSystemAction: String, Codable, CaseIterable, Hashable, Sendable
     case openLatestMeasurement
     case openHistory
     case getLatestResult
+    case measureNetworkSilently
 }
 
 public struct LinkaSystemActionResponse: Equatable, Sendable {

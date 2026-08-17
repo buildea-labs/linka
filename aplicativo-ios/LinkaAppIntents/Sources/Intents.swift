@@ -92,5 +92,34 @@ public struct LinkaAppShortcuts: AppShortcutsProvider {
             shortTitle: "Último resultado",
             systemImageName: "clock.arrow.circlepath"
         )
+
+        AppShortcut(
+            intent: MeasureNetworkSilentlyIntent(),
+            phrases: [
+                "Testar silenciosamente com \(.applicationName)",
+                "Medir rede silenciosamente no \(.applicationName)"
+            ],
+            shortTitle: "Testar silenciosamente",
+            systemImageName: "network"
+        )
+    }
+}
+
+public struct MeasureNetworkSilentlyIntent: AppIntent {
+    public static var title: LocalizedStringResource { "Testar silenciosamente" }
+    public static let description = IntentDescription("Mede a rede silenciosamente sem abrir o app.")
+    public static var openAppWhenRun: Bool { false }
+
+    @Dependency
+    private var executor: LinkaAppIntentExecutor
+
+    public init() {}
+
+    public func perform() async throws -> some IntentResult & ReturnsValue<String> {
+        let response = try await executor.execute(.measureNetworkSilently)
+        guard let value = response.value else {
+            throw LinkaAppIntentExecutionError.missingValue(action: .measureNetworkSilently)
+        }
+        return .result(value: value)
     }
 }

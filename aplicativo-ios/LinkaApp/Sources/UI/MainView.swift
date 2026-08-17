@@ -84,7 +84,7 @@ struct MainView: View {
 
                             VStack(spacing: 8) {
                                 Text(errorTitle)
-                                    .font(Font.system(size: 20, weight: .semibold))
+                                    .font(.displayMedium)
                                     .foregroundColor(.textPrimary)
 
                                 Text(errorMessage)
@@ -98,10 +98,10 @@ struct MainView: View {
                                 viewModel.startTest()
                             }) {
                                 Text("Tentar novamente")
-                                    .font(Font.system(size: 16, weight: .semibold))
+                                    .font(.buttonLabel)
                                     .foregroundColor(Color.surfacePage)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 18)
+                                    .padding(.vertical, 16)
                                     .background(Color.textPrimary)
                                     .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
@@ -155,10 +155,10 @@ struct MainView: View {
                                     viewModel.startTest()
                                 }) {
                                     Text("Testar")
-                                        .font(Font.system(size: 16, weight: .semibold))
+                                        .font(.buttonLabel)
                                         .foregroundColor(Color.surfacePage)
                                         .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 18)
+                                        .padding(.vertical, 16)
                                         .background(Color.textPrimary)
                                         .clipShape(RoundedRectangle(cornerRadius: 12))
                                 }
@@ -199,7 +199,7 @@ struct MainView: View {
                             
                             HStack(spacing: 6) {
                                 Text(String(format: "%.1f", viewModel.uploadSpeed).replacingOccurrences(of: ".", with: ","))
-                                    .font(Font.system(size: 16, weight: .bold))
+                                    .font(.metricSecondary)
                                     .foregroundColor(.textPrimary)
                                 Text("Mbps upload")
                                     .font(.bodySmall)
@@ -211,7 +211,7 @@ struct MainView: View {
                                     .padding(.horizontal, 4)
                                 
                                 Text("\(viewModel.ping)")
-                                    .font(Font.system(size: 16, weight: .bold))
+                                    .font(.metricSecondary)
                                     .foregroundColor(.textPrimary)
                                 Text("ms ping")
                                     .font(.bodySmall)
@@ -293,7 +293,10 @@ struct MainView: View {
                                 .padding(.horizontal, 16)
                                 .background(.ultraThinMaterial)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                                )
                                 .padding(.horizontal, 32)
                             }
                             .buttonStyle(.plain)
@@ -312,10 +315,10 @@ struct MainView: View {
                                 viewModel.startTest()
                             }) {
                                 Text("Testar novamente")
-                                    .font(Font.system(size: 16, weight: .semibold))
+                                    .font(.buttonLabel)
                                     .foregroundColor(Color.surfacePage)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 18)
+                                    .padding(.vertical, 16)
                                     .background(Color.textPrimary)
                                     .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
@@ -446,11 +449,11 @@ struct MainView: View {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 #endif
                 AudioServicesPlaySystemSound(1104)
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                withAnimation(LinkaMotion.pulse) {
                     ringScale = 1.05
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                    withAnimation(LinkaMotion.pulse) {
                         ringScale = 1.0
                     }
                 }

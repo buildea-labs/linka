@@ -125,7 +125,7 @@ struct AssistSheet: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("Assist")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.displayMedium)
                         .foregroundColor(.textPrimary)
                     Spacer()
                 }
@@ -177,12 +177,12 @@ struct AssistSheet: View {
                                     Button(action: { chat.submitQuestion(q) }) {
                                         HStack {
                                             Text(q)
-                                                .font(.system(size: 14, weight: .semibold))
+                                                .font(.bodyRegularStrong)
                                                 .foregroundColor(.textPrimary)
                                                 .multilineTextAlignment(.leading)
                                             Spacer()
                                             Image(systemName: "arrow.up.right")
-                                                .font(.system(size: 12, weight: .bold))
+                                                .font(.captionStrong)
                                                 .foregroundColor(.textSecondary)
                                         }
                                         .padding(.horizontal, 16)
@@ -303,7 +303,7 @@ struct AssistSheet: View {
                     if msg.longText != nil {
                         Button(action: { toggleExpansion(for: msg) }) {
                             Text(expandedMessages.contains(msg.id) ? "Ver menos" : "Ver mais")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(.captionStrong)
                                 .foregroundColor(.brandAccentWarm)
                         }
                         .buttonStyle(.plain)
@@ -343,7 +343,7 @@ struct AssistSheet: View {
 
                 Button(action: { toggleInvestigationExpansion() }) {
                     Text(investigationExpanded ? "Ver menos" : "Ver mais")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.captionStrong)
                         .foregroundColor(.brandAccentWarm)
                 }
                 .buttonStyle(.plain)
@@ -378,10 +378,10 @@ struct AssistSheet: View {
                 Button(action: { performActionSuggestion(suggestion) }) {
                     HStack(spacing: 6) {
                         Text(actionSuggestionLabel(for: suggestion))
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.bodyRegularStrong)
                             .foregroundColor(.textPrimary)
                         Image(systemName: actionSuggestionSymbol(for: suggestion))
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.captionStrong)
                             .foregroundColor(.textSecondary)
                     }
                     .padding(.horizontal, 16)
@@ -396,7 +396,7 @@ struct AssistSheet: View {
             HStack {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(actionSuggestionManualGuidanceTitle(for: topic))
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.bodySmallStrong)
                         .foregroundColor(.textSecondary)
                     ForEach(Array(actionSuggestionManualGuidanceSteps(for: topic).enumerated()), id: \.offset) { _, step in
                         Text("• \(step)")

@@ -70,10 +70,21 @@ public extension Color {
 }
 
 public extension Font {
+    static let displayHuge = Font.system(size: 56, weight: .bold, design: .rounded)
+    static let displayLarge = Font.system(size: 40, weight: .bold, design: .rounded)
     static let displayTitle = Font.system(size: 26, weight: .bold, design: .rounded)
     static let displayMedium = Font.system(size: 20, weight: .bold, design: .rounded)
+    static let buttonLabel = Font.system(size: 16, weight: .semibold, design: .default)
+    static let metricSecondary = Font.system(size: 16, weight: .bold, design: .default)
     static let bodyRegular = Font.system(size: 15, weight: .regular, design: .default)
+    static let bodyRegularStrong = Font.system(size: 15, weight: .semibold, design: .default)
     static let bodySmall = Font.system(size: 13, weight: .regular, design: .default)
+    static let bodySmallStrong = Font.system(size: 13, weight: .semibold, design: .default)
+    static let bodySmallMedium = Font.system(size: 13, weight: .medium, design: .default)
+    static let captionStrong = Font.system(size: 12, weight: .bold, design: .default)
+    static let captionMedium = Font.system(size: 12, weight: .medium, design: .default)
+    static let captionSmall = Font.system(size: 10, weight: .regular, design: .default)
+    static let captionSmallStrong = Font.system(size: 11, weight: .semibold, design: .default)
     static let monoEyebrow = Font.system(size: 12, weight: .regular, design: .monospaced)
     static let monoCaption = Font.system(size: 11, weight: .regular, design: .monospaced)
 }
@@ -81,4 +92,5 @@ public extension Font {
 public struct LinkaMotion {
     public static let spring = Animation.timingCurve(0.32, 0.72, 0, 1, duration: 0.35)
     public static let fade = Animation.timingCurve(0.4, 0, 0.2, 1, duration: 0.25)
+    public static let pulse = Animation.spring(response: 0.3, dampingFraction: 0.5)
 }

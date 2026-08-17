@@ -320,6 +320,11 @@ public final class CloudKitMeasurementRemoteStore: MeasurementRemoteStore, @unch
         // perfil, CloudKit fica desabilitado no simulador para não crashar.
         return false
         #else
+        #if DEBUG
+        // Durante o desenvolvimento (ex: via Personal Team), o iCloud pode não
+        // estar disponível e instanciar CKContainer daria SIGTRAP.
+        return false
+        #else
         // Em device, presença de embedded.mobileprovision indica binário
         // assinado com perfil que inclui os entitlements declarados no
         // arquivo `.entitlements` — o container precisa estar listado lá
@@ -327,6 +332,7 @@ public final class CloudKitMeasurementRemoteStore: MeasurementRemoteStore, @unch
         // `CKContainer(identifier:)` sobreviva. Se faltar, degradar para
         // no-op é melhor que crashar duro via os_crash.
         return Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision") != nil
+        #endif
         #endif
     }
 

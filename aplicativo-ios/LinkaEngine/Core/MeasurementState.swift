@@ -1,5 +1,6 @@
 import Foundation
 
+
 public struct MeasurementState {
     public var ping: Double?
     public var jitter: Double?
@@ -27,8 +28,10 @@ public struct MeasurementState {
     /// `phase == .error`. Só fato, sem copy: mensagem amigável é decisão da
     /// UI (ver `EngineFailureReason`).
     public var failureReason: EngineFailureReason?
+    
+    public var location: (latitude: Double, longitude: Double)?
 
-    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: String? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil, failureReason: EngineFailureReason? = nil) {
+    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: String? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil, failureReason: EngineFailureReason? = nil, location: (latitude: Double, longitude: Double)? = nil) {
         self.ping = ping
         self.jitter = jitter
         self.packetLossPercent = packetLossPercent
@@ -43,5 +46,6 @@ public struct MeasurementState {
         self.downloadThroughputVariation = downloadThroughputVariation
         self.uploadThroughputVariation = uploadThroughputVariation
         self.failureReason = failureReason
+        self.location = location
     }
 }

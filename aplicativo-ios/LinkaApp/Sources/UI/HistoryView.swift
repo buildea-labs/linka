@@ -1,9 +1,15 @@
 import SwiftUI
+import MapKit
 import MeasurementHistory
 import NetworkCore
 import NetworkInsights
 import LinkaEntitlements
 import LinkaModules
+
+enum HistoryDisplayMode {
+    case list
+    case map
+}
 
 struct HistoryView: View {
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
@@ -13,6 +19,7 @@ struct HistoryView: View {
     @State private var showAssist = false
     @State private var showPurchase = false
     @State private var insightText: String?
+    @State private var displayMode: HistoryDisplayMode = .list
 
     // Computada (não `let`) de propósito: `entitlements` vem de
     // `@EnvironmentObject` e ainda não está disponível no momento em que
@@ -60,8 +67,9 @@ struct HistoryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.surfacePage)
             } else {
-                List {
-                    // Assist Insight Card — text only when we have something to say,
+                if displayMode == .list {
+                    List {
+                        // Assist Insight Card — text only when we have something to say,
                     // but the "Perguntar ao Assist" CTA is always available so the
                     // user can reach the Assist even before enough data exists for
                     // a weekly insight.
@@ -136,9 +144,24 @@ struct HistoryView: View {
                 #endif
                 .scrollContentBackground(.hidden)
                 .background(Color.surfacePage)
+                } else {
+                    MapHistoryView(measurements: measurements)
+                }
             }
         }
         .navigationTitle("Histórico")
+        .toolbar {
+            if hasPlus {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Picker("Modo", selection: $displayMode) {
+                        Image(systemName: "list.bullet").tag(HistoryDisplayMode.list)
+                        Image(systemName: "map").tag(HistoryDisplayMode.map)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .frame(width: 100)
+                }
+            }
+        }
         #if canImport(UIKit)
         // `navigationBarTitleDisplayMode` não existe no macOS — lá a
         // titlebar não tem os modos large/inline do UIKit (issue #108).
@@ -464,3 +487,47 @@ struct DetailItem: View {
         return "\(label): \(value). \(explanation)"
     }
 }
+
+
+
+struct MapLocationItem: Identifiable {
+    let id: UUID
+    let coordinate: CLLocationCoordinate2D
+    let title: String
+}
+
+struct MapHistoryView: View {
+    let measurements: [NetworkMeasurement]
+    
+    @State private var region = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: -23.55052, longitude: -46.633308),
+        span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+    )
+    
+    var locationItems: [MapLocationItem] {
+        measurements.compactMap { m in
+            if let loc = m.location {
+                return MapLocationItem(id: m.id, coordinate: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude), title: m.serverIdentifier ?? "Medição")
+            }
+            return nil
+        }
+    }
+
+    var body: some View {
+        Map(coordinateRegion: $region, annotationItems: locationItems) { item in
+            MapAnnotation(coordinate: item.coordinate) {
+                Circle()
+                    .fill(Color.brandAccentWarm)
+                    .frame(width: 12, height: 12)
+                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+            }
+        }
+        .onAppear {
+            if let first = locationItems.first {
+                region.center = first.coordinate
+                region.span = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+            }
+        }
+    }
+}
+

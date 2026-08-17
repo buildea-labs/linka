@@ -65,7 +65,7 @@ struct SettingsSheet: View {
                         Text(subscriptionStatusText)
                             .foregroundColor(.textSecondary)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.bodySmallStrong)
                             .foregroundColor(.chevronAffordance)
                     }
                 }
@@ -92,7 +92,7 @@ struct SettingsSheet: View {
                         Text("Versão \(appVersion)")
                             .foregroundColor(.textSecondary)
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.bodySmallStrong)
                             .foregroundColor(.chevronAffordance)
                     }
                 }
@@ -137,7 +137,7 @@ struct SettingsSheet: View {
                 EmptyView()
             } footer: {
                 Text("Linka Speedtest · Versão \(appVersion)")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.captionMedium)
                     .foregroundColor(.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .center)
             }
@@ -227,7 +227,7 @@ struct SettingsRow: View {
                         .frame(width: 30, height: 30)
                     Image(systemName: icon)
                         .foregroundColor(.white)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.bodySmallStrong)
                 }
                 
                 Text(title)
@@ -236,7 +236,7 @@ struct SettingsRow: View {
                 Spacer()
                 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.bodySmallStrong)
                     .foregroundColor(.chevronAffordance)
             }
         }

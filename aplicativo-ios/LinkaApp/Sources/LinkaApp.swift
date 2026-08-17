@@ -5,6 +5,12 @@ import GoogleMobileAds
 import LinkaEntitlements
 import AppIntents
 import LinkaAppIntents
+import LinkaEngine
+import MeasurementHistory
+import NetworkCore
+import LinkaWidgetShared
+import WidgetKit
+import LinkaModules
 
 @main
 struct LinkaApp: App {
@@ -101,6 +107,66 @@ struct LinkaApp: App {
                     await AppIntentCoordinator.shared.requestPurchasePrompt()
                 }
                 return LinkaSystemActionResponse(action: .startSpeedTest)
+            
+            case .measureNetworkSilently:
+                let decision = await MainActor.run {
+                    LinkaEntitlementPolicy.decision(
+                        for: .appleIntegrations,
+                        snapshot: entitlements.snapshot,
+                        at: Date()
+                    )
+                }
+                guard decision.isGranted else {
+                    return LinkaSystemActionResponse(action: .measureNetworkSilently, value: "Assine o Linka Plus para automatizar medições.")
+                }
+
+                let engine = SpeedTestCore()
+                var finalState: MeasurementState?
+                for try await state in await engine.runTest() {
+                    if state.phase == .result || state.phase == .error {
+                        finalState = state
+                    }
+                }
+                
+                guard let state = finalState, state.phase == .result else {
+                    return LinkaSystemActionResponse(action: .measureNetworkSilently, value: "Erro ao medir a rede.")
+                }
+                
+                let m = NetworkMeasurement(
+                    outcome: .complete,
+                    downloadMbps: state.downloadSpeed ?? 0,
+                    uploadMbps: state.uploadSpeed ?? 0,
+                    latencyMs: state.ping ?? 0,
+                    jitterMs: state.jitter ?? 0,
+                    packetLossPercent: state.packetLossPercent ?? 0,
+                    loadedLatencyMs: state.loadedLatencyMs,
+                    durationMs: state.duration.map { Int(($0 * 1000).rounded()) },
+                    connectionKind: state.networkType == "Wi-Fi" ? .wifi : (state.networkType == "Rede móvel" ? .cellular : .other),
+                    wifiBandGHz: nil,
+                    networkIdentifier: state.provider ?? "",
+                    location: state.location.map { MeasurementLocation(latitude: $0.latitude, longitude: $0.longitude) }
+                )
+                let repo = LinkaMeasurementHistory.makeRepository(entitlements: StoreKitEntitlementProvider())
+                try? await repo.save(m)
+                
+                LinkaWidgetShared.writeLatestSummary(
+                    LinkaWidgetShared.LatestMeasurementSummary(
+                        downloadMbps: state.downloadSpeed ?? 0,
+                        uploadMbps: state.uploadSpeed ?? 0,
+                        latencyMs: state.ping ?? 0,
+                        measuredAt: m.measuredAt
+                    )
+                )
+                WidgetCenter.shared.reloadTimelines(ofKind: LinkaWidgetShared.widgetKind)
+                
+                let dl = String(format: "%.1f", state.downloadSpeed ?? 0).replacingOccurrences(of: ".", with: ",")
+                let ul = String(format: "%.1f", state.uploadSpeed ?? 0).replacingOccurrences(of: ".", with: ",")
+                let p = Int(state.ping ?? 0)
+                let net = state.networkType ?? "Desconhecido"
+                
+                let text = "Medição concluída. Download: \(dl) Mega, Upload: \(ul) Mega, Ping: \(p) milissegundos. Rede: \(net)"
+                return LinkaSystemActionResponse(action: .measureNetworkSilently, value: text)
+
             case .openLatestMeasurement, .openHistory, .getLatestResult:
                 throw LinkaAppIntentExecutionError.notConfigured
             }

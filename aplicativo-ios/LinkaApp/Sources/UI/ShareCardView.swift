@@ -101,7 +101,7 @@ struct ShareCardView: View {
     private func statFragment(value: String, unit: String) -> some View {
         HStack(spacing: 6) {
             Text(value)
-                .font(Font.system(size: 16, weight: .bold))
+                .font(.metricSecondary)
                 .foregroundColor(.textPrimary)
             Text(unit)
                 .font(.bodySmall)

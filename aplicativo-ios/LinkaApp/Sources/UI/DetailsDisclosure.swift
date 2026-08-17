@@ -79,7 +79,7 @@ struct DetailsDisclosure: View {
                         dismiss()
                     }) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.bodySmallStrong)
                             .foregroundColor(.textSecondary)
                             .frame(width: 30, height: 30)
                             .background(Color.textSecondary.opacity(0.14))
@@ -100,7 +100,7 @@ struct DetailsDisclosure: View {
                         .multilineTextAlignment(.center)
 
                         Text(usageSuitabilitySentence)
-                            .font(.bodySmall.weight(.semibold))
+                            .font(.bodySmallStrong)
                             .foregroundColor(.textPrimary)
                             .multilineTextAlignment(.center)
                             .accessibilityLabel(usageSuitabilitySentence)
@@ -227,10 +227,10 @@ private struct MetricExplanationRow: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 Text(label)
-                    .font(.bodySmall.weight(.semibold))
+                    .font(.bodySmallStrong)
                     .foregroundColor(.textPrimary)
                 Text(valueText)
-                    .font(.bodySmall.weight(.semibold))
+                    .font(.bodySmallStrong)
                     .foregroundColor(.textPrimary)
             }
             Text(explanation)

@@ -54,7 +54,7 @@ struct LinkaSpeedTestWidgetView: View {
 
     @ViewBuilder
     private func testButton(label: String, compact: Bool = false) -> some View {
-        Button(intent: StartSpeedTestIntent()) {
+        Button(intent: MeasureNetworkSilentlyIntent()) {
             Text(label)
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                 .frame(maxWidth: compact ? nil : .infinity)

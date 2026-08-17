@@ -38,7 +38,7 @@ struct MetricRing: View {
                             Text(value)
                         }
                     }
-                    .font(Font.system(size: size > 200 ? 56 : 40, weight: .bold, design: .rounded))
+                    .font(size > 200 ? .displayHuge : .displayLarge)
                     .foregroundColor(.textPrimary)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
