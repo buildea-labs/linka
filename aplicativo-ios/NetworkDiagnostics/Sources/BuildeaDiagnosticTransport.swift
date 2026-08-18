@@ -11,7 +11,7 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
     }
 
     public func answer(_ request: NetworkAssistRequest) async throws -> NetworkAssistResponse {
-        let ndsResponse = try await api.evaluate(request.currentMeasurement, requestAI: false)
+        let ndsResponse = try await api.evaluate(request.currentMeasurement, requestAI: true)
         
         guard let recommendation = ndsResponse.recommendation else {
             return NetworkAssistResponse(
@@ -26,11 +26,15 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         let score = ndsResponse.results?.first?.result?.score
         let findings = ndsResponse.results?.compactMap { $0.result?.findings }.flatMap { $0 } ?? []
 
+        let aiExplanation = ndsResponse.results?.first(where: { $0.module == "ai" })?.result?.explanation
+
         let input = DiagnosticCopyInput(
             recommendationTitle: recommendation.title,
             recommendationDescription: recommendation.description,
             score: score,
-            findings: findings
+            findings: findings,
+            aiTitle: aiExplanation?.tituloAmigavel,
+            aiSummary: aiExplanation?.resumoTecnicoTraduzido
         )
         
         let copy = await coordinator.resolveCopy(for: input)

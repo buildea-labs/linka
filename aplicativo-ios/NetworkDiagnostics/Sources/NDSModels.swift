@@ -172,9 +172,20 @@ public struct NDSFinding: Codable, Equatable, Sendable {
 public struct NDSExplanation: Codable, Equatable, Sendable {
     public var summary: String?
     public var audience: String?
+    public var tituloAmigavel: String?
+    public var resumoTecnicoTraduzido: String?
 
-    public init(summary: String? = nil, audience: String? = nil) {
+    public enum CodingKeys: String, CodingKey {
+        case summary
+        case audience
+        case tituloAmigavel = "titulo_amigavel"
+        case resumoTecnicoTraduzido = "resumo_tecnico_traduzido"
+    }
+
+    public init(summary: String? = nil, audience: String? = nil, tituloAmigavel: String? = nil, resumoTecnicoTraduzido: String? = nil) {
         self.summary = summary
         self.audience = audience
+        self.tituloAmigavel = tituloAmigavel
+        self.resumoTecnicoTraduzido = resumoTecnicoTraduzido
     }
 }

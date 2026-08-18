@@ -5,6 +5,24 @@ public struct DiagnosticCopyInput: Equatable, Sendable {
     public let recommendationDescription: String
     public let score: Int?
     public let findings: [NDSFinding]
+    public let aiTitle: String?
+    public let aiSummary: String?
+
+    public init(
+        recommendationTitle: String,
+        recommendationDescription: String,
+        score: Int?,
+        findings: [NDSFinding],
+        aiTitle: String? = nil,
+        aiSummary: String? = nil
+    ) {
+        self.recommendationTitle = recommendationTitle
+        self.recommendationDescription = recommendationDescription
+        self.score = score
+        self.findings = findings
+        self.aiTitle = aiTitle
+        self.aiSummary = aiSummary
+    }
 }
 
 public struct DiagnosticCopy: Equatable, Sendable {
@@ -36,8 +54,14 @@ public struct DeterministicDiagnosticCopyRenderer: DiagnosticCopyRenderer {
 public struct FoundationModelsDiagnosticCopyRenderer: DiagnosticCopyRenderer {
     public init() {}
     public func render(input: DiagnosticCopyInput) async throws -> DiagnosticCopy {
-        // Mock throwing "indisponível" logic for SDK not supporting Foundation Models yet
-        throw NetworkDiagnosticsError.decoding("Foundation Models indisponível via SDK.")
+        guard let title = input.aiTitle, let summary = input.aiSummary else {
+            throw NetworkDiagnosticsError.decoding("Foundation Models não retornou texto na resposta NDS.")
+        }
+        return DiagnosticCopy(
+            title: title,
+            summary: summary,
+            source: .ai
+        )
     }
 }
 
