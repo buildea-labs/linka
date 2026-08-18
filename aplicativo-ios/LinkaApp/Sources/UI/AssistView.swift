@@ -3,6 +3,7 @@ import MeasurementHistory
 import NetworkCore
 import NetworkAssist
 import LinkaEntitlements
+import LinkaModules
 
 struct AssistView: View {
     @Environment(\.dismiss) var dismiss
@@ -13,6 +14,7 @@ struct AssistView: View {
     let recentMeasurements: [NetworkMeasurement]
     let failureSignal: NetworkAssistFailureSignal?
     let onRetry: (() -> Void)?
+    let entitlements: StoreKitEntitlementProvider?
 
     init(
         currentMeasurement: NetworkMeasurement?,
@@ -27,6 +29,7 @@ struct AssistView: View {
         self.recentMeasurements = recentMeasurements
         self.failureSignal = failureSignal
         self.onRetry = onRetry
+        self.entitlements = entitlements
 
         let resolvedProvider: any NetworkAssistProviding
         if let assistProvider {
@@ -55,9 +58,18 @@ struct AssistView: View {
         #endif
         .navigationBarBackButtonHidden(false)
         .task {
+            var recent = recentMeasurements
+            if recent.isEmpty, let entitlements = entitlements {
+                let query = MeasurementQuery(limit: 20, sortOrder: .newestFirst)
+                let repo = LinkaMeasurementHistory.makeRepository(entitlements: entitlements)
+                if let fetched = try? await repo.measurements(matching: query) {
+                    recent = fetched
+                }
+            }
+            
             await viewModel.load(
                 currentMeasurement: currentMeasurement,
-                recentMeasurements: recentMeasurements,
+                recentMeasurements: recent,
                 failureSignal: failureSignal
             )
         }
