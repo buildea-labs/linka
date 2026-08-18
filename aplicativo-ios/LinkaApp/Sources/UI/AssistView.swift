@@ -140,7 +140,7 @@ struct AssistView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text("O que você quer saber sobre a sua conexão?")
+                    Text("Sobre o seu resultado")
                         .font(.displayTitle)
                         .foregroundColor(.textPrimary)
                     Spacer()

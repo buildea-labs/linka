@@ -122,10 +122,21 @@ public struct NDSResponse: Codable, Equatable, Sendable {
 public struct NDSModuleData: Codable, Equatable, Sendable {
     public var score: Int?
     public var explanation: NDSExplanation?
+    public var veredicto: String?
+    public var observedDimensions: [String]?
 
-    public init(score: Int? = nil, explanation: NDSExplanation? = nil) {
+    enum CodingKeys: String, CodingKey {
+        case score
+        case explanation
+        case veredicto
+        case observedDimensions = "observed_dimensions"
+    }
+
+    public init(score: Int? = nil, explanation: NDSExplanation? = nil, veredicto: String? = nil, observedDimensions: [String]? = nil) {
         self.score = score
         self.explanation = explanation
+        self.veredicto = veredicto
+        self.observedDimensions = observedDimensions
     }
 }
 

@@ -83,7 +83,7 @@ final class AssistChatController: ObservableObject {
         streamingMessageID = nil
         progressStep = nil
 
-        messages.append(ChatMessage(text: "Esse resultado está bom para o que você faz?", isUser: true))
+
 
         guard let currentMeasurement else {
             isTyping = false

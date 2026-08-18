@@ -13,18 +13,31 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
     public func answer(_ request: NetworkAssistRequest) async throws -> NetworkAssistResponse {
         let ndsResponse = try await api.evaluate(request.currentMeasurement, requestAI: true)
         
-        guard let recommendation = ndsResponse.recommendation else {
-            return NetworkAssistResponse(
-                text: "Não consegui gerar um diagnóstico definitivo no momento.",
-                disposition: .insufficientEvidence,
-                evidenceIDs: []
-            )
-        }
-        
-        // Extract score and findings properly depending on where they are in NDSResponse
-        // Let's assume they are top level, or from the first result
-        let score = ndsResponse.results?.first?.result?.score
+        // Extract score and veredicto properly from the scoring module
+        let scoringModule = ndsResponse.results?.first(where: { $0.module == "scoring" })?.result
+        let score = scoringModule?.score
+        let veredicto = scoringModule?.veredicto
         let findings = ndsResponse.results?.compactMap { $0.cards }.flatMap { $0 } ?? []
+
+        guard let recommendation = ndsResponse.recommendation else {
+            // Trata cenários onde recommendation == null
+            let isHealthyScore = (score ?? 0) >= 65 || veredicto == "bom" || veredicto == "excelente"
+            let hasProblemCards = findings.contains { $0.status == "attention" || $0.status == "critical" }
+            
+            if isHealthyScore && !hasProblemCards {
+                return NetworkAssistResponse(
+                    text: "Seu resultado está bom. Não encontrei nada que exija atenção agora.",
+                    disposition: .answered,
+                    evidenceIDs: []
+                )
+            } else {
+                return NetworkAssistResponse(
+                    text: "Não há dados suficientes para concluir.",
+                    disposition: .insufficientEvidence,
+                    evidenceIDs: []
+                )
+            }
+        }
 
         let aiExplanation = ndsResponse.results?.first(where: { $0.module == "ai" })?.result?.explanation
 
