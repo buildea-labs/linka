@@ -41,27 +41,26 @@ struct AssistView: View {
     }
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color("BackgroundTertiary")
-                    .ignoresSafeArea()
-                
-                contentView
+        ZStack {
+            Color("BackgroundTertiary")
+                .ignoresSafeArea()
+            
+            contentView
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                    }
-                }
-                
-                ToolbarItem(placement: .principal) {
-                    Text("Sobre o seu resultado")
-                        .font(.headline)
-                }
+            
+            ToolbarItem(placement: .principal) {
+                Text("Sobre o seu resultado")
+                    .font(.headline)
             }
         }
         .task {
