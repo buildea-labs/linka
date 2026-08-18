@@ -295,9 +295,11 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					675DFA678F2EAE7C57E6EC9C = {
+						DevelopmentTeam = 2Z4T8228GR;
 						ProvisioningStyle = Automatic;
 					};
 					86DF27BAA01897B036E86CFB = {
+						DevelopmentTeam = 2Z4T8228GR;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -438,6 +440,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 2Z4T8228GR;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LinkaApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -522,6 +525,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 2Z4T8228GR;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LinkaApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -600,6 +604,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 2Z4T8228GR;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LinkaApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -624,6 +629,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 2Z4T8228GR;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LinkaApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
