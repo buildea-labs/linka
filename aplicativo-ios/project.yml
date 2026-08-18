@@ -14,6 +14,7 @@ targets:
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "2"
         CODE_SIGN_ENTITLEMENTS: LinkaApp/LinkaApp.entitlements
+        CLIENT_API_TOKEN: "nds_live_9fd6fbbe7379f9d4f9392b5b7668a6e47439f42c60ab1118a0cda33f455b36d6"
     info:
       path: LinkaApp/Info.plist
       properties:
