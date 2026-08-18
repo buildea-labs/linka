@@ -46,23 +46,14 @@ struct AssistView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                Divider() // A subtle line under the Navigation Bar
-                
                 contentView
             }
         }
         .navigationTitle("Assist")
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "chevron.left")
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
-                }
-            }
-        }
+        #if canImport(UIKit)
+        .navigationBarTitleDisplayMode(.large)
+        #endif
+        .navigationBarBackButtonHidden(false)
         .task {
             await viewModel.load(
                 currentMeasurement: currentMeasurement,
