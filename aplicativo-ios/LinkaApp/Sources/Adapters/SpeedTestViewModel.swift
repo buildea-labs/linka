@@ -8,7 +8,7 @@ import MeasurementHistory
 import NetworkCore
 import LinkaEntitlements
 import LinkaModules
-import LinkaWidgetShared
+
 
 public enum SpeedTestUIPhase {
     case idle
@@ -311,27 +311,8 @@ public class SpeedTestViewModel: ObservableObject {
                     let repo = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
                     do {
                         try await repo.save(m)
-                        // Espelho read-only para o Widget (issue #55) — só
-                        // depois que `MeasurementHistory` (fonte de
-                        // verdade) confirmou o save. `MeasurementHistory`
-                        // continua o único lugar que decide o que é
-                        // histórico; isto é só um resumo derivado, num App
-                        // Group, para um processo (a extensão de widget)
-                        // que não acessa o container de arquivos do app.
-                        LinkaWidgetShared.writeLatestSummary(
-                            LinkaWidgetShared.LatestMeasurementSummary(
-                                downloadMbps: self.downloadSpeed,
-                                uploadMbps: self.uploadSpeed,
-                                latencyMs: Double(self.ping),
-                                measuredAt: m.measuredAt
-                            )
-                        )
-                        WidgetCenter.shared.reloadTimelines(ofKind: LinkaWidgetShared.widgetKind)
                     } catch {
-                        // Mesmo comportamento de antes (`try?`): falha ao
-                        // salvar no histórico não derruba o fluxo de
-                        // medição. Só não escreve o espelho do widget com
-                        // um resultado que nem chegou a ser persistido.
+                        // Falha ao salvar no histórico não derruba o fluxo de medição.
                     }
                     self.loadLastTest()
                 }

@@ -1,0 +1,29 @@
+{
+  "" : {
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements-primary.dia",
+    "emit-module-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements-primary-emit-module.dia",
+    "pch" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements-primary.swiftdeps"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaEntitlements/Sources/LinkaEntitlements.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements.dia",
+    "index-unit-output-path" : "/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/LinkaEntitlements~partial.swiftmodule"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaEntitlements/Sources/StoreKitEntitlementProvider.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/StoreKitEntitlementProvider.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/StoreKitEntitlementProvider.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/StoreKitEntitlementProvider.dia",
+    "index-unit-output-path" : "/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/StoreKitEntitlementProvider.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/StoreKitEntitlementProvider.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/StoreKitEntitlementProvider.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/StoreKitEntitlementProvider.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaEntitlements.build/Debug-iphonesimulator/LinkaEntitlements.build/Objects-normal/arm64/StoreKitEntitlementProvider~partial.swiftmodule"
+  }
+}

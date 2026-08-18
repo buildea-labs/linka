@@ -2,7 +2,7 @@ import Foundation
 
 public struct NetworkDiagnosticsConfiguration: Sendable {
     public let rulesEndpoint: URL
-    public let aiEndpoint: URL
+    public let bearerToken: String?
     public let requestTimeout: TimeInterval
     public let appVersion: String?
     public let platformIdentifier: String
@@ -11,7 +11,7 @@ public struct NetworkDiagnosticsConfiguration: Sendable {
 
     public init(
         rulesEndpoint: URL,
-        aiEndpoint: URL,
+        bearerToken: String? = nil,
         requestTimeout: TimeInterval = 8,
         appVersion: String? = nil,
         platformIdentifier: String,
@@ -19,7 +19,7 @@ public struct NetworkDiagnosticsConfiguration: Sendable {
         recentMeasurementsLimit: Int = 20
     ) {
         self.rulesEndpoint = rulesEndpoint
-        self.aiEndpoint = aiEndpoint
+        self.bearerToken = bearerToken
         self.requestTimeout = max(1, requestTimeout)
         self.appVersion = appVersion
         self.platformIdentifier = platformIdentifier
@@ -27,6 +27,5 @@ public struct NetworkDiagnosticsConfiguration: Sendable {
         self.recentMeasurementsLimit = max(0, recentMeasurementsLimit)
     }
 
-    public static let defaultRulesEndpoint = URL(string: "https://signallq-diagnostic.giammattey-luiz.workers.dev/diagnostic/evaluate")!
-    public static let defaultAiEndpoint = URL(string: "https://linka-ai-diagnosis-worker.giammattey-luiz.workers.dev/api/ai/diagnostico-conexao")!
+    public static let defaultRulesEndpoint = URL(string: "https://nds.signallq.com/v1/diagnostics/evaluate")!
 }

@@ -1,0 +1,4 @@
+module LinkaEngine {
+header "LinkaEngine-Swift.h"
+export *
+}

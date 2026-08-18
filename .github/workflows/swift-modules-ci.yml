@@ -3,35 +3,14 @@ name: Swift Modules CI
 on:
   push:
     branches:
+      - main
       - 'feat/**'
     paths:
-      - 'aplicativo-ios/NetworkCore/**'
-      - 'aplicativo-ios/MeasurementHistory/**'
-      - 'aplicativo-ios/NetworkInsights/**'
-      - 'aplicativo-ios/NetworkAssist/**'
-      - 'aplicativo-ios/LinkaEntitlements/**'
-      - 'aplicativo-ios/LinkaAppIntents/**'
-      - 'aplicativo-ios/LinkaModules/**'
-      - 'aplicativo-ios/LinkaEngine/**'
-      - 'aplicativo-ios/LinkaWidgetShared/**'
-      - 'aplicativo-ios/LinkaWidget/**'
-      - 'aplicativo-ios/LinkaApp/**'
-      - 'aplicativo-ios/LinkaApp.xcodeproj/**'
+      - 'aplicativo-ios/**'
       - '.github/workflows/swift-modules-ci.yml'
   pull_request:
     paths:
-      - 'aplicativo-ios/NetworkCore/**'
-      - 'aplicativo-ios/MeasurementHistory/**'
-      - 'aplicativo-ios/NetworkInsights/**'
-      - 'aplicativo-ios/NetworkAssist/**'
-      - 'aplicativo-ios/LinkaEntitlements/**'
-      - 'aplicativo-ios/LinkaAppIntents/**'
-      - 'aplicativo-ios/LinkaModules/**'
-      - 'aplicativo-ios/LinkaEngine/**'
-      - 'aplicativo-ios/LinkaWidgetShared/**'
-      - 'aplicativo-ios/LinkaWidget/**'
-      - 'aplicativo-ios/LinkaApp/**'
-      - 'aplicativo-ios/LinkaApp.xcodeproj/**'
+      - 'aplicativo-ios/**'
       - '.github/workflows/swift-modules-ci.yml'
 
 jobs:
@@ -63,6 +42,10 @@ jobs:
         working-directory: aplicativo-ios/NetworkAssist
         run: swift test
 
+      - name: Test NetworkDiagnostics
+        working-directory: aplicativo-ios/NetworkDiagnostics
+        run: swift test
+
       - name: Test LinkaEntitlements
         working-directory: aplicativo-ios/LinkaEntitlements
         run: swift test
@@ -84,7 +67,7 @@ jobs:
         run: swift test
 
   xcodebuild-app-ios:
-    name: LinkaApp build (iOS)
+    name: LinkaApp build and test (iOS)
     runs-on: macos-latest
     timeout-minutes: 15
 
@@ -95,21 +78,12 @@ jobs:
       - name: Xcode version
         run: xcodebuild -version
 
-      - name: Build LinkaApp for iOS Simulator
+      - name: Test LinkaApp for iOS Simulator
         run: |
-          xcodebuild build \
+          xcodebuild test \
             -project aplicativo-ios/LinkaApp.xcodeproj \
             -scheme LinkaApp_iOS \
-            -destination 'generic/platform=iOS Simulator' \
-            -skipMacroValidation \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Build LinkaWidgetExtension for iOS Simulator
-        run: |
-          xcodebuild build \
-            -project aplicativo-ios/LinkaApp.xcodeproj \
-            -scheme LinkaWidgetExtension \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO
 

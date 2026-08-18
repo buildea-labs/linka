@@ -1,0 +1,29 @@
+{
+  "" : {
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights-primary.dia",
+    "emit-module-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights-primary-emit-module.dia",
+    "pch" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights-primary.swiftdeps"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/NetworkInsights/Sources/NetworkInsights.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights.dia",
+    "index-unit-output-path" : "/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/NetworkInsights~partial.swiftmodule"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/NetworkInsights/Sources/UsageSuitability.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/UsageSuitability.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/UsageSuitability.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/UsageSuitability.dia",
+    "index-unit-output-path" : "/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/UsageSuitability.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/UsageSuitability.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/UsageSuitability.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/UsageSuitability.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkInsights.build/Debug-iphoneos/NetworkInsights.build/Objects-normal/arm64/UsageSuitability~partial.swiftmodule"
+  }
+}

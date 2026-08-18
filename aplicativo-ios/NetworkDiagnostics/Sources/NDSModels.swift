@@ -1,9 +1,12 @@
 import Foundation
 
 public struct NDSRequest: Codable, Equatable, Sendable {
-    public var sessionId: String?
+    public var schemaVersion: String?
     public var request_id: String?
+    public var sessionId: String?
     public var platform: String?
+    public var locale: String?
+    public var profile: String?
     public var app: AppInfo?
     public var capabilities: [String]
     public var connection: Connection?
@@ -12,9 +15,12 @@ public struct NDSRequest: Codable, Equatable, Sendable {
     public var quality: Quality?
 
     public init(
-        sessionId: String? = nil,
+        schemaVersion: String? = "1.0",
         request_id: String? = nil,
+        sessionId: String? = nil,
         platform: String? = nil,
+        locale: String? = nil,
+        profile: String? = nil,
         app: AppInfo? = nil,
         capabilities: [String] = [],
         connection: Connection? = nil,
@@ -22,9 +28,12 @@ public struct NDSRequest: Codable, Equatable, Sendable {
         speed: Speed? = nil,
         quality: Quality? = nil
     ) {
-        self.sessionId = sessionId
+        self.schemaVersion = schemaVersion
         self.request_id = request_id
+        self.sessionId = sessionId
         self.platform = platform
+        self.locale = locale
+        self.profile = profile
         self.app = app
         self.capabilities = capabilities
         self.connection = connection
@@ -44,23 +53,21 @@ public struct NDSRequest: Codable, Equatable, Sendable {
 
     public struct Connection: Codable, Equatable, Sendable {
         public var type: String?
-        public var status: String?
-        public init(type: String? = nil, status: String? = nil) {
+        public var hasInternet: Bool?
+        public init(type: String? = nil, hasInternet: Bool? = nil) {
             self.type = type
-            self.status = status
+            self.hasInternet = hasInternet
         }
     }
 
     public struct Wifi: Codable, Equatable, Sendable {
-        public var rssi: Double?
-        public var frequency: Double?
-        public var standard: String?
-        public var linkSpeed: Double?
-        public init(rssi: Double? = nil, frequency: Double? = nil, standard: String? = nil, linkSpeed: Double? = nil) {
-            self.rssi = rssi
-            self.frequency = frequency
-            self.standard = standard
-            self.linkSpeed = linkSpeed
+        public var rssiDbm: Double?
+        public var linkSpeedMbps: Double?
+        public var band: String?
+        public init(rssiDbm: Double? = nil, linkSpeedMbps: Double? = nil, band: String? = nil) {
+            self.rssiDbm = rssiDbm
+            self.linkSpeedMbps = linkSpeedMbps
+            self.band = band
         }
     }
 
@@ -76,21 +83,39 @@ public struct NDSRequest: Codable, Equatable, Sendable {
     public struct Quality: Codable, Equatable, Sendable {
         public var latencyMs: Double?
         public var loadedLatencyMs: Double?
+        public var jitterMs: Double?
         public var packetLossPercent: Double?
-        public init(latencyMs: Double? = nil, loadedLatencyMs: Double? = nil, packetLossPercent: Double? = nil) {
+        public init(latencyMs: Double? = nil, loadedLatencyMs: Double? = nil, jitterMs: Double? = nil, packetLossPercent: Double? = nil) {
             self.latencyMs = latencyMs
             self.loadedLatencyMs = loadedLatencyMs
+            self.jitterMs = jitterMs
             self.packetLossPercent = packetLossPercent
         }
     }
 }
 
 public struct NDSResponse: Codable, Equatable, Sendable {
+    public var results: [NDSResult]?
+    public var traces: [String]?
     public var recommendation: NDSRecommendation?
-    public var explanation: NDSExplanation?
     
-    public init(recommendation: NDSRecommendation? = nil, explanation: NDSExplanation? = nil) {
+    public init(results: [NDSResult]? = nil, traces: [String]? = nil, recommendation: NDSRecommendation? = nil) {
+        self.results = results
+        self.traces = traces
         self.recommendation = recommendation
+    }
+}
+
+public struct NDSResult: Codable, Equatable, Sendable {
+    public var module: String?
+    public var score: Int?
+    public var findings: [NDSFinding]?
+    public var explanation: NDSExplanation?
+
+    public init(module: String? = nil, score: Int? = nil, findings: [NDSFinding]? = nil, explanation: NDSExplanation? = nil) {
+        self.module = module
+        self.score = score
+        self.findings = findings
         self.explanation = explanation
     }
 }
@@ -109,12 +134,26 @@ public struct NDSRecommendation: Codable, Equatable, Sendable {
     }
 }
 
-public struct NDSExplanation: Codable, Equatable, Sendable {
-    public var titulo_amigavel: String?
-    public var resumo_tecnico_traduzido: String?
+public struct NDSFinding: Codable, Equatable, Sendable {
+    public var type: String
+    public var severity: String
+    public var value: Double?
+    public var message: String
 
-    public init(titulo_amigavel: String? = nil, resumo_tecnico_traduzido: String? = nil) {
-        self.titulo_amigavel = titulo_amigavel
-        self.resumo_tecnico_traduzido = resumo_tecnico_traduzido
+    public init(type: String, severity: String, value: Double? = nil, message: String) {
+        self.type = type
+        self.severity = severity
+        self.value = value
+        self.message = message
+    }
+}
+
+public struct NDSExplanation: Codable, Equatable, Sendable {
+    public var summary: String?
+    public var audience: String?
+
+    public init(summary: String? = nil, audience: String? = nil) {
+        self.summary = summary
+        self.audience = audience
     }
 }

@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkCore-primary.dia",
+    "emit-module-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkCore-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkCore-primary-emit-module.dia",
+    "pch" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkCore-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkCore-primary.swiftdeps"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/NetworkCore/Sources/NetworkMeasurement.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkMeasurement.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkMeasurement.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkMeasurement.dia",
+    "index-unit-output-path" : "/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkMeasurement.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkMeasurement.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkMeasurement.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkMeasurement.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkCore.build/Debug-iphoneos/NetworkCore.build/Objects-normal/arm64/NetworkMeasurement~partial.swiftmodule"
+  }
+}

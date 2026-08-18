@@ -35,7 +35,8 @@ public struct BuildeaDiagnosticAPI: Sendable {
         let (data, status) = try await httpClient.postJSON(
             url: configuration.rulesEndpoint,
             body: body,
-            timeout: configuration.requestTimeout
+            timeout: configuration.requestTimeout,
+            bearerToken: configuration.bearerToken
         )
         guard (200..<300).contains(status) else {
             throw NetworkDiagnosticsError.httpStatus(status)

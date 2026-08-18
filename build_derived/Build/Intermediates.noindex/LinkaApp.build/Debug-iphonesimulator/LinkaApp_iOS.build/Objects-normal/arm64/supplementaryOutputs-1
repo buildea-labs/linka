@@ -1,0 +1,23 @@
+{
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaApp/Sources/Adapters/AppIntentCoordinator.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/AppIntentCoordinator.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/AppIntentCoordinator.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/AppIntentCoordinator.dia",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/AppIntentCoordinator.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/AppIntentCoordinator.swiftdeps"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaApp/Sources/Adapters/ApplePlatformSignalProvider.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/ApplePlatformSignalProvider.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/ApplePlatformSignalProvider.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/ApplePlatformSignalProvider.dia",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/ApplePlatformSignalProvider.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/ApplePlatformSignalProvider.swiftdeps"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaApp/Sources/Adapters/AssistChatController.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/AssistChatController.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/AssistChatController.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/AssistChatController.dia",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/AssistChatController.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaApp_iOS.build/Objects-normal/arm64/AssistChatController.swiftdeps"
+  }
+}

@@ -1,0 +1,808 @@
+[
+  {
+    "typeName": "LinkaAppIntents.LinkaAppIntentsPackage",
+    "mangledTypeName": "15LinkaAppIntents0abC7PackageV",
+    "kind": "struct",
+    "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+    "line": 4,
+    "conformances": [
+      "AppIntents.AppIntentsPackage"
+    ],
+    "allConformances": [
+      {
+        "protocolName": "AppIntents.AppIntentsPackage",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      }
+    ],
+    "associatedTypeAliases": [],
+    "properties": []
+  },
+  {
+    "typeName": "LinkaAppIntents.StartSpeedTestIntent",
+    "mangledTypeName": "15LinkaAppIntents20StartSpeedTestIntentV",
+    "kind": "struct",
+    "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+    "line": 6,
+    "conformances": [
+      "AppIntents.AppIntent",
+      "AppIntents.PersistentlyIdentifiable",
+      "AppIntents._SupportsAppDependencies",
+      "Swift.Sendable",
+      "Swift.SendableMetatype"
+    ],
+    "allConformances": [
+      {
+        "protocolName": "AppIntents.AppIntent",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "AppIntents.PersistentlyIdentifiable",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "AppIntents._SupportsAppDependencies",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "Swift.Sendable",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "Swift.SendableMetatype",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      }
+    ],
+    "associatedTypeAliases": [
+      {
+        "typeAliasName": "PerformResult",
+        "substitutedTypeName": "some AppIntents.IntentResult",
+        "substitutedMangledTypeName": "15LinkaAppIntents20StartSpeedTestIntentV7performQryYaKFQOy_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.IntentResult"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      },
+      {
+        "typeAliasName": "SummaryContent",
+        "substitutedTypeName": "some AppIntents.ParameterSummary",
+        "substitutedMangledTypeName": "10AppIntents0A6IntentPAAE16parameterSummaryQrvpZQOy05LinkaaB0014StartSpeedTestC0V_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.ParameterSummary"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      }
+    ],
+    "properties": [
+      {
+        "label": "_executor",
+        "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "false",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 12,
+        "valueKind": "InitCall",
+        "value": {
+          "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+          "arguments": [
+            {
+              "label": "key",
+              "type": "Swift.Optional<Swift.AnyHashable>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "manager",
+              "type": "AppIntents.AppDependencyManager",
+              "valueKind": "Runtime"
+            }
+          ]
+        }
+      },
+      {
+        "label": "title",
+        "type": "Foundation.LocalizedStringResource",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 7,
+        "valueKind": "RawLiteral",
+        "value": "Testar internet"
+      },
+      {
+        "label": "description",
+        "type": "AppIntents.IntentDescription",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "false",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 8,
+        "valueKind": "RawLiteral",
+        "value": "Inicia uma medição de velocidade no Linka."
+      },
+      {
+        "label": "openAppWhenRun",
+        "type": "Swift.Bool",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 9,
+        "valueKind": "RawLiteral",
+        "value": "true"
+      },
+      {
+        "label": "executor",
+        "type": "LinkaAppIntents.LinkaAppIntentExecutor",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 12,
+        "valueKind": "Runtime",
+        "propertyWrappers": [
+          {
+            "type": "AppIntents.AppDependency",
+            "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+            "line": 11,
+            "arguments": []
+          }
+        ]
+      },
+      {
+        "label": "$executor",
+        "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 12,
+        "valueKind": "Runtime"
+      }
+    ]
+  },
+  {
+    "typeName": "LinkaAppIntents.OpenLatestMeasurementIntent",
+    "mangledTypeName": "15LinkaAppIntents27OpenLatestMeasurementIntentV",
+    "kind": "struct",
+    "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+    "line": 22,
+    "conformances": [
+      "AppIntents.AppIntent",
+      "AppIntents.PersistentlyIdentifiable",
+      "AppIntents._SupportsAppDependencies",
+      "Swift.Sendable",
+      "Swift.SendableMetatype"
+    ],
+    "allConformances": [
+      {
+        "protocolName": "AppIntents.AppIntent",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "AppIntents.PersistentlyIdentifiable",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "AppIntents._SupportsAppDependencies",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "Swift.Sendable",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "Swift.SendableMetatype",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      }
+    ],
+    "associatedTypeAliases": [
+      {
+        "typeAliasName": "PerformResult",
+        "substitutedTypeName": "some AppIntents.IntentResult",
+        "substitutedMangledTypeName": "15LinkaAppIntents27OpenLatestMeasurementIntentV7performQryYaKFQOy_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.IntentResult"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      },
+      {
+        "typeAliasName": "SummaryContent",
+        "substitutedTypeName": "some AppIntents.ParameterSummary",
+        "substitutedMangledTypeName": "10AppIntents0A6IntentPAAE16parameterSummaryQrvpZQOy05LinkaaB0021OpenLatestMeasurementC0V_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.ParameterSummary"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      }
+    ],
+    "properties": [
+      {
+        "label": "_executor",
+        "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "false",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 28,
+        "valueKind": "InitCall",
+        "value": {
+          "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+          "arguments": [
+            {
+              "label": "key",
+              "type": "Swift.Optional<Swift.AnyHashable>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "manager",
+              "type": "AppIntents.AppDependencyManager",
+              "valueKind": "Runtime"
+            }
+          ]
+        }
+      },
+      {
+        "label": "title",
+        "type": "Foundation.LocalizedStringResource",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 23,
+        "valueKind": "RawLiteral",
+        "value": "Abrir última medição"
+      },
+      {
+        "label": "description",
+        "type": "AppIntents.IntentDescription",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "false",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 24,
+        "valueKind": "RawLiteral",
+        "value": "Abre a medição mais recente no Linka."
+      },
+      {
+        "label": "openAppWhenRun",
+        "type": "Swift.Bool",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 25,
+        "valueKind": "RawLiteral",
+        "value": "true"
+      },
+      {
+        "label": "executor",
+        "type": "LinkaAppIntents.LinkaAppIntentExecutor",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 28,
+        "valueKind": "Runtime",
+        "propertyWrappers": [
+          {
+            "type": "AppIntents.AppDependency",
+            "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+            "line": 27,
+            "arguments": []
+          }
+        ]
+      },
+      {
+        "label": "$executor",
+        "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 28,
+        "valueKind": "Runtime"
+      }
+    ]
+  },
+  {
+    "typeName": "LinkaAppIntents.OpenHistoryIntent",
+    "mangledTypeName": "15LinkaAppIntents17OpenHistoryIntentV",
+    "kind": "struct",
+    "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+    "line": 38,
+    "conformances": [
+      "AppIntents.AppIntent",
+      "AppIntents.PersistentlyIdentifiable",
+      "AppIntents._SupportsAppDependencies",
+      "Swift.Sendable",
+      "Swift.SendableMetatype"
+    ],
+    "allConformances": [
+      {
+        "protocolName": "AppIntents.AppIntent",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "AppIntents.PersistentlyIdentifiable",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "AppIntents._SupportsAppDependencies",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "Swift.Sendable",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "Swift.SendableMetatype",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      }
+    ],
+    "associatedTypeAliases": [
+      {
+        "typeAliasName": "PerformResult",
+        "substitutedTypeName": "some AppIntents.IntentResult",
+        "substitutedMangledTypeName": "15LinkaAppIntents17OpenHistoryIntentV7performQryYaKFQOy_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.IntentResult"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      },
+      {
+        "typeAliasName": "SummaryContent",
+        "substitutedTypeName": "some AppIntents.ParameterSummary",
+        "substitutedMangledTypeName": "10AppIntents0A6IntentPAAE16parameterSummaryQrvpZQOy05LinkaaB0011OpenHistoryC0V_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.ParameterSummary"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      }
+    ],
+    "properties": [
+      {
+        "label": "_executor",
+        "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "false",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 44,
+        "valueKind": "InitCall",
+        "value": {
+          "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+          "arguments": [
+            {
+              "label": "key",
+              "type": "Swift.Optional<Swift.AnyHashable>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "manager",
+              "type": "AppIntents.AppDependencyManager",
+              "valueKind": "Runtime"
+            }
+          ]
+        }
+      },
+      {
+        "label": "title",
+        "type": "Foundation.LocalizedStringResource",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 39,
+        "valueKind": "RawLiteral",
+        "value": "Abrir histórico"
+      },
+      {
+        "label": "description",
+        "type": "AppIntents.IntentDescription",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "false",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 40,
+        "valueKind": "RawLiteral",
+        "value": "Abre o histórico de medições do Linka."
+      },
+      {
+        "label": "openAppWhenRun",
+        "type": "Swift.Bool",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 41,
+        "valueKind": "RawLiteral",
+        "value": "true"
+      },
+      {
+        "label": "executor",
+        "type": "LinkaAppIntents.LinkaAppIntentExecutor",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 44,
+        "valueKind": "Runtime",
+        "propertyWrappers": [
+          {
+            "type": "AppIntents.AppDependency",
+            "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+            "line": 43,
+            "arguments": []
+          }
+        ]
+      },
+      {
+        "label": "$executor",
+        "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 44,
+        "valueKind": "Runtime"
+      }
+    ]
+  },
+  {
+    "typeName": "LinkaAppIntents.GetLatestResultIntent",
+    "mangledTypeName": "15LinkaAppIntents21GetLatestResultIntentV",
+    "kind": "struct",
+    "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+    "line": 54,
+    "conformances": [
+      "AppIntents.AppIntent",
+      "AppIntents.PersistentlyIdentifiable",
+      "AppIntents._SupportsAppDependencies",
+      "Swift.Sendable",
+      "Swift.SendableMetatype"
+    ],
+    "allConformances": [
+      {
+        "protocolName": "AppIntents.AppIntent",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "AppIntents.PersistentlyIdentifiable",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "AppIntents._SupportsAppDependencies",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "Swift.Sendable",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "Swift.SendableMetatype",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      }
+    ],
+    "associatedTypeAliases": [
+      {
+        "typeAliasName": "PerformResult",
+        "substitutedTypeName": "some AppIntents.ReturnsValue<Swift.String>",
+        "substitutedMangledTypeName": "15LinkaAppIntents21GetLatestResultIntentV7performQryYaKFQOy_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.ReturnsValue"
+        ],
+        "opaqueTypeSameTypeRequirements": [
+          {
+            "typeAliasName": "AppIntents.IntentResult.Value",
+            "substitutedTypeName": "Swift.String",
+            "substitutedMangledTypeName": "SS"
+          }
+        ]
+      },
+      {
+        "typeAliasName": "SummaryContent",
+        "substitutedTypeName": "some AppIntents.ParameterSummary",
+        "substitutedMangledTypeName": "10AppIntents0A6IntentPAAE16parameterSummaryQrvpZQOy05LinkaaB0015GetLatestResultC0V_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.ParameterSummary"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      }
+    ],
+    "properties": [
+      {
+        "label": "_executor",
+        "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "false",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 60,
+        "valueKind": "InitCall",
+        "value": {
+          "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+          "arguments": [
+            {
+              "label": "key",
+              "type": "Swift.Optional<Swift.AnyHashable>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "manager",
+              "type": "AppIntents.AppDependencyManager",
+              "valueKind": "Runtime"
+            }
+          ]
+        }
+      },
+      {
+        "label": "title",
+        "type": "Foundation.LocalizedStringResource",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 55,
+        "valueKind": "RawLiteral",
+        "value": "Último resultado"
+      },
+      {
+        "label": "description",
+        "type": "AppIntents.IntentDescription",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "false",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 56,
+        "valueKind": "RawLiteral",
+        "value": "Retorna o resumo da medição mais recente do Linka."
+      },
+      {
+        "label": "openAppWhenRun",
+        "type": "Swift.Bool",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 57,
+        "valueKind": "RawLiteral",
+        "value": "false"
+      },
+      {
+        "label": "executor",
+        "type": "LinkaAppIntents.LinkaAppIntentExecutor",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 60,
+        "valueKind": "Runtime",
+        "propertyWrappers": [
+          {
+            "type": "AppIntents.AppDependency",
+            "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+            "line": 59,
+            "arguments": []
+          }
+        ]
+      },
+      {
+        "label": "$executor",
+        "type": "AppIntents.AppDependency<LinkaAppIntents.LinkaAppIntentExecutor>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 60,
+        "valueKind": "Runtime"
+      }
+    ]
+  },
+  {
+    "typeName": "LinkaAppIntents.LinkaAppShortcuts",
+    "mangledTypeName": "15LinkaAppIntents0aB9ShortcutsV",
+    "kind": "struct",
+    "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+    "line": 73,
+    "conformances": [
+      "AppIntents.AppShortcutsProvider",
+      "Swift.Sendable",
+      "Swift.SendableMetatype"
+    ],
+    "allConformances": [
+      {
+        "protocolName": "AppIntents.AppShortcutsProvider",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "Swift.Sendable",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      },
+      {
+        "protocolName": "Swift.SendableMetatype",
+        "conformanceDefiningModule": "LinkaAppIntents"
+      }
+    ],
+    "associatedTypeAliases": [],
+    "properties": [
+      {
+        "label": "appShortcuts",
+        "type": "Swift.Array<AppIntents.AppShortcut>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "true",
+        "file": "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaAppIntents/Sources/Intents.swift",
+        "line": 75,
+        "valueKind": "Builder",
+        "value": {
+          "type": "AppIntents.AppShortcutsBuilder",
+          "members": [
+            {
+              "kind": "buildExpression",
+              "element": {
+                "valueKind": "InitCall",
+                "value": {
+                  "type": "AppIntents.AppShortcut",
+                  "arguments": [
+                    {
+                      "label": "intent",
+                      "type": "LinkaAppIntents.StartSpeedTestIntent",
+                      "valueKind": "InitCall",
+                      "value": {
+                        "type": "LinkaAppIntents.StartSpeedTestIntent",
+                        "arguments": []
+                      }
+                    },
+                    {
+                      "label": "phrases",
+                      "type": "Swift.Array<AppIntents.AppShortcutPhrase<LinkaAppIntents.StartSpeedTestIntent>>",
+                      "valueKind": "Array",
+                      "value": [
+                        {
+                          "valueKind": "InterpolatedStringLiteral",
+                          "value": {
+                            "segments": [
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": "Testar internet com "
+                              },
+                              {
+                                "valueKind": "Enum",
+                                "value": {
+                                  "name": "applicationName"
+                                }
+                              },
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": ""
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "valueKind": "InterpolatedStringLiteral",
+                          "value": {
+                            "segments": [
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": "Medir minha conexão com "
+                              },
+                              {
+                                "valueKind": "Enum",
+                                "value": {
+                                  "name": "applicationName"
+                                }
+                              },
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": ""
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "label": "shortTitle",
+                      "type": "Swift.Optional<Foundation.LocalizedStringResource>",
+                      "valueKind": "RawLiteral",
+                      "value": "Testar internet"
+                    },
+                    {
+                      "label": "systemImageName",
+                      "type": "Swift.Optional<Swift.String>",
+                      "valueKind": "RawLiteral",
+                      "value": "gauge.with.dots.needle.50percent"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "kind": "buildExpression",
+              "element": {
+                "valueKind": "InitCall",
+                "value": {
+                  "type": "AppIntents.AppShortcut",
+                  "arguments": [
+                    {
+                      "label": "intent",
+                      "type": "LinkaAppIntents.GetLatestResultIntent",
+                      "valueKind": "InitCall",
+                      "value": {
+                        "type": "LinkaAppIntents.GetLatestResultIntent",
+                        "arguments": []
+                      }
+                    },
+                    {
+                      "label": "phrases",
+                      "type": "Swift.Array<AppIntents.AppShortcutPhrase<LinkaAppIntents.GetLatestResultIntent>>",
+                      "valueKind": "Array",
+                      "value": [
+                        {
+                          "valueKind": "InterpolatedStringLiteral",
+                          "value": {
+                            "segments": [
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": "Último teste no "
+                              },
+                              {
+                                "valueKind": "Enum",
+                                "value": {
+                                  "name": "applicationName"
+                                }
+                              },
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": ""
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "valueKind": "InterpolatedStringLiteral",
+                          "value": {
+                            "segments": [
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": "Ver último resultado no "
+                              },
+                              {
+                                "valueKind": "Enum",
+                                "value": {
+                                  "name": "applicationName"
+                                }
+                              },
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": ""
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "label": "shortTitle",
+                      "type": "Swift.Optional<Foundation.LocalizedStringResource>",
+                      "valueKind": "RawLiteral",
+                      "value": "Último resultado"
+                    },
+                    {
+                      "label": "systemImageName",
+                      "type": "Swift.Optional<Swift.String>",
+                      "valueKind": "RawLiteral",
+                      "value": "clock.arrow.circlepath"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

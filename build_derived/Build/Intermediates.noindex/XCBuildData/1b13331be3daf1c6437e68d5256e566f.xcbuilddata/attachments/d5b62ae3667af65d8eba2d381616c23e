@@ -1,0 +1,4 @@
+module LinkaEntitlements {
+header "LinkaEntitlements-Swift.h"
+export *
+}

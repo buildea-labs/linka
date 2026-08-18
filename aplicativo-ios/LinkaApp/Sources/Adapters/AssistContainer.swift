@@ -40,8 +40,7 @@ enum AssistContainer {
         let bundle = Bundle.main
         let rulesURL = URL(string: bundle.object(forInfoDictionaryKey: "NDRulesEndpoint") as? String ?? "")
             ?? NetworkDiagnosticsConfiguration.defaultRulesEndpoint
-        let aiURL = URL(string: bundle.object(forInfoDictionaryKey: "NDAiEndpoint") as? String ?? "")
-            ?? NetworkDiagnosticsConfiguration.defaultAiEndpoint
+        // O NDS atual agora resolve Rules e AI no mesmo endpoint `/v1/diagnostics/evaluate`
         let appVersion = bundle.infoDictionary?["CFBundleShortVersionString"] as? String
 
         #if os(macOS)
@@ -49,10 +48,12 @@ enum AssistContainer {
         #else
         let platformID = "ios"
         #endif
+        
+        let token = bundle.object(forInfoDictionaryKey: "CLIENT_API_TOKEN") as? String
 
         return NetworkDiagnosticsConfiguration(
             rulesEndpoint: rulesURL,
-            aiEndpoint: aiURL,
+            bearerToken: token,
             requestTimeout: 30,
             appVersion: appVersion,
             platformIdentifier: platformID
@@ -98,9 +99,7 @@ enum AssistContainer {
             configuration: configuration(),
             platformProvider: ApplePlatformSignalProvider()
         )
-        let localTransport = AppleIntelligenceDiagnosticTransport(api: api)
-        let remoteTransport = BuildeaDiagnosticTransport(api: api)
-        let transport = HybridDiagnosticTransport(localTransport: localTransport, remoteTransport: remoteTransport)
+        let transport = BuildeaDiagnosticTransport(api: api)
         return NetworkAssistService(transport: transport)
     }
 
@@ -112,11 +111,6 @@ enum AssistContainer {
             configuration: configuration(),
             platformProvider: ApplePlatformSignalProvider()
         )
-        // Regras não geram texto via IA, então sempre usam fallback desabilitando requestAI (que é default)
-        // Neste caso, para reuso e compatibilidade pura, o BuildeaDiagnosticTransport com requestAI = false
-        // atuaria como o antigo SignallqDiagnosticTransport, mas como o BuildeaDiagnosticTransport.answer()
-        // sempre chama evaluate(requestAI: true), vamos fazer um transport simples inline para regras.
-        // Ou melhor, expomos o uso puro do rules. Para manter simples:
         
         struct RulesTransport: NetworkAssistTransport {
             let api: BuildeaDiagnosticAPI

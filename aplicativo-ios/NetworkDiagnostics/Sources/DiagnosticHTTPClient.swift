@@ -3,7 +3,7 @@ import Foundation
 /// HTTP mínimo, injetável para testes. Não fazemos multi-part, streaming, nada.
 /// Só POST JSON → JSON.
 public protocol DiagnosticHTTPClient: Sendable {
-    func postJSON(url: URL, body: Data, timeout: TimeInterval) async throws -> (Data, Int)
+    func postJSON(url: URL, body: Data, timeout: TimeInterval, bearerToken: String?) async throws -> (Data, Int)
 }
 
 public struct URLSessionDiagnosticHTTPClient: DiagnosticHTTPClient {
@@ -21,12 +21,15 @@ public struct URLSessionDiagnosticHTTPClient: DiagnosticHTTPClient {
     /// `onCancel` chama `.cancel()` na `URLSessionDataTask` em voo,
     /// encerrando a requisição HTTP de verdade, não só parando de
     /// consumir o resultado no cliente.
-    public func postJSON(url: URL, body: Data, timeout: TimeInterval) async throws -> (Data, Int) {
+    public func postJSON(url: URL, body: Data, timeout: TimeInterval, bearerToken: String? = nil) async throws -> (Data, Int) {
         var request = URLRequest(url: url, timeoutInterval: timeout)
         request.httpMethod = "POST"
         request.httpBody = body
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let token = bearerToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         try Task.checkCancellation()
 

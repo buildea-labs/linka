@@ -2,31 +2,44 @@ import Foundation
 import NetworkAssist
 import NetworkCore
 
-/// Transport de fallback que delega 100% da avaliação e geração de texto ao
-/// Network Diagnostics Service remoto.
 public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
     public let api: BuildeaDiagnosticAPI
+    private let coordinator = DiagnosticCopyCoordinator()
 
     public init(api: BuildeaDiagnosticAPI) {
         self.api = api
     }
 
     public func answer(_ request: NetworkAssistRequest) async throws -> NetworkAssistResponse {
-        let ndsResponse = try await api.evaluate(request.currentMeasurement, requestAI: true)
+        let ndsResponse = try await api.evaluate(request.currentMeasurement, requestAI: false)
         
-        guard let explanation = ndsResponse.explanation, let primary = explanation.titulo_amigavel else {
+        guard let recommendation = ndsResponse.recommendation else {
             return NetworkAssistResponse(
-                text: "Não consegui gerar uma resposta com a IA no momento.",
+                text: "Não consegui gerar um diagnóstico definitivo no momento.",
                 disposition: .insufficientEvidence,
                 evidenceIDs: []
             )
         }
         
+        // Extract score and findings properly depending on where they are in NDSResponse
+        // Let's assume they are top level, or from the first result
+        let score = ndsResponse.results?.first?.score
+        let findings = ndsResponse.results?.flatMap { $0.findings ?? [] } ?? []
+
+        let input = DiagnosticCopyInput(
+            recommendationTitle: recommendation.title,
+            recommendationDescription: recommendation.description,
+            score: score,
+            findings: findings
+        )
+        
+        let copy = await coordinator.resolveCopy(for: input)
+        
         let evidenceIDs = [NetworkAssistRequest.currentMeasurementEvidenceID(request.currentMeasurement.id)]
         
         return NetworkAssistResponse(
-            text: primary,
-            longText: explanation.resumo_tecnico_traduzido,
+            text: copy.title,
+            longText: copy.summary,
             disposition: .answered,
             evidenceIDs: evidenceIDs
         )

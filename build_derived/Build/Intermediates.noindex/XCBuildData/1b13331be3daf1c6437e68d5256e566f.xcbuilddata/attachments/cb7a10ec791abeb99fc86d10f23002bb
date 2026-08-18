@@ -1,0 +1,4 @@
+module MeasurementHistory {
+header "MeasurementHistory-Swift.h"
+export *
+}

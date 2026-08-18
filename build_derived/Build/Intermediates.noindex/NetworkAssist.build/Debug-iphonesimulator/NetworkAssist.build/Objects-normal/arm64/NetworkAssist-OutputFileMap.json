@@ -1,0 +1,39 @@
+{
+  "" : {
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist-primary.dia",
+    "emit-module-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist-primary-emit-module.dia",
+    "pch" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist-primary.swiftdeps"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/NetworkAssist/Sources/NetworkAssist.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist.dia",
+    "index-unit-output-path" : "/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssist~partial.swiftmodule"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/NetworkAssist/Sources/NetworkAssistActionSuggestion.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistActionSuggestion.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistActionSuggestion.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistActionSuggestion.dia",
+    "index-unit-output-path" : "/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistActionSuggestion.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistActionSuggestion.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistActionSuggestion.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistActionSuggestion.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistActionSuggestion~partial.swiftmodule"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/NetworkAssist/Sources/NetworkAssistInvestigation.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistInvestigation.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistInvestigation.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistInvestigation.dia",
+    "index-unit-output-path" : "/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistInvestigation.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistInvestigation.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistInvestigation.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistInvestigation.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/NetworkAssist.build/Debug-iphonesimulator/NetworkAssist.build/Objects-normal/arm64/NetworkAssistInvestigation~partial.swiftmodule"
+  }
+}

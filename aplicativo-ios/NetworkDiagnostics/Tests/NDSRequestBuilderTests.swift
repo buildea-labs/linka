@@ -22,7 +22,7 @@ final class NDSRequestBuilderTests: XCTestCase {
         XCTAssertEqual(request.app?.version, "1.0.0")
         XCTAssertEqual(request.capabilities, ["ai"])
         XCTAssertEqual(request.connection?.type, "wifi")
-        XCTAssertEqual(request.wifi?.rssi, -50)
+        XCTAssertEqual(request.wifi?.rssiDbm, -50)
         XCTAssertEqual(request.speed?.downloadMbps, 100)
     }
 }

@@ -1,0 +1,49 @@
+{
+  "" : {
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetExtension-primary.dia",
+    "emit-module-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetExtension-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetExtension-primary-emit-module.dia",
+    "pch" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetExtension-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetExtension-primary.swiftdeps"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaApp/Sources/UI/DesignSystem.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/DesignSystem.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/DesignSystem.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/DesignSystem.dia",
+    "index-unit-output-path" : "/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/DesignSystem.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/DesignSystem.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/DesignSystem.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/DesignSystem.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/DesignSystem~partial.swiftmodule"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaWidget/Sources/LinkaSpeedTestWidget.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaSpeedTestWidget.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaSpeedTestWidget.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaSpeedTestWidget.dia",
+    "index-unit-output-path" : "/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaSpeedTestWidget.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaSpeedTestWidget.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaSpeedTestWidget.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaSpeedTestWidget.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaSpeedTestWidget~partial.swiftmodule"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaWidget/Sources/LinkaWidgetBundle.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetBundle.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetBundle.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetBundle.dia",
+    "index-unit-output-path" : "/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetBundle.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetBundle.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetBundle.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetBundle.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetBundle~partial.swiftmodule"
+  },
+  "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/aplicativo-ios/LinkaWidget/Sources/LinkaWidgetTimelineProvider.swift" : {
+    "const-values" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetTimelineProvider.swiftconstvalues",
+    "dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetTimelineProvider.d",
+    "diagnostics" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetTimelineProvider.dia",
+    "index-unit-output-path" : "/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetTimelineProvider.o",
+    "llvm-bc" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetTimelineProvider.bc",
+    "object" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetTimelineProvider.o",
+    "swift-dependencies" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetTimelineProvider.swiftdeps",
+    "swiftmodule" : "/Users/giammattey/GitHub Projects/gmmattey/linka-speedtest/build_derived/Build/Intermediates.noindex/LinkaApp.build/Debug-iphonesimulator/LinkaWidgetExtension.build/Objects-normal/arm64/LinkaWidgetTimelineProvider~partial.swiftmodule"
+  }
+}
