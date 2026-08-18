@@ -21,14 +21,14 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
 
         guard let recommendation = ndsResponse.recommendation else {
             // Trata cenários onde recommendation == null
-            let isHealthyScore = (score ?? 0) >= 65 || veredicto == "bom" || veredicto == "excelente"
+            let isHealthyScore = veredicto == "bom" || veredicto == "excelente"
             let hasProblemCards = findings.contains { $0.status == "attention" || $0.status == "critical" }
             
             if isHealthyScore && !hasProblemCards {
                 return NetworkAssistResponse(
                     text: "Seu resultado está bom. Não encontrei nada que exija atenção agora.",
                     disposition: .answered,
-                    evidenceIDs: []
+                    evidenceIDs: [NetworkAssistRequest.currentMeasurementEvidenceID(request.currentMeasurement.id)]
                 )
             } else {
                 return NetworkAssistResponse(

@@ -34,7 +34,7 @@ final class NDSContractTests: XCTestCase {
               "result": {
                 "score": 85,
                 "veredicto": "bom",
-                "observed_dimensions": ["latency", "wifi"]
+                "observed_dimensions": 2
               }
             },
             {

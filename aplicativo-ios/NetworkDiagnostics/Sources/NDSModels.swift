@@ -123,7 +123,7 @@ public struct NDSModuleData: Codable, Equatable, Sendable {
     public var score: Int?
     public var explanation: NDSExplanation?
     public var veredicto: String?
-    public var observedDimensions: [String]?
+    public var observedDimensions: Int?
 
     enum CodingKeys: String, CodingKey {
         case score
@@ -132,7 +132,7 @@ public struct NDSModuleData: Codable, Equatable, Sendable {
         case observedDimensions = "observed_dimensions"
     }
 
-    public init(score: Int? = nil, explanation: NDSExplanation? = nil, veredicto: String? = nil, observedDimensions: [String]? = nil) {
+    public init(score: Int? = nil, explanation: NDSExplanation? = nil, veredicto: String? = nil, observedDimensions: Int? = nil) {
         self.score = score
         self.explanation = explanation
         self.veredicto = veredicto
@@ -144,11 +144,23 @@ public struct NDSResult: Codable, Equatable, Sendable {
     public var module: String?
     public var result: NDSModuleData?
     public var cards: [NDSCard]?
+    public var warnings: [String]?
+    public var missingInputs: [String]?
 
-    public init(module: String? = nil, result: NDSModuleData? = nil, cards: [NDSCard]? = nil) {
+    enum CodingKeys: String, CodingKey {
+        case module
+        case result
+        case cards
+        case warnings
+        case missingInputs = "missing_inputs"
+    }
+
+    public init(module: String? = nil, result: NDSModuleData? = nil, cards: [NDSCard]? = nil, warnings: [String]? = nil, missingInputs: [String]? = nil) {
         self.module = module
         self.result = result
         self.cards = cards
+        self.warnings = warnings
+        self.missingInputs = missingInputs
     }
 }
 
@@ -157,12 +169,22 @@ public struct NDSRecommendation: Codable, Equatable, Sendable {
     public var type: String
     public var title: String
     public var description: String
+    public var sourceFindingIds: [String]?
 
-    public init(id: String, type: String, title: String, description: String) {
+    enum CodingKeys: String, CodingKey {
+        case id
+        case type
+        case title
+        case description
+        case sourceFindingIds = "source_finding_ids"
+    }
+
+    public init(id: String, type: String, title: String, description: String, sourceFindingIds: [String]? = nil) {
         self.id = id
         self.type = type
         self.title = title
         self.description = description
+        self.sourceFindingIds = sourceFindingIds
     }
 }
 
