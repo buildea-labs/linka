@@ -190,12 +190,22 @@ public class SpeedTestViewModel: ObservableObject {
     }
 
     public func loadHistoricalResult(_ measurement: NetworkMeasurement) {
+        if let kind = measurement.connectionKind {
+            switch kind {
+            case .cellular: self.networkType = "Rede Móvel"
+            case .wifi: self.networkType = "Wi-Fi"
+            case .ethernet: self.networkType = "Ethernet"
+            case .other: self.networkType = "Outra"
+            }
+        } else {
+            self.networkType = ""
+        }
+        
         self.downloadSpeed = measurement.downloadMbps ?? 0.0
         self.uploadSpeed = measurement.uploadMbps ?? 0.0
         self.ping = Int((measurement.latencyMs ?? 0).rounded())
         self.jitter = measurement.jitterMs ?? 0.0
         self.provider = measurement.networkIdentifier ?? ""
-        self.networkType = measurement.connectionKind?.rawValue ?? ""
         if let dur = measurement.durationMs {
             self.rawTestDuration = Double(dur) / 1000.0
             self.testDuration = String(format: "%.1fs", self.rawTestDuration!).replacingOccurrences(of: ".", with: ",")

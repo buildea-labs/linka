@@ -11,14 +11,12 @@ struct AssistView: View {
     @StateObject private var viewModel: AssistViewModel
 
     let currentMeasurement: NetworkMeasurement?
-    let recentMeasurements: [NetworkMeasurement]
     let failureSignal: NetworkAssistFailureSignal?
     let onRetry: (() -> Void)?
     let entitlements: StoreKitEntitlementProvider?
 
     init(
         currentMeasurement: NetworkMeasurement?,
-        recentMeasurements: [NetworkMeasurement] = [],
         failureSignal: NetworkAssistFailureSignal? = nil,
         onRetry: (() -> Void)? = nil,
         entitlements: StoreKitEntitlementProvider? = nil,
@@ -26,7 +24,6 @@ struct AssistView: View {
         assistIsRemote: Bool = AssistContainer.isRemoteAssistEnabled()
     ) {
         self.currentMeasurement = currentMeasurement
-        self.recentMeasurements = recentMeasurements
         self.failureSignal = failureSignal
         self.onRetry = onRetry
         self.entitlements = entitlements
@@ -58,18 +55,8 @@ struct AssistView: View {
         #endif
         .navigationBarBackButtonHidden(false)
         .task {
-            var recent = recentMeasurements
-            if recent.isEmpty, let entitlements = entitlements {
-                let query = MeasurementQuery(limit: 20, sortOrder: .newestFirst)
-                let repo = LinkaMeasurementHistory.makeRepository(entitlements: entitlements)
-                if let fetched = try? await repo.measurements(matching: query) {
-                    recent = fetched
-                }
-            }
-            
             await viewModel.load(
                 currentMeasurement: currentMeasurement,
-                recentMeasurements: recent,
                 failureSignal: failureSignal
             )
         }

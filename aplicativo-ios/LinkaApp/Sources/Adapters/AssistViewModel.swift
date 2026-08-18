@@ -27,7 +27,7 @@ final class AssistViewModel: ObservableObject {
         self.assistProvider = assistProvider
     }
 
-    func load(currentMeasurement: NetworkMeasurement?, recentMeasurements: [NetworkMeasurement], failureSignal: NetworkAssistFailureSignal?) async {
+    func load(currentMeasurement: NetworkMeasurement?, failureSignal: NetworkAssistFailureSignal?) async {
         guard case .idle = state else { return }
         
         guard let current = currentMeasurement else {
@@ -40,7 +40,7 @@ final class AssistViewModel: ObservableObject {
         let context = NetworkAssistContext(
             question: "Esse resultado está bom para o que você faz?",
             currentMeasurement: current,
-            recentMeasurements: recentMeasurements,
+            recentMeasurements: [],
             evidence: []
         )
 

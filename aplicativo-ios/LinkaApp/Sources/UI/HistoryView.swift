@@ -164,7 +164,6 @@ struct HistoryView: View {
             // adapter, não um botão escondido depois de calculado.
             AssistView(
                 currentMeasurement: measurements.first,
-                recentMeasurements: Array(measurements.dropFirst().prefix(19)),
                 entitlements: entitlements
             )
         }
