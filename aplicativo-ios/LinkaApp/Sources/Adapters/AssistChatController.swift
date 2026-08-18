@@ -63,6 +63,8 @@ final class AssistChatController: ObservableObject {
     /// sobrescreveria o estado que a pergunta nova acabou de montar.
     private var streamGeneration: Int = 0
 
+    private let orchestrator = AssistDiagnosticOrchestrator()
+
     init(
         currentMeasurement: NetworkMeasurement?,
         recentMeasurements: [NetworkMeasurement],
@@ -75,28 +77,13 @@ final class AssistChatController: ObservableObject {
         self.assistIsRemote = assistIsRemote
     }
 
-    /// Cancela de verdade o stream em andamento (não só para de
-    /// consumir client-side) — issue #69, requisito de aceite de
-    /// cancelamento. Chamado pelo `.onDisappear` de `AssistSheet` quando
-    /// o sheet é fechado.
     func cancelStream() {
         streamTask?.cancel()
     }
 
-    /// Envia a pergunta. Os dois casos sem `currentMeasurement`/com Assist
-    /// desligado são caminhos locais/instantâneos (guard clauses, issue
-    /// #69): a resposta já existe por completo antes de qualquer
-    /// round-trip, então revela de uma vez e nunca passa pela máquina de
-    /// streaming — não fingir "pensamento" sobre algo que já está pronto.
-    /// Só quando há de fato uma pergunta a consultar é que
-    /// `consumeAssistStream` (via `streamAnswer`) entra em cena.
     func submitQuestion(_ q: String) {
         streamTask?.cancel()
         streamTask = nil
-        // Avança a geração ANTES de qualquer outra coisa (PR #101, R2) —
-        // é essa ordem síncrona que garante que uma Task antiga, ao notar
-        // seu próprio cancelamento mais tarde, sempre encontre
-        // `streamGeneration` já apontando para a pergunta nova.
         streamGeneration += 1
         let myGeneration = streamGeneration
         streamingMessageID = nil
@@ -105,7 +92,19 @@ final class AssistChatController: ObservableObject {
         if let index = availableQuestions.firstIndex(of: q) {
             availableQuestions.remove(at: index)
         }
-        messages.append(ChatMessage(text: q, isUser: true))
+        
+        // Verifica interceptação de Widgets
+        if q == "Novo Teste" {
+            messages.append(ChatMessage(payload: .speedTestWidget(isActive: true, currentProgress: 0.0), isUser: true))
+            runInlineTest(generation: myGeneration)
+            return
+        } else if q == "Diagnóstico" {
+            messages.append(ChatMessage(payload: .diagnosticWidget(status: "Iniciando NDS..."), isUser: true))
+            runInlineDiagnostic(generation: myGeneration)
+            return
+        } else {
+            messages.append(ChatMessage(text: q, isUser: true))
+        }
 
         guard let currentMeasurement else {
             isTyping = false
@@ -131,11 +130,69 @@ final class AssistChatController: ObservableObject {
             currentMeasurement: currentMeasurement,
             recentMeasurements: recentMeasurements,
             evidence: [],
+            diagnosticPayload: nil,
             locale: "pt-BR"
         )
 
         streamTask = Task { @MainActor in
             await consumeAssistStream(for: context, generation: myGeneration)
+        }
+    }
+    
+    private func runInlineTest(generation: Int) {
+        streamTask = Task { @MainActor in
+            do {
+                let m = try await orchestrator.runSpeedTestInline { state in
+                    guard self.streamGeneration == generation else { return }
+                    if let idx = self.messages.lastIndex(where: { if case .speedTestWidget = $0.payload { return true } else { return false } }) {
+                        self.messages[idx].payload = .speedTestWidget(isActive: true, currentProgress: state.progress)
+                    }
+                }
+                guard self.streamGeneration == generation else { return }
+                if let idx = self.messages.lastIndex(where: { if case .speedTestWidget = $0.payload { return true } else { return false } }) {
+                    self.messages[idx].payload = .speedTestWidget(isActive: false, currentProgress: 1.0)
+                }
+                
+                // Encadeia com o modelo
+                let context = NetworkAssistContext(
+                    question: "Interprete este novo resultado.",
+                    currentMeasurement: m,
+                    recentMeasurements: self.recentMeasurements,
+                    evidence: [],
+                    diagnosticPayload: nil,
+                    locale: "pt-BR"
+                )
+                self.isTyping = true
+                await self.consumeAssistStream(for: context, generation: generation)
+            } catch {
+                self.handleStreamFailure(error)
+            }
+        }
+    }
+    
+    private func runInlineDiagnostic(generation: Int) {
+        streamTask = Task { @MainActor in
+            guard let m = self.currentMeasurement else { return }
+            do {
+                let report = try await orchestrator.runDiagnostics(on: m)
+                guard self.streamGeneration == generation else { return }
+                if let idx = self.messages.lastIndex(where: { if case .diagnosticWidget = $0.payload { return true } else { return false } }) {
+                    self.messages[idx].payload = .diagnosticWidget(status: "Concluído")
+                }
+                
+                let context = NetworkAssistContext(
+                    question: "Eis o resultado do diagnóstico detalhado para análise.",
+                    currentMeasurement: m,
+                    recentMeasurements: self.recentMeasurements,
+                    evidence: [],
+                    diagnosticPayload: report,
+                    locale: "pt-BR"
+                )
+                self.isTyping = true
+                await self.consumeAssistStream(for: context, generation: generation)
+            } catch {
+                self.handleStreamFailure(error)
+            }
         }
     }
 
@@ -280,6 +337,10 @@ final class AssistChatController: ObservableObject {
             messages[index].longText = long
         } else {
             messages.append(ChatMessage(text: short, longText: long, isUser: false))
+        }
+        
+        if let suggestions = response.suggestions, !suggestions.isEmpty {
+            self.availableQuestions = suggestions
         }
     }
 

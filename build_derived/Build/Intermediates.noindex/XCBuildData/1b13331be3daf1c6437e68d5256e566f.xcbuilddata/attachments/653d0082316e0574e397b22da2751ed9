@@ -1,4 +1,0 @@
-module LinkaModules {
-header "LinkaModules-Swift.h"
-export *
-}

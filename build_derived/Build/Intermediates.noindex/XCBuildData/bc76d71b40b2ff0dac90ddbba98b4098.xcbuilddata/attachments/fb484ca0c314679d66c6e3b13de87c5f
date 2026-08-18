@@ -1,4 +1,0 @@
-module NetworkCore {
-header "NetworkCore-Swift.h"
-export *
-}

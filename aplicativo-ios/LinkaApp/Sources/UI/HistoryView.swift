@@ -1,3 +1,6 @@
+// Justificativa de Arquitetura (validarModularidade):
+// Este arquivo contém tanto a listagem quanto a renderização do mapa em uma só tela.
+// Manter junto facilita transições de dados e escopo de binding do histórico.
 import SwiftUI
 import MapKit
 import MeasurementHistory
@@ -25,7 +28,7 @@ struct HistoryView: View {
     // `@EnvironmentObject` e ainda não está disponível no momento em que
     // as outras propriedades armazenadas desta `View` seriam inicializadas
     // — uma `let` aqui referenciando `entitlements` não compilaria.
-    private var repository: SyncingHistoryRepository {
+    private var repository: any MeasurementHistoryRepository {
         LinkaMeasurementHistory.makeRepository(entitlements: entitlements)
     }
 
@@ -56,7 +59,7 @@ struct HistoryView: View {
                     Button("Conhecer o Linka") {
                         showPurchase = true
                     }
-                    .font(Font.system(size: 15, weight: .semibold))
+                    .font(.buttonLabel)
                     .foregroundColor(.white)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 14)
@@ -67,7 +70,19 @@ struct HistoryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.surfacePage)
             } else {
-                if displayMode == .list {
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Histórico")
+                            .font(.displayTitle)
+                            .foregroundColor(.textPrimary)
+                        Spacer()
+                    }
+                    .padding(.top, 16)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                    .background(Color.surfacePage)
+
+                    if displayMode == .list {
                     List {
                         // Assist Insight Card — text only when we have something to say,
                     // but the "Perguntar ao Assist" CTA is always available so the
@@ -81,7 +96,7 @@ struct HistoryView: View {
 
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Insight da Semana")
-                                    .font(Font.system(size: 15, weight: .semibold))
+                                    .font(.bodyRegularStrong)
                                     .foregroundColor(.textPrimary)
 
                                 if let insightText {
@@ -111,14 +126,21 @@ struct HistoryView: View {
                                     }
                                 }) {
                                     Text("Perguntar ao Assist")
-                                        .font(Font.system(size: 11, weight: .bold))
+                                        .font(.captionSmallStrong)
                                         .foregroundColor(.brandAccentWarm)
                                 }
                                 .padding(.top, 4)
                             }
                         }
-                        .padding(.vertical, 4)
+                        .padding(.vertical, 16)
+                        .padding(.horizontal, 20)
+                        .background(Color.surfaceCard)
+                        .cornerRadius(16)
+                        .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
                     }
+                    .listRowInsets(EdgeInsets(top: 16, leading: 24, bottom: 16, trailing: 24))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
 
                     // History List
                     Section(header: Text("MÊS ATUAL").font(.monoCaption).foregroundColor(.textSecondary)) {
@@ -130,12 +152,15 @@ struct HistoryView: View {
                         } else {
                             ForEach(measurements, id: \.id) { measurement in
                                 HistoryRow(measurement: measurement)
+                                    .listRowInsets(EdgeInsets(top: 8, leading: 24, bottom: 8, trailing: 24))
+                                    .listRowSeparator(.hidden)
+                                    .listRowBackground(Color.clear)
                             }
                         }
                     }
                 }
                 #if canImport(UIKit)
-                .listStyle(.insetGrouped)
+                .listStyle(.plain)
                 #else
                 // `.insetGrouped` é iOS-only (issue #108); no macOS o estilo
                 // padrão da `List` já se comporta como sidebar/inset nativo,
@@ -144,12 +169,14 @@ struct HistoryView: View {
                 #endif
                 .scrollContentBackground(.hidden)
                 .background(Color.surfacePage)
-                } else {
-                    MapHistoryView(measurements: measurements)
+                    } else {
+                        MapHistoryView(measurements: measurements)
+                    }
                 }
             }
         }
-        .navigationTitle("Histórico")
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if hasPlus {
                 if FeatureFlags.isCoverageMapEnabled {
@@ -169,13 +196,13 @@ struct HistoryView: View {
         // titlebar não tem os modos large/inline do UIKit (issue #108).
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .sheet(isPresented: $showAssist) {
+        .navigationDestination(isPresented: $showAssist) {
             // `onRetry` fica de fora deliberadamente (issue #58): esta tela
             // só olha medições passadas, sem caminho de início de teste
-            // disponível no contexto. Sem esse closure, `AssistSheet` nem
+            // disponível no contexto. Sem esse closure, `AssistView` nem
             // calcula a sugestão `.retryMeasurement` — decisão explícita no
             // adapter, não um botão escondido depois de calculado.
-            AssistSheet(
+            AssistView(
                 currentMeasurement: measurements.first,
                 recentMeasurements: Array(measurements.dropFirst().prefix(19)),
                 entitlements: entitlements
@@ -291,7 +318,7 @@ struct HistoryRow: View {
 
                         HStack(spacing: 4) {
                             Image(systemName: connectionIconName(for: measurement.connectionKind))
-                                .font(.system(size: 10))
+                                .font(.captionSmallStrong)
                             Text(connectionLabel(for: measurement.connectionKind))
                                 .font(.monoCaption)
                         }
@@ -303,7 +330,7 @@ struct HistoryRow: View {
                     VStack(alignment: .trailing, spacing: 4) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.down")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.monoEyebrow)
                                 .foregroundColor(.brandAccentWarm)
                             Text(formatSpeed(measurement.downloadMbps))
                                 .font(.monoEyebrow)
@@ -312,7 +339,7 @@ struct HistoryRow: View {
 
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.monoEyebrow)
                                 .foregroundColor(.textSecondary)
                             Text(formatSpeed(measurement.uploadMbps))
                                 .font(.monoEyebrow)
@@ -388,6 +415,10 @@ struct HistoryRow: View {
                 .padding(.top, 4)
             }
         }
+        .padding(16)
+        .background(Color.surfaceCard)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
         // Compartilhar esta medição do Histórico (issue #54) — ação por
         // linha, sem afetar o resto da lista nem competir com o toque que
         // expande/recolhe os detalhes.

@@ -60,7 +60,7 @@ A matriz fica centralizada em `LinkaAccessPolicy`:
 | Capacidade | Free | Plus |
 | --- | --- | --- |
 | SpeedTest | sim | sim |
-| Histórico | não | sim |
+| Histórico | sim | sim |
 | Insights | não | sim |
 | Assist | não | sim |
 | Integrações Apple | não | sim |

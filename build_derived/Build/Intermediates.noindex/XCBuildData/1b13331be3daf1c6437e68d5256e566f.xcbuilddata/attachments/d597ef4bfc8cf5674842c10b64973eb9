@@ -1,4 +1,0 @@
-module NetworkInsights {
-header "NetworkInsights-Swift.h"
-export *
-}

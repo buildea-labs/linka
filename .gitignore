@@ -50,3 +50,11 @@ xcuserdata/
 
 # Firebase Hosting deploy cache
 .firebase/
+
+# Build Derived
+build_derived/
+
+
+# SwiftPM
+.swiftpm/
+

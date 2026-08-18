@@ -9,7 +9,7 @@ import StoreKit
 /// 2. Configurar um StoreKit Configuration file local (`.storekit`) e
 ///    associá-lo ao scheme de teste antes de qualquer TestFlight.
 public enum LinkaStoreProductID {
-    /// Produto ativo hoje na `PurchaseSheet`: "R$ 34,90/ano".
+    /// Produto ativo hoje na `PurchaseSheet`: "R$ 19,90/ano".
     public static let plusAnnual = "com.linka.plus.annual"
 
     /// Reservado para uma futura oferta mensal.

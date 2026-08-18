@@ -23,10 +23,10 @@ private actor NeverCallsCloudKitRemoteStore: MeasurementRemoteStore {
 }
 
 final class LinkaModulesTests: XCTestCase {
-    func testFreeTierOnlyIncludesSpeedTest() {
-        XCTAssertEqual(LinkaAccessPolicy.capabilities(for: .free), [.speedTest])
+    func testFreeTierIncludesSpeedTestAndHistory() {
+        XCTAssertEqual(LinkaAccessPolicy.capabilities(for: .free), [.speedTest, .history])
         XCTAssertTrue(LinkaAccessPolicy.hasAccess(to: .speedTest, on: .free))
-        XCTAssertFalse(LinkaAccessPolicy.hasAccess(to: .history, on: .free))
+        XCTAssertTrue(LinkaAccessPolicy.hasAccess(to: .history, on: .free))
         XCTAssertFalse(LinkaAccessPolicy.hasAccess(to: .insights, on: .free))
         XCTAssertFalse(LinkaAccessPolicy.hasAccess(to: .assist, on: .free))
         XCTAssertFalse(LinkaAccessPolicy.hasAccess(to: .appleIntegrations, on: .free))

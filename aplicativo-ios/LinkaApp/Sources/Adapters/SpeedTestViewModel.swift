@@ -1,3 +1,6 @@
+// Justificativa de Arquitetura (validarModularidade):
+// Este arquivo gerencia o ciclo de vida e a coordenação entre o motor (LinkaEngine) e a UI de medição.
+// Fica coeso manter as conversões de publish em um só lugar para garantir transições atômicas de UI.
 import Foundation
 import Combine
 import Network
@@ -174,24 +177,55 @@ public class SpeedTestViewModel: ObservableObject {
                     // (mesmo de sessão anterior), não só quando o usuário mede
                     // dentro desta sessão. Sem isto, o usuário perde a
                     // referência do último teste entre relançamentos do app.
-                    if self.lastValidResultSnapshot == nil {
-                        self.lastValidResultSnapshot = ResultSnapshot(
-                            downloadSpeed: dl,
-                            uploadSpeed: last.uploadMbps ?? 0,
-                            ping: Int((last.latencyMs ?? 0).rounded()),
-                            jitter: last.jitterMs ?? 0,
-                            provider: last.networkIdentifier ?? "",
-                            networkType: last.connectionKind?.rawValue ?? "",
-                            testDuration: last.durationMs.map { "\($0 / 1000)s" } ?? "",
-                            packetLossPercent: last.packetLossPercent,
-                            connectionKind: last.connectionKind,
-                            wifiBandGHz: last.wifiBandGHz
-                        )
+                    if self.lastValidResultSnapshot == nil && self.uiPhase == .idle {
+                        self.loadHistoricalResult(last)
                     }
+                }
+            } else {
+                if self.uiPhase == .idle {
+                    self.startTest()
                 }
             }
         }
     }
+
+    public func loadHistoricalResult(_ measurement: NetworkMeasurement) {
+        self.downloadSpeed = measurement.downloadMbps ?? 0.0
+        self.uploadSpeed = measurement.uploadMbps ?? 0.0
+        self.ping = Int((measurement.latencyMs ?? 0).rounded())
+        self.jitter = measurement.jitterMs ?? 0.0
+        self.provider = measurement.networkIdentifier ?? ""
+        self.networkType = measurement.connectionKind?.rawValue ?? ""
+        if let dur = measurement.durationMs {
+            self.rawTestDuration = Double(dur) / 1000.0
+            self.testDuration = String(format: "%.1fs", self.rawTestDuration!).replacingOccurrences(of: ".", with: ",")
+        } else {
+            self.rawTestDuration = nil
+            self.testDuration = ""
+        }
+        self.packetLossPercent = measurement.packetLossPercent
+        self.loadedLatencyMs = measurement.loadedLatencyMs
+        self.connectionKind = measurement.connectionKind
+        self.wifiBandGHz = measurement.wifiBandGHz
+        
+        self.lastValidResultSnapshot = ResultSnapshot(
+            downloadSpeed: self.downloadSpeed,
+            uploadSpeed: self.uploadSpeed,
+            ping: self.ping,
+            jitter: self.jitter,
+            provider: self.provider,
+            networkType: self.networkType,
+            testDuration: self.testDuration,
+            packetLossPercent: self.packetLossPercent,
+            connectionKind: self.connectionKind,
+            wifiBandGHz: self.wifiBandGHz
+        )
+        
+        self.progress = 1.0
+        self.uiPhase = .done
+        self.isTesting = false
+    }
+
     
     public func startTest() {
         guard !isTesting else { return }

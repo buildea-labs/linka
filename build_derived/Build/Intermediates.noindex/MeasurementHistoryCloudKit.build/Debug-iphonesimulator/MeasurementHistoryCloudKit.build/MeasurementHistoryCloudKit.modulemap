@@ -1,4 +1,0 @@
-module MeasurementHistoryCloudKit {
-header "MeasurementHistoryCloudKit-Swift.h"
-export *
-}

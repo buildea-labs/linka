@@ -1,4 +1,0 @@
-module LinkaWidgetShared {
-header "LinkaWidgetShared-Swift.h"
-export *
-}

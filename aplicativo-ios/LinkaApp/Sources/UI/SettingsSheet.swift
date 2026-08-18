@@ -26,140 +26,108 @@ struct SettingsSheet: View {
     }
     
     var body: some View {
-        List {
-            Section(header: Text("ATIVIDADE").font(.monoCaption).foregroundColor(.textSecondary)) {
-                NavigationLink(destination: HistoryView()) {
-                    HStack {
-                        Text("Histórico")
-                            .foregroundColor(.textPrimary)
-                        Spacer()
-                        Text("\(testCount) testes")
-                            .foregroundColor(.textSecondary)
-                    }
-                }
-                .listRowBackground(Color.surfaceCard)
-            }
-
-            Section(header: Text("APARÊNCIA").font(.monoCaption).foregroundColor(.textSecondary)) {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                // Custom Header
                 HStack {
-                    Text("Aparência")
+                    Text("Ajustes")
+                        .font(.displayTitle)
                         .foregroundColor(.textPrimary)
                     Spacer()
-                    Picker("Aparência", selection: $appAppearance) {
-                        Text("Claro").tag("light")
-                        Text("Escuro").tag("dark")
-                        Text("Sistema").tag("system")
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 180)
                 }
-                .listRowBackground(Color.surfaceCard)
-            }
+                .padding(.top, 16)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
 
-            Section(header: Text("ASSINATURA").font(.monoCaption).foregroundColor(.textSecondary)) {
-                Button(action: { showPurchase = true }) {
-                    HStack {
-                        Text("Linka")
-                            .foregroundColor(.textPrimary)
-                        Spacer()
-                        Text(subscriptionStatusText)
-                            .foregroundColor(.textSecondary)
-                        Image(systemName: "chevron.right")
-                            .font(.bodySmallStrong)
-                            .foregroundColor(.chevronAffordance)
+                VStack(spacing: 24) {
+                    SettingsSection(header: "ATIVIDADE") {
+                        NavigationLink(destination: HistoryView()) {
+                            SettingsRowContent(title: "Histórico", subtitle: "\(testCount) testes", showChevron: false)
+                        }
                     }
-                }
-                .listRowBackground(Color.surfaceCard)
-            }
 
-            Section(header: Text("GERAL").font(.monoCaption).foregroundColor(.textSecondary)) {
-                Button(action: { /* placeholder */ }) {
-                    HStack {
-                        Text("Buscar atualização")
-                            .foregroundColor(.textPrimary)
-                        Spacer()
-                        Text("Buscar agora")
-                            .foregroundColor(.textSecondary)
+                    SettingsSection(header: "APARÊNCIA") {
+                        HStack {
+                            Text("Aparência")
+                                .foregroundColor(.textPrimary)
+                            Spacer()
+                            Picker("Aparência", selection: $appAppearance) {
+                                Text("Claro").tag("light")
+                                Text("Escuro").tag("dark")
+                                Text("Sistema").tag("system")
+                            }
+                            .pickerStyle(.segmented)
+                            .frame(width: 180)
+                        }
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 16)
                     }
-                }
-                .listRowBackground(Color.surfaceCard)
 
-                Button(action: { /* placeholder */ }) {
-                    HStack {
-                        Text("Notas da versão")
-                            .foregroundColor(.textPrimary)
-                        Spacer()
-                        Text("Versão \(appVersion)")
-                            .foregroundColor(.textSecondary)
-                        Image(systemName: "chevron.right")
-                            .font(.bodySmallStrong)
-                            .foregroundColor(.chevronAffordance)
+                    SettingsSection(header: "ASSINATURA") {
+                        Button(action: { showPurchase = true }) {
+                            SettingsRowContent(title: "Linka", subtitle: subscriptionStatusText, showChevron: true)
+                        }
                     }
-                }
-                .listRowBackground(Color.surfaceCard)
-            }
 
-            Section(header: Text("SOBRE O APP").font(.monoCaption).foregroundColor(.textSecondary)) {
-                SettingsRow(icon: "info.circle.fill", color: Color(red: 0.1, green: 0.2, blue: 0.4), title: "Sobre Nós", url: "https://linka-speedtest.web.app")
-                SettingsRow(icon: "speedometer", color: .orange, title: "Como medimos", url: "https://linka-speedtest.web.app/como-medimos")
-                SettingsRow(icon: "lock.fill", color: .gray, title: "Privacidade & Termos de Uso", url: "https://linka-speedtest.web.app/privacidade")
-            }
-            .listRowBackground(Color.surfaceCard)
-
-            #if DEBUG
-            // Atalhos de desenvolvimento para exercitar a UI Plus sem
-            // depender de um StoreKit Configuration file. Compilados
-            // apenas em builds DEBUG — não existem no binário de
-            // Release (issue #60, requisito de aceite 5).
-            Section(header: Text("DEBUG INTERNO").font(.monoCaption).foregroundColor(.brandAccentWarm)) {
-                Button(action: { entitlements.debugForcePlus() }) {
-                    HStack {
-                        Image(systemName: "bolt.fill")
-                            .foregroundColor(.brandAccentWarm)
-                        Text("Forçar Linka Plus (DEBUG)")
-                            .foregroundColor(.textPrimary)
+                    SettingsSection(header: "GERAL") {
+                        Button(action: { /* placeholder */ }) {
+                            SettingsRowContent(title: "Buscar atualização", subtitle: "Buscar agora", showChevron: false)
+                        }
+                        Divider().padding(.leading, 16)
+                        Button(action: { /* placeholder */ }) {
+                            SettingsRowContent(title: "Notas da versão", subtitle: "Versão \(appVersion)", showChevron: true)
+                        }
                     }
-                }
 
-                Button(action: { entitlements.debugResetToFree() }) {
-                    HStack {
-                        Image(systemName: "trash.fill")
-                            .foregroundColor(.brandAccentWarm)
-                        Text("Resetar Compra Mockada")
-                            .foregroundColor(.textPrimary)
+                    SettingsSection(header: "SOBRE O APP") {
+                        SettingsRow(icon: "info.circle.fill", color: Color(red: 0.1, green: 0.2, blue: 0.4), title: "Sobre Nós", url: "https://linka-speedtest.web.app")
+                        Divider().padding(.leading, 56)
+                        SettingsRow(icon: "speedometer", color: .orange, title: "Como medimos", url: "https://linka-speedtest.web.app/como-medimos")
+                        Divider().padding(.leading, 56)
+                        SettingsRow(icon: "lock.fill", color: .gray, title: "Privacidade & Termos de Uso", url: "https://linka-speedtest.web.app/privacidade")
                     }
-                }
-            }
-            .listRowBackground(Color.surfaceCard)
-            #endif
 
-            Section {
-                EmptyView()
-            } footer: {
-                Text("Linka Speedtest · Versão \(appVersion)")
-                    .font(.captionMedium)
-                    .foregroundColor(.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    #if DEBUG
+                    SettingsSection(header: "DEBUG INTERNO", headerColor: .brandAccentWarm) {
+                        Button(action: { entitlements.debugForcePlus() }) {
+                            HStack {
+                                Image(systemName: "bolt.fill")
+                                    .foregroundColor(.brandAccentWarm)
+                                Text("Forçar Linka Plus (DEBUG)")
+                                    .foregroundColor(.textPrimary)
+                                Spacer()
+                            }
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 16)
+                        }
+                        Divider().padding(.leading, 16)
+                        Button(action: { entitlements.debugResetToFree() }) {
+                            HStack {
+                                Image(systemName: "trash.fill")
+                                    .foregroundColor(.brandAccentWarm)
+                                Text("Resetar Compra Mockada")
+                                    .foregroundColor(.textPrimary)
+                                Spacer()
+                            }
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 16)
+                        }
+                    }
+                    #endif
+
+                    Text("Linka Speedtest · Versão \(appVersion)")
+                        .font(.captionMedium)
+                        .foregroundColor(.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 16)
+                        .padding(.bottom, 40)
+                }
             }
         }
-        #if canImport(UIKit)
-        .listStyle(.insetGrouped)
-        #else
-        // `.insetGrouped` é iOS-only (issue #114); o estilo padrão da
-        // `List` no macOS já se comporta como sidebar/inset nativo, sem
-        // equivalente 1:1 que valha a pena forçar aqui (mesmo raciocínio
-        // de HistoryView, issue #108).
-        .listStyle(.automatic)
-        #endif
-        .scrollContentBackground(.hidden)
         .background(Color.surfacePage.ignoresSafeArea())
-        .navigationTitle("Ajustes")
+        .navigationTitle("")
         #if canImport(UIKit)
-        // `navigationBarTitleDisplayMode` e o placement `.navigationBar`
-        // do toolbar não existem no macOS — lá a titlebar não tem os
-        // modos large/inline do UIKit, nem uma navigation bar separada
-        // pra colorir (issue #114, mesmo padrão de HistoryView/#108).
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color.surfacePage, for: .navigationBar)
         #endif
         .onAppear {
@@ -175,7 +143,7 @@ struct SettingsSheet: View {
     private var subscriptionStatusText: String {
         switch entitlements.snapshot.plan {
         case .free:
-            return "R$ 34,90/ano"
+            return "R$ 19,90/ano"
         case .plus:
             return entitlements.snapshot.status == .active ? "Ativo" : "Expirado"
         }
@@ -192,10 +160,6 @@ struct SettingsSheet: View {
 }
 
 private extension Color {
-    /// Cor de baixa ênfase para o chevron de navegação/afordance.
-    /// `UIColor.tertiaryLabel` é iOS-only (issue #114); `NSColor
-    /// .tertiaryLabelColor` é o equivalente semântico direto no AppKit,
-    /// mesmo papel de "texto terciário" que o macOS já expõe nativamente.
     static var chevronAffordance: Color {
         #if canImport(UIKit)
         Color(UIColor.tertiaryLabel)
@@ -204,6 +168,54 @@ private extension Color {
         #else
         Color.textSecondary
         #endif
+    }
+}
+
+struct SettingsSection<Content: View>: View {
+    var header: String
+    var headerColor: Color = .textSecondary
+    @ViewBuilder var content: Content
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(header.uppercased())
+                .font(.monoCaption)
+                .foregroundColor(headerColor)
+                .padding(.horizontal, 24)
+            
+            VStack(spacing: 0) {
+                content
+            }
+            .background(Color.surfaceCard)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+            .padding(.horizontal, 24)
+        }
+    }
+}
+
+struct SettingsRowContent: View {
+    var title: String
+    var subtitle: String?
+    var showChevron: Bool
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .foregroundColor(.textPrimary)
+            Spacer()
+            if let subtitle = subtitle {
+                Text(subtitle)
+                    .foregroundColor(.textSecondary)
+            }
+            if showChevron {
+                Image(systemName: "chevron.right")
+                    .font(.bodySmallStrong)
+                    .foregroundColor(.chevronAffordance)
+            }
+        }
+        .padding(.vertical, 16)
+        .padding(.horizontal, 16)
     }
 }
 
@@ -239,6 +251,8 @@ struct SettingsRow: View {
                     .font(.bodySmallStrong)
                     .foregroundColor(.chevronAffordance)
             }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
         }
     }
 }

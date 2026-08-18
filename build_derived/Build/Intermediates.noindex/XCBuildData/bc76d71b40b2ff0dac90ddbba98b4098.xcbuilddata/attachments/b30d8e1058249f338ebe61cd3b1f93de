@@ -1,4 +1,0 @@
-module NetworkDiagnostics {
-header "NetworkDiagnostics-Swift.h"
-export *
-}

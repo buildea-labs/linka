@@ -1,4 +1,0 @@
-module LinkaAppIntents {
-header "LinkaAppIntents-Swift.h"
-export *
-}

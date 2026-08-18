@@ -1,3 +1,6 @@
+// Justificativa de Arquitetura (validarModularidade):
+// Este arquivo coordena a hierarquia principal da interface de medição e a disposição dos painéis auxiliares.
+// Dividi-lo criaria complexidade de injeção de estado desnecessária na raiz do aplicativo.
 import SwiftUI
 import AudioToolbox
 import LinkaEngine
@@ -217,7 +220,7 @@ struct MainView: View {
                                     .font(.bodySmall)
                                     .foregroundColor(.textSecondary)
                             }
-                            .padding(.bottom, 24)
+                            .padding(.bottom, 14)
                             
                             HStack(spacing: 12) {
                                 Button(action: {
@@ -225,58 +228,36 @@ struct MainView: View {
                                 }) {
                                     HStack(spacing: 6) {
                                         Text("Ver detalhes")
-                                            .font(.bodySmall)
+                                            .font(.bodySmallStrong)
 
                                         Image(systemName: "chevron.down")
-                                            .font(.system(size: 10, weight: .semibold))
+                                            .font(.captionStrong)
                                             .rotationEffect(.degrees(detailsOpen ? 180 : 0))
                                     }
                                     .foregroundColor(.textPrimary)
                                 }
                                 .buttonStyle(.plain)
-
-                                Text("·")
-                                    .font(.bodySmall)
-                                    .foregroundColor(.textSecondary)
-
-                                Button(action: {
-                                    // Assist é feature Plus. Usuário Free vai
-                                    // direto para a tela de assinatura em vez
-                                    // de abrir o sheet e receber mensagem
-                                    // "faz parte do Plus" no meio da conversa.
-                                    let assistDecision = LinkaEntitlementPolicy.decision(
-                                        for: .assist,
-                                        snapshot: entitlements.snapshot,
-                                        at: Date()
-                                    )
-                                    if assistDecision.isGranted {
-                                        showAssist = true
-                                    } else {
-                                        showPurchase = true
-                                    }
-                                }) {
-                                    HStack(spacing: 6) {
-                                        Text("Perguntar ao Assist")
-                                            .font(.bodySmall)
-
-                                        Image(systemName: "sparkles")
-                                            .font(.system(size: 10, weight: .semibold))
-                                    }
-                                    .foregroundColor(.textPrimary)
-                                }
-                                .buttonStyle(.plain)
-
                             }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 16)
+                            .padding(.bottom, 16)
                             
-
+                            AssistTeaserCard(
+                                downloadSpeed: viewModel.downloadSpeed,
+                                onFreeTap: {
+                                    showPurchase = true
+                                },
+                                onPlusTap: {
+                                    showAssist = true
+                                },
+                                isPlusActive: isPlusActive
+                            )
+                            .padding(.horizontal, 32)
+                            .padding(.top, 16)
                             
-                            // Último teste Glass Pill
+                            // Último teste (Linha chapada)
                             NavigationLink(destination: HistoryView()) {
                                 HStack {
                                     Text("Último teste")
-                                        .font(.bodySmall.weight(.medium))
+                                        .font(.bodyRegularStrong)
                                         .foregroundColor(.textPrimary)
                                     
                                     Spacer()
@@ -286,21 +267,18 @@ struct MainView: View {
                                         .foregroundColor(.textSecondary)
                                     
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 10, weight: .semibold))
+                                        .font(.captionStrong)
                                         .foregroundColor(.textSecondary)
                                 }
-                                .padding(.vertical, 12)
+                                .padding(.vertical, 14)
                                 .padding(.horizontal, 16)
-                                .background(.ultraThinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-                                )
-                                .padding(.horizontal, 32)
+                                .background(Color.surfaceCard)
+                                .cornerRadius(16)
+                                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
                             }
                             .buttonStyle(.plain)
-                            .padding(.top, 24)
+                            .padding(.horizontal, 32)
+                            .padding(.top, 8)
                             
                             Spacer(minLength: 16)
 
@@ -368,7 +346,7 @@ struct MainView: View {
             #endif
         }
         .onAppear {
-            viewModel.startTest()
+            // Início e carga de histórico controlados por SpeedTestViewModel.init()
         }
         // Widget/Siri/Shortcuts pediram uma medição (issue #55): se o app
         // já estava aberto (foreground), `.onAppear` acima não dispara de
@@ -390,7 +368,7 @@ struct MainView: View {
             showPurchase = true
             intentCoordinator.consumePurchasePrompt()
         }
-        .sheet(isPresented: $showAssist) {
+        .navigationDestination(isPresented: $showAssist) {
             // `onRetry` reusa o mesmo `viewModel.startTest()` do botão
             // "Testar novamente"/"Tentar novamente" (issue #58) — nunca uma
             // nova chamada ao motor. `failureSignal` ainda não é passado
@@ -399,7 +377,7 @@ struct MainView: View {
             // sugestão `.retryMeasurement` nunca chega a ser calculada por
             // falta de `investigation`, então este closure fica pronto sem
             // efeito colateral até essa fiação fechar.
-            AssistSheet(
+            AssistView(
                 currentMeasurement: currentMeasurement,
                 onRetry: { viewModel.startTest() },
                 entitlements: entitlements

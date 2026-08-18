@@ -71,6 +71,7 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
     public let currentMeasurement: NetworkMeasurement
     public let recentMeasurements: [NetworkMeasurement]
     public let evidence: [NetworkAssistEvidence]
+    public let diagnosticPayload: String?
     public let locale: String?
 
     public init(
@@ -78,12 +79,14 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
         currentMeasurement: NetworkMeasurement,
         recentMeasurements: [NetworkMeasurement] = [],
         evidence: [NetworkAssistEvidence] = [],
+        diagnosticPayload: String? = nil,
         locale: String? = nil
     ) {
         self.question = question
         self.currentMeasurement = currentMeasurement
         self.recentMeasurements = recentMeasurements
         self.evidence = evidence
+        self.diagnosticPayload = diagnosticPayload
         self.locale = locale
     }
 }
@@ -128,17 +131,20 @@ public struct NetworkAssistResponse: Codable, Equatable, Sendable {
     public let longText: String?
     public let disposition: NetworkAssistDisposition
     public let evidenceIDs: [String]
+    public let suggestions: [String]?
 
     public init(
         text: String,
         longText: String? = nil,
         disposition: NetworkAssistDisposition = .answered,
-        evidenceIDs: [String] = []
+        evidenceIDs: [String] = [],
+        suggestions: [String]? = nil
     ) {
         self.text = text
         self.longText = longText
         self.disposition = disposition
         self.evidenceIDs = evidenceIDs
+        self.suggestions = suggestions
     }
 }
 

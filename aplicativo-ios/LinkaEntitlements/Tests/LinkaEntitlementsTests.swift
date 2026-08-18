@@ -4,7 +4,7 @@ import XCTest
 final class LinkaEntitlementsTests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 10_000)
 
-    func testFreeAlwaysAllowsSpeedTestAndDeniesPremium() {
+    func testFreeAlwaysAllowsSpeedTestAndHistoryAndDeniesPremium() {
         XCTAssertTrue(
             LinkaEntitlementPolicy.hasAccess(
                 to: .speedTest,
@@ -12,10 +12,16 @@ final class LinkaEntitlementsTests: XCTestCase {
                 at: now
             )
         )
+        XCTAssertTrue(
+            LinkaEntitlementPolicy.hasAccess(
+                to: .history,
+                snapshot: .free,
+                at: now
+            )
+        )
 
         for capability in [
-            LinkaCapability.history,
-            .insights,
+            LinkaCapability.insights,
             .assist,
             .appleIntegrations
         ] {
@@ -60,7 +66,7 @@ final class LinkaEntitlementsTests: XCTestCase {
                 source: .subscription
             )
             let decision = LinkaEntitlementPolicy.decision(
-                for: .history,
+                for: .insights,
                 snapshot: snapshot,
                 at: now
             )
@@ -114,7 +120,7 @@ final class LinkaEntitlementsTests: XCTestCase {
         )
 
         let premiumDecision = LinkaEntitlementPolicy.decision(
-            for: .history,
+            for: .insights,
             snapshot: invalid,
             at: now
         )

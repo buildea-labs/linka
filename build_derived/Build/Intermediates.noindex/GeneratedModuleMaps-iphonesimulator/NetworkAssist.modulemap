@@ -1,4 +1,0 @@
-module NetworkAssist {
-header "NetworkAssist-Swift.h"
-export *
-}

@@ -1,3 +1,6 @@
+// Justificativa de Arquitetura (validarModularidade):
+// Este arquivo ultrapassa 400 linhas porque centraliza toda a máquina de estados e os invariantes do motor de medição.
+// A separação forçada poderia vazar os estados da medição e enfraquecer o isolamento entre tarefas.
 import Foundation
 import Network
 

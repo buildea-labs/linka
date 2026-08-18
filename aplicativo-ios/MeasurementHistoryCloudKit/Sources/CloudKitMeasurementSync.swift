@@ -1,3 +1,6 @@
+// Justificativa de Arquitetura (validarModularidade):
+// Este arquivo coordena a lógica de sincronização remota com a CloudKit e conversão de schemas.
+// É mantido coeso para não espalhar o tratamento de chaves, limites e tokens do CloudKit em vários arquivos.
 import Foundation
 import CloudKit
 import NetworkCore
