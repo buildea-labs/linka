@@ -11,17 +11,9 @@ import LinkaModules
 @main
 struct LinkaApp: App {
     @State private var showSplash = true
-    @AppStorage("appAppearance") private var appAppearance: String = "system"
-
     @StateObject private var entitlements = StoreKitEntitlementProvider()
 
     init() {
-    }
-
-    var colorScheme: ColorScheme? {
-        if appAppearance == "light" { return .light }
-        if appAppearance == "dark" { return .dark }
-        return nil
     }
 
     var body: some Scene {
@@ -39,7 +31,6 @@ struct LinkaApp: App {
                 }
             }
             .environmentObject(entitlements)
-            .preferredColorScheme(colorScheme)
             .task {
                 await entitlements.refreshSnapshot()
             }

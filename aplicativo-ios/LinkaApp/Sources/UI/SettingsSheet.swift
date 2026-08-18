@@ -8,7 +8,6 @@ import AppKit
 #endif
 
 struct SettingsSheet: View {
-    @AppStorage("appAppearance") private var appAppearance: String = "system"
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @State private var showPurchase = false
     @State private var testCount: Int = 0
@@ -19,26 +18,9 @@ struct SettingsSheet: View {
         return "\(version) (build \(build))"
     }
     
-    var colorScheme: ColorScheme? {
-        if appAppearance == "light" { return .light }
-        if appAppearance == "dark" { return .dark }
-        return nil
-    }
-    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // Custom Header
-                HStack {
-                    Text("Ajustes")
-                        .font(.displayTitle)
-                        .foregroundColor(.textPrimary)
-                    Spacer()
-                }
-                .padding(.top, 16)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-
                 VStack(spacing: 24) {
                     SettingsSection(header: "ATIVIDADE") {
                         NavigationLink(destination: HistoryView()) {

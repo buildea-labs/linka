@@ -334,11 +334,9 @@ struct MainView: View {
                     }
                 }
             }
+            .navigationTitle("")
             #if os(iOS)
-            // `for: .navigationBar` é iOS-only (issue #112) — no macOS a
-            // navigation bar tem semântica diferente (titlebar da janela) e
-            // este overload de `.toolbar(.hidden, for:)` não existe.
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
             #endif
         }
         .onAppear {
@@ -423,12 +421,14 @@ struct MainView: View {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 #endif
                 AudioServicesPlaySystemSound(1104)
-                withAnimation(LinkaMotion.pulse) {
-                    ringScale = 1.05
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                if !reduceMotion {
                     withAnimation(LinkaMotion.pulse) {
-                        ringScale = 1.0
+                        ringScale = 1.05
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        withAnimation(LinkaMotion.pulse) {
+                            ringScale = 1.0
+                        }
                     }
                 }
             case .downloading, .done:

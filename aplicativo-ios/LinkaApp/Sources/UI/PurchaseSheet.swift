@@ -89,10 +89,6 @@ struct PurchaseSheet: View {
                             )
                             PurchaseFeatureRow(
                                 text: "Insights e tendências",
-                                showDivider: true
-                            )
-                            PurchaseFeatureRow(
-                                text: "Sem anúncios",
                                 showDivider: false
                             )
                         }

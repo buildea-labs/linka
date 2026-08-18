@@ -136,8 +136,6 @@ struct HistoryView: View {
                 }
             }
         }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if hasPlus {
                 if FeatureFlags.isCoverageMapEnabled {
