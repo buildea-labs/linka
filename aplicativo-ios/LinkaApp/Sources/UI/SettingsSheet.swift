@@ -46,45 +46,18 @@ struct SettingsSheet: View {
                         }
                     }
 
-                    SettingsSection(header: "APARÊNCIA") {
-                        HStack {
-                            Text("Aparência")
-                                .foregroundColor(.textPrimary)
-                            Spacer()
-                            Picker("Aparência", selection: $appAppearance) {
-                                Text("Claro").tag("light")
-                                Text("Escuro").tag("dark")
-                                Text("Sistema").tag("system")
-                            }
-                            .pickerStyle(.segmented)
-                            .frame(width: 180)
-                        }
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 16)
-                    }
-
                     SettingsSection(header: "ASSINATURA") {
                         Button(action: { showPurchase = true }) {
-                            SettingsRowContent(title: "Linka", subtitle: subscriptionStatusText, showChevron: true)
-                        }
-                    }
-
-                    SettingsSection(header: "GERAL") {
-                        Button(action: { /* placeholder */ }) {
-                            SettingsRowContent(title: "Buscar atualização", subtitle: "Buscar agora", showChevron: false)
-                        }
-                        Divider().padding(.leading, 16)
-                        Button(action: { /* placeholder */ }) {
-                            SettingsRowContent(title: "Notas da versão", subtitle: "Versão \(appVersion)", showChevron: true)
+                            SettingsRowContent(title: "Linka Plus", subtitle: subscriptionStatusText, showChevron: true)
                         }
                     }
 
                     SettingsSection(header: "SOBRE O APP") {
-                        SettingsRow(icon: "info.circle.fill", color: Color(red: 0.1, green: 0.2, blue: 0.4), title: "Sobre Nós", url: "https://linka-speedtest.web.app")
+                        SettingsRow(icon: "info.circle.fill", color: Color(red: 0.1, green: 0.2, blue: 0.4), title: "Sobre o Linka", url: "https://linka-speedtest.web.app")
                         Divider().padding(.leading, 56)
                         SettingsRow(icon: "speedometer", color: .orange, title: "Como medimos", url: "https://linka-speedtest.web.app/como-medimos")
                         Divider().padding(.leading, 56)
-                        SettingsRow(icon: "lock.fill", color: .gray, title: "Privacidade & Termos de Uso", url: "https://linka-speedtest.web.app/privacidade")
+                        SettingsRow(icon: "lock.fill", color: .gray, title: "Privacidade & Termos", url: "https://linka-speedtest.web.app/privacidade")
                     }
 
                     #if DEBUG
@@ -115,7 +88,7 @@ struct SettingsSheet: View {
                     }
                     #endif
 
-                    Text("Linka Speedtest · Versão \(appVersion)")
+                    Text("Versão \(appVersion)")
                         .font(.captionMedium)
                         .foregroundColor(.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -125,9 +98,9 @@ struct SettingsSheet: View {
             }
         }
         .background(Color.surfacePage.ignoresSafeArea())
-        .navigationTitle("")
+        .navigationTitle("Ajustes")
+        .navigationBarTitleDisplayMode(.large)
         #if canImport(UIKit)
-        .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color.surfacePage, for: .navigationBar)
         #endif
         .onAppear {
@@ -136,14 +109,12 @@ struct SettingsSheet: View {
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet()
         }
-        .id(appAppearance)
-        .preferredColorScheme(colorScheme)
     }
     
     private var subscriptionStatusText: String {
         switch entitlements.snapshot.plan {
         case .free:
-            return "R$ 19,90/ano"
+            return "Conhecer"
         case .plus:
             return entitlements.snapshot.status == .active ? "Ativo" : "Expirado"
         }

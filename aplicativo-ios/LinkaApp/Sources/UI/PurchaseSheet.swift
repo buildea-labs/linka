@@ -26,17 +26,20 @@ struct PurchaseSheet: View {
                             .frame(width: 30, height: 30)
                             .background(Color.textSecondary.opacity(0.14))
                             .clipShape(Circle())
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                            .accessibilityLabel("Fechar")
                     }
                 }
-                .padding(.trailing, 16)
-                .padding(.top, 16)
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
                 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
-                        // Brand Wordmark
-                        Image("wordmark")
-                            .renderingMode(.template)
+                        // Header Hero
+                        Image("Logo")
                             .resizable()
+                            .renderingMode(.template)
                             .scaledToFit()
                             .frame(height: 32)
                             .foregroundColor(.textPrimary)
@@ -56,12 +59,16 @@ struct PurchaseSheet: View {
                             .padding(.horizontal, 32)
                             
                         // Grátis: o que já funciona sem Plus
-                        PurchaseSectionHeader(text: "No Linka, sempre grátis")
+                        PurchaseSectionHeader(text: "LINKA GRÁTIS")
                             .padding(.top, 32)
 
                         VStack(spacing: 0) {
                             PurchaseFeatureRow(
-                                text: "Medição de velocidade, sem limite",
+                                text: "Medição de velocidade",
+                                showDivider: true
+                            )
+                            PurchaseFeatureRow(
+                                text: "Histórico de resultados",
                                 showDivider: false
                             )
                         }
@@ -72,28 +79,20 @@ struct PurchaseSheet: View {
                         .padding(.horizontal, 24)
 
                         // Plus: capacidades hoje gateadas por LinkaCapability
-                        PurchaseSectionHeader(text: "Com o Linka Plus")
+                        PurchaseSectionHeader(text: "LINKA PLUS")
                             .padding(.top, 24)
 
                         VStack(spacing: 0) {
                             PurchaseFeatureRow(
-                                text: "Histórico ilimitado de medições",
+                                text: "Assist: intérprete IA",
                                 showDivider: true
                             )
                             PurchaseFeatureRow(
-                                text: "Sincronização via iCloud",
+                                text: "Insights e tendências",
                                 showDivider: true
                             )
                             PurchaseFeatureRow(
-                                text: "Comparação de desempenho e tendências",
-                                showDivider: true
-                            )
-                            PurchaseFeatureRow(
-                                text: "Assist: orientação IA sobre a conexão",
-                                showDivider: true
-                            )
-                            PurchaseFeatureRow(
-                                text: "Widgets e Atalhos da Siri",
+                                text: "Sem anúncios",
                                 showDivider: false
                             )
                         }

@@ -9,6 +9,8 @@ struct MetricRing: View {
     var animation: Namespace.ID? = nil
     var matchedId: String? = nil
     
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    
     var body: some View {
         ZStack {
             // Background arc (full circle in the prototype)
@@ -22,7 +24,7 @@ struct MetricRing: View {
                 .stroke(Color.brandSurface, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .frame(width: size, height: size)
-                .animation(.linear(duration: 0.15), value: progress)
+                .animation(reduceMotion ? nil : .linear(duration: 0.15), value: progress)
             
             VStack(spacing: 4) {
                 if connecting {
@@ -31,7 +33,7 @@ struct MetricRing: View {
                         .foregroundColor(.textSecondary)
                 } else {
                     Group {
-                        if let id = matchedId, let ns = animation {
+                        if let id = matchedId, let ns = animation, !reduceMotion {
                             Text(value)
                                 .matchedGeometryEffect(id: id, in: ns)
                         } else {
@@ -55,6 +57,6 @@ struct MetricRing: View {
         .frame(width: size, height: size)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(connecting ? value : "\(value) \(unit ?? "")")
-        .accessibilityValue(String(format: "%.0f porcento", progress * 100))
+        .accessibilityValue(String(format: "%.0f por cento", progress * 100))
     }
 }

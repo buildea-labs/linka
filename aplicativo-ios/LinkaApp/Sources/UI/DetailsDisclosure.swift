@@ -84,6 +84,9 @@ struct DetailsDisclosure: View {
                             .frame(width: 30, height: 30)
                             .background(Color.textSecondary.opacity(0.14))
                             .clipShape(Circle())
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                            .accessibilityLabel("Fechar")
                     }
                 }
                 .padding(.trailing, 16)

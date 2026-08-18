@@ -223,6 +223,8 @@ struct AssistView: View {
         }
     }
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     /// Indicador antes do primeiro trecho da resposta (issue #69):
     /// deliberadamente mínimo e neutro — um único ponto respirando
     /// devagar, sem rótulo "Pensando…" e sem a bolinha tripla saltitante
@@ -235,8 +237,9 @@ struct AssistView: View {
             Circle()
                 .fill(Color.brandAccentWarm)
                 .frame(width: 8, height: 8)
-                .offset(y: progressPulse ? -4 : 4)
+                .offset(y: (progressPulse && !reduceMotion) ? -4 : 0)
                 .onAppear {
+                    guard !reduceMotion else { return }
                     withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
                         progressPulse.toggle()
                     }

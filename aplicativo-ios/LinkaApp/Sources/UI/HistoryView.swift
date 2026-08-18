@@ -39,77 +39,38 @@ struct HistoryView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color.surfacePage)
-            } else if !hasPlus {
-                // Upsell View for Free users
-                VStack(spacing: 24) {
-                    Image(systemName: "clock.badge.exclamationmark")
-                        .font(.system(size: 64, weight: .light))
-                        .foregroundColor(.brandAccentWarm)
-
-                    Text("Linka")
-                        .font(.displayTitle)
-                        .foregroundColor(.textPrimary)
-
-                    Text("O histórico de medições e as análises de rede são exclusivos para assinantes do Linka.")
-                        .font(.bodyRegular)
-                        .foregroundColor(.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-
-                    Button("Conhecer o Linka") {
-                        showPurchase = true
-                    }
-                    .font(.buttonLabel)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .background(Color.brandAccentWarm)
-                    .clipShape(Capsule())
-                    .padding(.top, 16)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.surfacePage)
             } else {
                 VStack(spacing: 0) {
-                    HStack {
-                        Text("Histórico")
-                            .font(.displayTitle)
-                            .foregroundColor(.textPrimary)
-                        Spacer()
-                    }
-                    .padding(.top, 16)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 16)
-                    .background(Color.surfacePage)
-
                     if displayMode == .list {
-                    List {
-                        // Assist Insight Card — text only when we have something to say,
-                    // but the "Perguntar ao Assist" CTA is always available so the
-                    // user can reach the Assist even before enough data exists for
-                    // a weekly insight.
-                    Section {
-                        HStack(alignment: .top, spacing: 16) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 24))
-                                .foregroundColor(.brandAccentWarm)
+                        List {
+                            // Assist Insight Card
+                            Section {
+                                HStack(alignment: .top, spacing: 16) {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.brandAccentWarm)
 
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Insight da Semana")
-                                    .font(.bodyRegularStrong)
-                                    .foregroundColor(.textPrimary)
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("Insight da Semana")
+                                            .font(.bodyRegularStrong)
+                                            .foregroundColor(.textPrimary)
 
-                                if let insightText {
-                                    Text(insightText)
-                                        .font(.bodySmall)
-                                        .foregroundColor(.textSecondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                } else {
-                                    Text("Ainda não há dados suficientes para um resumo semanal — faça alguns testes ao longo dos dias.")
-                                        .font(.bodySmall)
-                                        .foregroundColor(.textSecondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
+                                        if !hasPlus {
+                                            Text("Veja tendências e comparações com Linka Plus")
+                                                .font(.bodySmall)
+                                                .foregroundColor(.textSecondary)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        } else if let insightText {
+                                            Text(insightText)
+                                                .font(.bodySmall)
+                                                .foregroundColor(.textSecondary)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        } else {
+                                            Text("Ainda não há dados suficientes para um resumo semanal — faça alguns testes ao longo dos dias.")
+                                                .font(.bodySmall)
+                                                .foregroundColor(.textSecondary)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
 
                                 Button(action: {
                                     // Assist é Plus. Free vai direto pra
@@ -191,10 +152,11 @@ struct HistoryView: View {
                 }
             }
         }
+        .navigationTitle("Histórico")
         #if canImport(UIKit)
         // `navigationBarTitleDisplayMode` não existe no macOS — lá a
         // titlebar não tem os modos large/inline do UIKit (issue #108).
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         #endif
         .navigationDestination(isPresented: $showAssist) {
             // `onRetry` fica de fora deliberadamente (issue #58): esta tela
@@ -220,25 +182,17 @@ struct HistoryView: View {
     private func loadData() {
         Task {
             let decision = LinkaEntitlementPolicy.decision(
-                for: .history,
+                for: .insights,
                 snapshot: entitlements.snapshot,
                 at: Date()
             )
 
             hasPlus = decision.isGranted
 
-            // Usuário Free tentando acessar Histórico: abre a tela de
-            // assinatura direto em cima do upsell — evita fricção de dois
-            // toques ("entrei em Histórico, agora leio o texto, agora aperto
-            // o botão"). O upsell continua embaixo como fallback caso o
-            // usuário feche o sheet e queira voltar.
-            if !hasPlus {
-                showPurchase = true
-            }
-
+            let query = MeasurementQuery(limit: 50, sortOrder: .newestFirst)
+            measurements = (try? await repository.measurements(matching: query)) ?? []
+            
             if hasPlus {
-                let query = MeasurementQuery(limit: 50, sortOrder: .newestFirst)
-                measurements = (try? await repository.measurements(matching: query)) ?? []
                 insightText = weeklyInsightText(from: measurements)
             }
 

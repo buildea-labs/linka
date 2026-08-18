@@ -58,11 +58,13 @@ struct MainView: View {
     /// não revalida `validUntil` contra o relógio atual; `decision` faz isso.
     private var isPlusActive: Bool {
         LinkaEntitlementPolicy.decision(
-            for: .history,
+            for: .assist,
             snapshot: entitlements.snapshot,
             at: Date()
         ).isGranted
     }
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         NavigationStack {
@@ -70,8 +72,7 @@ struct MainView: View {
                 Color.surfacePage.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Safe Area Padding
-                    Color.clear.frame(height: 80)
+
                     Spacer()
                     
                     if viewModel.uiPhase == .error {
@@ -174,6 +175,8 @@ struct MainView: View {
                                     Text(viewModel.hasValidResult ? "Cancelar" : "Pular")
                                         .font(.bodySmall)
                                         .foregroundColor(.textSecondary)
+                                        .frame(minWidth: 44, minHeight: 44)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .padding(.top, 20)
@@ -235,6 +238,8 @@ struct MainView: View {
                                             .rotationEffect(.degrees(detailsOpen ? 180 : 0))
                                     }
                                     .foregroundColor(.textPrimary)
+                                    .frame(minWidth: 44, minHeight: 44)
+                                    .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -310,32 +315,23 @@ struct MainView: View {
                     }
                 }
             }
-            .overlay(alignment: .topTrailing) {
-                // Settings & History Glass Pills
-                if viewModel.uiPhase == .idle || viewModel.uiPhase == .connecting || viewModel.uiPhase == .done || viewModel.uiPhase == .error {
-                    HStack(spacing: 12) {
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    if viewModel.uiPhase == .idle || viewModel.uiPhase == .connecting || viewModel.uiPhase == .done || viewModel.uiPhase == .error {
                         NavigationLink(destination: HistoryView()) {
                             Image(systemName: "clock")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textPrimary)
-                                .frame(width: 40, height: 40)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
-                                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+                                .accessibilityLabel("Histórico")
                         }
                         
                         NavigationLink(destination: SettingsSheet()) {
                             Image(systemName: "slider.horizontal.3")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textPrimary)
-                                .frame(width: 40, height: 40)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
-                                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+                                .accessibilityLabel("Ajustes")
                         }
                     }
-                    .padding(.trailing, 16)
-                    .padding(.top, 16)
                 }
             }
             #if os(iOS)
@@ -407,7 +403,7 @@ struct MainView: View {
             .presentationDetents([.medium, .large])
             #endif
         }
-        .animation(LinkaMotion.spring, value: viewModel.uiPhase)
+        .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: scenePhase) { newPhase in
             // Mesmo padrão de `.onChange` de parâmetro único já usado neste
             // arquivo (issue #65) — mantém compatibilidade com o
