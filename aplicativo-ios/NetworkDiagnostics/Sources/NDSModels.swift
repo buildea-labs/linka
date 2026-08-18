@@ -119,17 +119,25 @@ public struct NDSResponse: Codable, Equatable, Sendable {
     }
 }
 
-public struct NDSResult: Codable, Equatable, Sendable {
-    public var module: String?
+public struct NDSModuleData: Codable, Equatable, Sendable {
     public var score: Int?
     public var findings: [NDSFinding]?
     public var explanation: NDSExplanation?
 
-    public init(module: String? = nil, score: Int? = nil, findings: [NDSFinding]? = nil, explanation: NDSExplanation? = nil) {
-        self.module = module
+    public init(score: Int? = nil, findings: [NDSFinding]? = nil, explanation: NDSExplanation? = nil) {
         self.score = score
         self.findings = findings
         self.explanation = explanation
+    }
+}
+
+public struct NDSResult: Codable, Equatable, Sendable {
+    public var module: String?
+    public var result: NDSModuleData?
+
+    public init(module: String? = nil, result: NDSModuleData? = nil) {
+        self.module = module
+        self.result = result
     }
 }
 

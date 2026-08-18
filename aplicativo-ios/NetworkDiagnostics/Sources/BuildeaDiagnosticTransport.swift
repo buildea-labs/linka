@@ -23,8 +23,8 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         
         // Extract score and findings properly depending on where they are in NDSResponse
         // Let's assume they are top level, or from the first result
-        let score = ndsResponse.results?.first?.score
-        let findings = ndsResponse.results?.flatMap { $0.findings ?? [] } ?? []
+        let score = ndsResponse.results?.first?.result?.score
+        let findings = ndsResponse.results?.compactMap { $0.result?.findings }.flatMap { $0 } ?? []
 
         let input = DiagnosticCopyInput(
             recommendationTitle: recommendation.title,

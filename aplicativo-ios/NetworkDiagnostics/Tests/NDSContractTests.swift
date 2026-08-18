@@ -15,15 +15,17 @@ final class NDSContractTests: XCTestCase {
           "results": [
             {
               "module": "wifi",
-              "score": 85,
-              "findings": [
-                {
-                  "type": "latency",
-                  "severity": "high",
-                  "value": 150.0,
-                  "message": "Latência elevada"
-                }
-              ]
+              "result": {
+                "score": 85,
+                "findings": [
+                  {
+                    "type": "latency",
+                    "severity": "high",
+                    "value": 150.0,
+                    "message": "Latência elevada"
+                  }
+                ]
+              }
             }
           ]
         }
@@ -33,7 +35,7 @@ final class NDSContractTests: XCTestCase {
         let response = try decoder.decode(NDSResponse.self, from: json)
         
         XCTAssertEqual(response.recommendation?.id, "REC_WIFI_FAR")
-        XCTAssertEqual(response.results?.first?.score, 85)
-        XCTAssertEqual(response.results?.first?.findings?.first?.message, "Latência elevada")
+        XCTAssertEqual(response.results?.first?.result?.score, 85)
+        XCTAssertEqual(response.results?.first?.result?.findings?.first?.message, "Latência elevada")
     }
 }

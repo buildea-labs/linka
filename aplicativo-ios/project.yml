@@ -17,6 +17,7 @@ targets:
     info:
       path: LinkaApp/Info.plist
       properties:
+        CLIENT_API_TOKEN: "$(CLIENT_API_TOKEN)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         GADApplicationIdentifier: "ca-app-pub-3940256099942544~1458002511"
