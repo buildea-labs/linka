@@ -19,35 +19,16 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         let veredicto = scoringModule?.veredicto
         let findings = ndsResponse.results?.compactMap { $0.cards }.flatMap { $0 } ?? []
 
-        guard let recommendation = ndsResponse.recommendation else {
-            // Trata cenários onde recommendation == null
-            let isHealthyScore = veredicto == "bom" || veredicto == "excelente"
-            let hasProblemCards = findings.contains { $0.status == "attention" || $0.status == "critical" }
-            
-            if isHealthyScore && !hasProblemCards {
-                return NetworkAssistResponse(
-                    text: "Seu resultado está bom. Não encontrei nada que exija atenção agora.",
-                    disposition: .answered,
-                    evidenceIDs: [NetworkAssistRequest.currentMeasurementEvidenceID(request.currentMeasurement.id)]
-                )
-            } else {
-                return NetworkAssistResponse(
-                    text: "Não há dados suficientes para concluir.",
-                    disposition: .insufficientEvidence,
-                    evidenceIDs: []
-                )
-            }
-        }
-
         let aiExplanation = ndsResponse.results?.first(where: { $0.module == "ai" })?.result?.explanation
 
         let input = DiagnosticCopyInput(
-            recommendationTitle: recommendation.title,
-            recommendationDescription: recommendation.description,
+            recommendationTitle: ndsResponse.recommendation?.title,
+            recommendationDescription: ndsResponse.recommendation?.description,
             score: score,
             findings: findings,
             aiTitle: aiExplanation?.tituloAmigavel,
-            aiSummary: aiExplanation?.resumoTecnicoTraduzido
+            aiSummary: aiExplanation?.resumoTecnicoTraduzido,
+            veredicto: veredicto
         )
         
         let copy = await coordinator.resolveCopy(for: input)

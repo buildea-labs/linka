@@ -1,20 +1,22 @@
 import Foundation
 
 public struct DiagnosticCopyInput: Equatable, Sendable {
-    public let recommendationTitle: String
-    public let recommendationDescription: String
+    public let recommendationTitle: String?
+    public let recommendationDescription: String?
     public let score: Int?
     public let findings: [NDSCard]
     public let aiTitle: String?
     public let aiSummary: String?
+    public let veredicto: String?
 
     public init(
-        recommendationTitle: String,
-        recommendationDescription: String,
+        recommendationTitle: String?,
+        recommendationDescription: String?,
         score: Int?,
         findings: [NDSCard],
         aiTitle: String? = nil,
-        aiSummary: String? = nil
+        aiSummary: String? = nil,
+        veredicto: String? = nil
     ) {
         self.recommendationTitle = recommendationTitle
         self.recommendationDescription = recommendationDescription
@@ -22,6 +24,7 @@ public struct DiagnosticCopyInput: Equatable, Sendable {
         self.findings = findings
         self.aiTitle = aiTitle
         self.aiSummary = aiSummary
+        self.veredicto = veredicto
     }
 }
 
@@ -43,11 +46,29 @@ public protocol DiagnosticCopyRenderer: Sendable {
 public struct DeterministicDiagnosticCopyRenderer: DiagnosticCopyRenderer {
     public init() {}
     public func render(input: DiagnosticCopyInput) async throws -> DiagnosticCopy {
-        return DiagnosticCopy(
-            title: input.recommendationTitle,
-            summary: input.recommendationDescription,
-            source: .deterministic
-        )
+        if let title = input.recommendationTitle, let desc = input.recommendationDescription {
+            return DiagnosticCopy(
+                title: title,
+                summary: desc,
+                source: .deterministic
+            )
+        }
+        let isHealthyScore = input.veredicto == "bom" || input.veredicto == "excelente"
+        let hasProblemCards = input.findings.contains { $0.status == "attention" || $0.status == "critical" }
+        
+        if isHealthyScore && !hasProblemCards {
+            return DiagnosticCopy(
+                title: "Tudo certo com a conexão",
+                summary: "Seu resultado está bom. Não encontrei nada que exija atenção agora.",
+                source: .deterministic
+            )
+        } else {
+            return DiagnosticCopy(
+                title: "Diagnóstico inconclusivo",
+                summary: "Não há dados suficientes para concluir.",
+                source: .deterministic
+            )
+        }
     }
 }
 
@@ -85,8 +106,8 @@ public struct DiagnosticCopyCoordinator: Sendable {
         
         // Fallback to deterministic
         return (try? await deterministic.render(input: input)) ?? DiagnosticCopy(
-            title: input.recommendationTitle,
-            summary: input.recommendationDescription,
+            title: input.recommendationTitle ?? "Diagnóstico inconclusivo",
+            summary: input.recommendationDescription ?? "Não há dados suficientes para concluir.",
             source: .deterministic
         )
     }

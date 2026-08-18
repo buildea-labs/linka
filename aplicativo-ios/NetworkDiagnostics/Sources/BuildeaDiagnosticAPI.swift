@@ -31,6 +31,10 @@ public struct BuildeaDiagnosticAPI: Sendable {
         encoder.outputFormatting = [.sortedKeys]
         let body = try encoder.encode(payload)
 
+        print("\n--- NDS REQUEST ---")
+        print("URL: \(configuration.rulesEndpoint.absoluteString)")
+        print("TOKEN INJECTED: \(configuration.bearerToken?.prefix(10) ?? "nil")...")
+
         // Nota: Assumimos que a rulesEndpoint agora aponta para /v1/diagnostics/evaluate
         let (data, status) = try await httpClient.postJSON(
             url: configuration.rulesEndpoint,
@@ -44,7 +48,11 @@ public struct BuildeaDiagnosticAPI: Sendable {
 
         let decoder = JSONDecoder()
         do {
-            return try decoder.decode(NDSResponse.self, from: data)
+            let decoded = try decoder.decode(NDSResponse.self, from: data)
+            if let str = String(data: data, encoding: .utf8) {
+                print("NDS RESPONSE (HTTP \(status)): \(str)")
+            }
+            return decoded
         } catch {
             print("BuildeaDiagnosticAPI decoding error: \(error)")
             if let str = String(data: data, encoding: .utf8) {
