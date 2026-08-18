@@ -27,5 +27,5 @@ public struct NetworkDiagnosticsConfiguration: Sendable {
         self.recentMeasurementsLimit = max(0, recentMeasurementsLimit)
     }
 
-    public static let defaultRulesEndpoint = URL(string: "https://nds.buildea.com/v1/diagnostics/evaluate")!
+    public static let defaultRulesEndpoint = URL(string: "https://network-diagnostics-service.buildealabs.workers.dev/v1/diagnostics/evaluate")!
 }
