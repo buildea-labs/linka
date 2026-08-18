@@ -59,6 +59,7 @@ struct AssistTeaserCard: View {
             }
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
+            .contentShape(Rectangle())
             .background(Color.surfaceCard)
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)

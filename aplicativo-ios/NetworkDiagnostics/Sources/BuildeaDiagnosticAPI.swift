@@ -46,6 +46,10 @@ public struct BuildeaDiagnosticAPI: Sendable {
         do {
             return try decoder.decode(NDSResponse.self, from: data)
         } catch {
+            print("BuildeaDiagnosticAPI decoding error: \(error)")
+            if let str = String(data: data, encoding: .utf8) {
+                print("Response data: \(str)")
+            }
             throw NetworkDiagnosticsError.decoding(String(describing: error))
         }
     }

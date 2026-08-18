@@ -291,6 +291,7 @@ final class AssistChatController: ObservableObject {
     /// `Task.isCancelled`) antes de chamar este método (PR #101, R2);
     /// este continua sendo só o caminho de erro real pro usuário.
     private func handleStreamFailure(_ error: Error) {
+        print("AssistChatController Stream Failure: \(error)")
         let text: String
         switch error {
         case NetworkAssistError.notConfigured:

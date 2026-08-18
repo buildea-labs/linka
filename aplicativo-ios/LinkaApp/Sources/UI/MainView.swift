@@ -338,6 +338,21 @@ struct MainView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
+            .navigationDestination(isPresented: $showAssist) {
+                // `onRetry` reusa o mesmo `viewModel.startTest()` do botão
+                // "Testar novamente"/"Tentar novamente" (issue #58) — nunca uma
+                // nova chamada ao motor. `failureSignal` ainda não é passado
+                // aqui (fiação ponta-a-ponta pendente de outro passo da cadeia,
+                // ver comentário em `AssistSheet.failureSignal`); sem ele, a
+                // sugestão `.retryMeasurement` nunca chega a ser calculada por
+                // falta de `investigation`, então este closure fica pronto sem
+                // efeito colateral até essa fiação fechar.
+                AssistView(
+                    currentMeasurement: currentMeasurement,
+                    onRetry: { viewModel.startTest() },
+                    entitlements: entitlements
+                )
+            }
         }
         .onAppear {
             // Início e carga de histórico controlados por SpeedTestViewModel.init()
@@ -361,21 +376,6 @@ struct MainView: View {
             // paywall em vez de rodar medição.
             showPurchase = true
             intentCoordinator.consumePurchasePrompt()
-        }
-        .navigationDestination(isPresented: $showAssist) {
-            // `onRetry` reusa o mesmo `viewModel.startTest()` do botão
-            // "Testar novamente"/"Tentar novamente" (issue #58) — nunca uma
-            // nova chamada ao motor. `failureSignal` ainda não é passado
-            // aqui (fiação ponta-a-ponta pendente de outro passo da cadeia,
-            // ver comentário em `AssistSheet.failureSignal`); sem ele, a
-            // sugestão `.retryMeasurement` nunca chega a ser calculada por
-            // falta de `investigation`, então este closure fica pronto sem
-            // efeito colateral até essa fiação fechar.
-            AssistView(
-                currentMeasurement: currentMeasurement,
-                onRetry: { viewModel.startTest() },
-                entitlements: entitlements
-            )
         }
         // Compartilhar continua disponível como swipe-action no Histórico
         // (feedback do Luiz: tela de resultado carregada demais). A UX de
