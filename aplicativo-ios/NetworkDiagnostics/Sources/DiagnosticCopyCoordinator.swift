@@ -4,7 +4,7 @@ public struct DiagnosticCopyInput: Equatable, Sendable {
     public let recommendationTitle: String
     public let recommendationDescription: String
     public let score: Int?
-    public let findings: [NDSFinding]
+    public let findings: [NDSCard]
     public let aiTitle: String?
     public let aiSummary: String?
 
@@ -12,7 +12,7 @@ public struct DiagnosticCopyInput: Equatable, Sendable {
         recommendationTitle: String,
         recommendationDescription: String,
         score: Int?,
-        findings: [NDSFinding],
+        findings: [NDSCard],
         aiTitle: String? = nil,
         aiSummary: String? = nil
     ) {
@@ -51,7 +51,7 @@ public struct DeterministicDiagnosticCopyRenderer: DiagnosticCopyRenderer {
     }
 }
 
-public struct FoundationModelsDiagnosticCopyRenderer: DiagnosticCopyRenderer {
+public struct NDSAIDiagnosticCopyRenderer: DiagnosticCopyRenderer {
     public init() {}
     public func render(input: DiagnosticCopyInput) async throws -> DiagnosticCopy {
         guard let title = input.aiTitle, let summary = input.aiSummary else {
@@ -67,11 +67,11 @@ public struct FoundationModelsDiagnosticCopyRenderer: DiagnosticCopyRenderer {
 
 public struct DiagnosticCopyCoordinator: Sendable {
     private let deterministic: DeterministicDiagnosticCopyRenderer
-    private let foundation: FoundationModelsDiagnosticCopyRenderer
+    private let foundation: NDSAIDiagnosticCopyRenderer
     
     public init(
         deterministic: DeterministicDiagnosticCopyRenderer = DeterministicDiagnosticCopyRenderer(),
-        foundation: FoundationModelsDiagnosticCopyRenderer = FoundationModelsDiagnosticCopyRenderer()
+        foundation: NDSAIDiagnosticCopyRenderer = NDSAIDiagnosticCopyRenderer()
     ) {
         self.deterministic = deterministic
         self.foundation = foundation

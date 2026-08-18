@@ -36,12 +36,7 @@ final class AssistChatController: ObservableObject {
     /// quando o transporte real emite o evento; nunca inferida
     /// client-side.
     @Published var progressStep: NetworkAssistProgressStep?
-    @Published var availableQuestions: [String] = [
-        "Serve para uma chamada de vídeo?",
-        "Como está comparado aos meus últimos testes?",
-        "Minha conexão variou muito esta semana?",
-        "Esse resultado está melhor ou pior que o anterior?"
-    ]
+
 
     private let currentMeasurement: NetworkMeasurement?
     private let recentMeasurements: [NetworkMeasurement]
@@ -80,7 +75,7 @@ final class AssistChatController: ObservableObject {
         streamTask?.cancel()
     }
 
-    func submitQuestion(_ q: String) {
+    func explain() {
         streamTask?.cancel()
         streamTask = nil
         streamGeneration += 1
@@ -88,11 +83,7 @@ final class AssistChatController: ObservableObject {
         streamingMessageID = nil
         progressStep = nil
 
-        if let index = availableQuestions.firstIndex(of: q) {
-            availableQuestions.remove(at: index)
-        }
-        
-        messages.append(ChatMessage(text: q, isUser: true))
+        messages.append(ChatMessage(text: "Esse resultado está bom para o que você faz?", isUser: true))
 
         guard let currentMeasurement else {
             isTyping = false
@@ -114,7 +105,7 @@ final class AssistChatController: ObservableObject {
         isTyping = true
 
         let context = NetworkAssistContext(
-            question: q,
+            question: "Esse resultado está bom para o que você faz?",
             currentMeasurement: currentMeasurement,
             recentMeasurements: recentMeasurements,
             evidence: [],
@@ -270,9 +261,7 @@ final class AssistChatController: ObservableObject {
             messages.append(ChatMessage(text: short, longText: long, isUser: false))
         }
         
-        if let suggestions = response.suggestions, !suggestions.isEmpty {
-            self.availableQuestions = suggestions
-        }
+
     }
 
     /// Mesmo mapeamento de disposição→texto de antes de #69 (issue #53).

@@ -20,7 +20,7 @@ final class NDSRequestBuilderTests: XCTestCase {
         XCTAssertEqual(request.sessionId, measurement.id.uuidString)
         XCTAssertEqual(request.platform, "ios")
         XCTAssertEqual(request.app?.version, "1.0.0")
-        XCTAssertEqual(request.capabilities, ["ai"])
+        XCTAssertEqual(request.capabilities, ["scoring", "ai"])
         XCTAssertEqual(request.connection?.type, "wifi")
         XCTAssertEqual(request.wifi?.rssiDbm, -50)
         XCTAssertEqual(request.speed?.downloadMbps, 100)

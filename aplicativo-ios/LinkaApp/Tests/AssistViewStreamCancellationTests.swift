@@ -105,7 +105,7 @@ final class AssistViewStreamCancellationTests: XCTestCase {
         throw WaitTimeoutError(description: description)
     }
 
-    func test_cancelViaNewQuestion_removesPartialBubbleAndPreservesNewQuestionState() async throws {
+    func test_cancelStream_removesPartialBubble() async throws {
         let provider = ScriptedStreamingAssistProvider()
         let chat = AssistChatController(
             currentMeasurement: makeMeasurement(),
@@ -114,83 +114,28 @@ final class AssistViewStreamCancellationTests: XCTestCase {
             assistIsRemote: true
         )
 
-        // 1) Enfileira Q1 e começa a streamar: primeiro `.textDelta`
-        //    cria a bolha parcial do assistente.
-        chat.submitQuestion("Serve para uma chamada de vídeo?")
-        let q1Continuation = try await provider.continuation(for: "Serve para uma chamada de vídeo?")
-        q1Continuation.yield(.textDelta("Com base no seu teste mais recente"))
+        chat.explain()
+        let continuation = try await provider.continuation(for: "Esse resultado está bom para o que você faz?")
+        continuation.yield(.textDelta("Com base no seu teste mais recente"))
 
-        try await waitUntil(description: "bolha parcial de Q1 nunca apareceu em `messages`") {
+        try await waitUntil(description: "bolha parcial nunca apareceu em `messages`") {
             chat.messages.contains { !$0.isUser && $0.text == "Com base no seu teste mais recente" }
         }
         guard let partialBubble = chat.messages.first(where: { !$0.isUser }) else {
-            XCTFail("Bolha parcial de Q1 nunca apareceu em `messages`")
+            XCTFail("Bolha parcial nunca apareceu em `messages`")
             return
         }
         XCTAssertEqual(chat.streamingMessageID, partialBubble.id)
 
-        // 2) Cancela via nova pergunta (Q2) ANTES de Q1 completar — não
-        //    envia nenhum evento pra Q2 ainda, deixando-a em "digitando"
-        //    sem bolha própria, justamente pra expor a corrida por
-        //    geração (achado ALTA): se o cleanup da Task antiga não
-        //    fosse guardado por `streamGeneration`, ele sobrescreveria
-        //    `isTyping` de Q2 pra `false` no meio do caminho.
-        chat.submitQuestion("Como está comparado aos meus últimos testes?")
-        XCTAssertTrue(chat.isTyping, "Q2 deve começar 'digitando' antes de qualquer delta")
-        XCTAssertNil(chat.streamingMessageID, "submitQuestion reseta o id compartilhado pra Q2 imediatamente")
+        // Cancela de verdade, fechando a view
+        chat.cancelStream()
 
-        // 3) Espera a Task antiga (Q1) notar o próprio cancelamento e
-        //    remover a bolha parcial — cobertura direta do achado
-        //    BLOQUEANTE (cancelamento silencioso via `Task.isCancelled`,
-        //    já que `AsyncThrowingStream` não lança `CancellationError`
-        //    quando o consumidor é cancelado).
-        try await waitUntil(description: "bolha parcial de Q1 nunca foi removida após o cancelamento") {
+        try await waitUntil(description: "bolha parcial nunca foi removida após o cancelamento") {
             !chat.messages.contains { $0.id == partialBubble.id }
         }
         XCTAssertFalse(
             chat.messages.contains { $0.id == partialBubble.id },
-            "Bolha parcial de Q1 deveria ter sido removida após o cancelamento silencioso"
+            "Bolha parcial deveria ter sido removida após o cancelamento silencioso"
         )
-
-        // 4) No instante em que a Task antiga terminou o próprio
-        //    cleanup, `isTyping` de Q2 precisa continuar `true` — prova
-        //    de que a guarda por geração impediu a Task antiga de
-        //    sobrescrever o estado da pergunta nova (achado ALTA).
-        XCTAssertTrue(
-            chat.isTyping,
-            "Cleanup da Task cancelada (Q1) não deve sobrescrever isTyping de Q2, que ainda está pendente"
-        )
-        XCTAssertNil(
-            chat.streamingMessageID,
-            "Cleanup da Task cancelada (Q1) não deve reintroduzir um streamingMessageID: Q2 ainda não tem bolha"
-        )
-
-        // 5) Só agora Q2 recebe seu próprio delta — precisa criar a
-        //    PRÓPRIA bolha normalmente, sem nenhum resquício de Q1.
-        let q2Continuation = try await provider.continuation(for: "Como está comparado aos meus últimos testes?")
-        q2Continuation.yield(.textDelta("Seus últimos três testes"))
-        try await waitUntil(description: "bolha de Q2 nunca apareceu em `messages`") {
-            chat.messages.contains { !$0.isUser && $0.text == "Seus últimos três testes" }
-        }
-        guard let q2Bubble = chat.messages.first(where: { !$0.isUser && $0.text == "Seus últimos três testes" }) else {
-            XCTFail("Bolha de Q2 nunca apareceu em `messages`")
-            return
-        }
-        XCTAssertEqual(chat.streamingMessageID, q2Bubble.id)
-        XCTAssertFalse(chat.isTyping)
-
-        // 6) Estado final: só as duas perguntas do usuário e a resposta
-        //    de Q2 — nenhum resquício de Q1 (nem bolha parcial, nem
-        //    bolha de erro fabricada a partir do cancelamento).
-        XCTAssertEqual(chat.messages.count, 3)
-        XCTAssertEqual(chat.messages[0].text, "Serve para uma chamada de vídeo?")
-        XCTAssertTrue(chat.messages[0].isUser)
-        XCTAssertEqual(chat.messages[1].text, "Como está comparado aos meus últimos testes?")
-        XCTAssertTrue(chat.messages[1].isUser)
-        XCTAssertEqual(chat.messages[2].id, q2Bubble.id)
-        XCTAssertFalse(chat.messages[2].isUser)
-
-        q2Continuation.yield(.completed(NetworkAssistResponse(text: "Seus últimos três testes ficaram estáveis.")))
-        q2Continuation.finish()
     }
 }

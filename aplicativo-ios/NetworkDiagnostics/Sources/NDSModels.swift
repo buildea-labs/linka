@@ -121,12 +121,10 @@ public struct NDSResponse: Codable, Equatable, Sendable {
 
 public struct NDSModuleData: Codable, Equatable, Sendable {
     public var score: Int?
-    public var findings: [NDSFinding]?
     public var explanation: NDSExplanation?
 
-    public init(score: Int? = nil, findings: [NDSFinding]? = nil, explanation: NDSExplanation? = nil) {
+    public init(score: Int? = nil, explanation: NDSExplanation? = nil) {
         self.score = score
-        self.findings = findings
         self.explanation = explanation
     }
 }
@@ -134,10 +132,12 @@ public struct NDSModuleData: Codable, Equatable, Sendable {
 public struct NDSResult: Codable, Equatable, Sendable {
     public var module: String?
     public var result: NDSModuleData?
+    public var cards: [NDSCard]?
 
-    public init(module: String? = nil, result: NDSModuleData? = nil) {
+    public init(module: String? = nil, result: NDSModuleData? = nil, cards: [NDSCard]? = nil) {
         self.module = module
         self.result = result
+        self.cards = cards
     }
 }
 
@@ -155,19 +155,30 @@ public struct NDSRecommendation: Codable, Equatable, Sendable {
     }
 }
 
-public struct NDSFinding: Codable, Equatable, Sendable {
-    public var type: String
-    public var severity: String
-    public var value: Double?
-    public var message: String
+public struct NDSCard: Codable, Equatable, Sendable {
+    public var id: String
+    public var titulo: String
+    public var status: String
+    public var evidencia: String?
+    public var mensagemUsuario: String
+    public var recomendacao: String?
+    public var categoria: String
+    public var podeConcluir: Bool
+    public var categoriaOrigem: String?
 
-    public init(type: String, severity: String, value: Double? = nil, message: String) {
-        self.type = type
-        self.severity = severity
-        self.value = value
-        self.message = message
+    public init(id: String, titulo: String, status: String, evidencia: String? = nil, mensagemUsuario: String, recomendacao: String? = nil, categoria: String, podeConcluir: Bool, categoriaOrigem: String? = nil) {
+        self.id = id
+        self.titulo = titulo
+        self.status = status
+        self.evidencia = evidencia
+        self.mensagemUsuario = mensagemUsuario
+        self.recomendacao = recomendacao
+        self.categoria = categoria
+        self.podeConcluir = podeConcluir
+        self.categoriaOrigem = categoriaOrigem
     }
 }
+
 
 public struct NDSExplanation: Codable, Equatable, Sendable {
     public var summary: String?

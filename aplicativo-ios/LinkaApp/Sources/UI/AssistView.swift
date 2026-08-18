@@ -184,40 +184,19 @@ struct AssistView: View {
                         if chat.isTyping {
                             assistProgressIndicator
                                 .id("typing")
-                        } else if !chat.availableQuestions.isEmpty {
-                            VStack(spacing: 8) {
-                                ForEach(chat.availableQuestions, id: \.self) { q in
-                                    Button(action: { chat.submitQuestion(q) }) {
-                                        HStack(alignment: .top, spacing: 8) {
-                                            Image(systemName: "arrow.down.right") // Seta tipo "↳"
-                                                .font(.bodyRegularStrong)
-                                                .foregroundColor(.textSecondary)
-                                            Text(q)
-                                                .font(.bodyRegularStrong)
-                                                .foregroundColor(.textSecondary)
-                                                .multilineTextAlignment(.leading)
-                                            Spacer()
-                                        }
-                                        .padding(.vertical, 8)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                            .padding(.top, chat.messages.isEmpty ? 0 : 16)
-                            .id("suggestions")
                         }
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 32)
                 }
                 .onChange(of: chat.messages.count) { _ in
-                    withAnimation { proxy.scrollTo("suggestions", anchor: .bottom) }
+                    if let last = chat.messages.last {
+                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                    }
                 }
                 .onChange(of: chat.isTyping) { typing in
                     if typing {
                         withAnimation { proxy.scrollTo("typing", anchor: .bottom) }
-                    } else {
-                        withAnimation { proxy.scrollTo("suggestions", anchor: .bottom) }
                     }
                 }
                 // Acompanha a bolha crescendo chunk a chunk (issue #69):
@@ -236,6 +215,11 @@ struct AssistView: View {
         // requisito de aceite de cancelamento.
         .onDisappear {
             chat.cancelStream()
+        }
+        .onAppear {
+            if chat.messages.isEmpty {
+                chat.explain()
+            }
         }
     }
 

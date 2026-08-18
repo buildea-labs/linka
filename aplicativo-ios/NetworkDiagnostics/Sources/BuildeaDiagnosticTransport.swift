@@ -24,7 +24,7 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         // Extract score and findings properly depending on where they are in NDSResponse
         // Let's assume they are top level, or from the first result
         let score = ndsResponse.results?.first?.result?.score
-        let findings = ndsResponse.results?.compactMap { $0.result?.findings }.flatMap { $0 } ?? []
+        let findings = ndsResponse.results?.compactMap { $0.cards }.flatMap { $0 } ?? []
 
         let aiExplanation = ndsResponse.results?.first(where: { $0.module == "ai" })?.result?.explanation
 

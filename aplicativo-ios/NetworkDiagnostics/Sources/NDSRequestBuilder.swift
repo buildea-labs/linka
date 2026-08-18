@@ -11,7 +11,7 @@ public struct NDSRequestBuilder: Sendable {
         platformIdentifier: String,
         requestAI: Bool
     ) -> NDSRequest {
-        var capabilities: [String] = []
+        var capabilities: [String] = ["scoring"]
         if requestAI {
             capabilities.append("ai")
         }
