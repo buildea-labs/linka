@@ -51,6 +51,7 @@ struct AssistView: View {
                 contentView
             }
         }
+        .navigationTitle("Assist")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -60,11 +61,6 @@ struct AssistView: View {
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
                 }
-            }
-            
-            ToolbarItem(placement: .principal) {
-                Text("Sobre o seu resultado")
-                    .font(.bodyRegularStrong)
             }
         }
         .task {
