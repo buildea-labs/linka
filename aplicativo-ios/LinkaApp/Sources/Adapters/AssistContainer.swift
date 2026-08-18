@@ -94,10 +94,13 @@ enum AssistContainer {
         guard isRemoteAssistEnabled() else {
             return NetworkAssistService(transport: UnconfiguredNetworkAssistTransport())
         }
-        let transport = SignallqAiDiagnosticTransport(
+        let api = BuildeaDiagnosticAPI(
             configuration: configuration(),
             platformProvider: ApplePlatformSignalProvider()
         )
+        let localTransport = AppleIntelligenceDiagnosticTransport(api: api)
+        let remoteTransport = BuildeaDiagnosticTransport(api: api)
+        let transport = HybridDiagnosticTransport(localTransport: localTransport, remoteTransport: remoteTransport)
         return NetworkAssistService(transport: transport)
     }
 
@@ -105,11 +108,28 @@ enum AssistContainer {
         guard isRemoteAssistEnabled() else {
             return NetworkAssistService(transport: UnconfiguredNetworkAssistTransport())
         }
-        let transport = SignallqDiagnosticTransport(
+        let api = BuildeaDiagnosticAPI(
             configuration: configuration(),
             platformProvider: ApplePlatformSignalProvider()
         )
-        return NetworkAssistService(transport: transport)
+        // Regras não geram texto via IA, então sempre usam fallback desabilitando requestAI (que é default)
+        // Neste caso, para reuso e compatibilidade pura, o BuildeaDiagnosticTransport com requestAI = false
+        // atuaria como o antigo SignallqDiagnosticTransport, mas como o BuildeaDiagnosticTransport.answer()
+        // sempre chama evaluate(requestAI: true), vamos fazer um transport simples inline para regras.
+        // Ou melhor, expomos o uso puro do rules. Para manter simples:
+        
+        struct RulesTransport: NetworkAssistTransport {
+            let api: BuildeaDiagnosticAPI
+            func answer(_ request: NetworkAssistRequest) async throws -> NetworkAssistResponse {
+                let ndsResponse = try await api.evaluate(request.currentMeasurement, requestAI: false)
+                guard let rec = ndsResponse.recommendation else {
+                    return NetworkAssistResponse(text: "Diagnóstico inconclusivo.", disposition: .insufficientEvidence, evidenceIDs: [])
+                }
+                return NetworkAssistResponse(text: rec.title, longText: rec.description, disposition: .answered, evidenceIDs: [NetworkAssistRequest.currentMeasurementEvidenceID(request.currentMeasurement.id)])
+            }
+        }
+        
+        return NetworkAssistService(transport: RulesTransport(api: api))
     }
 
     /// Constrói a investigação local determinística (issue #56) a partir do

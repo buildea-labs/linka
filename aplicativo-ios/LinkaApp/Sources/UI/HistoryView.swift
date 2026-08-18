@@ -152,13 +152,15 @@ struct HistoryView: View {
         .navigationTitle("Histórico")
         .toolbar {
             if hasPlus {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Picker("Modo", selection: $displayMode) {
-                        Image(systemName: "list.bullet").tag(HistoryDisplayMode.list)
-                        Image(systemName: "map").tag(HistoryDisplayMode.map)
+                if FeatureFlags.isCoverageMapEnabled {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Picker("Modo", selection: $displayMode) {
+                            Image(systemName: "list.bullet").tag(HistoryDisplayMode.list)
+                            Image(systemName: "map").tag(HistoryDisplayMode.map)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(width: 100)
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .frame(width: 100)
                 }
             }
         }

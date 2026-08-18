@@ -96,7 +96,8 @@ public enum LinkaEntitlementPolicy {
     public static func capabilities(for plan: LinkaPlan) -> Set<LinkaCapability> {
         switch plan {
         case .free:
-            return [.speedTest]
+            // MVP: SpeedTest e Histórico inclusos
+            return [.speedTest, .history]
         case .plus:
             return Set(LinkaCapability.allCases)
         }
@@ -108,7 +109,7 @@ public enum LinkaEntitlementPolicy {
         at date: Date = Date()
     ) -> LinkaAccessDecision {
         // A função principal nunca depende do estado do sistema de assinatura.
-        if capability == .speedTest {
+        if capability == .speedTest || capability == .history {
             return LinkaAccessDecision(
                 capability: capability,
                 isGranted: true,

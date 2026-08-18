@@ -99,7 +99,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				5DA4E299822FB8F13A83E605 /* LinkaWidget.appex in Embed Foundation Extensions */,
+				/* 5DA4E299822FB8F13A83E605 LinkaWidget.appex in Embed Foundation Extensions REMOVED FOR MVP */
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;

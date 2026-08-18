@@ -14,6 +14,10 @@ public final class LocationTracker: NSObject, CLLocationManagerDelegate, Sendabl
     }
     
     public func getCurrentLocationIfPermitted() -> (latitude: Double, longitude: Double)? {
+        guard UserDefaults.standard.bool(forKey: "isBackgroundAutomationEnabled") else {
+            return nil
+        }
+        
         // We only return location if the user has already authorized it.
         // We DO NOT call requestWhenInUseAuthorization() to avoid interrupting the UI flow.
         

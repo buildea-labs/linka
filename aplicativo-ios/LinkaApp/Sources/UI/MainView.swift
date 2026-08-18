@@ -304,7 +304,7 @@ struct MainView: View {
                             
                             Spacer(minLength: 16)
 
-                            if !isPlusActive {
+                            if !isPlusActive && FeatureFlags.isAdsEnabled {
                                 BannerView()
                                     .padding(.bottom, 8)
                             }
