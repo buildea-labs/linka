@@ -7,15 +7,7 @@ struct AssistTeaserCard: View {
     let isPlusActive: Bool
     
     private var dynamicQuestion: String {
-        if downloadSpeed > 100 {
-            return "Posso jogar online sem lag com essa conexão?"
-        } else if downloadSpeed > 30 {
-            return "Essa velocidade aguenta streaming em 4K?"
-        } else if downloadSpeed > 10 {
-            return "Essa velocidade é boa para uma chamada de vídeo?"
-        } else {
-            return "Por que minha conexão está lenta?"
-        }
+        return "Esse resultado está bom para o que você faz?"
     }
     
     var body: some View {

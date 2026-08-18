@@ -63,7 +63,6 @@ final class AssistChatController: ObservableObject {
     /// sobrescreveria o estado que a pergunta nova acabou de montar.
     private var streamGeneration: Int = 0
 
-    private let orchestrator = AssistDiagnosticOrchestrator()
 
     init(
         currentMeasurement: NetworkMeasurement?,
@@ -93,18 +92,7 @@ final class AssistChatController: ObservableObject {
             availableQuestions.remove(at: index)
         }
         
-        // Verifica interceptação de Widgets
-        if q == "Novo Teste" {
-            messages.append(ChatMessage(payload: .speedTestWidget(isActive: true, currentProgress: 0.0), isUser: true))
-            runInlineTest(generation: myGeneration)
-            return
-        } else if q == "Diagnóstico" {
-            messages.append(ChatMessage(payload: .diagnosticWidget(status: "Iniciando NDS..."), isUser: true))
-            runInlineDiagnostic(generation: myGeneration)
-            return
-        } else {
-            messages.append(ChatMessage(text: q, isUser: true))
-        }
+        messages.append(ChatMessage(text: q, isUser: true))
 
         guard let currentMeasurement else {
             isTyping = false
@@ -136,63 +124,6 @@ final class AssistChatController: ObservableObject {
 
         streamTask = Task { @MainActor in
             await consumeAssistStream(for: context, generation: myGeneration)
-        }
-    }
-    
-    private func runInlineTest(generation: Int) {
-        streamTask = Task { @MainActor in
-            do {
-                let m = try await orchestrator.runSpeedTestInline { state in
-                    guard self.streamGeneration == generation else { return }
-                    if let idx = self.messages.lastIndex(where: { if case .speedTestWidget = $0.payload { return true } else { return false } }) {
-                        self.messages[idx].payload = .speedTestWidget(isActive: true, currentProgress: state.progress)
-                    }
-                }
-                guard self.streamGeneration == generation else { return }
-                if let idx = self.messages.lastIndex(where: { if case .speedTestWidget = $0.payload { return true } else { return false } }) {
-                    self.messages[idx].payload = .speedTestWidget(isActive: false, currentProgress: 1.0)
-                }
-                
-                // Encadeia com o modelo
-                let context = NetworkAssistContext(
-                    question: "Interprete este novo resultado.",
-                    currentMeasurement: m,
-                    recentMeasurements: self.recentMeasurements,
-                    evidence: [],
-                    diagnosticPayload: nil,
-                    locale: "pt-BR"
-                )
-                self.isTyping = true
-                await self.consumeAssistStream(for: context, generation: generation)
-            } catch {
-                self.handleStreamFailure(error)
-            }
-        }
-    }
-    
-    private func runInlineDiagnostic(generation: Int) {
-        streamTask = Task { @MainActor in
-            guard let m = self.currentMeasurement else { return }
-            do {
-                let report = try await orchestrator.runDiagnostics(on: m)
-                guard self.streamGeneration == generation else { return }
-                if let idx = self.messages.lastIndex(where: { if case .diagnosticWidget = $0.payload { return true } else { return false } }) {
-                    self.messages[idx].payload = .diagnosticWidget(status: "Concluído")
-                }
-                
-                let context = NetworkAssistContext(
-                    question: "Eis o resultado do diagnóstico detalhado para análise.",
-                    currentMeasurement: m,
-                    recentMeasurements: self.recentMeasurements,
-                    evidence: [],
-                    diagnosticPayload: report,
-                    locale: "pt-BR"
-                )
-                self.isTyping = true
-                await self.consumeAssistStream(for: context, generation: generation)
-            } catch {
-                self.handleStreamFailure(error)
-            }
         }
     }
 

@@ -14,6 +14,21 @@ public struct NDSRequest: Codable, Equatable, Sendable {
     public var speed: Speed?
     public var quality: Quality?
 
+    public enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case request_id
+        case sessionId
+        case platform
+        case locale
+        case profile
+        case app
+        case capabilities
+        case connection
+        case wifi
+        case speed
+        case quality
+    }
+
     public init(
         schemaVersion: String? = "1.0",
         request_id: String? = nil,
@@ -96,12 +111,10 @@ public struct NDSRequest: Codable, Equatable, Sendable {
 
 public struct NDSResponse: Codable, Equatable, Sendable {
     public var results: [NDSResult]?
-    public var traces: [String]?
     public var recommendation: NDSRecommendation?
     
-    public init(results: [NDSResult]? = nil, traces: [String]? = nil, recommendation: NDSRecommendation? = nil) {
+    public init(results: [NDSResult]? = nil, recommendation: NDSRecommendation? = nil) {
         self.results = results
-        self.traces = traces
         self.recommendation = recommendation
     }
 }

@@ -9,9 +9,7 @@ import LinkaEntitlements
 
 enum BubblePayload: Equatable {
     case text(String, longText: String?)
-    case speedTestWidget(isActive: Bool, currentProgress: Double)
     case historyWidget(selectedItems: [NetworkMeasurement])
-    case diagnosticWidget(status: String)
 }
 
 struct ChatMessage: Identifiable {
@@ -293,30 +291,6 @@ struct AssistView: View {
                 switch msg.payload {
                 case .text(let text, _):
                     Text(text)
-                        .font(.bodyRegular)
-                        .padding()
-                        .background(Color.brandAccentWarm)
-                        .cornerRadius(16)
-                        .foregroundColor(.surfacePage)
-                case .speedTestWidget(let isActive, let progress):
-                    HStack {
-                        Text(isActive ? "Testando..." : "Teste Concluído")
-                            .font(.bodyRegularStrong)
-                        Spacer()
-                        if isActive {
-                            ProgressView(value: progress)
-                                .frame(width: 40)
-                                .tint(.surfacePage)
-                        } else {
-                            Image(systemName: "checkmark.circle.fill")
-                        }
-                    }
-                    .padding()
-                    .background(Color.brandAccentWarm)
-                    .cornerRadius(16)
-                    .foregroundColor(.surfacePage)
-                case .diagnosticWidget(let status):
-                    Text(status)
                         .font(.bodyRegular)
                         .padding()
                         .background(Color.brandAccentWarm)

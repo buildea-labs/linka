@@ -17,7 +17,7 @@ public struct NDSRequestBuilder: Sendable {
         }
 
         let hasInternet: Bool? = (current.latencyMs != nil || current.downloadMbps != nil) ? true : nil
-        let bandStr: String? = current.wifiBandGHz.map { "\($0)GHz" }
+        let bandStr: String? = current.wifiBandGHz.map { String($0) }
 
         return NDSRequest(
             schemaVersion: "1.0",

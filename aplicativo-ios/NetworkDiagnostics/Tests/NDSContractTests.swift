@@ -5,7 +5,7 @@ final class NDSContractTests: XCTestCase {
     func testDecodeNDSResponse() throws {
         let json = """
         {
-          "traces": ["t1"],
+
           "recommendation": {
             "id": "REC_WIFI_FAR",
             "type": "wifi_issue",

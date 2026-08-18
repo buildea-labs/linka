@@ -58,3 +58,7 @@ build_derived/
 # SwiftPM
 .swiftpm/
 
+
+# Xcode build directories
+build/
+
