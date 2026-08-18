@@ -35,11 +35,29 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         
         let evidenceIDs = [NetworkAssistRequest.currentMeasurementEvidenceID(request.currentMeasurement.id)]
         
+        let headerStatus = (veredicto == "bom" || veredicto == "excelente") ? "✓ TUDO CERTO" : "⚠ PRECISA DE ATENÇÃO"
+        
+        var parsedRecommendation: NetworkAssistRecommendation? = nil
+        if let rec = ndsResponse.recommendation {
+            parsedRecommendation = NetworkAssistRecommendation(title: rec.title, description: rec.description)
+        }
+        
+        var mappedDimensions: [NetworkAssistDimension]? = nil
+        if let dimensoes = scoringModule?.dimensoes, !dimensoes.isEmpty {
+            mappedDimensions = dimensoes.map { NetworkAssistDimension(name: $0.nome, status: $0.status) }
+        }
+        
         return NetworkAssistResponse(
             text: copy.title,
             longText: copy.summary,
             disposition: .answered,
-            evidenceIDs: evidenceIDs
+            evidenceIDs: evidenceIDs,
+            suggestions: nil,
+            headerStatus: headerStatus,
+            title: copy.title,
+            summary: copy.summary,
+            recommendation: parsedRecommendation,
+            dimensions: mappedDimensions
         )
     }
 }

@@ -126,6 +126,24 @@ public struct NetworkAssistRequest: Codable, Equatable, Sendable {
     }
 }
 
+public struct NetworkAssistDimension: Codable, Equatable, Sendable {
+    public let name: String
+    public let status: String
+    public init(name: String, status: String) {
+        self.name = name
+        self.status = status
+    }
+}
+
+public struct NetworkAssistRecommendation: Codable, Equatable, Sendable {
+    public let title: String
+    public let description: String
+    public init(title: String, description: String) {
+        self.title = title
+        self.description = description
+    }
+}
+
 public struct NetworkAssistResponse: Codable, Equatable, Sendable {
     public let text: String
     public let longText: String?
@@ -133,18 +151,35 @@ public struct NetworkAssistResponse: Codable, Equatable, Sendable {
     public let evidenceIDs: [String]
     public let suggestions: [String]?
 
+    // Novos campos estruturados para o AssistViewModel
+    public let headerStatus: String?
+    public let title: String?
+    public let summary: String?
+    public let recommendation: NetworkAssistRecommendation?
+    public let dimensions: [NetworkAssistDimension]?
+
     public init(
         text: String,
         longText: String? = nil,
         disposition: NetworkAssistDisposition = .answered,
         evidenceIDs: [String] = [],
-        suggestions: [String]? = nil
+        suggestions: [String]? = nil,
+        headerStatus: String? = nil,
+        title: String? = nil,
+        summary: String? = nil,
+        recommendation: NetworkAssistRecommendation? = nil,
+        dimensions: [NetworkAssistDimension]? = nil
     ) {
         self.text = text
         self.longText = longText
         self.disposition = disposition
         self.evidenceIDs = evidenceIDs
         self.suggestions = suggestions
+        self.headerStatus = headerStatus
+        self.title = title
+        self.summary = summary
+        self.recommendation = recommendation
+        self.dimensions = dimensions
     }
 }
 
@@ -351,7 +386,13 @@ public struct NetworkAssistService<Transport: NetworkAssistTransport>: NetworkAs
             text: response.text.trimmingCharacters(in: .whitespacesAndNewlines),
             longText: (trimmedLong?.isEmpty == false) ? trimmedLong : nil,
             disposition: response.disposition,
-            evidenceIDs: response.evidenceIDs
+            evidenceIDs: response.evidenceIDs,
+            suggestions: response.suggestions,
+            headerStatus: response.headerStatus,
+            title: response.title,
+            summary: response.summary,
+            recommendation: response.recommendation,
+            dimensions: response.dimensions
         )
     }
 
