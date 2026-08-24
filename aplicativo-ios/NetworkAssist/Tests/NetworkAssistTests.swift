@@ -63,6 +63,27 @@ final class NetworkAssistTests: XCTestCase {
         XCTAssertFalse(response.text.isEmpty)
     }
 
+    func testServiceForwardsOnlyUserProvidedUsageContext() async throws {
+        let measurement = completeMeasurement()
+        let transport = RecordingTransport { request in
+            XCTAssertEqual(request.usageContext, "chamada de vídeo")
+            return NetworkAssistResponse(
+                text: "A medição foi interpretada.",
+                disposition: .answered,
+                evidenceIDs: [NetworkAssistRequest.currentMeasurementEvidenceID(measurement.id)]
+            )
+        }
+        let service = NetworkAssistService(transport: transport)
+
+        _ = try await service.answer(
+            NetworkAssistContext(
+                question: "Como foi?",
+                currentMeasurement: measurement,
+                usageContext: "chamada de vídeo"
+            )
+        )
+    }
+
     func testInvalidMeasurementNeverReachesTransport() async {
         let invalid = NetworkMeasurement(outcome: .complete, downloadMbps: 100)
         let service = NetworkAssistService(transport: FailingIfCalledTransport())

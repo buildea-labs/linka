@@ -16,14 +16,13 @@ targets:
         CODE_SIGN_ENTITLEMENTS: LinkaApp/LinkaApp.entitlements
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "2Z4T8228GR"
-        CLIENT_API_TOKEN: "nds_live_9fd6fbbe7379f9d4f9392b5b7668a6e47439f42c60ab1118a0cda33f455b36d6"
     info:
       path: LinkaApp/Info.plist
       properties:
-        CLIENT_API_TOKEN: "$(CLIENT_API_TOKEN)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         GADApplicationIdentifier: "ca-app-pub-3940256099942544~1458002511"
+        NDAssistRelayEndpoint: "https://linka-assist-relay.buildealabs.workers.dev/v1/assist"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait

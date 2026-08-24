@@ -16,7 +16,8 @@ import UIKit
 ///
 /// A flag `assistUsesRemoteDiagnostic` (via `Info.plist` ou `UserDefaults`)
 /// controla se o Assist responde de verdade ou permanece "não configurado".
-/// Default: debug true, release false até validação de campo.
+/// O relay não carrega credencial no app; a flag continua disponível para
+/// desligamento operacional explícito sem alterar o contrato de medição.
 ///
 /// Esse flag é ortogonal ao entitlement de plano aplicado por
 /// `makeAssistProvider(entitlements:)`: um controla se o transport remoto
@@ -38,9 +39,8 @@ enum AssistContainer {
 
     static func configuration() -> NetworkDiagnosticsConfiguration {
         let bundle = Bundle.main
-        let rulesURL = URL(string: bundle.object(forInfoDictionaryKey: "NDRulesEndpoint") as? String ?? "")
-            ?? NetworkDiagnosticsConfiguration.defaultRulesEndpoint
-        // O NDS atual agora resolve Rules e AI no mesmo endpoint `/v1/diagnostics/evaluate`
+        let rulesURL = URL(string: bundle.object(forInfoDictionaryKey: "NDAssistRelayEndpoint") as? String ?? "")
+            ?? NetworkDiagnosticsConfiguration.defaultAssistRelayEndpoint
         let appVersion = bundle.infoDictionary?["CFBundleShortVersionString"] as? String
 
         #if os(macOS)
@@ -49,11 +49,12 @@ enum AssistContainer {
         let platformID = "ios"
         #endif
         
-        let token = bundle.object(forInfoDictionaryKey: "CLIENT_API_TOKEN") as? String
+        let endpoint = ProcessInfo.processInfo.environment["LINKA_NDS_ENDPOINT"]
+            .flatMap(URL.init(string:)) ?? rulesURL
 
         return NetworkDiagnosticsConfiguration(
-            rulesEndpoint: rulesURL,
-            bearerToken: token,
+            rulesEndpoint: endpoint,
+            transportAuth: .relay,
             requestTimeout: 30,
             appVersion: appVersion,
             platformIdentifier: platformID
@@ -92,11 +93,15 @@ enum AssistContainer {
     }
 
     private static func makeRawAssistProvider() -> any NetworkAssistProviding {
+        let configuration = configuration()
+        // Relay é autenticado no servidor; não existe bearer token no bundle
+        // nem no cliente. Exigir `bearerToken` aqui fazia o provider remoto
+        // cair sempre em `UnconfiguredNetworkAssistTransport`.
         guard isRemoteAssistEnabled() else {
             return NetworkAssistService(transport: UnconfiguredNetworkAssistTransport())
         }
         let api = BuildeaDiagnosticAPI(
-            configuration: configuration(),
+            configuration: configuration,
             platformProvider: ApplePlatformSignalProvider()
         )
         let transport = BuildeaDiagnosticTransport(api: api)
@@ -104,11 +109,12 @@ enum AssistContainer {
     }
 
     private static func makeRawRulesProvider() -> any NetworkAssistProviding {
+        let configuration = configuration()
         guard isRemoteAssistEnabled() else {
             return NetworkAssistService(transport: UnconfiguredNetworkAssistTransport())
         }
         let api = BuildeaDiagnosticAPI(
-            configuration: configuration(),
+            configuration: configuration,
             platformProvider: ApplePlatformSignalProvider()
         )
         
@@ -119,7 +125,17 @@ enum AssistContainer {
                 guard let rec = ndsResponse.recommendation else {
                     return NetworkAssistResponse(text: "Diagnóstico inconclusivo.", disposition: .insufficientEvidence, evidenceIDs: [])
                 }
-                return NetworkAssistResponse(text: rec.title, longText: rec.description, disposition: .answered, evidenceIDs: [NetworkAssistRequest.currentMeasurementEvidenceID(request.currentMeasurement.id)])
+                return NetworkAssistResponse(
+                    text: rec.title,
+                    longText: rec.description,
+                    disposition: .answered,
+                    evidenceIDs: [NetworkAssistRequest.currentMeasurementEvidenceID(request.currentMeasurement.id)],
+                    recommendation: NetworkAssistRecommendation(
+                        title: rec.title,
+                        description: rec.description,
+                        steps: rec.steps
+                    )
+                )
             }
         }
         

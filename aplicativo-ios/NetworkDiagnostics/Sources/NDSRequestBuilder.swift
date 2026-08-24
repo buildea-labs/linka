@@ -9,11 +9,16 @@ public struct NDSRequestBuilder: Sendable {
         platformHints: PlatformHints,
         appVersion: String?,
         platformIdentifier: String,
-        requestAI: Bool
+        requestAI: Bool,
+        diagnosticContext: NDSRequest.DiagnosticContext? = nil,
+        historical: NDSRequest.Historical? = nil
     ) -> NDSRequest {
-        var capabilities: [String] = ["scoring"]
-        if requestAI {
-            capabilities.append("ai")
+        var capabilities: [String] = []
+        if platformHints.wifi != nil, current.connectionKind == .wifi {
+            capabilities.append("wifi")
+        }
+        if historical != nil {
+            capabilities.append("historical")
         }
 
         let hasInternet: Bool? = (current.latencyMs != nil || current.downloadMbps != nil) ? true : nil
@@ -27,6 +32,8 @@ public struct NDSRequestBuilder: Sendable {
             locale: Locale.current.language.languageCode?.identifier ?? "en",
             app: NDSRequest.AppInfo(id: "linka", version: appVersion),
             capabilities: capabilities,
+            requestedOutputs: requestAI ? ["scoring", "ai"] : ["scoring"],
+            context: diagnosticContext,
             connection: mapConnection(current.connectionKind, hasInternet: hasInternet),
             wifi: mapWifi(platformHints.wifi, kind: current.connectionKind, band: bandStr),
             speed: NDSRequest.Speed(downloadMbps: current.downloadMbps, uploadMbps: current.uploadMbps),
@@ -35,7 +42,8 @@ public struct NDSRequestBuilder: Sendable {
                 loadedLatencyMs: current.loadedLatencyMs,
                 jitterMs: current.jitterMs,
                 packetLossPercent: current.packetLossPercent
-            )
+            ),
+            historical: historical
         )
     }
 

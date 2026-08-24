@@ -88,8 +88,10 @@ private final class CancellableURLSessionTaskBox: @unchecked Sendable {
 }
 
 public enum NetworkDiagnosticsError: Error, Equatable, Sendable {
+    case notConfigured
     case transport(String)
     case httpStatus(Int)
+    case nds(code: String, message: String, retryable: Bool, requestID: String?)
     case decoding(String)
     case emptyResult
 }

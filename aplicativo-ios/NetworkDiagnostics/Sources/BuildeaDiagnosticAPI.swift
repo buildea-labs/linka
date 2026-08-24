@@ -17,47 +17,53 @@ public struct BuildeaDiagnosticAPI: Sendable {
         self.platformProvider = platformProvider
     }
 
-    public func evaluate(_ measurement: NetworkMeasurement, requestAI: Bool) async throws -> NDSResponse {
+    public func evaluate(
+        _ measurement: NetworkMeasurement,
+        requestAI: Bool,
+        diagnosticContext: NDSRequest.DiagnosticContext? = nil,
+        historical: NDSRequest.Historical? = nil
+    ) async throws -> NDSResponse {
+        guard configuration.transportAuth == .relay || configuration.bearerToken?.isEmpty == false else {
+            throw NetworkDiagnosticsError.notConfigured
+        }
+
         let hints = await platformProvider.currentHints()
         let payload = builder.buildRequest(
             current: measurement,
             platformHints: hints,
             appVersion: configuration.appVersion,
             platformIdentifier: configuration.platformIdentifier,
-            requestAI: requestAI
+            requestAI: requestAI,
+            diagnosticContext: diagnosticContext,
+            historical: historical
         )
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let body = try encoder.encode(payload)
 
-        print("\n--- NDS REQUEST ---")
-        print("URL: \(configuration.rulesEndpoint.absoluteString)")
-        print("TOKEN INJECTED: \(configuration.bearerToken?.prefix(10) ?? "nil")...")
-
-        // Nota: Assumimos que a rulesEndpoint agora aponta para /v1/diagnostics/evaluate
         let (data, status) = try await httpClient.postJSON(
             url: configuration.rulesEndpoint,
             body: body,
             timeout: configuration.requestTimeout,
-            bearerToken: configuration.bearerToken
+            bearerToken: configuration.transportAuth == .bearer ? configuration.bearerToken : nil
         )
         guard (200..<300).contains(status) else {
+            if let errorEnvelope = try? JSONDecoder().decode(NDSErrorEnvelope.self, from: data) {
+                throw NetworkDiagnosticsError.nds(
+                    code: errorEnvelope.error.code,
+                    message: errorEnvelope.error.message,
+                    retryable: errorEnvelope.error.retryable,
+                    requestID: errorEnvelope.requestID
+                )
+            }
             throw NetworkDiagnosticsError.httpStatus(status)
         }
 
         let decoder = JSONDecoder()
         do {
-            let decoded = try decoder.decode(NDSResponse.self, from: data)
-            if let str = String(data: data, encoding: .utf8) {
-                print("NDS RESPONSE (HTTP \(status)): \(str)")
-            }
-            return decoded
+            return try decoder.decode(NDSResponse.self, from: data)
         } catch {
-            print("BuildeaDiagnosticAPI decoding error: \(error)")
-            if let str = String(data: data, encoding: .utf8) {
-                print("Response data: \(str)")
-            }
             throw NetworkDiagnosticsError.decoding(String(describing: error))
         }
     }

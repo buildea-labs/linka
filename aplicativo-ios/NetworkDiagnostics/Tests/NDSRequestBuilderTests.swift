@@ -3,7 +3,7 @@ import XCTest
 import NetworkCore
 
 final class NDSRequestBuilderTests: XCTestCase {
-    func testBuildRequest() {
+    func testBuildRequest() throws {
         let builder = NDSRequestBuilder()
         let measurement = NetworkMeasurement(
             id: UUID(),
@@ -20,9 +20,63 @@ final class NDSRequestBuilderTests: XCTestCase {
         XCTAssertEqual(request.sessionId, measurement.id.uuidString)
         XCTAssertEqual(request.platform, "ios")
         XCTAssertEqual(request.app?.version, "1.0.0")
-        XCTAssertEqual(request.capabilities, ["scoring", "ai"])
+        XCTAssertEqual(request.capabilities, ["wifi"])
+        XCTAssertEqual(request.requestedOutputs, ["scoring", "ai"])
         XCTAssertEqual(request.connection?.type, "wifi")
         XCTAssertEqual(request.wifi?.rssiDbm, -50)
         XCTAssertEqual(request.speed?.downloadMbps, 100)
+
+        let encoded = try JSONEncoder().encode(request)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertEqual(json["requested_outputs"] as? [String], ["scoring", "ai"])
+        XCTAssertNil(json["context"])
+    }
+
+    func testBuildRequest_forwardsOnlyProvidedDiagnosticContext() throws {
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 100,
+            uploadMbps: 50,
+            latencyMs: 20
+        )
+        let context = NDSRequest.DiagnosticContext(objective: "chamada de vídeo")
+
+        let request = NDSRequestBuilder().buildRequest(
+            current: measurement,
+            platformHints: PlatformHints(),
+            appVersion: nil,
+            platformIdentifier: "ios",
+            requestAI: true,
+            diagnosticContext: context
+        )
+
+        XCTAssertEqual(request.context, context)
+    }
+
+    func testBuildRequest_forwardsHistoricalEvidenceAsCapability() throws {
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 100,
+            uploadMbps: 50,
+            latencyMs: 20
+        )
+        let historical = NDSRequest.Historical(
+            avgDownload30d: 200,
+            avgDownload7d: 150,
+            tests30d: 8,
+            tests7d: 3
+        )
+
+        let request = NDSRequestBuilder().buildRequest(
+            current: measurement,
+            platformHints: PlatformHints(),
+            appVersion: nil,
+            platformIdentifier: "ios",
+            requestAI: true,
+            historical: historical
+        )
+
+        XCTAssertEqual(request.capabilities, ["historical"])
+        XCTAssertEqual(request.historical, historical)
     }
 }

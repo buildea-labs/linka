@@ -54,6 +54,15 @@ O `LinkaEngine` não conhecerá histórico, assinatura, Assist ou UI. A tela exi
 4. Contexto/evidências do Assist e estados remotos explícitos.
 5. Validação de acessibilidade, iPhone real e regressões multiplataforma.
 
+## Item 4 — implementação realizada em 24/08/2026
+
+- O adapter remoto envia a medição atual, o contexto permitido e um resumo agregado de até 30 dias do histórico, com recorte de 7 dias.
+- O resumo contém somente médias e contagens determinísticas; não envia o arquivo bruto de histórico.
+- As evidências da medição atual e das medições recentes acompanham a resposta do Assist.
+- O relay aceita apenas o contrato canônico, rejeita campos desconhecidos inclusive dentro do histórico e mantém o token exclusivamente no Worker.
+- A validação passou em 35 testes do `NetworkAssist`, 10 testes do `NetworkDiagnostics`, 15 testes do `LinkaModules`, 150 testes do NDS e 17 testes do app no simulador.
+- A ativação operacional foi concluída: o relay e o NDS estão publicados, `/v1/version` e `/v1/health` respondem 200, o smoke test remoto responde 200 e o contrato rejeita campos desconhecidos. O build assinado foi instalado e iniciado no iPhone 17 pareado; o simulador e o aparelho não substituem o roteiro manual de uso em redes Wi-Fi/celular reais.
+
 ## Não-objetivos
 
 - Não implementar Widget, Siri, App Intents ou sincronização Apple nesta entrega.

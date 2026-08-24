@@ -1,8 +1,14 @@
 import Foundation
 
+public enum NetworkDiagnosticsTransportAuth: Equatable, Sendable {
+    case bearer
+    case relay
+}
+
 public struct NetworkDiagnosticsConfiguration: Sendable {
     public let rulesEndpoint: URL
     public let bearerToken: String?
+    public let transportAuth: NetworkDiagnosticsTransportAuth
     public let requestTimeout: TimeInterval
     public let appVersion: String?
     public let platformIdentifier: String
@@ -12,6 +18,7 @@ public struct NetworkDiagnosticsConfiguration: Sendable {
     public init(
         rulesEndpoint: URL,
         bearerToken: String? = nil,
+        transportAuth: NetworkDiagnosticsTransportAuth = .bearer,
         requestTimeout: TimeInterval = 8,
         appVersion: String? = nil,
         platformIdentifier: String,
@@ -20,6 +27,7 @@ public struct NetworkDiagnosticsConfiguration: Sendable {
     ) {
         self.rulesEndpoint = rulesEndpoint
         self.bearerToken = bearerToken
+        self.transportAuth = transportAuth
         self.requestTimeout = max(1, requestTimeout)
         self.appVersion = appVersion
         self.platformIdentifier = platformIdentifier
@@ -28,4 +36,5 @@ public struct NetworkDiagnosticsConfiguration: Sendable {
     }
 
     public static let defaultRulesEndpoint = URL(string: "https://network-diagnostics-service.buildealabs.workers.dev/v1/diagnostics/evaluate")!
+    public static let defaultAssistRelayEndpoint = URL(string: "https://linka-assist-relay.buildealabs.workers.dev/v1/assist")!
 }

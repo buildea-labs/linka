@@ -9,10 +9,13 @@ public struct NDSRequest: Codable, Equatable, Sendable {
     public var profile: String?
     public var app: AppInfo?
     public var capabilities: [String]
+    public var requestedOutputs: [String]?
+    public var context: DiagnosticContext?
     public var connection: Connection?
     public var wifi: Wifi?
     public var speed: Speed?
     public var quality: Quality?
+    public var historical: Historical?
 
     public enum CodingKeys: String, CodingKey {
         case schemaVersion = "schema_version"
@@ -23,10 +26,13 @@ public struct NDSRequest: Codable, Equatable, Sendable {
         case profile
         case app
         case capabilities
+        case requestedOutputs = "requested_outputs"
+        case context
         case connection
         case wifi
         case speed
         case quality
+        case historical
     }
 
     public init(
@@ -38,10 +44,13 @@ public struct NDSRequest: Codable, Equatable, Sendable {
         profile: String? = nil,
         app: AppInfo? = nil,
         capabilities: [String] = [],
+        requestedOutputs: [String]? = nil,
+        context: DiagnosticContext? = nil,
         connection: Connection? = nil,
         wifi: Wifi? = nil,
         speed: Speed? = nil,
-        quality: Quality? = nil
+        quality: Quality? = nil,
+        historical: Historical? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.request_id = request_id
@@ -51,10 +60,39 @@ public struct NDSRequest: Codable, Equatable, Sendable {
         self.profile = profile
         self.app = app
         self.capabilities = capabilities
+        self.requestedOutputs = requestedOutputs
+        self.context = context
         self.connection = connection
         self.wifi = wifi
         self.speed = speed
         self.quality = quality
+        self.historical = historical
+    }
+
+    public struct DiagnosticContext: Codable, Equatable, Sendable {
+        public var reportedProblem: String?
+        public var objective: String?
+        public var symptoms: [String]?
+        public var answers: [String: String]?
+
+        public enum CodingKeys: String, CodingKey {
+            case reportedProblem = "reported_problem"
+            case objective
+            case symptoms
+            case answers
+        }
+
+        public init(
+            reportedProblem: String? = nil,
+            objective: String? = nil,
+            symptoms: [String]? = nil,
+            answers: [String: String]? = nil
+        ) {
+            self.reportedProblem = reportedProblem
+            self.objective = objective
+            self.symptoms = symptoms
+            self.answers = answers
+        }
     }
 
     public struct AppInfo: Codable, Equatable, Sendable {
@@ -107,15 +145,88 @@ public struct NDSRequest: Codable, Equatable, Sendable {
             self.packetLossPercent = packetLossPercent
         }
     }
+
+    public struct Historical: Codable, Equatable, Sendable {
+        public var avgDownload30d: Double?
+        public var avgDownload7d: Double?
+        public var avgUpload30d: Double?
+        public var avgUpload7d: Double?
+        public var avgPing30d: Double?
+        public var avgPing7d: Double?
+        public var tests30d: Int?
+        public var tests7d: Int?
+
+        public init(
+            avgDownload30d: Double? = nil,
+            avgDownload7d: Double? = nil,
+            avgUpload30d: Double? = nil,
+            avgUpload7d: Double? = nil,
+            avgPing30d: Double? = nil,
+            avgPing7d: Double? = nil,
+            tests30d: Int? = nil,
+            tests7d: Int? = nil
+        ) {
+            self.avgDownload30d = avgDownload30d
+            self.avgDownload7d = avgDownload7d
+            self.avgUpload30d = avgUpload30d
+            self.avgUpload7d = avgUpload7d
+            self.avgPing30d = avgPing30d
+            self.avgPing7d = avgPing7d
+            self.tests30d = tests30d
+            self.tests7d = tests7d
+        }
+    }
 }
 
 public struct NDSResponse: Codable, Equatable, Sendable {
     public var results: [NDSResult]?
+    public var traces: [NDSTrace]?
     public var recommendation: NDSRecommendation?
     
-    public init(results: [NDSResult]? = nil, recommendation: NDSRecommendation? = nil) {
+    public init(results: [NDSResult]? = nil, traces: [NDSTrace]? = nil, recommendation: NDSRecommendation? = nil) {
         self.results = results
+        self.traces = traces
         self.recommendation = recommendation
+    }
+}
+
+public struct NDSErrorEnvelope: Codable, Equatable, Sendable {
+    public struct Detail: Codable, Equatable, Sendable {
+        public let code: String
+        public let message: String
+        public let retryable: Bool
+    }
+
+    public let error: Detail
+    public let requestID: String?
+
+    enum CodingKeys: String, CodingKey {
+        case error
+        case requestID = "request_id"
+    }
+}
+
+public struct NDSTrace: Codable, Equatable, Sendable {
+    public var module: String
+    public var durationMs: Int?
+    public var status: String?
+    public var error: String?
+    public var source: String?
+
+    enum CodingKeys: String, CodingKey {
+        case module
+        case durationMs = "duration_ms"
+        case status
+        case error
+        case source
+    }
+
+    public init(module: String, durationMs: Int? = nil, status: String? = nil, error: String? = nil, source: String? = nil) {
+        self.module = module
+        self.durationMs = durationMs
+        self.status = status
+        self.error = error
+        self.source = source
     }
 }
 
@@ -182,6 +293,7 @@ public struct NDSRecommendation: Codable, Equatable, Sendable {
     public var type: String
     public var title: String
     public var description: String
+    public var steps: [String]
     public var sourceFindingIds: [String]?
 
     enum CodingKeys: String, CodingKey {
@@ -189,14 +301,16 @@ public struct NDSRecommendation: Codable, Equatable, Sendable {
         case type
         case title
         case description
+        case steps
         case sourceFindingIds = "source_finding_ids"
     }
 
-    public init(id: String, type: String, title: String, description: String, sourceFindingIds: [String]? = nil) {
+    public init(id: String, type: String, title: String, description: String, steps: [String] = [], sourceFindingIds: [String]? = nil) {
         self.id = id
         self.type = type
         self.title = title
         self.description = description
+        self.steps = steps
         self.sourceFindingIds = sourceFindingIds
     }
 }

@@ -27,7 +27,12 @@ final class AssistViewModel: ObservableObject {
         self.assistProvider = assistProvider
     }
 
-    func load(currentMeasurement: NetworkMeasurement?, failureSignal: NetworkAssistFailureSignal?) async {
+    func load(
+        currentMeasurement: NetworkMeasurement?,
+        recentMeasurements: [NetworkMeasurement] = [],
+        usageContext: String? = nil,
+        failureSignal: NetworkAssistFailureSignal?
+    ) async {
         guard case .idle = state else { return }
         
         guard let current = currentMeasurement else {
@@ -37,11 +42,10 @@ final class AssistViewModel: ObservableObject {
 
         state = .loading
         
-        let context = NetworkAssistContext(
-            question: "Esse resultado está bom para o que você faz?",
+        let context = Self.makeContext(
             currentMeasurement: current,
-            recentMeasurements: [],
-            evidence: []
+            recentMeasurements: recentMeasurements,
+            usageContext: usageContext
         )
 
         do {
@@ -54,6 +58,11 @@ final class AssistViewModel: ObservableObject {
             }
             
             if let response = finalResponse {
+                guard response.disposition == .answered else {
+                    state = .error(Self.message(for: response.disposition))
+                    return
+                }
+
                 if let title = response.title, let summary = response.summary {
                     let data = DiagnosticData(
                         headerStatus: response.headerStatus ?? "DIAGNÓSTICO CONCLUÍDO",
@@ -69,8 +78,8 @@ final class AssistViewModel: ObservableObject {
                         headerStatus: "Assist",
                         title: "Conclusão",
                         summary: response.text,
-                        recommendation: nil,
-                        dimensions: [],
+                        recommendation: response.recommendation,
+                        dimensions: response.dimensions ?? [],
                         fallbackText: response.longText
                     )
                     state = .success(data)
@@ -91,4 +100,57 @@ final class AssistViewModel: ObservableObject {
             state = .error(errorText)
         }
     }
+
+    /// Monta somente o contexto que a tela realmente possui. Histórico é
+    /// limitado ao contrato do Assist, e uma finalidade de uso só passa se
+    /// tiver sido informada por uma superfície que a coletou.
+    static func makeContext(
+        currentMeasurement: NetworkMeasurement,
+        recentMeasurements: [NetworkMeasurement],
+        usageContext: String? = nil
+    ) -> NetworkAssistContext {
+        let recent = recentMeasurements
+            .filter { $0.id != currentMeasurement.id }
+            .prefix(20)
+
+        let currentEvidence = NetworkAssistEvidence(
+            id: NetworkAssistRequest.currentMeasurementEvidenceID(currentMeasurement.id),
+            kind: .metric,
+            metricKey: "measurement",
+            sourceMeasurementIDs: [currentMeasurement.id]
+        )
+        let recentEvidence = recent.map { measurement in
+            NetworkAssistEvidence(
+                id: NetworkAssistRequest.recentMeasurementEvidenceID(measurement.id),
+                kind: .metric,
+                metricKey: "measurement",
+                sourceMeasurementIDs: [measurement.id]
+            )
+        }
+
+        return NetworkAssistContext(
+            question: "Interprete esta medição com os dados disponíveis.",
+            currentMeasurement: currentMeasurement,
+            recentMeasurements: Array(recent),
+            evidence: [currentEvidence] + recentEvidence,
+            usageContext: usageContext?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+        )
+    }
+
+    private static func message(for disposition: NetworkAssistDisposition) -> String {
+        switch disposition {
+        case .insufficientEvidence:
+            return "Ainda não há dados suficientes para uma interpretação confiável."
+        case .requiresDiagnosis:
+            return "Esta pergunta exige uma investigação que o Linka não pode concluir só com esta medição."
+        case .unsupported:
+            return "O Assist não consegue responder a esse tipo de solicitação."
+        case .answered:
+            return ""
+        }
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

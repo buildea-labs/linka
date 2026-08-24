@@ -71,6 +71,9 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
     public let currentMeasurement: NetworkMeasurement
     public let recentMeasurements: [NetworkMeasurement]
     public let evidence: [NetworkAssistEvidence]
+    /// Contexto de uso informado pelo usuário, quando existir. Ausência é
+    /// diferente de uma finalidade inferida pelo cliente.
+    public let usageContext: String?
     public let diagnosticPayload: String?
     public let locale: String?
 
@@ -79,6 +82,7 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
         currentMeasurement: NetworkMeasurement,
         recentMeasurements: [NetworkMeasurement] = [],
         evidence: [NetworkAssistEvidence] = [],
+        usageContext: String? = nil,
         diagnosticPayload: String? = nil,
         locale: String? = nil
     ) {
@@ -86,6 +90,7 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
         self.currentMeasurement = currentMeasurement
         self.recentMeasurements = recentMeasurements
         self.evidence = evidence
+        self.usageContext = usageContext
         self.diagnosticPayload = diagnosticPayload
         self.locale = locale
     }
@@ -96,6 +101,7 @@ public struct NetworkAssistRequest: Codable, Equatable, Sendable {
     public let currentMeasurement: NetworkMeasurement
     public let recentMeasurements: [NetworkMeasurement]
     public let evidence: [NetworkAssistEvidence]
+    public let usageContext: String?
     public let locale: String?
     public let policy: NetworkAssistPolicy
 
@@ -104,6 +110,7 @@ public struct NetworkAssistRequest: Codable, Equatable, Sendable {
         self.currentMeasurement = context.currentMeasurement
         self.recentMeasurements = context.recentMeasurements
         self.evidence = context.evidence
+        self.usageContext = context.usageContext
         self.locale = context.locale
         self.policy = .measurementUnderstanding
     }
@@ -138,9 +145,11 @@ public struct NetworkAssistDimension: Codable, Equatable, Sendable {
 public struct NetworkAssistRecommendation: Codable, Equatable, Sendable {
     public let title: String
     public let description: String
-    public init(title: String, description: String) {
+    public let steps: [String]
+    public init(title: String, description: String, steps: [String] = []) {
         self.title = title
         self.description = description
+        self.steps = steps
     }
 }
 

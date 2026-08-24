@@ -18,10 +18,10 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>CLIENT_API_TOKEN</key>
-	<string>$(CLIENT_API_TOKEN)</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>NDAssistRelayEndpoint</key>
+	<string>https://linka-assist-relay.buildealabs.workers.dev/v1/assist</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
