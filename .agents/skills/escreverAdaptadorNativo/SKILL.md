@@ -1,5 +1,5 @@
 ---
-name: escreverAdaptadorNativo
+name: escrever-adaptador-nativo
 description: Procedimento do Guinho para adaptar SwiftUI a capacidades do LinkaEngine e dos pacotes Swift sem acoplar a View ao motor nem quebrar a fronteira Engine/Adapter/UI.
 ---
 

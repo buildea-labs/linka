@@ -1,5 +1,5 @@
 ---
-name: escreverTestes
+name: escrever-testes
 description: Procedimento do Guinho para escrever testes junto com a implementação do Linka — motor, conversões de rede, política de retenção e estados do adapter. Ferramenta padrão é swift test (XCTest) nos pacotes Swift.
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: desenharInterface
+name: desenhar-interface
 description: Procedimento do Giam para especificar a UI do Linka a partir do protótipo canônico e do Design System, antes do Guinho implementar.
 ---
 

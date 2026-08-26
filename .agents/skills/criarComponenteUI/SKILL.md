@@ -1,6 +1,6 @@
 ---
-name: criarComponenteUI
-description: Diretrizes do Guinho para construir componentes SwiftUI do Linka (e componentes do site institucional em aplicacao-web/) com fidelidade ao minimalismo Apple-first.
+name: criar-componente-ui
+description: Diretrizes do papel de implementação para construir componentes SwiftUI do Linka (e componentes do site institucional em aplicacao-web/) com fidelidade ao minimalismo Apple-only.
 ---
 
 # Skill: criarComponenteUI

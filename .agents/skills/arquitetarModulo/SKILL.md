@@ -1,5 +1,5 @@
 ---
-name: arquitetarModulo
+name: arquitetar-modulo
 description: Guia do Giam para desenhar mudanças modulares no Linka sem ampliar o escopo por acidente, respeitando a separação Engine/Adapter/UI e a curadoria de minimalismo.
 ---
 

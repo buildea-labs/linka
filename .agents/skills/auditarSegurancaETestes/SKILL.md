@@ -1,5 +1,5 @@
 ---
-name: auditarSegurancaETestes
+name: auditar-seguranca-e-testes
 description: Runbook do Marcelo para validar robustez do LinkaEngine, comportamento em rede real e integridade da separação motor/interpretação.
 ---
 
@@ -64,7 +64,7 @@ O pior bug de um SpeedTest não é o app fechar. É desenhar uma tela linda com 
 - Interface bonita com número errado é **só um erro bem desenhado**.
 - Mock em código de produção é reprovação automática (o commit `b410c6e` os removeu; qualquer PR que traga de volta precisa justificar).
 
-## 4. Aparelho real (Apple-first)
+## 4. Aparelho real (Apple-only)
 
 **iPhone real é padrão.** No simulador e no desktop a latência costuma ser 1 ms — não mostra o produto que o usuário vai ver.
 

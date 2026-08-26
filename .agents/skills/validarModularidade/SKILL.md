@@ -1,5 +1,5 @@
 ---
-name: validarModularidade
+name: validar-modularidade
 description: Runbook do Marcelo para detectar acoplamento, responsabilidades misturadas e duplicação de regra no código do Linka.
 ---
 

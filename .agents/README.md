@@ -2,6 +2,12 @@
 
 Tudo que a squad usa mora aqui dentro. Nenhuma fonte externa é necessária para trabalhar no Linka, e nenhuma tem autoridade sobre o que está definido aqui e em [`AGENTS.md`](../AGENTS.md) na raiz.
 
+## Como o Codex usa esta pasta
+
+O Codex carrega [`AGENTS.md`](../AGENTS.md) como governança e descobre cada skill pelo `SKILL.md` e pelo `name` em seu frontmatter. Os nomes de invocação são kebab-case (por exemplo, `pensar-como-medicao`), mesmo quando a pasta histórica ainda usa camelCase. A delegação nativa cria subagentes por tarefa; use os JSONs em `plugins/squad-linka/` como templates de papel e nunca como autorização independente.
+
+Nesta sessão, o Codex é o interlocutor único com o Luiz. “Giam”, “Guinho” e “Marcelo” identificam o papel aplicado à tarefa, inclusive quando um subagente é criado. O agente principal integra os resultados; nunca fabrique um handoff, uma revisão ou uma aprovação.
+
 ## Squad
 
 Definida em [`AGENTS.md`](../AGENTS.md) §4:
@@ -28,6 +34,7 @@ O trabalho opera em três trilhas atrás de um **Roteador**: Fast‑lane (trivia
 ├── matarCheiroDeIA/          filtro anti-linguagem e anti-formato de IA
 ├── arquitetarModulo/         desenho modular respeitando fronteira Engine/UI
 ├── registrarIssue/           issue, PR e commit — texto de trabalho direto
+├── delegar-subagente/       contrato de delegação nativa do Codex
 │
 │   GUINHO — implementação, arquitetura e proteção do motor
 ├── criarComponenteUI/        constrói componente SwiftUI (ou React no site)
@@ -42,7 +49,7 @@ O trabalho opera em três trilhas atrás de um **Roteador**: Fast‑lane (trivia
 └── auditarSegurancaETestes/  pipeline, rede real, mentira visual, fronteira
 ```
 
-Skill não é propriedade privada: o Guinho usa `registrarIssue` no PR dele, e o Marcelo usa `aplicarVozLinka` e `matarCheiroDeIA` para checar o texto entregue. O que a coluna diz é **quem responde por aquilo**.
+Skill não é propriedade privada: o papel de implementação usa `registrar-issue`, e o papel de qualidade usa `aplicar-voz-linka` e `matar-cheiro-de-ia` para checar o texto entregue. O que a coluna diz é **quem responde por aquilo**.
 
 O aceite da entrega, papel do Giam, não tem skill — o procedimento é [`.agents/WORKFLOW.md`](WORKFLOW.md) Passo 3.
 
@@ -50,7 +57,7 @@ Cada skill é um `SKILL.md` com frontmatter (`name`, `description`) e um procedi
 
 ## Evolução planejada da squad
 
-A squad atual (Giam / Guinho / Marcelo) é o **mínimo viável multi‑agente** — planner, implementer, reviewer — recomendado pela literatura como ponto de partida. **Não crie papel novo por intuição.** Divida quando o loop reclamar.
+A squad atual (Giam / Guinho / Marcelo) é o **mínimo viável de papéis delegáveis** — produto, implementação e qualidade. **Não crie papel novo por intuição.** Delegue apenas tarefas concretas, independentes e com escopo explícito; mantenha decisões acopladas no agente principal.
 
 Três candidatos legítimos a acréscimo, em ordem de prioridade, cada um com **gatilho objetivo**:
 
@@ -99,7 +106,7 @@ Ordem de precedência ([`AGENTS.md`](../AGENTS.md) §3):
 
 ## Histórico
 
-As personas Giam/Guinho/Marcelo/Camillo vieram do produto irmão Auê, um jogo mobile — [`AGENTS.md`](../AGENTS.md) §4 registra isso. As skills desta pasta foram **adaptadas** para o Linka em 2026-08-14, deixando de descrever Arena/arroto/carioca e passando a descrever medição, `LinkaEngine`, Apple-first e a fronteira Linka/SignallQ (que era dura naquele momento). A skill `regrasDoAndroid` foi removida na adaptação (o Linka não tem versão Android per [`AGENTS.md`](../AGENTS.md) §2), e quatro skills foram renomeadas:
+As personas Giam/Guinho/Marcelo/Camillo vieram do produto irmão Auê, um jogo mobile — [`AGENTS.md`](../AGENTS.md) §4 registra isso. As skills desta pasta foram **adaptadas** para o Linka em 2026-08-14, deixando de descrever Arena/arroto/carioca e passando a descrever medição, `LinkaEngine` e Apple-only. A skill `regrasDoAndroid` foi removida na adaptação (o Linka não tem versão Android per [`AGENTS.md`](../AGENTS.md) §2), e quatro skills foram renomeadas:
 
 - `conversarComOPrimo` → `conversarComOLuiz`
 - `aplicarTomOgro` → `aplicarVozLinka`

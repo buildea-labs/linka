@@ -1,5 +1,5 @@
 ---
-name: conversarComOLuiz
+name: conversar-com-o-luiz
 description: Como o Giam (você, o agente) interage com o Luiz — dono do produto. Tom direto, mastigado, respeitoso à voz do Linka, com a IA agindo como interlocutor único da squad.
 ---
 

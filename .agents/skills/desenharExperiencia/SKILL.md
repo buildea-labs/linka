@@ -1,5 +1,5 @@
 ---
-name: desenharExperiencia
+name: desenhar-experiencia
 description: Procedimento do Giam para desenhar o fluxo e os estados do Linka (abrir → medir → mostrar → repetir) sem inventar tela nova nem inflar o produto.
 ---
 

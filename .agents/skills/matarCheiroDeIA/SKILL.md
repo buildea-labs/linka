@@ -1,5 +1,5 @@
 ---
-name: matarCheiroDeIA
+name: matar-cheiro-de-ia
 description: Filtro obrigatório contra linguagem e formato típicos de IA em copy, issue, PR, commit e conversa do Linka.
 ---
 

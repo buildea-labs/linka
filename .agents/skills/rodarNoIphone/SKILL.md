@@ -1,5 +1,5 @@
 ---
-name: rodarNoIphone
+name: rodar-no-iphone
 description: Procedimento do Guinho para construir, assinar e instalar o Linka num iPhone/iPad/Mac de verdade, com os portões do Xcode que travam o caminho.
 ---
 

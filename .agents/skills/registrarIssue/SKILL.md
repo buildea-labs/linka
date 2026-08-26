@@ -1,5 +1,5 @@
 ---
-name: registrarIssue
+name: registrar-issue
 description: Como o Linka escreve issue, PR e commit — linguagem direta, sem corporativismo, obedecendo à voz canônica do produto.
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: aconselharArquitetura
+name: aconselhar-arquitetura
 description: Procedimento do Guinho para proteger o LinkaEngine e os pacotes Swift quando aparece decisão difícil, evitando que a simplicidade da UI comprometa a medição.
 ---
 

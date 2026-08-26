@@ -1,3 +1,6 @@
 {
-  "name": "Squad Linka"
+  "name": "squad-linka",
+  "description": "Perfis de prompt para delegação nativa de subagentes do Codex. O AGENTS.md define a autoridade e o contrato de delegação.",
+  "runtime": "codex-native-subagents",
+  "profile_directory": "agents"
 }

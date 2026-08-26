@@ -1,5 +1,5 @@
 ---
-name: pensarComoMedicao
+name: pensar-como-medicao
 description: Curadoria do Giam para julgar se uma mudança fortalece o Linka como SpeedTest mínimo no ecossistema Apple, ou se está inchando o produto em painel/dashboard.
 ---
 

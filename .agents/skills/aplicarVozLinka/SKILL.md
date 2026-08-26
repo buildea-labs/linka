@@ -1,5 +1,5 @@
 ---
-name: aplicarVozLinka
+name: aplicar-voz-linka
 description: Aplica a voz canônica do Linka definida em documentacao/produto/VOZ.md sem inventar escopo, sem entusiasmo artificial e sem interpretar resultado.
 ---
 

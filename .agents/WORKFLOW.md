@@ -52,7 +52,7 @@ Para feature ou mudança material.
 - Implementa seguindo o Design System.
 - Escreve testes junto com a implementação.
 - **Protege o motor** — quando toca `LinkaEngine`, `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist` ou `LinkaModules`, mantém UI e medição desacopladas, preserva contratos e evolui com versionamento quando necessário.
-- Onde partes são independentes (ex.: componente + adaptador nativo + teste), pode paralelizar em subagentes isolados.
+- Onde partes são independentes (ex.: componente + adaptador nativo + teste), o Codex pode criar subagentes com escopos de escrita disjuntos. O agente principal continua responsável por integrar, revisar e relatar o resultado. Não delegue uma tarefa cujo retorno bloqueie imediatamente o próximo passo crítico.
 - Não amplia escopo por conta própria — descoberta relevante vira nota no `plano.md` para o Giam decidir.
 
 ### 3. Evaluate (Marcelo)

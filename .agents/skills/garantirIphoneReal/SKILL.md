@@ -1,5 +1,5 @@
 ---
-name: garantirIphoneReal
+name: garantir-iphone-real
 description: Procedimento do Guinho para o Linka funcionar em iPhone/iPad/Mac reais — não simulador — com atenção às condições que o desktop e o simulador não reproduzem.
 ---
 
