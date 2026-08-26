@@ -393,19 +393,27 @@ public actor SpeedTestCore {
         let payload = phase == .upload ? generateRandomPayload(size: bytes) : nil
 
         // ------------------------------------------------------------
-        // Latência sob carga (issue #52), só na fase de download.
+        // Latência sob carga (issue #52, paridade de upload na issue #128),
+        // nas fases de download e upload.
         //
         // Sonda HEAD leve (0 bytes) contra o mesmo endpoint Cloudflare,
-        // concorrente à carga real dos `streams` de download — é essa
-        // concorrência que a diferencia da latência ociosa de
-        // `performPingTest` (que roda isolada, antes de qualquer carga).
+        // concorrente à carga real dos `streams` da fase — é essa
+        // concorrência (com download OU upload) que a diferencia da latência
+        // ociosa de `performPingTest` (que roda isolada, antes de qualquer
+        // carga). A sondagem em si (`performLoadedLatencyProbe`) sempre bate
+        // no endpoint de download com HEAD de 0 bytes — o que muda por fase é
+        // só a carga concorrente que ela testemunha, não a sondagem; por
+        // isso a mesma função nonisolated é reaproveitada literalmente para
+        // as duas fases, sem variante nem parâmetro de fase.
         //
         // Fica presa à mesma janela da fase (`phaseStart`/`maxDuration`) e é
         // cancelada assim que o loop principal termina, cedo por convergência
         // ou no teto — nunca estende a duração calibrada por #62. O
         // intervalo de 1s entre sondagens mantém o custo de dados desprezível
         // (HEAD de 0 bytes) e não compete por banda com os streams de carga.
-        let latencyCollector: DoubleSampleCollector? = phase == .download ? DoubleSampleCollector() : nil
+        let latencyCollector: DoubleSampleCollector? = (phase == .download || phase == .upload)
+            ? DoubleSampleCollector()
+            : nil
         let latencySamplingTask: Task<Void, Never>? = latencyCollector.map { collector in
             Task.detached(priority: .utility) {
                 while Date().timeIntervalSince(phaseStart) < maxDuration && !Task.isCancelled {
@@ -556,13 +564,21 @@ public actor SpeedTestCore {
 
         // Encerra a sondagem de latência sob carga na mesma virada da carga
         // real — nunca sobrevive além da janela da fase. Falha ou ausência
-        // total de amostras aqui nunca lança nem afeta `downloadSpeed`
-        // (aceite #4): `aggregateLoadedLatency` simplesmente devolve `nil`.
+        // total de amostras aqui nunca lança nem afeta `downloadSpeed`/
+        // `uploadSpeed` (aceite #4 da #52, preservado na paridade de upload
+        // da #128): `aggregateLoadedLatency` simplesmente devolve `nil`, e o
+        // resultado principal da fase (`return .measured(...)` abaixo) nunca
+        // depende deste bloco.
         latencySamplingTask?.cancel()
         _ = await latencySamplingTask?.value
-        if phase == .download, let latencyCollector {
+        if let latencyCollector {
             let latencySamples = await latencyCollector.all()
-            state.loadedLatencyMs = Self.aggregateLoadedLatency(samples: latencySamples)
+            let aggregatedLatency = Self.aggregateLoadedLatency(samples: latencySamples)
+            if phase == .download {
+                state.loadedLatencyMs = aggregatedLatency
+            } else {
+                state.loadedLatencyUploadMs = aggregatedLatency
+            }
         }
 
         // Fallback: se nenhum sample instantâneo pegou nada (rede muito
@@ -764,9 +780,13 @@ public actor SpeedTestCore {
         return errored
     }
 
-    /// Agregação da latência sob carga (issue #52): reduz as sondagens
-    /// coletadas por `performLoadedLatencyProbe` durante a fase de download
-    /// a um único valor representativo.
+    /// Agregação da latência sob carga (issue #52, reaproveitada para a
+    /// paridade de upload na issue #128): reduz as sondagens coletadas por
+    /// `performLoadedLatencyProbe` durante a fase de download OU upload a um
+    /// único valor representativo. Função única e parametrizada só pela
+    /// lista de amostras — não existe variante por fase porque a agregação
+    /// (mediana, piso de amostras) não depende de qual fase gerou as
+    /// amostras, só do que as amostras dizem.
     ///
     /// `nonisolated static` de propósito — mesmo padrão de `hasConverged`:
     /// não toca `Date()` ao vivo nem estado do ator, então é inteiramente

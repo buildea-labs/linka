@@ -8,12 +8,18 @@ public enum NetworkMetric: String, Codable, CaseIterable, Sendable {
     case jitterMs
     case packetLossPercent
     case loadedLatencyMs
+    /// Latência sob carga durante upload (issue #128) — paridade de
+    /// `loadedLatencyMs`, que só cobria download. Vira métrica de primeira
+    /// classe (não só um campo de `NetworkMeasurement`) para herdar de
+    /// graça estatísticas e tendência histórica (`summarize`/`comparePeriods`)
+    /// e a comparação parada-vs-carga (`LoadResponsivenessEvaluator`).
+    case loadedLatencyUploadMs
 
     public var preference: MetricPreference {
         switch self {
         case .downloadMbps, .uploadMbps:
             return .higherIsBetter
-        case .latencyMs, .jitterMs, .packetLossPercent, .loadedLatencyMs:
+        case .latencyMs, .jitterMs, .packetLossPercent, .loadedLatencyMs, .loadedLatencyUploadMs:
             return .lowerIsBetter
         }
     }
@@ -159,6 +165,87 @@ public protocol NetworkInsightsAnalyzing: Sendable {
     ) throws -> NetworkPeriodComparison
 }
 
+/// Núcleo puro de comparação entre duas leituras de uma métrica (extraído de
+/// `BasicNetworkInsightsAnalyzer.compareValues` na issue #128): calcula
+/// delta absoluto, delta percentual e direção (`InsightDirection`) a partir
+/// de dois valores e da preferência da métrica (`NetworkMetric.preference`).
+///
+/// Motivo da extração: `LoadResponsivenessEvaluator` (issue #128, comparação
+/// parada-vs-carga em `LoadResponsiveness.swift`) precisa exatamente do
+/// mesmo cálculo de delta percentual que já embasa todo `MetricComparison`
+/// deste pacote — reimplementar a fórmula ali seria a "segunda forma de
+/// calcular percentual de mudança" que a issue #128 explicitamente pede para
+/// não existir. `BasicNetworkInsightsAnalyzer.compareValues` agora delega
+/// para cá; o comportamento observável não muda (mesmos testes de
+/// `NetworkInsightsTests` continuam cobrindo esta lógica através dele).
+///
+/// `enum` sem casos (namespace de função estática) pelo mesmo motivo de
+/// `NetworkMeasurementContract`: agrupa uma função pura sem estado, sem
+/// precisar de instância.
+public enum MetricComparator {
+    /// - Parameters:
+    ///   - metric: identifica a métrica comparada — decide, via
+    ///     `metric.preference`, se um delta positivo é melhora ou piora.
+    ///   - current: valor "atual"/"sob carga" da comparação. `nil` produz
+    ///     `.unavailable` sem inventar direção.
+    ///   - baseline: valor de referência/"parado" da comparação. `nil`
+    ///     produz `.unavailable` pelo mesmo motivo.
+    ///   - stableChangeThresholdPercent: variação percentual absoluta,
+    ///     abaixo da qual a mudança é considerada ruído e não um resultado
+    ///     real (`.stable`), em vez de `.improved`/`.worsened`. Passado pelo
+    ///     chamador porque o limiar de "estável" é uma decisão de contexto
+    ///     (comparação de duas medições vs. tendência histórica vs.
+    ///     responsividade sob carga), não uma constante única do pacote.
+    public static func compare(
+        metric: NetworkMetric,
+        current: Double?,
+        baseline: Double?,
+        stableChangeThresholdPercent: Double
+    ) -> MetricComparison {
+        guard let current, let baseline else {
+            return MetricComparison(
+                metric: metric,
+                currentValue: current,
+                baselineValue: baseline,
+                absoluteDelta: nil,
+                percentDelta: nil,
+                direction: .unavailable
+            )
+        }
+
+        let delta = current - baseline
+        let percentDelta = baseline == 0 ? nil : (delta / abs(baseline)) * 100
+
+        let isStable: Bool
+        if let percentDelta {
+            isStable = abs(percentDelta) <= stableChangeThresholdPercent
+        } else {
+            isStable = delta == 0
+        }
+
+        let direction: InsightDirection
+        if isStable {
+            direction = .stable
+        } else {
+            switch metric.preference {
+            case .higherIsBetter:
+                direction = delta > 0 ? .improved : .worsened
+            case .lowerIsBetter:
+                direction = delta < 0 ? .improved : .worsened
+            }
+        }
+
+        return MetricComparison(
+            metric: metric,
+            currentValue: current,
+            baselineValue: baseline,
+            absoluteDelta: delta,
+            percentDelta: percentDelta,
+            direction: direction
+        )
+    }
+}
+
 public struct BasicNetworkInsightsAnalyzer: NetworkInsightsAnalyzing {
     public let configuration: NetworkInsightsConfiguration
 
@@ -230,46 +317,11 @@ public struct BasicNetworkInsightsAnalyzer: NetworkInsightsAnalyzing {
         current: Double?,
         baseline: Double?
     ) -> MetricComparison {
-        guard let current, let baseline else {
-            return MetricComparison(
-                metric: metric,
-                currentValue: current,
-                baselineValue: baseline,
-                absoluteDelta: nil,
-                percentDelta: nil,
-                direction: .unavailable
-            )
-        }
-
-        let delta = current - baseline
-        let percentDelta = baseline == 0 ? nil : (delta / abs(baseline)) * 100
-
-        let isStable: Bool
-        if let percentDelta {
-            isStable = abs(percentDelta) <= configuration.stableChangeThresholdPercent
-        } else {
-            isStable = delta == 0
-        }
-
-        let direction: InsightDirection
-        if isStable {
-            direction = .stable
-        } else {
-            switch metric.preference {
-            case .higherIsBetter:
-                direction = delta > 0 ? .improved : .worsened
-            case .lowerIsBetter:
-                direction = delta < 0 ? .improved : .worsened
-            }
-        }
-
-        return MetricComparison(
+        MetricComparator.compare(
             metric: metric,
-            currentValue: current,
-            baselineValue: baseline,
-            absoluteDelta: delta,
-            percentDelta: percentDelta,
-            direction: direction
+            current: current,
+            baseline: baseline,
+            stableChangeThresholdPercent: configuration.stableChangeThresholdPercent
         )
     }
 
@@ -424,6 +476,8 @@ public struct BasicNetworkInsightsAnalyzer: NetworkInsightsAnalyzing {
             return measurement.packetLossPercent
         case .loadedLatencyMs:
             return measurement.loadedLatencyMs
+        case .loadedLatencyUploadMs:
+            return measurement.loadedLatencyUploadMs
         }
     }
 }

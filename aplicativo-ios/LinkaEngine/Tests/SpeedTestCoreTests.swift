@@ -284,6 +284,43 @@ final class SpeedTestCoreLoadedMetricsTests: XCTestCase {
         XCTAssertEqual(result, 21.0)
     }
 
+    // MARK: - aggregateLoadedLatency, paridade de upload (issue #128)
+    //
+    // `aggregateLoadedLatency` é `nonisolated static` e não recebe `phase`
+    // como parâmetro (ver comentário em `SpeedTestCore.runPhaseTimeBased`,
+    // bloco de agregação da latência sob carga): a mesma função agrega tanto
+    // as amostras coletadas durante download (`state.loadedLatencyMs`)
+    // quanto durante upload (`state.loadedLatencyUploadMs`) — o motor decide
+    // em qual campo guardar o resultado a partir de `phase`, mas a regra de
+    // agregação (mediana, piso de amostras, filtro de inválidos) é idêntica
+    // nos dois casos. Os testes acima já cobrem essa regra de forma
+    // exaustiva; os dois abaixo documentam explicitamente que amostras
+    // "de upload" passam pelos mesmos casos de borda, sem duplicar lógica.
+
+    func test_aggregateLoadedLatency_uploadPhaseSamples_sameMedianRule() {
+        // Mesmo cenário de `test_aggregateLoadedLatency_absorbsSingleOutlier`,
+        // só que representando sondagens colhidas durante a fase de upload —
+        // a função não distingue a origem das amostras.
+        let uploadPhaseSamples: [Double] = [30.0, 32.0, 31.0, 29.0, 260.0]
+
+        let result = SpeedTestCore.aggregateLoadedLatency(samples: uploadPhaseSamples)
+
+        XCTAssertEqual(result, 31.0)
+    }
+
+    func test_aggregateLoadedLatency_uploadPhaseBelowMinSamples_returnsNilNeverAffectsUploadSpeed() {
+        // Paridade do aceite #1 da issue #52 ("resultado principal nunca
+        // depende da sondagem") estendida à #128: amostras insuficientes de
+        // upload também não inventam valor — o motor só marca
+        // `loadedLatencyUploadMs` como `nil`, `uploadSpeed` segue vindo do
+        // caminho de medição real, inteiramente independente desta função.
+        let uploadPhaseSamples: [Double] = [28.0, 33.0]
+
+        let result = SpeedTestCore.aggregateLoadedLatency(samples: uploadPhaseSamples)
+
+        XCTAssertNil(result)
+    }
+
     // MARK: - throughputVariation
 
     func test_throughputVariation_stableWindow_returnsLowVariation() {
