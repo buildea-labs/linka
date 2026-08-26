@@ -11,12 +11,16 @@ struct AssistView: View {
     @StateObject private var viewModel: AssistViewModel
 
     let currentMeasurement: NetworkMeasurement?
+    let recentMeasurements: [NetworkMeasurement]
+    let usageContext: String?
     let failureSignal: NetworkAssistFailureSignal?
     let onRetry: (() -> Void)?
     let entitlements: StoreKitEntitlementProvider?
 
     init(
         currentMeasurement: NetworkMeasurement?,
+        recentMeasurements: [NetworkMeasurement] = [],
+        usageContext: String? = nil,
         failureSignal: NetworkAssistFailureSignal? = nil,
         onRetry: (() -> Void)? = nil,
         entitlements: StoreKitEntitlementProvider? = nil,
@@ -24,6 +28,8 @@ struct AssistView: View {
         assistIsRemote: Bool = AssistContainer.isRemoteAssistEnabled()
     ) {
         self.currentMeasurement = currentMeasurement
+        self.recentMeasurements = recentMeasurements
+        self.usageContext = usageContext
         self.failureSignal = failureSignal
         self.onRetry = onRetry
         self.entitlements = entitlements
@@ -57,6 +63,8 @@ struct AssistView: View {
         .task {
             await viewModel.load(
                 currentMeasurement: currentMeasurement,
+                recentMeasurements: recentMeasurements,
+                usageContext: usageContext,
                 failureSignal: failureSignal
             )
         }
@@ -151,24 +159,20 @@ struct AssistView: View {
                                     Text(rec.description)
                                         .font(.bodyRegular)
                                         .foregroundColor(.textSecondary)
+
+                                    if !rec.steps.isEmpty {
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            ForEach(Array(rec.steps.enumerated()), id: \.offset) { index, step in
+                                                Text("\(index + 1). \(step)")
+                                                    .font(.bodySmall)
+                                                    .foregroundColor(.textSecondary)
+                                            }
+                                        }
+                                        .padding(.top, 6)
+                                    }
                                 }
                             }
                             
-                            if let retry = onRetry {
-                                Button(action: {
-                                    retry()
-                                    dismiss()
-                                }) {
-                                    Text("Testar novamente")
-                                        .font(.buttonLabel)
-                                        .frame(maxWidth: .infinity)
-                                        .padding()
-                                        .background(Color.accentColor)
-                                        .foregroundColor(.white)
-                                        .cornerRadius(12)
-                                }
-                                .padding(.top, 8)
-                            }
                         } else {
                             HStack(alignment: .center, spacing: 12) {
                                 Image(systemName: "checkmark.circle.fill")
@@ -177,8 +181,28 @@ struct AssistView: View {
                                 
                                 Text("Nenhuma ação necessária.")
                                     .font(.bodyRegular)
-                                    .foregroundColor(.textSecondary)
+                                .foregroundColor(.textSecondary)
                             }
+                        }
+
+                        // Reteste é uma ação do usuário, não uma consequência
+                        // opcional da recomendação do NDS. Ele permanece
+                        // disponível mesmo quando o NDS devolve uma resposta
+                        // sem recommendation.
+                        if let retry = onRetry {
+                            Button(action: {
+                                retry()
+                                dismiss()
+                            }) {
+                                Text("Testar novamente")
+                                    .font(.buttonLabel)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.accentColor)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                            }
+                            .padding(.top, 8)
                         }
                     }
                     

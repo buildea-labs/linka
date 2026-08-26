@@ -16,7 +16,6 @@ struct MainView: View {
     // `StartSpeedTestIntent` (issue #55) — ver `AppIntentCoordinator`.
     @ObservedObject private var intentCoordinator = AppIntentCoordinator.shared
     @State private var detailsOpen: Bool = false
-    @State private var showAssist: Bool = false
     @State private var showPurchase: Bool = false
     @State private var ringScale: CGFloat = 1.0
     @Namespace private var animation
@@ -188,7 +187,10 @@ struct MainView: View {
                         VStack(spacing: 0) {
                             MetricRing(
                                 connecting: false,
-                                progress: viewModel.progress,
+                                // No resultado, o arco deixa de representar
+                                // progresso e passa a ser a moldura estável
+                                // da medição concluída.
+                                progress: 1.0,
                                 value: String(format: "%.1f", viewModel.downloadSpeed).replacingOccurrences(of: ".", with: ","),
                                 unit: "Mbps",
                                 size: 210,
@@ -222,15 +224,31 @@ struct MainView: View {
                                 Text("ms ping")
                                     .font(.bodySmall)
                                     .foregroundColor(.textSecondary)
+
+                                Text("·")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                                    .padding(.horizontal, 4)
+
+                                Text(String(format: "%.0f", viewModel.jitter))
+                                    .font(.metricSecondary)
+                                    .foregroundColor(.textPrimary)
+                                Text("ms jitter")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("Upload, \(formatted(viewModel.uploadSpeed)) megabits por segundo. Ping, \(viewModel.ping) milissegundos. Jitter, \(String(format: "%.0f", viewModel.jitter)) milissegundos.")
                             .padding(.bottom, 14)
                             
                             HStack(spacing: 12) {
                                 Button(action: {
-                                    detailsOpen = true
+                                    withAnimation(reduceMotion ? nil : LinkaMotion.spring) {
+                                        detailsOpen.toggle()
+                                    }
                                 }) {
                                     HStack(spacing: 6) {
-                                        Text("Ver detalhes")
+                                        Text(detailsOpen ? "Ocultar detalhes" : "Ver detalhes")
                                             .font(.bodySmallStrong)
 
                                         Image(systemName: "chevron.down")
@@ -244,46 +262,53 @@ struct MainView: View {
                                 .buttonStyle(.plain)
                             }
                             .padding(.bottom, 16)
-                            
-                            AssistTeaserCard(
-                                downloadSpeed: viewModel.downloadSpeed,
-                                onFreeTap: {
-                                    showPurchase = true
-                                },
-                                onPlusTap: {
-                                    showAssist = true
-                                },
-                                isPlusActive: isPlusActive
-                            )
-                            .padding(.horizontal, 32)
-                            .padding(.top, 16)
-                            
-                            // Último teste (Linha chapada)
-                            NavigationLink(destination: HistoryView()) {
-                                HStack {
-                                    Text("Último teste")
-                                        .font(.bodyRegularStrong)
-                                        .foregroundColor(.textPrimary)
-                                    
-                                    Spacer()
-                                    
-                                    Text(viewModel.lastTestSpeedString ?? "Nenhum teste anterior")
-                                        .font(.monoCaption)
-                                        .foregroundColor(.textSecondary)
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(.captionStrong)
-                                        .foregroundColor(.textSecondary)
-                                }
-                                .padding(.vertical, 14)
-                                .padding(.horizontal, 16)
-                                .background(Color.surfaceCard)
-                                .cornerRadius(16)
-                                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
+
+                            if detailsOpen {
+                                InlineResultDetails(
+                                    operatorName: viewModel.networkType.isEmpty ? "--" : viewModel.networkType,
+                                    provider: viewModel.provider.isEmpty ? "--" : viewModel.provider,
+                                    duration: viewModel.testDuration.isEmpty ? "--" : viewModel.testDuration,
+                                    ping: viewModel.ping,
+                                    wifiBandGHz: viewModel.wifiBandGHz,
+                                    jitter: viewModel.jitter,
+                                    packetLossPercent: viewModel.packetLossPercent,
+                                    loadedLatencyMs: viewModel.loadedLatencyMs
+                                )
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 16)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
                             }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal, 32)
-                            .padding(.top, 8)
+                            
+                            // O resultado não duplica a medição em uma linha
+                            // de "Último teste" nem promete uma resposta do
+                            // Assist por meio de skeleton. O Assist continua
+                            // disponível para Plus como ação secundária,
+                            // somente quando pode ser aberto de verdade.
+                            if isPlusActive {
+                                NavigationLink {
+                                    AssistView(
+                                        currentMeasurement: currentMeasurement,
+                                        recentMeasurements: viewModel.recentMeasurements,
+                                        onRetry: { viewModel.startTest() },
+                                        entitlements: entitlements
+                                    )
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "sparkles")
+                                        Text("Abrir Assist")
+                                            .font(.bodySmallStrong)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.captionStrong)
+                                    }
+                                    .foregroundColor(.textPrimary)
+                                    .frame(minHeight: 44)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.horizontal, 32)
+                                .padding(.top, 4)
+                            }
                             
                             Spacer(minLength: 16)
 
@@ -316,8 +341,11 @@ struct MainView: View {
                 }
             }
             .navigationTitle("")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
+                #if os(iOS)
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     if viewModel.uiPhase == .idle || viewModel.uiPhase == .connecting || viewModel.uiPhase == .done || viewModel.uiPhase == .error {
                         NavigationLink(destination: HistoryView()) {
@@ -333,26 +361,28 @@ struct MainView: View {
                         }
                     }
                 }
+                #else
+                ToolbarItemGroup {
+                    if viewModel.uiPhase == .idle || viewModel.uiPhase == .connecting || viewModel.uiPhase == .done || viewModel.uiPhase == .error {
+                        NavigationLink(destination: HistoryView()) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 16, weight: .medium))
+                                .accessibilityLabel("Histórico")
+                        }
+
+                        NavigationLink(destination: SettingsSheet()) {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 16, weight: .medium))
+                                .accessibilityLabel("Ajustes")
+                        }
+                    }
+                }
+                #endif
             }
             .navigationTitle("")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .navigationDestination(isPresented: $showAssist) {
-                // `onRetry` reusa o mesmo `viewModel.startTest()` do botão
-                // "Testar novamente"/"Tentar novamente" (issue #58) — nunca uma
-                // nova chamada ao motor. `failureSignal` ainda não é passado
-                // aqui (fiação ponta-a-ponta pendente de outro passo da cadeia,
-                // ver comentário em `AssistSheet.failureSignal`); sem ele, a
-                // sugestão `.retryMeasurement` nunca chega a ser calculada por
-                // falta de `investigation`, então este closure fica pronto sem
-                // efeito colateral até essa fiação fechar.
-                AssistView(
-                    currentMeasurement: currentMeasurement,
-                    onRetry: { viewModel.startTest() },
-                    entitlements: entitlements
-                )
-            }
         }
         .onAppear {
             // Início e carga de histórico controlados por SpeedTestViewModel.init()
@@ -383,23 +413,6 @@ struct MainView: View {
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet()
                 .environmentObject(entitlements)
-        }
-        .sheet(isPresented: $detailsOpen) {
-            DetailsDisclosure(
-                operatorName: viewModel.networkType.isEmpty ? "--" : viewModel.networkType,
-                provider: viewModel.provider.isEmpty ? "--" : viewModel.provider,
-                duration: viewModel.testDuration.isEmpty ? "--" : viewModel.testDuration,
-                ping: viewModel.ping,
-                wifiBandGHz: viewModel.wifiBandGHz,
-                jitter: viewModel.jitter,
-                packetLossPercent: viewModel.packetLossPercent,
-                loadedLatencyMs: viewModel.loadedLatencyMs,
-                downloadMbps: viewModel.downloadSpeed,
-                uploadMbps: viewModel.uploadSpeed
-            )
-            #if os(iOS)
-            .presentationDetents([.medium, .large])
-            #endif
         }
         .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: scenePhase) { newPhase in
@@ -460,6 +473,10 @@ struct MainView: View {
         }
     }
 
+    private func formatted(_ value: Double) -> String {
+        String(format: "%.1f", value).replacingOccurrences(of: ".", with: ",")
+    }
+
     private var phaseLabel: String {
         switch viewModel.uiPhase {
         case .idle, .connecting:
@@ -510,5 +527,72 @@ struct MainView: View {
         case nil:
             return "Algo interrompeu a medição. Tente novamente."
         }
+    }
+}
+
+private struct InlineResultDetails: View {
+    let operatorName: String
+    let provider: String
+    let duration: String
+    let ping: Int
+    let wifiBandGHz: Double?
+    let jitter: Double
+    let packetLossPercent: Double?
+    let loadedLatencyMs: Double?
+
+    private var networkLabel: String {
+        guard let wifiBandGHz else { return operatorName }
+        let band = wifiBandGHz.truncatingRemainder(dividingBy: 1) == 0
+            ? String(format: "%.0f", wifiBandGHz)
+            : String(format: "%.1f", wifiBandGHz)
+        return "\(operatorName) · \(band) GHz"
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            InlineResultDetailRow(label: "Rede", value: networkLabel)
+            InlineResultDetailRow(label: "Provedor", value: provider)
+            InlineResultDetailRow(label: "Duração", value: duration)
+            InlineResultDetailRow(label: "Ping", value: "\(ping) ms")
+            InlineResultDetailRow(label: "Jitter", value: String(format: "%.0f ms", jitter))
+
+            if let packetLossPercent {
+                InlineResultDetailRow(label: "Perda de pacotes", value: "\(Int(packetLossPercent))%")
+            }
+
+            if let loadedLatencyMs {
+                InlineResultDetailRow(label: "Latência sob carga", value: String(format: "%.0f ms", loadedLatencyMs))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color.surfaceCard)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.borderDefault, lineWidth: 0.5)
+        }
+        .accessibilityElement(children: .contain)
+    }
+}
+
+private struct InlineResultDetailRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(.bodySmall)
+                .foregroundColor(.textSecondary)
+            Spacer(minLength: 8)
+            Text(value)
+                .font(.bodySmallStrong)
+                .foregroundColor(.textPrimary)
+                .multilineTextAlignment(.trailing)
+        }
+        .frame(minHeight: 36)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
     }
 }

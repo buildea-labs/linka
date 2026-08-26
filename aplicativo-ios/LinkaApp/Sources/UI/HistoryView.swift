@@ -139,6 +139,7 @@ struct HistoryView: View {
         .toolbar {
             if hasPlus {
                 if FeatureFlags.isCoverageMapEnabled {
+                    #if canImport(UIKit)
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Picker("Modo", selection: $displayMode) {
                             Image(systemName: "list.bullet").tag(HistoryDisplayMode.list)
@@ -147,6 +148,16 @@ struct HistoryView: View {
                         .pickerStyle(SegmentedPickerStyle())
                         .frame(width: 100)
                     }
+                    #else
+                    ToolbarItem {
+                        Picker("Modo", selection: $displayMode) {
+                            Image(systemName: "list.bullet").tag(HistoryDisplayMode.list)
+                            Image(systemName: "map").tag(HistoryDisplayMode.map)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(width: 100)
+                    }
+                    #endif
                 }
             }
         }
@@ -164,6 +175,7 @@ struct HistoryView: View {
             // adapter, não um botão escondido depois de calculado.
             AssistView(
                 currentMeasurement: measurements.first,
+                recentMeasurements: Array(measurements.dropFirst().prefix(20)),
                 entitlements: entitlements
             )
         }
@@ -514,4 +526,3 @@ struct MapHistoryView: View {
         }
     }
 }
-

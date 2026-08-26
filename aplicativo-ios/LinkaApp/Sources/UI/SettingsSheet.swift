@@ -44,11 +44,11 @@ struct SettingsSheet: View {
 
                     #if DEBUG
                     SettingsSection(header: "DEBUG INTERNO", headerColor: .brandAccentWarm) {
-                        Button(action: { entitlements.debugForcePlus() }) {
+                        Button(action: { entitlements.debugResetToFree() }) {
                             HStack {
                                 Image(systemName: "bolt.fill")
                                     .foregroundColor(.brandAccentWarm)
-                                Text("Forçar Linka Plus (DEBUG)")
+                                Text("Simular Linka Free (DEBUG)")
                                     .foregroundColor(.textPrimary)
                                 Spacer()
                             }
@@ -56,11 +56,11 @@ struct SettingsSheet: View {
                             .padding(.horizontal, 16)
                         }
                         Divider().padding(.leading, 16)
-                        Button(action: { entitlements.debugResetToFree() }) {
+                        Button(action: { entitlements.debugForcePlus() }) {
                             HStack {
-                                Image(systemName: "trash.fill")
+                                Image(systemName: "bolt.fill")
                                     .foregroundColor(.brandAccentWarm)
-                                Text("Resetar Compra Mockada")
+                                Text("Simular Linka Plus (DEBUG)")
                                     .foregroundColor(.textPrimary)
                                 Spacer()
                             }
@@ -81,8 +81,8 @@ struct SettingsSheet: View {
         }
         .background(Color.surfacePage.ignoresSafeArea())
         .navigationTitle("Ajustes")
-        .navigationBarTitleDisplayMode(.large)
         #if canImport(UIKit)
+        .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(Color.surfacePage, for: .navigationBar)
         #endif
         .onAppear {

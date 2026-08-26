@@ -22,7 +22,12 @@ public final class LocationTracker: NSObject, CLLocationManagerDelegate, Sendabl
         // We DO NOT call requestWhenInUseAuthorization() to avoid interrupting the UI flow.
         
         let status = manager.authorizationStatus
-        guard status == .authorizedWhenInUse || status == .authorizedAlways else {
+        #if os(iOS)
+        let isAuthorized = status == .authorizedWhenInUse || status == .authorizedAlways
+        #else
+        let isAuthorized = status == .authorized
+        #endif
+        guard isAuthorized else {
             return nil
         }
         

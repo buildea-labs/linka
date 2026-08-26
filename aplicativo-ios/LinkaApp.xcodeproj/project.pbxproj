@@ -435,7 +435,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLIENT_API_TOKEN = nds_live_9fd6fbbe7379f9d4f9392b5b7668a6e47439f42c60ab1118a0cda33f455b36d6;
 				CODE_SIGN_ENTITLEMENTS = LinkaApp/LinkaApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -520,7 +519,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLIENT_API_TOKEN = nds_live_9fd6fbbe7379f9d4f9392b5b7668a6e47439f42c60ab1118a0cda33f455b36d6;
 				CODE_SIGN_ENTITLEMENTS = LinkaApp/LinkaApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
@@ -599,7 +597,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLIENT_API_TOKEN = nds_live_9fd6fbbe7379f9d4f9392b5b7668a6e47439f42c60ab1118a0cda33f455b36d6;
 				CODE_SIGN_ENTITLEMENTS = LinkaApp/LinkaApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
@@ -624,7 +621,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLIENT_API_TOKEN = nds_live_9fd6fbbe7379f9d4f9392b5b7668a6e47439f42c60ab1118a0cda33f455b36d6;
 				CODE_SIGN_ENTITLEMENTS = LinkaApp/LinkaApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;

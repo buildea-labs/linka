@@ -33,6 +33,11 @@ struct LinkaApp: App {
             .environmentObject(entitlements)
             .task {
                 await entitlements.refreshSnapshot()
+                #if DEBUG
+                // O build de desenvolvimento começa simulando Plus. O
+                // cenário Free fica disponível apenas no menu DEBUG interno.
+                entitlements.debugForcePlus()
+                #endif
             }
         }
     }

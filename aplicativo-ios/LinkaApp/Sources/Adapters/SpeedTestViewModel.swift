@@ -75,7 +75,10 @@ public class SpeedTestViewModel: ObservableObject {
     /// milissegundos só no momento da construção final.
     private var rawTestDuration: Double? = nil
 
-    @Published public var lastTestSpeedString: String? = nil
+    /// Histórico recente real disponível para superfícies secundárias como
+    /// o Assist. O limite coincide com `NetworkAssistConfiguration` e evita
+    /// carregar uma coleção maior do que o contrato aceita.
+    @Published public private(set) var recentMeasurements: [NetworkMeasurement] = []
 
     // UI states
     @Published public var showPurchase: Bool = false
@@ -159,19 +162,10 @@ public class SpeedTestViewModel: ObservableObject {
         Task { @MainActor in
             let repository = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
             if let count = try? await repository.totalCount(), count > 0 {
-                let query = MeasurementQuery(limit: 1, sortOrder: .newestFirst)
-                let results = try? await repository.measurements(matching: query)
-                if let last = results?.first, let dl = last.downloadMbps {
-                    let formattedSpeed = String(format: "%.1f", dl).replacingOccurrences(of: ".", with: ",")
-                    let formatter = DateFormatter()
-                    formatter.locale = Locale(identifier: "pt_BR")
-                    if Calendar.current.isDateInToday(last.measuredAt) {
-                        self.lastTestSpeedString = "\(formattedSpeed) Mbps · Hoje"
-                    } else {
-                        formatter.dateFormat = "dd/MM"
-                        self.lastTestSpeedString = "\(formattedSpeed) Mbps · \(formatter.string(from: last.measuredAt))"
-                    }
-
+                let query = MeasurementQuery(limit: 20, sortOrder: .newestFirst)
+                let results = (try? await repository.measurements(matching: query)) ?? []
+                self.recentMeasurements = results
+                if let last = results.first {
                     // Hidrata snapshot em memória a partir da última medição
                     // persistida — Pular passa a restaurar o último resultado
                     // (mesmo de sessão anterior), não só quando o usuário mede
@@ -182,6 +176,7 @@ public class SpeedTestViewModel: ObservableObject {
                     }
                 }
             } else {
+                self.recentMeasurements = []
                 if self.uiPhase == .idle {
                     self.startTest()
                 }
