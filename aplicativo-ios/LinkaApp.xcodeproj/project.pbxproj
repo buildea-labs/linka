@@ -42,6 +42,7 @@
 		8F43FE7424FB03B9F36897E9 /* StatDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240C677AB8218C3DE05600FB /* StatDisplay.swift */; };
 		8FA33CB5620B468DC00D3C18 /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7798E2D1800A4FF1C0E30E /* ShareCardView.swift */; };
 		910814D6D49CF4D31DF32FC1 /* SpeedTestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E816515881C246C6E28B0653 /* SpeedTestViewModel.swift */; };
+		917E9E7322E9130BA3223569 /* NetworkStabilityPatternsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641020ADE92F07BF8F597BD6 /* NetworkStabilityPatternsViewModel.swift */; };
 		939AB442072FC3494E2B785F /* DetailsDisclosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEF366EB2385DC20D0757E43 /* DetailsDisclosure.swift */; };
 		99DC47095EFAC9A6C617FE64 /* MetricRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179DA64F9C7059B7A140B92E /* MetricRing.swift */; };
 		9D9CAA41523C5B4063A18FF2 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60A040FE4E49231CD858102 /* MainView.swift */; };
@@ -53,6 +54,7 @@
 		B49CE021825E80DC95B954AA /* AssistContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD4A980DC574793818E97A1 /* AssistContainer.swift */; };
 		BB664E873410EAC7F101D24B /* ApplePlatformSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */; };
 		C52F715538667A43E3CCA1CA /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 8B33A51CB0672AFF8EF05F84 /* GoogleMobileAds */; };
+		C795EB7B3D3C235CC07EB505 /* AssistViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78285EB65890B076CF8D41D4 /* AssistViewModelTests.swift */; };
 		CDD3F59B3B734268681868EA /* AssistTeaserCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647AB617F0B68B7D63BE2191 /* AssistTeaserCard.swift */; };
 		CF3CD7092B1A2A05068FD02F /* LinkaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C35725E79C96780D745AB7 /* LinkaApp.swift */; };
 		D023E595162ADE7D1452F5EC /* LinkaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C35725E79C96780D745AB7 /* LinkaApp.swift */; };
@@ -63,6 +65,7 @@
 		EB421BFDB3D4D610383923F1 /* ApplePlatformSignalProviderCWChannelBandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */; };
 		EFE90B32EE9F3C3441921A5D /* LinkaModules in Frameworks */ = {isa = PBXBuildFile; productRef = F9AA1524670AA76CD25C8EE7 /* LinkaModules */; };
 		F492A685388DF380C07F0B86 /* AssistViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD77BB89224BDA9466A65983 /* AssistViewModel.swift */; };
+		FB04D476B3C59CD38514B55C /* NetworkStabilityPatternsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641020ADE92F07BF8F597BD6 /* NetworkStabilityPatternsViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,10 +91,12 @@
 		4F6C710FA9D415DDBB3316F9 /* BannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerView.swift; sourceTree = "<group>"; };
 		5306A9B9735CAA5118F099E0 /* LinkaAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LinkaAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D7798E2D1800A4FF1C0E30E /* ShareCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardView.swift; sourceTree = "<group>"; };
+		641020ADE92F07BF8F597BD6 /* NetworkStabilityPatternsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkStabilityPatternsViewModel.swift; sourceTree = "<group>"; };
 		647AB617F0B68B7D63BE2191 /* AssistTeaserCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistTeaserCard.swift; sourceTree = "<group>"; };
 		6F3C93A80DDDCD9D80E5235B /* LinkaApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LinkaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		72C35725E79C96780D745AB7 /* LinkaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaApp.swift; sourceTree = "<group>"; };
 		736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
+		78285EB65890B076CF8D41D4 /* AssistViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistViewModelTests.swift; sourceTree = "<group>"; };
 		8041784263895147F69C02D2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8DD4A980DC574793818E97A1 /* AssistContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistContainer.swift; sourceTree = "<group>"; };
 		A955FDE679C032C5443EEF5D /* SpeedTestViewModelScenePhaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestViewModelScenePhaseTests.swift; sourceTree = "<group>"; };
@@ -171,6 +176,7 @@
 			isa = PBXGroup;
 			children = (
 				4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */,
+				78285EB65890B076CF8D41D4 /* AssistViewModelTests.swift */,
 				FB32ED976CC4BE668BB83D5C /* SpeedTestViewModelResultTimingTests.swift */,
 				A955FDE679C032C5443EEF5D /* SpeedTestViewModelScenePhaseTests.swift */,
 			);
@@ -216,6 +222,7 @@
 				D0E2413E81B1C0AF7D31BBC0 /* AssistFailureSignalMapping.swift */,
 				DD77BB89224BDA9466A65983 /* AssistViewModel.swift */,
 				B8A27A3A416A9EAF5A075A2C /* FeatureFlags.swift */,
+				641020ADE92F07BF8F597BD6 /* NetworkStabilityPatternsViewModel.swift */,
 				E816515881C246C6E28B0653 /* SpeedTestViewModel.swift */,
 			);
 			path = Adapters;
@@ -369,6 +376,7 @@
 				CF3CD7092B1A2A05068FD02F /* LinkaApp.swift in Sources */,
 				2AD6E6F6C8A5849D189EFFD5 /* MainView.swift in Sources */,
 				99DC47095EFAC9A6C617FE64 /* MetricRing.swift in Sources */,
+				917E9E7322E9130BA3223569 /* NetworkStabilityPatternsViewModel.swift in Sources */,
 				50C85316B3E53EB821D140B2 /* PhaseDots.swift in Sources */,
 				45C0F482F56FF0A25084CBD1 /* PurchaseSheet.swift in Sources */,
 				D1F96FFD9A366D9F61AD5F96 /* SettingsSheet.swift in Sources */,
@@ -385,6 +393,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EB421BFDB3D4D610383923F1 /* ApplePlatformSignalProviderCWChannelBandTests.swift in Sources */,
+				C795EB7B3D3C235CC07EB505 /* AssistViewModelTests.swift in Sources */,
 				5B0458DD58805571D30AC3EC /* SpeedTestViewModelResultTimingTests.swift in Sources */,
 				3780733E2BDF1FB538D9CC35 /* SpeedTestViewModelScenePhaseTests.swift in Sources */,
 			);
@@ -409,6 +418,7 @@
 				D023E595162ADE7D1452F5EC /* LinkaApp.swift in Sources */,
 				9D9CAA41523C5B4063A18FF2 /* MainView.swift in Sources */,
 				22ACBF6A87B265E99D871533 /* MetricRing.swift in Sources */,
+				FB04D476B3C59CD38514B55C /* NetworkStabilityPatternsViewModel.swift in Sources */,
 				7F7970BA85081796F66C73DB /* PhaseDots.swift in Sources */,
 				2F7AC1D0FB4C81453B1B1EC7 /* PurchaseSheet.swift in Sources */,
 				6F17598AD7C151721E54AB92 /* SettingsSheet.swift in Sources */,
