@@ -3,31 +3,30 @@ import NetworkCore
 @testable import NetworkInsights
 
 /// Cobre `LoadResponsivenessEvaluator` (issue #128): categorização objetiva
-/// de responsividade sob carga a partir do delta percentual entre latência
-/// parada e latência sob carga (download/upload). Função pura — sem rede,
-/// sem `Date()` ao vivo — mesmo espírito de `UsageSuitabilityTests`.
+/// de responsividade sob carga a partir do delta absoluto em ms entre
+/// latência parada e latência sob carga (download/upload) — deliberadamente
+/// não percentual, ver `LoadResponsivenessThresholds`. Função pura — sem
+/// rede, sem `Date()` ao vivo — mesmo espírito de `UsageSuitabilityTests`.
 final class LoadResponsivenessTests: XCTestCase {
 
-    // MARK: - Categorias com limiares padrão (high 25% / medium 100%)
+    // MARK: - Categorias com limiares padrão (high 30ms / medium 100ms)
 
     func testSmallIncreaseIsHighResponsiveness() {
         let result = LoadResponsivenessEvaluator.evaluate(
             idleLatencyMs: 20,
-            loadedDownloadLatencyMs: 24, // +20%
-            loadedUploadLatencyMs: 22    // +10%
+            loadedDownloadLatencyMs: 40, // +20ms
+            loadedUploadLatencyMs: 28    // +8ms
         )
 
         XCTAssertEqual(result.category, .high)
-        XCTAssertEqual(result.downloadComparison.direction, .stable)
-        XCTAssertEqual(result.uploadComparison.direction, .stable)
     }
 
     func testHighThresholdIsInclusiveAtTheBoundary() {
-        // Exatamente 25% de crescimento — limiar documentado como inclusivo
-        // ("até highThresholdPercent") em `LoadResponsivenessThresholds`.
+        // Exatamente 30ms de acréscimo — limiar documentado como inclusivo
+        // ("até highThresholdMs") em `LoadResponsivenessThresholds`.
         let result = LoadResponsivenessEvaluator.evaluate(
             idleLatencyMs: 20,
-            loadedDownloadLatencyMs: 25, // exatamente +25%
+            loadedDownloadLatencyMs: 50, // exatamente +30ms
             loadedUploadLatencyMs: nil
         )
 
@@ -37,36 +36,60 @@ final class LoadResponsivenessTests: XCTestCase {
     func testModerateIncreaseIsMediumResponsiveness() {
         let result = LoadResponsivenessEvaluator.evaluate(
             idleLatencyMs: 20,
-            loadedDownloadLatencyMs: 30, // +50%
+            loadedDownloadLatencyMs: 70, // +50ms
             loadedUploadLatencyMs: nil
         )
 
         XCTAssertEqual(result.category, .medium)
-        XCTAssertEqual(result.downloadComparison.direction, .worsened)
     }
 
     func testLargeIncreaseIsLowResponsiveness() {
         let result = LoadResponsivenessEvaluator.evaluate(
             idleLatencyMs: 20,
             loadedDownloadLatencyMs: nil,
-            loadedUploadLatencyMs: 50 // +150%
+            loadedUploadLatencyMs: 150 // +130ms
         )
 
         XCTAssertEqual(result.category, .low)
         XCTAssertEqual(result.uploadComparison.direction, .worsened)
     }
 
+    /// Caso que motivou reescrever a categorização de percentual para ms
+    /// absoluto: numa conexão rápida, um crescimento percentual grande pode
+    /// ser um acréscimo em ms irrelevante para qualquer chamada real.
+    func testLargePercentIncreaseOnFastConnectionIsStillHighResponsiveness() {
+        let result = LoadResponsivenessEvaluator.evaluate(
+            idleLatencyMs: 8,
+            loadedDownloadLatencyMs: 20, // +150%, mas só +12ms
+            loadedUploadLatencyMs: nil
+        )
+
+        XCTAssertEqual(result.category, .high)
+    }
+
+    /// Caso simétrico: numa conexão mais lenta, um crescimento percentual
+    /// pequeno ainda pode ser um acréscimo em ms claramente perceptível.
+    func testModeratePercentIncreaseOnSlowConnectionIsLowResponsiveness() {
+        let result = LoadResponsivenessEvaluator.evaluate(
+            idleLatencyMs: 150,
+            loadedDownloadLatencyMs: 260, // +73%, mas +110ms
+            loadedUploadLatencyMs: nil
+        )
+
+        XCTAssertEqual(result.category, .low)
+    }
+
     // MARK: - Pior direção decide a categoria
 
     func testWorstOfDownloadAndUploadDecidesCategory() {
-        // Download quase inalterado (+10%, alta responsividade sozinho);
-        // upload degrada muito (+150%, baixa responsividade sozinho). Um
+        // Download quase inalterado (+8ms, alta responsividade sozinho);
+        // upload degrada muito (+130ms, baixa responsividade sozinho). Um
         // sintoma claro de bufferbloat em qualquer direção já é suficiente —
         // a categoria final acompanha a pior das duas.
         let result = LoadResponsivenessEvaluator.evaluate(
             idleLatencyMs: 20,
-            loadedDownloadLatencyMs: 22,
-            loadedUploadLatencyMs: 50
+            loadedDownloadLatencyMs: 28,
+            loadedUploadLatencyMs: 150
         )
 
         XCTAssertEqual(result.category, .low)
@@ -96,28 +119,12 @@ final class LoadResponsivenessTests: XCTestCase {
         XCTAssertEqual(result.category, .notAssessed)
     }
 
-    /// Latência parada de 0 é um caso degenerado (não deveria ocorrer numa
-    /// medição real, mas não pode ser tratado com ginástica): o percentual
-    /// de mudança é indefinido (`MetricComparator` já devolve `percentDelta
-    /// == nil` quando `baseline == 0`), então a categorização nunca cai para
-    /// um cálculo alternativo silencioso — vira "não avaliado".
-    func testZeroBaselineNeverFabricatesACategory() {
-        let result = LoadResponsivenessEvaluator.evaluate(
-            idleLatencyMs: 0,
-            loadedDownloadLatencyMs: 10,
-            loadedUploadLatencyMs: nil
-        )
-
-        XCTAssertEqual(result.category, .notAssessed)
-        XCTAssertNil(result.downloadComparison.percentDelta)
-    }
-
     // MARK: - Uma única direção disponível
 
     func testAssessesFromDownloadAloneWhenUploadIsMissing() {
         let result = LoadResponsivenessEvaluator.evaluate(
             idleLatencyMs: 40,
-            loadedDownloadLatencyMs: 90, // +125%
+            loadedDownloadLatencyMs: 160, // +120ms
             loadedUploadLatencyMs: nil
         )
 
@@ -129,7 +136,7 @@ final class LoadResponsivenessTests: XCTestCase {
         let result = LoadResponsivenessEvaluator.evaluate(
             idleLatencyMs: 40,
             loadedDownloadLatencyMs: nil,
-            loadedUploadLatencyMs: 44 // +10%
+            loadedUploadLatencyMs: 48 // +8ms
         )
 
         XCTAssertEqual(result.category, .high)
@@ -145,7 +152,7 @@ final class LoadResponsivenessTests: XCTestCase {
         // qualquer outra coisa fabricada a partir de um delta negativo.
         let result = LoadResponsivenessEvaluator.evaluate(
             idleLatencyMs: 50,
-            loadedDownloadLatencyMs: 30, // -40%
+            loadedDownloadLatencyMs: 30, // -20ms
             loadedUploadLatencyMs: nil
         )
 
@@ -157,13 +164,13 @@ final class LoadResponsivenessTests: XCTestCase {
 
     func testCustomThresholdsChangeCategoryBoundaries() {
         let thresholds = LoadResponsivenessThresholds(
-            highThresholdPercent: 10,
-            mediumThresholdPercent: 50
+            highThresholdMs: 10,
+            mediumThresholdMs: 50
         )
 
         let result = LoadResponsivenessEvaluator.evaluate(
             idleLatencyMs: 20,
-            loadedDownloadLatencyMs: 23, // +15%: seria "high" no padrão (25%), mas não com highThresholdPercent: 10
+            loadedDownloadLatencyMs: 35, // +15ms: seria "high" no padrão (30ms), mas não com highThresholdMs: 10
             loadedUploadLatencyMs: nil,
             thresholds: thresholds
         )
@@ -172,13 +179,13 @@ final class LoadResponsivenessTests: XCTestCase {
     }
 
     func testThresholdsClampMediumToAtLeastHigh() {
-        // `mediumThresholdPercent` nunca pode ficar abaixo de
-        // `highThresholdPercent` — faria uma faixa "medium" invertida/vazia.
+        // `mediumThresholdMs` nunca pode ficar abaixo de `highThresholdMs` —
+        // faria uma faixa "medium" invertida/vazia.
         let thresholds = LoadResponsivenessThresholds(
-            highThresholdPercent: 50,
-            mediumThresholdPercent: 20
+            highThresholdMs: 50,
+            mediumThresholdMs: 20
         )
 
-        XCTAssertEqual(thresholds.mediumThresholdPercent, 50)
+        XCTAssertEqual(thresholds.mediumThresholdMs, 50)
     }
 }

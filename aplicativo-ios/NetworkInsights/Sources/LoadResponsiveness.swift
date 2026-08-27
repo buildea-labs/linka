@@ -21,48 +21,48 @@ public enum LoadResponsivenessCategory: String, Codable, Equatable, Sendable {
     case notAssessed
 }
 
-/// Limiares que convertem "quanto a latência cresce sob carga, em %" em
-/// `LoadResponsivenessCategory`. Reaproveita o `percentDelta` já calculado
-/// por `MetricComparator` (a mesma fórmula usada por todo `MetricComparison`
-/// deste pacote) — não introduz um segundo cálculo percentual.
+/// Limiares que convertem "quanto a latência cresce sob carga, em ms" em
+/// `LoadResponsivenessCategory`.
 ///
-/// Por que percentual e não delta absoluto em ms (a métrica clássica de
-/// "grade de bufferbloat" tipo A/B/C/D/F): a issue #128 pede explicitamente
-/// para reaproveitar a lógica de delta percentual já existente em
-/// `NetworkInsights` (`MetricComparison`) em vez de inventar uma segunda
-/// forma de medir mudança — então os limiares abaixo são deliberadamente
-/// percentuais, não absolutos.
+/// Delta absoluto em milissegundos, não percentual — decisão revisada
+/// depois da primeira implementação (que reaproveitava `percentDelta` de
+/// `MetricComparator`). Percentual falsifica o sintoma nas duas pontas: numa
+/// conexão rápida (ex. 8ms parado → 20ms sob carga, +150%) o atraso extra
+/// real é de 12ms, imperceptível em qualquer chamada, mas a categoria
+/// percentual soaria "baixa responsividade"; numa conexão mais lenta (ex.
+/// 150ms parado → 220ms sob carga, +47%) os 70ms extras já são um sintoma
+/// claro de bufferbloat, mas o percentual ficaria na faixa "média". O que
+/// importa para o usuário é o atraso extra em si — é isso que atrasa um
+/// pacote de voz/vídeo concorrente —, não a proporção sobre uma base que
+/// varia de conexão para conexão. Este pacote continua calculando
+/// `percentDelta` (via `MetricComparator`) para exibição/comparação
+/// genérica, mas a categorização de bufferbloat usa `absoluteDelta`.
 ///
 /// Os dois limiares abaixo são o parâmetro público desta decisão — nenhum
-/// deles é usado como número mágico dentro da lógica de categorização,
-/// ambos existem aqui por um motivo escrito:
+/// deles é número mágico dentro da lógica de categorização, ambos existem
+/// por um motivo escrito:
 ///
-/// - `highThresholdPercent` (25%): teto de crescimento de latência que
-///   ainda soa "praticamente igual" a estar parado. Escolhido bem acima do
-///   limiar de "estável" já usado para tendência histórica
-///   (`NetworkInsightsConfiguration.stableChangeThresholdPercent`, default
-///   3%) porque a latência sob carga tem ruído natural maior que uma leitura
-///   parada isolada (ela compete de verdade com os streams de
-///   download/upload) — um piso ~8x maior evita marcar como "degradada" uma
-///   flutuação comum de rede saudável.
-/// - `mediumThresholdPercent` (100%): a latência sob carga dobra ou mais em
-///   relação à parada. Acima disso o sintoma já é inequívoco — a fila do
-///   roteador está sendo monopolizada pela transferência concorrente, não é
-///   mais "um pouco mais lento", é "a conexão fica de fato menos responsiva
-///   enquanto algo grande transfere".
+/// - `highThresholdMs` (30ms): atraso extra até aqui é menor que o jitter
+///   natural que qualquer chamada de voz/vídeo saudável já tolera — soa
+///   "praticamente igual" a estar parado.
+/// - `mediumThresholdMs` (100ms): referência comum de atraso perceptível em
+///   tempo real (ex. ITU-T G.114 trata ~150ms de atraso unidirecional total
+///   como o teto aceitável para voz) — acima disso o atraso *extra* sozinho
+///   já é grande o bastante para ser notado com clareza numa chamada em
+///   andamento, sinal inequívoco de fila cheia no roteador.
 ///
 /// Entre os dois fica a faixa "média": perceptível, mas não necessariamente
 /// grave (ex.: uma chamada de vídeo ainda funciona, com atraso notável).
 public struct LoadResponsivenessThresholds: Equatable, Sendable {
-    public var highThresholdPercent: Double
-    public var mediumThresholdPercent: Double
+    public var highThresholdMs: Double
+    public var mediumThresholdMs: Double
 
     public init(
-        highThresholdPercent: Double = 25,
-        mediumThresholdPercent: Double = 100
+        highThresholdMs: Double = 30,
+        mediumThresholdMs: Double = 100
     ) {
-        self.highThresholdPercent = max(0, highThresholdPercent)
-        self.mediumThresholdPercent = max(self.highThresholdPercent, mediumThresholdPercent)
+        self.highThresholdMs = max(0, highThresholdMs)
+        self.mediumThresholdMs = max(self.highThresholdMs, mediumThresholdMs)
     }
 }
 
@@ -107,48 +107,46 @@ public enum LoadResponsivenessEvaluator {
     ///     (`NetworkMeasurement.loadedLatencyMs`).
     ///   - loadedUploadLatencyMs: latência sob carga durante upload
     ///     (`NetworkMeasurement.loadedLatencyUploadMs`, issue #128).
-    ///   - thresholds: limiares percentuais que decidem a categoria.
+    ///   - thresholds: limiares em milissegundos que decidem a categoria.
     /// - Returns: `.notAssessed` quando `idleLatencyMs` está ausente, ou
-    ///   quando nenhuma das duas latências sob carga está disponível, ou
-    ///   quando o `baseline` de todas as comparações disponíveis é `0`
-    ///   (percentual indefinido — `MetricComparator` já devolve
-    ///   `percentDelta == nil` nesse caso, e esta função nunca cai para
-    ///   delta absoluto como substituto silencioso). Caso contrário, a pior
-    ///   (maior) variação percentual entre download e upload decide a
-    ///   categoria — um único sinal claro de bufferbloat em qualquer direção
-    ///   já é o suficiente para revelar fila cheia no roteador, mesmo que a
-    ///   outra direção esteja saudável.
+    ///   quando nenhuma das duas latências sob carga está disponível.
+    ///   Caso contrário, a pior (maior) variação absoluta em ms entre
+    ///   download e upload decide a categoria — um único sinal claro de
+    ///   bufferbloat em qualquer direção já é o suficiente para revelar
+    ///   fila cheia no roteador, mesmo que a outra direção esteja saudável.
     public static func evaluate(
         idleLatencyMs: Double?,
         loadedDownloadLatencyMs: Double?,
         loadedUploadLatencyMs: Double?,
         thresholds: LoadResponsivenessThresholds = .init()
     ) -> LoadResponsivenessResult {
-        // `stableChangeThresholdPercent: thresholds.highThresholdPercent` faz
-        // `MetricComparison.direction` concordar com a categoria: dentro do
-        // teto de "alta responsividade" o crescimento de latência conta como
-        // `.stable` (a mesma leitura de "praticamente igual a parado" que
-        // justifica `.high` acima); além dele, `.worsened` acompanha
-        // `.medium`/`.low`. Evita expor um `direction` que discorda da
-        // `category` calculada a partir do mesmo delta.
+        // `direction` (em `MetricComparison`) e `category` respondem
+        // perguntas diferentes de propósito: `direction` usa o limiar de
+        // "estável" padrão do pacote (ruído estatístico — mudou de verdade
+        // ou não?), enquanto `category` usa os limiares em ms acima
+        // (impacto perceptível — o quanto isso incomoda um humano numa
+        // chamada?). Uma medição pode legitimamente aparecer como
+        // `.worsened` e ainda cair em `.high` (mudança real, porém pequena
+        // demais para importar) — não é inconsistência, é a mesma distinção
+        // entre significância estatística e significância prática.
         let downloadComparison = MetricComparator.compare(
             metric: .loadedLatencyMs,
             current: loadedDownloadLatencyMs,
             baseline: idleLatencyMs,
-            stableChangeThresholdPercent: thresholds.highThresholdPercent
+            stableChangeThresholdPercent: NetworkInsightsConfiguration().stableChangeThresholdPercent
         )
         let uploadComparison = MetricComparator.compare(
             metric: .loadedLatencyUploadMs,
             current: loadedUploadLatencyMs,
             baseline: idleLatencyMs,
-            stableChangeThresholdPercent: thresholds.highThresholdPercent
+            stableChangeThresholdPercent: NetworkInsightsConfiguration().stableChangeThresholdPercent
         )
 
-        let measuredPercentDeltas = [downloadComparison, uploadComparison]
+        let measuredDeltasMs = [downloadComparison, uploadComparison]
             .filter { $0.direction != .unavailable }
-            .compactMap(\.percentDelta)
+            .compactMap(\.absoluteDelta)
 
-        guard let worstPercentDelta = measuredPercentDeltas.max() else {
+        guard let worstDeltaMs = measuredDeltasMs.max() else {
             return LoadResponsivenessResult(
                 category: .notAssessed,
                 downloadComparison: downloadComparison,
@@ -159,14 +157,14 @@ public enum LoadResponsivenessEvaluator {
         // Só a piora (latência sob carga maior que parada) indica fila
         // cheia; uma latência sob carga menor que a parada (ruído/medição
         // mais favorável) nunca é tratada como sintoma — conta como "alta
-        // responsividade", não como um crescimento negativo que abaixaria
+        // responsividade", não como uma redução que abaixaria
         // artificialmente a categoria.
-        let worstIncreasePercent = max(0, worstPercentDelta)
+        let worstIncreaseMs = max(0, worstDeltaMs)
 
         let category: LoadResponsivenessCategory
-        if worstIncreasePercent <= thresholds.highThresholdPercent {
+        if worstIncreaseMs <= thresholds.highThresholdMs {
             category = .high
-        } else if worstIncreasePercent <= thresholds.mediumThresholdPercent {
+        } else if worstIncreaseMs <= thresholds.mediumThresholdMs {
             category = .medium
         } else {
             category = .low
