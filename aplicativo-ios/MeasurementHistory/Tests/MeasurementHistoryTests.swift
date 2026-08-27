@@ -289,6 +289,30 @@ final class MeasurementHistoryTests: XCTestCase {
         XCTAssertEqual(restored?.durationMs, 12_300)
     }
 
+    func testFileRepositoryPersistsWiFiContextLocally() async throws {
+        let fileURL = temporaryFileURL()
+        defer { try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent()) }
+
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 512,
+            uploadMbps: 100,
+            latencyMs: 12,
+            connectionKind: .wifi,
+            wifiContext: WiFiNetworkContext(
+                ssid: "Casa",
+                accessPointIdentifier: "derived-ap",
+                securityType: .personal
+            )
+        )
+        let writer = FileMeasurementHistoryRepository(fileURL: fileURL)
+        try await writer.save(measurement)
+
+        let restored = try await FileMeasurementHistoryRepository(fileURL: fileURL).measurement(id: measurement.id)
+
+        XCTAssertEqual(restored?.wifiContext, measurement.wifiContext)
+    }
+
     private func makeMeasurement(
         id: UUID = UUID(),
         measuredAt: Date = Date(),

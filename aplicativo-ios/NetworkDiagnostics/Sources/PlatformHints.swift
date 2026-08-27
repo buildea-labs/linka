@@ -1,4 +1,5 @@
 import Foundation
+import NetworkCore
 
 /// Sinais que a camada de plataforma pode preencher para enriquecer o snapshot
 /// de diagnóstico. O `NetworkDiagnostics` não conhece `CoreWLAN` nem
@@ -6,8 +7,8 @@ import Foundation
 ///
 /// - No macOS, um provider pode preencher `wifi` via `CoreWLAN`.
 /// - No iOS, `mobile` pode ser preenchido via `CoreTelephony`.
-/// - No iOS, `wifi` fica majoritariamente vazio (`NEHotspotHelper` requer
-///   entitlement que não temos e não vamos pedir).
+/// - No iOS, `wifi` é preenchido somente quando `fetchCurrent()` recebe a
+///   autorização/capability pública exigida pela Apple.
 public struct PlatformHints: Equatable, Sendable {
     public var wifi: Wifi?
     public var mobile: Mobile?
@@ -25,19 +26,22 @@ public struct PlatformHints: Equatable, Sendable {
         public var rssiDbm: Double?
         public var band: String?
         public var linkSpeedMbps: Double?
+        public var securityType: WiFiSecurityType?
 
         public init(
             ssid: String? = nil,
             bssid: String? = nil,
             rssiDbm: Double? = nil,
             band: String? = nil,
-            linkSpeedMbps: Double? = nil
+            linkSpeedMbps: Double? = nil,
+            securityType: WiFiSecurityType? = nil
         ) {
             self.ssid = ssid
             self.bssid = bssid
             self.rssiDbm = rssiDbm
             self.band = band
             self.linkSpeedMbps = linkSpeedMbps
+            self.securityType = securityType
         }
     }
 

@@ -87,7 +87,8 @@ public struct NetworkGroupInsightsAnalyzer: NetworkGroupInsightsAnalyzing {
     }
 
     /// Agrupa por `NetworkGroupIdentity`. Medições sem `connectionKind` ou
-    /// sem `networkIdentifier` (vazio ou ausente) ficam de fora: sem os dois
+    /// sem identidade (SSID para Wi-Fi novo; `networkIdentifier` para os
+    /// demais e registros legados) ficam de fora: sem os dois
     /// fatos não há como nomear a rede numa frase factual depois (issue
     /// #125, item 3) nem como garantir que o grupo é realmente uma única
     /// rede — em vez de inventar um rótulo tipo "desconhecida", a medição
@@ -95,15 +96,22 @@ public struct NetworkGroupInsightsAnalyzer: NetworkGroupInsightsAnalyzing {
     public static func group(_ measurements: [NetworkMeasurement]) -> [NetworkGroupIdentity: [NetworkMeasurement]] {
         Dictionary(grouping: measurements.filter { measurement in
             guard measurement.connectionKind != nil else { return false }
-            guard let identifier = measurement.networkIdentifier,
+            guard let identifier = Self.identifier(for: measurement),
                   !identifier.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
             return true
         }) { measurement in
             NetworkGroupIdentity(
                 connectionKind: measurement.connectionKind!,
-                networkIdentifier: measurement.networkIdentifier!
+                networkIdentifier: Self.identifier(for: measurement)!
             )
         }
+    }
+
+    private static func identifier(for measurement: NetworkMeasurement) -> String? {
+        if measurement.connectionKind == .wifi {
+            return measurement.wifiContext?.ssid ?? measurement.networkIdentifier
+        }
+        return measurement.networkIdentifier
     }
 
     /// `group(_:)` filtrado por amostra mínima e ordenado de forma

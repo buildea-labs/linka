@@ -45,6 +45,7 @@ struct MainView: View {
             // cabeado (Ethernet nunca era produzido).
             connectionKind: viewModel.connectionKind,
             wifiBandGHz: viewModel.wifiBandGHz,
+            wifiContext: viewModel.wifiContext,
             networkIdentifier: viewModel.provider.isEmpty ? nil : viewModel.provider
         )
     }
@@ -270,11 +271,14 @@ struct MainView: View {
                                     provider: viewModel.provider.isEmpty ? "--" : viewModel.provider,
                                     duration: viewModel.testDuration.isEmpty ? "--" : viewModel.testDuration,
                                     ping: viewModel.ping,
+                                    connectionKind: viewModel.connectionKind,
                                     wifiBandGHz: viewModel.wifiBandGHz,
+                                    wifiContext: viewModel.wifiContext,
                                     jitter: viewModel.jitter,
                                     packetLossPercent: viewModel.packetLossPercent,
                                     loadedLatencyMs: viewModel.loadedLatencyMs,
-                                    loadedLatencyUploadMs: viewModel.loadedLatencyUploadMs
+                                    loadedLatencyUploadMs: viewModel.loadedLatencyUploadMs,
+                                    onIdentifyNetwork: WiFiNetworkPermission.requestIdentification
                                 )
                                 .padding(.horizontal, 24)
                                 .padding(.bottom, 16)
@@ -537,13 +541,16 @@ private struct InlineResultDetails: View {
     let provider: String
     let duration: String
     let ping: Int
+    let connectionKind: NetworkConnectionKind?
     let wifiBandGHz: Double?
+    let wifiContext: WiFiNetworkContext?
     let jitter: Double
     let packetLossPercent: Double?
     let loadedLatencyMs: Double?
     /// Latência sob carga durante upload (issue #128) — mesmo tratamento de
     /// `loadedLatencyMs`: `nil` some, sem "--".
     let loadedLatencyUploadMs: Double?
+    let onIdentifyNetwork: () -> Void
 
     /// Categoria de responsividade sob carga (issue #128) — `nil`
     /// (`.notAssessed`) some da tela, mesmo padrão de qualquer métrica
@@ -567,6 +574,22 @@ private struct InlineResultDetails: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if connectionKind == .wifi {
+                if let ssid = wifiContext?.ssid {
+                    InlineResultDetailRow(label: "Rede Wi-Fi", value: ssid)
+                    if let security = wifiContext?.securityType {
+                        InlineResultDetailRow(label: "Segurança", value: security.displayLabel)
+                    }
+                } else {
+                    HStack(spacing: 12) {
+                        InlineResultDetailRow(label: "Rede Wi-Fi", value: "Nome não disponível")
+                        Button("Identificar rede", action: onIdentifyNetwork)
+                            .font(.bodySmallStrong)
+                            .foregroundColor(.brandAccentWarm)
+                            .frame(minHeight: 44)
+                    }
+                }
+            }
             InlineResultDetailRow(label: "Rede", value: networkLabel)
             InlineResultDetailRow(label: "Provedor", value: provider)
             InlineResultDetailRow(label: "Duração", value: duration)
@@ -598,6 +621,18 @@ private struct InlineResultDetails: View {
                 .stroke(Color.borderDefault, lineWidth: 0.5)
         }
         .accessibilityElement(children: .contain)
+    }
+}
+
+extension WiFiSecurityType {
+    var displayLabel: String {
+        switch self {
+        case .open: return "Aberta"
+        case .wep: return "WEP"
+        case .personal: return "Rede pessoal protegida"
+        case .enterprise: return "Rede corporativa"
+        case .unknown: return "Não informada"
+        }
     }
 }
 

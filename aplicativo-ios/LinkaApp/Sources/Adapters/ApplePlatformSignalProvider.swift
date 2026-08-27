@@ -1,5 +1,7 @@
 import Foundation
 import NetworkDiagnostics
+import NetworkCore
+import CryptoKit
 
 #if canImport(CoreTelephony) && os(iOS)
 import CoreTelephony
@@ -9,21 +11,26 @@ import CoreTelephony
 import CoreWLAN
 #endif
 
+#if canImport(NetworkExtension) && os(iOS)
+import NetworkExtension
+#endif
+
 /// Preenche `PlatformHints` com o que Apple público expõe sem entitlement
 /// extra:
-/// - iOS: portadora e tecnologia via `CoreTelephony`. **Sem** RSSI móvel
-///   (não exposto). **Sem** SSID/RSSI Wi-Fi (`NEHotspotHelper` requer
-///   entitlement).
+/// - iOS: portadora e tecnologia via `CoreTelephony`, SSID/BSSID/tipo de
+///   segurança via `NEHotspotNetwork.fetchCurrent()` somente após a
+///   capability e a autorização explícita. **Sem** RSSI móvel ou Wi-Fi,
+///   banda e link speed (não expostos por esse caminho).
 /// - macOS: SSID, BSSID, RSSI e banda via `CoreWLAN`.
 struct ApplePlatformSignalProvider: PlatformSignalProviding {
     func currentHints() async -> PlatformHints {
         PlatformHints(
-            wifi: currentWifi(),
+            wifi: await currentWifi(),
             mobile: currentMobile()
         )
     }
 
-    private func currentWifi() -> PlatformHints.Wifi? {
+    private func currentWifi() async -> PlatformHints.Wifi? {
         #if canImport(CoreWLAN) && os(macOS)
         guard let iface = CWWiFiClient.shared().interface() else { return nil }
         let ssid = iface.ssid()
@@ -47,15 +54,38 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
             bssid: bssid,
             rssiDbm: rssi,
             band: band,
-            linkSpeedMbps: linkSpeed
+            linkSpeedMbps: linkSpeed,
+            securityType: nil
         )
         let anySet = wifi.ssid != nil || wifi.bssid != nil || wifi.rssiDbm != nil
             || wifi.band != nil || wifi.linkSpeedMbps != nil
         return anySet ? wifi : nil
+        #elseif canImport(NetworkExtension) && os(iOS)
+        guard #available(iOS 14.0, *), let network = await NEHotspotNetwork.fetchCurrent() else {
+            return nil
+        }
+        return PlatformHints.Wifi(
+            ssid: network.ssid.nilIfEmpty,
+            bssid: network.bssid.nilIfEmpty,
+            securityType: Self.mapSecurityType(network.securityType)
+        )
         #else
         return nil
         #endif
     }
+
+    #if canImport(NetworkExtension) && os(iOS)
+    private static func mapSecurityType(_ securityType: NEHotspotNetworkSecurityType) -> WiFiSecurityType {
+        switch securityType {
+        case .open: return .open
+        case .WEP: return .wep
+        case .personal: return .personal
+        case .enterprise: return .enterprise
+        case .unknown: return .unknown
+        @unknown default: return .unknown
+        }
+    }
+    #endif
 
     private func currentMobile() -> PlatformHints.Mobile? {
         #if canImport(CoreTelephony) && os(iOS)
@@ -107,6 +137,7 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
         switch band {
         case .band2GHz: return 2.4
         case .band5GHz: return 5.0
+        case .band6GHz: return 6.0
         case .bandUnknown: return nil
         @unknown default: return nil
         }
@@ -118,6 +149,7 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
         guard let ghz else { return nil }
         if ghz == 2.4 { return "2.4GHz" }
         if ghz == 5.0 { return "5GHz" }
+        if ghz == 6.0 { return "6GHz" }
         return nil
     }
     #endif
@@ -139,4 +171,8 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
         }
     }
     #endif
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

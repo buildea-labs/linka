@@ -573,6 +573,23 @@ final class CloudKitMeasurementSyncTests: XCTestCase {
         XCTAssertEqual(roundTripped, measurement)
     }
 
+    func testRecordDoesNotSynchronizeWiFiIdentityByDefault() {
+        let measurement = Self.makeMeasurement(
+            connectionKind: .wifi,
+            networkIdentifier: "Provedor",
+            wifiContext: WiFiNetworkContext(
+                ssid: "Casa",
+                accessPointIdentifier: "derived-ap",
+                securityType: .personal
+            )
+        )
+
+        let record = MeasurementRecordMapper.record(from: measurement)
+        let roundTripped = MeasurementRecordMapper.measurement(from: record)
+
+        XCTAssertNil(roundTripped?.wifiContext)
+    }
+
     func testRecordIDUsesMeasurementIDAsRecordName() {
         let id = UUID()
         let recordID = MeasurementRecordMapper.recordID(for: id)
@@ -591,6 +608,7 @@ final class CloudKitMeasurementSyncTests: XCTestCase {
         connectionKind: NetworkConnectionKind? = nil,
         wifiBand: Double? = nil,
         networkIdentifier: String? = nil,
+        wifiContext: WiFiNetworkContext? = nil,
         serverIdentifier: String? = nil,
         engineVersion: String? = nil
     ) -> NetworkMeasurement {
@@ -605,6 +623,7 @@ final class CloudKitMeasurementSyncTests: XCTestCase {
             packetLossPercent: 0,
             connectionKind: connectionKind,
             wifiBandGHz: wifiBand,
+            wifiContext: wifiContext,
             networkIdentifier: networkIdentifier,
             serverIdentifier: serverIdentifier,
             engineVersion: engineVersion

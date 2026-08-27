@@ -2,6 +2,53 @@ import XCTest
 @testable import NetworkCore
 
 final class NetworkCoreTests: XCTestCase {
+    func testWiFiContextRoundTripsAndLegacyJSONRemainsCompatible() throws {
+        let context = WiFiNetworkContext(
+            ssid: "Casa",
+            accessPointIdentifier: "derived-id",
+            securityType: .personal,
+            bandGHz: 5,
+            rssiDbm: -51,
+            linkSpeedMbps: 866
+        )
+        let original = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 500,
+            uploadMbps: 100,
+            latencyMs: 12,
+            connectionKind: .wifi,
+            wifiContext: context
+        )
+
+        let decoded = try JSONDecoder().decode(NetworkMeasurement.self, from: JSONEncoder().encode(original))
+        XCTAssertEqual(decoded.wifiContext, context)
+    }
+
+    func testWiFiContextRequiresWiFiConnection() {
+        let measurement = NetworkMeasurement(
+            latencyMs: 15,
+            connectionKind: .cellular,
+            wifiContext: WiFiNetworkContext(ssid: "Casa")
+        )
+        XCTAssertTrue(NetworkMeasurementContract.violations(for: measurement).contains("wifiContext"))
+    }
+
+    func testWiFiContextResolveRejectsSSIDChangeAndAllowsRoaming() {
+        let start = WiFiNetworkContext(ssid: "Casa", accessPointIdentifier: "ap-1", securityType: .personal)
+        let changed = WiFiNetworkContext(ssid: "Trabalho", accessPointIdentifier: "ap-2", securityType: .personal)
+        XCTAssertNil(WiFiNetworkContext.resolve(start: start, end: changed, connectionKind: .wifi))
+
+        let roaming = WiFiNetworkContext(ssid: "Casa", accessPointIdentifier: "ap-2", securityType: .personal)
+        let resolved = WiFiNetworkContext.resolve(start: start, end: roaming, connectionKind: .wifi)
+        XCTAssertEqual(resolved?.ssid, "Casa")
+        XCTAssertNil(resolved?.accessPointIdentifier)
+    }
+
+    func testWiFiContextResolveRejectsInterfaceTransition() {
+        let context = WiFiNetworkContext(ssid: "Casa")
+        XCTAssertNil(WiFiNetworkContext.resolve(start: context, end: context, connectionKind: nil))
+    }
+
     func testCompleteMeasurementRequiresCoreMetrics() {
         let measurement = NetworkMeasurement(
             outcome: .complete,

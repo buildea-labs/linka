@@ -1,6 +1,9 @@
 import SwiftUI
 import LinkaEntitlements
 import LinkaModules
+#if canImport(CoreLocation) && os(iOS)
+import CoreLocation
+#endif
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -27,6 +30,23 @@ struct SettingsSheet: View {
                             SettingsRowContent(title: "Histórico", subtitle: "\(testCount) testes", showChevron: false)
                         }
                     }
+
+                    #if os(iOS)
+                    SettingsSection(header: "REDE WI-FI") {
+                        Button(action: { WiFiNetworkPermission.requestIdentification() }) {
+                            SettingsRowContent(
+                                title: "Identificação de rede Wi-Fi",
+                                subtitle: WiFiNetworkPermission.statusText,
+                                showChevron: true
+                            )
+                        }
+                        Text("Permite ao Linka mostrar o nome da rede usada nas medições e identificar padrões no histórico.")
+                            .font(.bodySmall)
+                            .foregroundColor(.textSecondary)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 16)
+                    }
+                    #endif
 
                     SettingsSection(header: "ASSINATURA") {
                         Button(action: { showPurchase = true }) {
@@ -110,6 +130,41 @@ struct SettingsSheet: View {
             }
         }
     }
+}
+
+/// `fetchCurrent()` só retorna a rede no iPhone quando a capability de Wi-Fi
+/// e localização precisa foram concedidas. O prompt acontece exclusivamente
+/// após ação do usuário nesta tela ou em "Identificar rede" no resultado.
+enum WiFiNetworkPermission {
+    #if canImport(CoreLocation) && os(iOS)
+    private static let manager = CLLocationManager()
+
+    static var statusText: String {
+        switch manager.authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
+            return manager.accuracyAuthorization == .fullAccuracy ? "Ativada" : "Permissão necessária"
+        case .denied, .restricted:
+            return "Desativada"
+        case .notDetermined:
+            return "Permissão necessária"
+        @unknown default:
+            return "Permissão necessária"
+        }
+    }
+
+    @MainActor
+    static func requestIdentification() {
+        guard manager.authorizationStatus == .notDetermined else {
+            guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+            UIApplication.shared.open(url)
+            return
+        }
+        manager.requestWhenInUseAuthorization()
+    }
+    #else
+    static var statusText: String { "Não disponível" }
+    static func requestIdentification() {}
+    #endif
 }
 
 private extension Color {
