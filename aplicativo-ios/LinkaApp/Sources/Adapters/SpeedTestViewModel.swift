@@ -66,6 +66,10 @@ public class SpeedTestViewModel: ObservableObject {
     /// a esta classe.
     public private(set) var loadedLatencyMs: Double? = nil
 
+    /// Latência sob carga durante upload (issue #128, paridade com
+    /// `loadedLatencyMs`) — mesmo motivo de não ser `@Published`.
+    public private(set) var loadedLatencyUploadMs: Double? = nil
+
     /// Duração bruta do teste em segundos (issue #50), do jeito que o motor
     /// entrega em `MeasurementState.duration` — mesmo padrão de
     /// `loadedLatencyMs`: não-`@Published` para não competir com o
@@ -210,6 +214,7 @@ public class SpeedTestViewModel: ObservableObject {
         }
         self.packetLossPercent = measurement.packetLossPercent
         self.loadedLatencyMs = measurement.loadedLatencyMs
+        self.loadedLatencyUploadMs = measurement.loadedLatencyUploadMs
         self.connectionKind = measurement.connectionKind
         self.wifiBandGHz = measurement.wifiBandGHz
         
@@ -244,6 +249,7 @@ public class SpeedTestViewModel: ObservableObject {
         networkType = ""
         testDuration = ""
         loadedLatencyMs = nil
+        loadedLatencyUploadMs = nil
         rawTestDuration = nil
         failureReason = nil
         connectionKind = nil
@@ -342,6 +348,7 @@ public class SpeedTestViewModel: ObservableObject {
                         jitterMs: self.jitter,
                         packetLossPercent: self.packetLossPercent,
                         loadedLatencyMs: self.loadedLatencyMs,
+                        loadedLatencyUploadMs: self.loadedLatencyUploadMs,
                         durationMs: self.rawTestDuration.map { Int(($0 * 1000).rounded()) },
                         connectionKind: self.connectionKind,
                         wifiBandGHz: self.wifiBandGHz,

@@ -6,6 +6,7 @@ import AudioToolbox
 import LinkaEngine
 import MeasurementHistory
 import NetworkCore
+import NetworkInsights
 import LinkaEntitlements
 
 struct MainView: View {
@@ -272,7 +273,8 @@ struct MainView: View {
                                     wifiBandGHz: viewModel.wifiBandGHz,
                                     jitter: viewModel.jitter,
                                     packetLossPercent: viewModel.packetLossPercent,
-                                    loadedLatencyMs: viewModel.loadedLatencyMs
+                                    loadedLatencyMs: viewModel.loadedLatencyMs,
+                                    loadedLatencyUploadMs: viewModel.loadedLatencyUploadMs
                                 )
                                 .padding(.horizontal, 24)
                                 .padding(.bottom, 16)
@@ -539,6 +541,21 @@ private struct InlineResultDetails: View {
     let jitter: Double
     let packetLossPercent: Double?
     let loadedLatencyMs: Double?
+    /// Latência sob carga durante upload (issue #128) — mesmo tratamento de
+    /// `loadedLatencyMs`: `nil` some, sem "--".
+    let loadedLatencyUploadMs: Double?
+
+    /// Categoria de responsividade sob carga (issue #128) — `nil`
+    /// (`.notAssessed`) some da tela, mesmo padrão de qualquer métrica
+    /// insuficiente aqui: nunca um estado fabricado.
+    private var responsiveness: LoadResponsivenessCategory? {
+        let result = LoadResponsivenessEvaluator.evaluate(
+            idleLatencyMs: Double(ping),
+            loadedDownloadLatencyMs: loadedLatencyMs,
+            loadedUploadLatencyMs: loadedLatencyUploadMs
+        )
+        return result.category == .notAssessed ? nil : result.category
+    }
 
     private var networkLabel: String {
         guard let wifiBandGHz else { return operatorName }
@@ -561,7 +578,15 @@ private struct InlineResultDetails: View {
             }
 
             if let loadedLatencyMs {
-                InlineResultDetailRow(label: "Latência sob carga", value: String(format: "%.0f ms", loadedLatencyMs))
+                InlineResultDetailRow(label: "Latência sob carga (download)", value: String(format: "%.0f ms", loadedLatencyMs))
+            }
+
+            if let loadedLatencyUploadMs {
+                InlineResultDetailRow(label: "Latência sob carga (upload)", value: String(format: "%.0f ms", loadedLatencyUploadMs))
+            }
+
+            if let responsiveness {
+                InlineResultDetailRow(label: "Responsividade sob carga", value: LoadResponsivenessCopy.label(for: responsiveness))
             }
         }
         .padding(.horizontal, 16)

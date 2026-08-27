@@ -161,6 +161,26 @@ enum MetricExplanation {
     static let jitter = "Variação no tempo de resposta de uma medição para outra."
     static let packetLoss = "Parte dos dados que não chegou ao destino."
     static let loadedLatency = "Quanto o tempo de resposta piora com a conexão ocupada."
+    /// issue #128 — paridade de `loadedLatency` para a fase de upload.
+    static let loadedLatencyUpload = "Quanto o tempo de resposta piora com a conexão ocupada enviando dados."
+}
+
+/// Copy da categoria de responsividade sob carga (issue #128) — vive na UI,
+/// mesmo padrão de `MetricExplanation`/`UsageSuitabilityCopy`: o pacote de
+/// cálculo (`NetworkInsights`) não conhece texto. Nomeia o fenômeno
+/// (fila cheia no roteador / bufferbloat) sem apontar causa não medida
+/// (ex.: nunca culpa um aparelho, provedor ou vizinho específico).
+enum LoadResponsivenessCopy {
+    static func label(for category: LoadResponsivenessCategory) -> String {
+        switch category {
+        case .high: return "Alta"
+        case .medium: return "Média"
+        case .low: return "Baixa"
+        case .notAssessed: return "Não avaliada"
+        }
+    }
+
+    static let explanation = "Quanto o tempo de resposta piora quando a conexão está ocupada baixando ou enviando dados — sinal de fila cheia no roteador, mesmo com a velocidade medida normal."
 }
 
 /// Traduz o veredito puro de `UsageSuitabilityReport` (NetworkInsights) numa
