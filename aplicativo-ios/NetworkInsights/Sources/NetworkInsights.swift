@@ -410,20 +410,10 @@ public struct BasicNetworkInsightsAnalyzer: NetworkInsightsAnalyzing {
         return values.reduce(0, +) / Double(values.count)
     }
 
+    // Compartilhado com `NetworkTimeWindowPatternDetector` (issue #125) via
+    // `NetworkMetric.measuredValue(in:)` — as duas nunca podem divergir
+    // sobre qual campo cada métrica lê.
     private func value(of metric: NetworkMetric, in measurement: NetworkMeasurement) -> Double? {
-        switch metric {
-        case .downloadMbps:
-            return measurement.downloadMbps
-        case .uploadMbps:
-            return measurement.uploadMbps
-        case .latencyMs:
-            return measurement.latencyMs
-        case .jitterMs:
-            return measurement.jitterMs
-        case .packetLossPercent:
-            return measurement.packetLossPercent
-        case .loadedLatencyMs:
-            return measurement.loadedLatencyMs
-        }
+        metric.measuredValue(in: measurement)
     }
 }

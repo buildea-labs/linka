@@ -9,6 +9,7 @@ struct AssistView: View {
     @Environment(\.dismiss) var dismiss
     
     @StateObject private var viewModel: AssistViewModel
+    @StateObject private var stabilityViewModel: NetworkStabilityPatternsViewModel
 
     let currentMeasurement: NetworkMeasurement?
     let recentMeasurements: [NetworkMeasurement]
@@ -44,6 +45,9 @@ struct AssistView: View {
         }
 
         self._viewModel = StateObject(wrappedValue: AssistViewModel(assistProvider: resolvedProvider))
+        self._stabilityViewModel = StateObject(
+            wrappedValue: NetworkStabilityPatternsViewModel(entitlements: entitlements)
+        )
     }
 
     var body: some View {
@@ -67,6 +71,9 @@ struct AssistView: View {
                 usageContext: usageContext,
                 failureSignal: failureSignal
             )
+        }
+        .task {
+            await stabilityViewModel.load()
         }
     }
     
@@ -205,10 +212,16 @@ struct AssistView: View {
                             .padding(.top, 8)
                         }
                     }
-                    
+
+                    // Padrões no seu histórico (issue #125) — cálculo local
+                    // sobre o histórico do usuário, independente da resposta
+                    // remota do NDS acima. Título e estado próprios para não
+                    // parecer parte da mesma conclusão do Assist remoto.
+                    stabilityPatternsSection
+
                     Divider()
                         .padding(.top, 16)
-                    
+
                     // Botão Detalhes da Medição
                     Button(action: { dismiss() }) {
                         HStack(spacing: 8) {
@@ -227,6 +240,55 @@ struct AssistView: View {
         }
     }
     
+    @ViewBuilder
+    private var stabilityPatternsSection: some View {
+        switch stabilityViewModel.state {
+        case .loading, .unavailable:
+            // `.unavailable` cobre Free, sem histórico ou falha ao
+            // consultar — silenciar a seção é honesto aqui porque a
+            // `AssistView` já é Plus-only na entrada; não é um bloqueio
+            // escondido, é a ausência de dado para essa leitura específica.
+            EmptyView()
+        case .insufficientHistory:
+            stabilityPatternsContainer {
+                Text("Ainda não há histórico suficiente para apontar um padrão de horário nesta rede.")
+                    .font(.bodyRegular)
+                    .foregroundColor(.textSecondary)
+            }
+        case .noPatternDetected:
+            stabilityPatternsContainer {
+                Text("Nenhum horário de instabilidade recorrente identificado até agora.")
+                    .font(.bodyRegular)
+                    .foregroundColor(.textSecondary)
+            }
+        case .detected(let sentences):
+            stabilityPatternsContainer {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(Array(sentences.enumerated()), id: \.offset) { _, sentence in
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.title2)
+                                .foregroundColor(.orange)
+                            Text(sentence)
+                                .font(.bodyRegular)
+                                .foregroundColor(.textPrimary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func stabilityPatternsContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Padrões no seu histórico")
+                .font(.bodyRegularStrong)
+                .foregroundColor(.textPrimary)
+            content()
+        }
+    }
+
     private func dimensionRow(_ dimension: NetworkAssistDimension) -> some View {
         let statusColor = colorForStatus(dimension.status)
         return HStack(spacing: 16) {
