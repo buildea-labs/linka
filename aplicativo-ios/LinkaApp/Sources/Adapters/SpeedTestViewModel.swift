@@ -6,6 +6,7 @@ import Combine
 import Network
 import SwiftUI
 import WidgetKit
+import CryptoKit
 import LinkaEngine
 import MeasurementHistory
 import NetworkCore
@@ -57,6 +58,10 @@ public class SpeedTestViewModel: ObservableObject {
     /// realmente informa (CoreWLAN no Mac). `nil` é estado normal no
     /// iPhone e sempre que a rede mudou durante o teste.
     @Published public var wifiBandGHz: Double? = nil
+
+    /// Contexto Wi-Fi da medição, amostrado junto com a interface no começo e
+    /// no fim. Não substitui `provider`, que é o provedor do teste.
+    @Published public var wifiContext: WiFiNetworkContext? = nil
 
     /// Latência sob carga (issue #52). Não é `@Published` de propósito: não
     /// deve disparar re-render nenhum, para não competir com o resultado
@@ -143,6 +148,33 @@ public class SpeedTestViewModel: ObservableObject {
         let packetLossPercent: Double?
         let connectionKind: NetworkConnectionKind?
         let wifiBandGHz: Double?
+        let wifiContext: WiFiNetworkContext?
+
+        init(
+            downloadSpeed: Double,
+            uploadSpeed: Double,
+            ping: Int,
+            jitter: Double,
+            provider: String,
+            networkType: String,
+            testDuration: String,
+            packetLossPercent: Double?,
+            connectionKind: NetworkConnectionKind?,
+            wifiBandGHz: Double?,
+            wifiContext: WiFiNetworkContext? = nil
+        ) {
+            self.downloadSpeed = downloadSpeed
+            self.uploadSpeed = uploadSpeed
+            self.ping = ping
+            self.jitter = jitter
+            self.provider = provider
+            self.networkType = networkType
+            self.testDuration = testDuration
+            self.packetLossPercent = packetLossPercent
+            self.connectionKind = connectionKind
+            self.wifiBandGHz = wifiBandGHz
+            self.wifiContext = wifiContext
+        }
     }
 
     /// Mesmo racional de acesso `internal` de `ResultSnapshot` acima
@@ -217,6 +249,7 @@ public class SpeedTestViewModel: ObservableObject {
         self.loadedLatencyUploadMs = measurement.loadedLatencyUploadMs
         self.connectionKind = measurement.connectionKind
         self.wifiBandGHz = measurement.wifiBandGHz
+        self.wifiContext = measurement.wifiContext
         
         self.lastValidResultSnapshot = ResultSnapshot(
             downloadSpeed: self.downloadSpeed,
@@ -228,7 +261,8 @@ public class SpeedTestViewModel: ObservableObject {
             testDuration: self.testDuration,
             packetLossPercent: self.packetLossPercent,
             connectionKind: self.connectionKind,
-            wifiBandGHz: self.wifiBandGHz
+            wifiBandGHz: self.wifiBandGHz,
+            wifiContext: self.wifiContext
         )
         
         self.progress = 1.0
@@ -254,6 +288,7 @@ public class SpeedTestViewModel: ObservableObject {
         failureReason = nil
         connectionKind = nil
         wifiBandGHz = nil
+        wifiContext = nil
         uiPhase = .connecting
 
         testTask?.cancel()
@@ -264,6 +299,7 @@ public class SpeedTestViewModel: ObservableObject {
             // subida do motor (não soma latência) — independente do
             // `NWPathMonitor` interno de `SpeedTestCore` (issue #51).
             async let startingKindTask = Self.sampleConnectionKind()
+            async let startingWiFiContextTask = Self.sampleWiFiContext()
 
             do {
                 var lastUpdateTime = Date()
@@ -299,10 +335,14 @@ public class SpeedTestViewModel: ObservableObject {
                             // continua sendo o estado neutro).
                             let startingKind = await startingKindTask
                             let endingKind = await Self.sampleConnectionKind()
+                            let startingWiFiContext = await startingWiFiContextTask
+                            let endingWiFiContext = await Self.sampleWiFiContext()
                             self.processResultState(
                                 state,
                                 startingKind: startingKind,
                                 endingKind: endingKind,
+                                startingWiFiContext: startingWiFiContext,
+                                endingWiFiContext: endingWiFiContext,
                                 generation: myGeneration
                             )
                         } else {
@@ -337,7 +377,8 @@ public class SpeedTestViewModel: ObservableObject {
                         testDuration: self.testDuration,
                         packetLossPercent: self.packetLossPercent,
                         connectionKind: self.connectionKind,
-                        wifiBandGHz: self.wifiBandGHz
+                        wifiBandGHz: self.wifiBandGHz,
+                        wifiContext: self.wifiContext
                     )
 
                     let m = NetworkMeasurement(
@@ -352,6 +393,7 @@ public class SpeedTestViewModel: ObservableObject {
                         durationMs: self.rawTestDuration.map { Int(($0 * 1000).rounded()) },
                         connectionKind: self.connectionKind,
                         wifiBandGHz: self.wifiBandGHz,
+                        wifiContext: self.wifiContext,
                         networkIdentifier: self.provider
                     )
                     let repo = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
@@ -511,6 +553,7 @@ public class SpeedTestViewModel: ObservableObject {
         packetLossPercent = snapshot.packetLossPercent
         connectionKind = snapshot.connectionKind
         wifiBandGHz = snapshot.wifiBandGHz
+        wifiContext = snapshot.wifiContext
         progress = 1.0
         uiPhase = .done
     }
@@ -532,6 +575,8 @@ public class SpeedTestViewModel: ObservableObject {
         _ state: MeasurementState,
         startingKind: NetworkConnectionKind,
         endingKind: NetworkConnectionKind,
+        startingWiFiContext: WiFiNetworkContext? = nil,
+        endingWiFiContext: WiFiNetworkContext? = nil,
         generation: Int
     ) {
         if self.testGeneration == generation {
@@ -539,6 +584,11 @@ public class SpeedTestViewModel: ObservableObject {
             self.wifiBandGHz = self.connectionKind == .wifi
                 ? ApplePlatformSignalProvider.currentWifiBandGHz()
                 : nil
+            self.wifiContext = WiFiNetworkContext.resolve(
+                start: startingWiFiContext,
+                end: endingWiFiContext,
+                connectionKind: self.connectionKind
+            )
         }
         self.update(with: state)
     }
@@ -596,5 +646,40 @@ public class SpeedTestViewModel: ObservableObject {
         } else {
             return .other
         }
+    }
+
+    /// Lê somente os fatos liberados pela plataforma naquele instante. Em
+    /// iPhone/iPad `fetchCurrent()` devolve nil até que o usuário conceda a
+    /// capability e a localização precisa; esta chamada não pede permissão.
+    private static func sampleWiFiContext() async -> WiFiNetworkContext? {
+        let hints = await ApplePlatformSignalProvider().currentHints()
+        guard let wifi = hints.wifi, let ssid = wifi.ssid else { return nil }
+
+        return WiFiNetworkContext(
+            ssid: ssid,
+            accessPointIdentifier: localAccessPointIdentifier(for: wifi.bssid),
+            securityType: wifi.securityType,
+            bandGHz: wifi.band.flatMap(Double.init),
+            rssiDbm: wifi.rssiDbm,
+            linkSpeedMbps: wifi.linkSpeedMbps
+        )
+    }
+
+    /// BSSID nunca sai do processo: o histórico recebe somente este hash com
+    /// salt local não sincronizado, suficiente para reconhecer roaming no
+    /// próprio aparelho sem expor o identificador físico do AP.
+    private static func localAccessPointIdentifier(for bssid: String?) -> String? {
+        guard let bssid, !bssid.isEmpty else { return nil }
+        let defaults = UserDefaults.standard
+        let key = "linka.wifi.access-point-salt.v1"
+        let salt: String
+        if let existing = defaults.string(forKey: key) {
+            salt = existing
+        } else {
+            salt = UUID().uuidString
+            defaults.set(salt, forKey: key)
+        }
+        let digest = SHA256.hash(data: Data("\(salt)|\(bssid.lowercased())".utf8))
+        return digest.prefix(16).map { String(format: "%02x", $0) }.joined()
     }
 }

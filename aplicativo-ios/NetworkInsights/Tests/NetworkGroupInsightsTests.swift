@@ -3,6 +3,17 @@ import NetworkCore
 @testable import NetworkInsights
 
 final class NetworkGroupInsightsTests: XCTestCase {
+    func testWiFiGroupsUseSSIDInsteadOfProviderIdentifierWhenAvailable() {
+        let measurements = [
+            measurement(connectionKind: .wifi, networkIdentifier: "ISP A", wifiSSID: "Casa"),
+            measurement(connectionKind: .wifi, networkIdentifier: "ISP B", wifiSSID: "Casa")
+        ]
+
+        let groups = NetworkGroupInsightsAnalyzer.group(measurements)
+
+        XCTAssertEqual(groups.count, 1)
+        XCTAssertEqual(groups[NetworkGroupIdentity(connectionKind: .wifi, networkIdentifier: "Casa")]?.count, 2)
+    }
     private let day = 86_400.0
 
     // MARK: - Agrupamento (issue #125, item 1)
@@ -113,6 +124,7 @@ final class NetworkGroupInsightsTests: XCTestCase {
     private func measurement(
         connectionKind: NetworkConnectionKind?,
         networkIdentifier: String?,
+        wifiSSID: String? = nil,
         download: Double = 100,
         measuredAt: Date = Date(timeIntervalSince1970: 1_000)
     ) -> NetworkMeasurement {
@@ -123,6 +135,7 @@ final class NetworkGroupInsightsTests: XCTestCase {
             uploadMbps: 50,
             latencyMs: 20,
             connectionKind: connectionKind,
+            wifiContext: wifiSSID.map { WiFiNetworkContext(ssid: $0) },
             networkIdentifier: networkIdentifier
         )
     }

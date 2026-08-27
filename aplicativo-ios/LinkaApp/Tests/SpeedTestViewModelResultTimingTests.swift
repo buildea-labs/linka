@@ -126,6 +126,39 @@ final class SpeedTestViewModelResultTimingTests: XCTestCase {
         XCTAssertNil(viewModel.wifiBandGHz)
     }
 
+    func test_wifiContextIsPersistableOnlyWhenSSIDMatchesAcrossMeasurement() {
+        let viewModel = SpeedTestViewModel()
+        let start = WiFiNetworkContext(ssid: "Casa", accessPointIdentifier: "ap-1", securityType: .personal)
+        let end = WiFiNetworkContext(ssid: "Casa", accessPointIdentifier: "ap-2", securityType: .personal)
+
+        viewModel.processResultState(
+            resultState(),
+            startingKind: .wifi,
+            endingKind: .wifi,
+            startingWiFiContext: start,
+            endingWiFiContext: end,
+            generation: 0
+        )
+
+        XCTAssertEqual(viewModel.wifiContext?.ssid, "Casa")
+        XCTAssertNil(viewModel.wifiContext?.accessPointIdentifier, "roaming não escolhe um BSSID")
+    }
+
+    func test_ssidChangeDuringMeasurementLeavesWiFiContextAbsent() {
+        let viewModel = SpeedTestViewModel()
+
+        viewModel.processResultState(
+            resultState(),
+            startingKind: .wifi,
+            endingKind: .wifi,
+            startingWiFiContext: WiFiNetworkContext(ssid: "Casa"),
+            endingWiFiContext: WiFiNetworkContext(ssid: "Trabalho"),
+            generation: 0
+        )
+
+        XCTAssertNil(viewModel.wifiContext)
+    }
+
     /// Rede não-Wi-Fi nunca carrega banda (aceite #1: `nil` é resultado
     /// legítimo quando não é Wi-Fi).
     func test_cellularConnection_wifiBandGHzStaysNil() {

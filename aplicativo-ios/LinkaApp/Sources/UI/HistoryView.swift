@@ -275,6 +275,11 @@ struct HistoryRow: View {
             }) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
+                        if measurement.connectionKind == .wifi {
+                            Text(measurement.wifiContext?.ssid ?? "Wi-Fi")
+                                .font(.bodySmall.weight(.medium))
+                                .foregroundColor(.textPrimary)
+                        }
                         Text(formatDate(measurement.measuredAt))
                             .font(.bodySmall.weight(.medium))
                             .foregroundColor(.textPrimary)
@@ -379,6 +384,16 @@ struct HistoryRow: View {
                                 explanation: LoadResponsivenessCopy.explanation
                             )
                             Spacer()
+                        }
+                    }
+
+                    HStack {
+                        if let wifi = measurement.wifiContext {
+                            DetailItem(label: "REDE WI-FI", value: wifi.ssid ?? "Nome não disponível")
+                            Spacer()
+                            if let security = wifi.securityType {
+                                DetailItem(label: "SEGURANÇA", value: security.displayLabel)
+                            }
                         }
                     }
 
@@ -492,6 +507,7 @@ struct HistoryRow: View {
         return result.category == .notAssessed ? nil : result.category
     }
 }
+
 
 struct DetailItem: View {
     let label: String

@@ -53,6 +53,32 @@ final class NDSRequestBuilderTests: XCTestCase {
         XCTAssertEqual(request.context, context)
     }
 
+    func testBuildRequestNeverSendsSSIDOrBSSID() throws {
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 100,
+            uploadMbps: 50,
+            latencyMs: 20,
+            connectionKind: .wifi,
+            wifiContext: WiFiNetworkContext(ssid: "Casa", accessPointIdentifier: "derived-ap")
+        )
+        let hints = PlatformHints(wifi: .init(ssid: "Casa", bssid: "AA:BB:CC:DD:EE:FF", rssiDbm: -51))
+
+        let request = NDSRequestBuilder().buildRequest(
+            current: measurement,
+            platformHints: hints,
+            appVersion: nil,
+            platformIdentifier: "ios",
+            requestAI: false
+        )
+        let data = try JSONEncoder().encode(request)
+        let json = String(decoding: data, as: UTF8.self)
+
+        XCTAssertFalse(json.contains("Casa"))
+        XCTAssertFalse(json.contains("AA:BB:CC:DD:EE:FF"))
+        XCTAssertFalse(json.contains("derived-ap"))
+    }
+
     func testBuildRequest_forwardsHistoricalEvidenceAsCapability() throws {
         let measurement = NetworkMeasurement(
             outcome: .complete,

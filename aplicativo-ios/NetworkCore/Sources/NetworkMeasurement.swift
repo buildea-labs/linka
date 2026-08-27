@@ -37,6 +37,11 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
     /// é o estado normal quando a plataforma não expõe essa informação
     /// (sempre o caso no iPhone) ou quando `connectionKind` não é `.wifi`.
     public let wifiBandGHz: Double?
+    /// Contexto factual da rede Wi-Fi usado nesta medição. É opcional para
+    /// preservar registros antigos e medições sem autorização da plataforma.
+    /// Não contém BSSID cru: `accessPointIdentifier`, quando existir, é um
+    /// identificador local derivado (issue #133).
+    public let wifiContext: WiFiNetworkContext?
     public let networkIdentifier: String?
     public let serverIdentifier: String?
     public let engineVersion: String?
@@ -57,6 +62,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         durationMs: Int? = nil,
         connectionKind: NetworkConnectionKind? = nil,
         wifiBandGHz: Double? = nil,
+        wifiContext: WiFiNetworkContext? = nil,
         networkIdentifier: String? = nil,
         serverIdentifier: String? = nil,
         engineVersion: String? = nil,
@@ -76,11 +82,77 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         self.durationMs = durationMs
         self.connectionKind = connectionKind
         self.wifiBandGHz = wifiBandGHz
+        self.wifiContext = wifiContext
         self.networkIdentifier = networkIdentifier
         self.serverIdentifier = serverIdentifier
         self.engineVersion = engineVersion
         self.location = location
     }
+}
+
+/// Fatos sobre a rede Wi-Fi expostos publicamente pela plataforma. Campos
+/// indisponíveis continuam `nil`; o contrato não infere banda, sinal ou taxa
+/// de link a partir do nome da rede.
+public struct WiFiNetworkContext: Codable, Equatable, Hashable, Sendable {
+    public let ssid: String?
+    public let accessPointIdentifier: String?
+    public let securityType: WiFiSecurityType?
+    public let bandGHz: Double?
+    public let rssiDbm: Double?
+    public let linkSpeedMbps: Double?
+
+    public init(
+        ssid: String? = nil,
+        accessPointIdentifier: String? = nil,
+        securityType: WiFiSecurityType? = nil,
+        bandGHz: Double? = nil,
+        rssiDbm: Double? = nil,
+        linkSpeedMbps: Double? = nil
+    ) {
+        self.ssid = ssid
+        self.accessPointIdentifier = accessPointIdentifier
+        self.securityType = securityType
+        self.bandGHz = bandGHz
+        self.rssiDbm = rssiDbm
+        self.linkSpeedMbps = linkSpeedMbps
+    }
+
+    /// Só associa uma identidade quando o teste começou e terminou no mesmo
+    /// SSID. Roaming no mesmo SSID conserva o contexto, mas marca a troca do
+    /// ponto de acesso pelo identificador ausente para não escolher um deles.
+    public static func resolve(
+        start: WiFiNetworkContext?,
+        end: WiFiNetworkContext?,
+        connectionKind: NetworkConnectionKind?
+    ) -> WiFiNetworkContext? {
+        guard connectionKind == .wifi,
+              let start,
+              let end,
+              let startSSID = start.ssid,
+              let endSSID = end.ssid,
+              startSSID == endSSID else {
+            return nil
+        }
+
+        return WiFiNetworkContext(
+            ssid: startSSID,
+            accessPointIdentifier: start.accessPointIdentifier == end.accessPointIdentifier
+                ? start.accessPointIdentifier
+                : nil,
+            securityType: start.securityType == end.securityType ? start.securityType : nil,
+            bandGHz: start.bandGHz == end.bandGHz ? start.bandGHz : nil,
+            rssiDbm: end.rssiDbm,
+            linkSpeedMbps: end.linkSpeedMbps
+        )
+    }
+}
+
+public enum WiFiSecurityType: String, Codable, Equatable, Hashable, Sendable {
+    case open
+    case wep
+    case personal
+    case enterprise
+    case unknown
 }
 
 public enum MeasurementOutcome: String, Codable, Equatable, Hashable, Sendable {
@@ -167,6 +239,10 @@ public enum NetworkMeasurementContract {
             if measurement.connectionKind != .wifi {
                 result.append("wifiBandGHz")
             }
+        }
+
+        if measurement.wifiContext != nil, measurement.connectionKind != .wifi {
+            result.append("wifiContext")
         }
 
         switch measurement.outcome {
