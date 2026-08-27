@@ -34,7 +34,8 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         let veredicto = scoringModule?.veredicto
         let findings = ndsResponse.results?.compactMap { $0.cards }.flatMap { $0 } ?? []
 
-        let aiExplanation = ndsResponse.results?.first(where: { $0.module == "ai" })?.result?.explanation
+        let aiResult = ndsResponse.results?.first(where: { $0.module == "ai" })?.result
+        let aiExplanation = aiResult?.explanation
 
         let input = DiagnosticCopyInput(
             recommendationTitle: ndsResponse.recommendation?.title,
@@ -43,7 +44,8 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
             findings: findings,
             aiTitle: aiExplanation?.tituloAmigavel,
             aiSummary: aiExplanation?.resumoTecnicoTraduzido,
-            veredicto: veredicto
+            veredicto: veredicto,
+            aiSourceFindingIds: aiResult?.sourceFindingIds
         )
         
         let copy = await coordinator.resolveCopy(for: input)
