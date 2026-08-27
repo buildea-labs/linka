@@ -1,42 +1,50 @@
-# plano.md — Issue #133: identidade da rede Wi-Fi
+# plano.md — Issue #134: diagnóstico Wi-Fi avançado via Atalhos
 
 **Trilha:** Full-flow.
-**Branch:** `feat/issue-133-wifi-network-context`.
+**Branch:** `feat/issue-134-wifi-advanced-shortcut`.
 **Autorização:** Luiz solicitou a implementação e o merge nesta sessão em 2026-08-27.
 
 ## Objetivo
 
-Associar cada medição Wi-Fi à rede realmente usada, quando a Apple autorizar
-essa leitura, sem transformar o Linka em uma tela técnica ou bloquear a
-medição.
+Permitir, apenas para Linka Plus e por ação explícita, que um atalho criado
+no app Atalhos importe fatos públicos da rede Wi-Fi e os associe com segurança
+à medição correta, sem interromper o Speedtest quando o atalho estiver ausente.
 
 ## Mudança arquitetural
 
-- Adicionar `WiFiNetworkContext` opcional ao contrato canônico e manter
-  compatibilidade de decodificação com medições antigas.
-- No iPhone/iPad, usar exclusivamente `NEHotspotNetwork.fetchCurrent()` após
-  ação explícita do usuário e com Access Wi-Fi Information + localização
-  precisa; amostrar em paralelo ao motor no início e no fim do teste.
-- No macOS, continuar com CoreWLAN e preservar os fatos que ele expõe.
-- Persistir SSID e o identificador de ponto de acesso derivado apenas no
-  histórico local. Não enviar SSID/BSSID ao NDS e não sincronizá-los pelo
-  CloudKit nesta entrega.
-- Mostrar a rede apenas em `Ver detalhes` e no Histórico; Ajustes oferece o
-  gatilho de permissão, sem prometer alterar a permissão do sistema.
+- Criar `AdvancedWiFiDiagnostics` no `NetworkCore`, separado do contexto
+  nativo da #133; BSSID e MAC entram somente como valores transitórios e se
+  tornam identificadores locais derivados antes de qualquer persistência.
+- Expor `ImportWiFiDiagnosticsIntent` com um JSON limitado e versionado como
+  entrada oficial do atalho. O atalho é um fluxo explícito no app Atalhos:
+  `Obter detalhes da rede` → montar JSON → `Importar diagnóstico Wi-Fi`.
+- Guardar um diagnóstico avançado pendente somente no aparelho, com expiração
+  curta. O ViewModel decide a associação pelo intervalo temporal, Wi-Fi e
+  ausência de contradição de SSID; conflitos não são anexados à medição.
+- Incluir o contexto avançado opcional em `NetworkMeasurement`, histórico e
+  detalhes. CloudKit continua sem esse contexto; NDS recebe apenas fatos
+  avançados medidos, jamais SSID, BSSID ou MAC.
+- Acrescentar a capacidade Plus `advancedWiFiDiagnostics` ao
+  `LinkaEntitlementPolicy`; Ajustes e detalhes usam essa política, não gates
+  locais espalhados.
 
 ## Requisito de aceite
 
-- SSID e segurança aparecem para nova medição Wi-Fi quando a Apple permite.
-- Falta de permissão, rede ausente ou troca de SSID tornam o contexto ausente,
-  sem impedir o Speedtest.
-- BSSID cru não é persistido, exibido, enviado ao NDS ou sincronizado.
-- iPhone não exibe banda, RSSI ou link speed sem fato exposto; macOS preserva
-  os seus dados CoreWLAN.
-- Contratos, testes de unidade, packages e builds dos targets passam; o fluxo
-  em dispositivo físico fica documentado como validação de release.
+- Payload válido, parcial e inválido têm validação determinística; não há
+  zero artificial, schema desconhecido, timestamp implausível nem payload
+  duplicado associado.
+- SNR e banda provável só são derivados por regras documentadas; largura de
+  canal, MCS e demais fatos não expostos permanecem ausentes.
+- A interface mostra campos avançados somente sob detalhes e mantém a lista
+  do histórico discreta; ausência do atalho não muda o fluxo de medição.
+- BSSID/MAC crus não persistem, não entram no CloudKit, NDS ou logs.
+- Testes de unidade e targets compilam; a matriz de Atalhos em iPhone físico
+  fica registrada como validação de release se o dispositivo não estiver
+  disponível nesta sessão.
 
 ## Não-objetivos
 
-- Scan de redes, localização contínua, inferência pelo SSID e Hotspot Helper.
-- Diagnóstico causal, nova aba Wi-Fi, alteração do motor ou envio de dados de
-  rede ao serviço remoto.
+- API privada, Hotspot Helper, scan Wi-Fi, largura de canal, MCS, spatial
+  streams, alteração de roteador/canal, lookup externo ou causa raiz.
+- Instalação silenciosa de atalho, coleta automática durante todo Speedtest,
+  upload de identificadores de rede ou mudança do motor de medição.

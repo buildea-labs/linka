@@ -2,6 +2,7 @@ import XCTest
 import Combine
 import NetworkCore
 import LinkaEngine
+import LinkaEntitlements
 @testable import LinkaApp
 
 /// Cobertura do requisito de aceite da issue #88: no instante síncrono em
@@ -20,6 +21,43 @@ import LinkaEngine
 /// `handleScenePhaseChange`.
 @MainActor
 final class SpeedTestViewModelResultTimingTests: XCTestCase {
+
+    func test_advancedWiFiInboxValidatesAndDerivesOnlyLocalAccessPointIdentifier() throws {
+        let suite = "linka-issue-134-\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suite) else { return XCTFail("suite de teste indisponível") }
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let now = Date()
+        let payload = """
+        {"schemaVersion":1,"shortcutVersion":1,"captureIdentifier":"550E8400-E29B-41D4-A716-446655440000","capturedAt":"\(ISO8601DateFormatter().string(from: now))","ssid":"Casa","bssid":"AA:BB:CC:DD:EE:FF","hardwareMacAddress":"11:22:33:44:55:66","rssiDbm":-54,"noiseDbm":-92,"channelNumber":44}
+        """
+
+        let diagnostics = try AdvancedWiFiDiagnosticsInbox.importPayload(
+            payload,
+            entitlement: .plus(status: .active, source: .promotion),
+            now: now,
+            defaults: defaults
+        )
+
+        XCTAssertNotNil(diagnostics.accessPointIdentifier)
+        XCTAssertEqual(diagnostics.snrDb, 38)
+        let stored = try XCTUnwrap(defaults.data(forKey: "linka.advanced-wifi.pending.v1"))
+        let json = String(decoding: stored, as: UTF8.self)
+        XCTAssertFalse(json.localizedCaseInsensitiveContains("AA:BB:CC:DD:EE:FF"))
+        XCTAssertFalse(json.localizedCaseInsensitiveContains("11:22:33:44:55:66"))
+    }
+
+    func test_advancedWiFiInboxRejectsFreeExpiredAndDuplicatePayload() throws {
+        let suite = "linka-issue-134-\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suite) else { return XCTFail("suite de teste indisponível") }
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let now = Date()
+        let payload = """
+        {"schemaVersion":1,"shortcutVersion":1,"captureIdentifier":"550E8400-E29B-41D4-A716-446655440000","capturedAt":"\(ISO8601DateFormatter().string(from: now))"}
+        """
+        XCTAssertThrowsError(try AdvancedWiFiDiagnosticsInbox.importPayload(payload, entitlement: .free, now: now, defaults: defaults))
+        _ = try AdvancedWiFiDiagnosticsInbox.importPayload(payload, entitlement: .plus(status: .active, source: .promotion), now: now, defaults: defaults)
+        XCTAssertThrowsError(try AdvancedWiFiDiagnosticsInbox.importPayload(payload, entitlement: .plus(status: .active, source: .promotion), now: now, defaults: defaults))
+    }
 
     private func resultState() -> MeasurementState {
         MeasurementState(
@@ -157,6 +195,46 @@ final class SpeedTestViewModelResultTimingTests: XCTestCase {
         )
 
         XCTAssertNil(viewModel.wifiContext)
+    }
+
+    func test_advancedWiFiDiagnosticsPersistsOnlyForMatchingWiFiMeasurement() {
+        let viewModel = SpeedTestViewModel()
+        let advanced = AdvancedWiFiDiagnostics(
+            capturedAt: Date(),
+            ssid: "Casa",
+            rssiDbm: -54,
+            noiseDbm: -92,
+            snrDb: 38
+        )
+
+        viewModel.processResultState(
+            resultState(),
+            startingKind: .wifi,
+            endingKind: .wifi,
+            startingWiFiContext: WiFiNetworkContext(ssid: "Casa"),
+            endingWiFiContext: WiFiNetworkContext(ssid: "Casa"),
+            advancedWiFiDiagnostics: advanced,
+            generation: 0
+        )
+
+        XCTAssertEqual(viewModel.advancedWiFiDiagnostics, advanced)
+    }
+
+    func test_advancedWiFiDiagnosticsRejectsConflictingSSID() {
+        let viewModel = SpeedTestViewModel()
+        let advanced = AdvancedWiFiDiagnostics(capturedAt: Date(), ssid: "Trabalho")
+
+        viewModel.processResultState(
+            resultState(),
+            startingKind: .wifi,
+            endingKind: .wifi,
+            startingWiFiContext: WiFiNetworkContext(ssid: "Casa"),
+            endingWiFiContext: WiFiNetworkContext(ssid: "Casa"),
+            advancedWiFiDiagnostics: advanced,
+            generation: 0
+        )
+
+        XCTAssertNil(viewModel.advancedWiFiDiagnostics)
     }
 
     /// Rede não-Wi-Fi nunca carrega banda (aceite #1: `nil` é resultado

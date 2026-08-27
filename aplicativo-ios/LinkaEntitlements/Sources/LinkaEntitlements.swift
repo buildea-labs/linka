@@ -11,6 +11,8 @@ public enum LinkaCapability: String, Codable, CaseIterable, Hashable, Sendable {
     case insights
     case assist
     case appleIntegrations
+    /// Importação opt-in de telemetria Wi-Fi pelo app Atalhos (issue #134).
+    case advancedWiFiDiagnostics
 }
 
 public enum LinkaEntitlementStatus: String, Codable, Sendable {

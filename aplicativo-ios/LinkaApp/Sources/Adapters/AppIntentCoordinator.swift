@@ -1,4 +1,9 @@
+import AppIntents
+import CryptoKit
 import Foundation
+import LinkaEntitlements
+import NetworkCore
+import StoreKit
 
 /// Ponte observável entre a execução de `LinkaAppIntentExecutor`
 /// (Siri/Shortcuts/Widget — issue #55) e `MainView`.
@@ -36,6 +41,7 @@ public final class AppIntentCoordinator: ObservableObject {
     /// exclusivos do Linka Plus, incluindo o disparo de `startSpeedTest`
     /// por essas superfícies.
     @Published public private(set) var pendingPurchasePrompt: Bool = false
+    @Published public private(set) var pendingAdvancedWiFiDiagnosticsImport: Bool = false
 
     private init() {}
 
@@ -54,4 +60,214 @@ public final class AppIntentCoordinator: ObservableObject {
     public func consumePurchasePrompt() {
         pendingPurchasePrompt = false
     }
+
+    public func requestAdvancedWiFiDiagnosticsImport() {
+        pendingAdvancedWiFiDiagnosticsImport = true
+    }
+
+    public func consumeAdvancedWiFiDiagnosticsImport() {
+        pendingAdvancedWiFiDiagnosticsImport = false
+    }
 }
+
+/// Caixa local e efêmera entre o App Intent/URL e a próxima atualização do
+/// `SpeedTestViewModel`. O dado bruto do Atalhos só existe dentro de
+/// `importPayload`; BSSID/MAC nunca são gravados em `UserDefaults`.
+enum AdvancedWiFiDiagnosticsInbox {
+    private static let pendingKey = "linka.advanced-wifi.pending.v1"
+    private static let handledIdentifiersKey = "linka.advanced-wifi.handled.v1"
+    private static let accessPointSaltKey = "linka.advanced-wifi.access-point-salt.v1"
+    static let maximumPayloadBytes = 4_096
+    static let pendingLifetime: TimeInterval = 180
+
+    struct Payload: Decodable {
+        let schemaVersion: Int
+        let shortcutVersion: Int
+        let captureIdentifier: UUID
+        let capturedAt: Date
+        let ssid: String?
+        let bssid: String?
+        let wifiStandard: String?
+        let rxRateMbps: Double?
+        let txRateMbps: Double?
+        let rssiDbm: Double?
+        let noiseDbm: Double?
+        let channelNumber: Int?
+        let hardwareMacAddress: String?
+
+        enum CodingKeys: String, CodingKey {
+            case schemaVersion, shortcutVersion, captureIdentifier, capturedAt, ssid, bssid, wifiStandard
+            case rxRateMbps, txRateMbps, rssiDbm, noiseDbm, channelNumber, hardwareMacAddress
+        }
+    }
+
+    enum ImportError: Error, Equatable {
+        case notEntitled
+        case invalidPayload
+        case unsupportedSchema
+        case expiredTimestamp
+        case duplicate
+    }
+
+    static func importPayload(
+        _ json: String,
+        entitlement: LinkaEntitlementSnapshot,
+        now: Date = Date(),
+        defaults: UserDefaults = .standard
+    ) throws -> AdvancedWiFiDiagnostics {
+        guard LinkaEntitlementPolicy.decision(
+            for: .advancedWiFiDiagnostics,
+            snapshot: entitlement,
+            at: now
+        ).isGranted else {
+            throw ImportError.notEntitled
+        }
+
+        let data = Data(json.utf8)
+        guard !data.isEmpty, data.count <= maximumPayloadBytes else {
+            throw ImportError.invalidPayload
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let payload = try? decoder.decode(Payload.self, from: data) else {
+            throw ImportError.invalidPayload
+        }
+        guard payload.schemaVersion == AdvancedWiFiDiagnostics.currentSchemaVersion,
+              (1...AdvancedWiFiDiagnostics.currentShortcutVersion).contains(payload.shortcutVersion) else {
+            throw ImportError.unsupportedSchema
+        }
+        guard payload.capturedAt <= now.addingTimeInterval(30),
+              payload.capturedAt >= now.addingTimeInterval(-pendingLifetime) else {
+            throw ImportError.expiredTimestamp
+        }
+
+        var handled = Set(defaults.stringArray(forKey: handledIdentifiersKey) ?? [])
+        let identifier = payload.captureIdentifier.uuidString
+        guard !handled.contains(identifier) else { throw ImportError.duplicate }
+
+        let diagnostics = AdvancedWiFiDiagnostics(
+            schemaVersion: payload.schemaVersion,
+            shortcutVersion: payload.shortcutVersion,
+            captureIdentifier: payload.captureIdentifier,
+            capturedAt: payload.capturedAt,
+            ssid: normalized(payload.ssid, maximumLength: 64),
+            accessPointIdentifier: localAccessPointIdentifier(for: payload.bssid, defaults: defaults),
+            wifiStandard: normalized(payload.wifiStandard, maximumLength: 32),
+            rxRateMbps: nonNegativeFinite(payload.rxRateMbps),
+            txRateMbps: nonNegativeFinite(payload.txRateMbps),
+            rssiDbm: finite(payload.rssiDbm),
+            noiseDbm: finite(payload.noiseDbm),
+            channelNumber: positive(payload.channelNumber),
+            bandGHz: AdvancedWiFiDiagnostics.bandGHz(forChannel: positive(payload.channelNumber)),
+            snrDb: AdvancedWiFiDiagnostics.snrDb(rssiDbm: finite(payload.rssiDbm), noiseDbm: finite(payload.noiseDbm))
+        )
+
+        guard let encoded = try? JSONEncoder().encode(diagnostics) else {
+            throw ImportError.invalidPayload
+        }
+        defaults.set(encoded, forKey: pendingKey)
+        defaults.set(true, forKey: "linka.advanced-wifi.configured.v1")
+        handled.insert(identifier)
+        defaults.set(Array(handled.suffix(32)), forKey: handledIdentifiersKey)
+        return diagnostics
+    }
+
+    static func takePending(now: Date = Date(), defaults: UserDefaults = .standard) -> AdvancedWiFiDiagnostics? {
+        defer { defaults.removeObject(forKey: pendingKey) }
+        guard let data = defaults.data(forKey: pendingKey),
+              let diagnostics = try? JSONDecoder().decode(AdvancedWiFiDiagnostics.self, from: data),
+              diagnostics.capturedAt >= now.addingTimeInterval(-pendingLifetime) else {
+            return nil
+        }
+        return diagnostics
+    }
+
+    static func requeue(_ diagnostics: AdvancedWiFiDiagnostics, defaults: UserDefaults = .standard) {
+        guard let data = try? JSONEncoder().encode(diagnostics) else { return }
+        defaults.set(data, forKey: pendingKey)
+    }
+
+    static func removePending(defaults: UserDefaults = .standard) {
+        defaults.removeObject(forKey: pendingKey)
+    }
+
+    private static func normalized(_ value: String?, maximumLength: Int) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty, value.count <= maximumLength else { return nil }
+        return value
+    }
+
+    private static func finite(_ value: Double?) -> Double? {
+        guard let value, value.isFinite else { return nil }
+        return value
+    }
+
+    private static func nonNegativeFinite(_ value: Double?) -> Double? {
+        guard let value = finite(value), value >= 0 else { return nil }
+        return value
+    }
+
+    private static func positive(_ value: Int?) -> Int? {
+        guard let value, value > 0 else { return nil }
+        return value
+    }
+
+    private static func localAccessPointIdentifier(for bssid: String?, defaults: UserDefaults) -> String? {
+        guard let bssid = normalized(bssid, maximumLength: 17),
+              bssid.range(of: "^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$", options: .regularExpression) != nil else {
+            return nil
+        }
+        let salt: String
+        if let saved = defaults.string(forKey: accessPointSaltKey) {
+            salt = saved
+        } else {
+            salt = UUID().uuidString
+            defaults.set(salt, forKey: accessPointSaltKey)
+        }
+        let digest = SHA256.hash(data: Data("\(salt)|\(bssid.lowercased())".utf8))
+        return digest.prefix(16).map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+// Ação que o atalho oficial usa após `Obter detalhes da rede`. O JSON é um
+// parâmetro padrão suportado por App Intents e mantém a composição dentro do
+// app Atalhos; não há API privada, serviço intermediário ou segredo na URL.
+#if os(iOS)
+struct ImportWiFiDiagnosticsIntent: AppIntent {
+    static var title: LocalizedStringResource { "Importar diagnóstico Wi-Fi" }
+    static let description = IntentDescription("Importa dados Wi-Fi medidos pelo atalho Linka Wi-Fi Advanced.")
+    static var openAppWhenRun: Bool { true }
+
+    @Parameter(title: "Payload de diagnóstico")
+    var payloadJSON: String
+
+    init() {}
+
+    init(payloadJSON: String) {
+        self.payloadJSON = payloadJSON
+    }
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Importar \(\.$payloadJSON)")
+    }
+
+    func perform() async throws -> some IntentResult {
+        let snapshot = await currentSnapshot()
+        _ = try AdvancedWiFiDiagnosticsInbox.importPayload(payloadJSON, entitlement: snapshot)
+        await MainActor.run {
+            AppIntentCoordinator.shared.requestAdvancedWiFiDiagnosticsImport()
+        }
+        return .result()
+    }
+
+    private func currentSnapshot() async -> LinkaEntitlementSnapshot {
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result,
+                  LinkaStoreProductID.all.contains(transaction.productID) else { continue }
+            return .plus(status: .active, source: .subscription, validUntil: transaction.expirationDate)
+        }
+        return .free
+    }
+}
+#endif

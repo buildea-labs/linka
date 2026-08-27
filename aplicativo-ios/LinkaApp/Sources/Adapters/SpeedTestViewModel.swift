@@ -63,6 +63,11 @@ public class SpeedTestViewModel: ObservableObject {
     /// no fim. Não substitui `provider`, que é o provedor do teste.
     @Published public var wifiContext: WiFiNetworkContext? = nil
 
+    /// Fatos avançados importados explicitamente pelo app Atalhos. São
+    /// secundários ao resultado e só existem quando a janela de associação
+    /// temporal da issue #134 é satisfeita.
+    @Published public var advancedWiFiDiagnostics: AdvancedWiFiDiagnostics? = nil
+
     /// Latência sob carga (issue #52). Não é `@Published` de propósito: não
     /// deve disparar re-render nenhum, para não competir com o resultado
     /// (AGENTS.md §6). Leitura pública (issue #53) para que `MainView` possa
@@ -124,6 +129,8 @@ public class SpeedTestViewModel: ObservableObject {
     /// via `isTesting == false` e chamava `startTest()` de novo, criando T3
     /// e cancelando T2 sem pedido do usuário.
     private var testGeneration: Int = 0
+    private var measurementStartedAt: Date?
+    private var latestFinishedMeasurement: NetworkMeasurement?
 
     /// Snapshot do último resultado `.done` alcançado nesta sessão do view
     /// model (issue #47) — capturado em `startTest()` no instante em que um
@@ -149,6 +156,7 @@ public class SpeedTestViewModel: ObservableObject {
         let connectionKind: NetworkConnectionKind?
         let wifiBandGHz: Double?
         let wifiContext: WiFiNetworkContext?
+        let advancedWiFiDiagnostics: AdvancedWiFiDiagnostics?
 
         init(
             downloadSpeed: Double,
@@ -161,7 +169,8 @@ public class SpeedTestViewModel: ObservableObject {
             packetLossPercent: Double?,
             connectionKind: NetworkConnectionKind?,
             wifiBandGHz: Double?,
-            wifiContext: WiFiNetworkContext? = nil
+            wifiContext: WiFiNetworkContext? = nil,
+            advancedWiFiDiagnostics: AdvancedWiFiDiagnostics? = nil
         ) {
             self.downloadSpeed = downloadSpeed
             self.uploadSpeed = uploadSpeed
@@ -174,6 +183,7 @@ public class SpeedTestViewModel: ObservableObject {
             self.connectionKind = connectionKind
             self.wifiBandGHz = wifiBandGHz
             self.wifiContext = wifiContext
+            self.advancedWiFiDiagnostics = advancedWiFiDiagnostics
         }
     }
 
@@ -221,6 +231,7 @@ public class SpeedTestViewModel: ObservableObject {
     }
 
     public func loadHistoricalResult(_ measurement: NetworkMeasurement) {
+        latestFinishedMeasurement = measurement
         if let kind = measurement.connectionKind {
             switch kind {
             case .cellular: self.networkType = "Rede Móvel"
@@ -250,6 +261,7 @@ public class SpeedTestViewModel: ObservableObject {
         self.connectionKind = measurement.connectionKind
         self.wifiBandGHz = measurement.wifiBandGHz
         self.wifiContext = measurement.wifiContext
+        self.advancedWiFiDiagnostics = measurement.advancedWiFiDiagnostics
         
         self.lastValidResultSnapshot = ResultSnapshot(
             downloadSpeed: self.downloadSpeed,
@@ -262,7 +274,8 @@ public class SpeedTestViewModel: ObservableObject {
             packetLossPercent: self.packetLossPercent,
             connectionKind: self.connectionKind,
             wifiBandGHz: self.wifiBandGHz,
-            wifiContext: self.wifiContext
+            wifiContext: self.wifiContext,
+            advancedWiFiDiagnostics: self.advancedWiFiDiagnostics
         )
         
         self.progress = 1.0
@@ -289,6 +302,8 @@ public class SpeedTestViewModel: ObservableObject {
         connectionKind = nil
         wifiBandGHz = nil
         wifiContext = nil
+        advancedWiFiDiagnostics = nil
+        measurementStartedAt = Date()
         uiPhase = .connecting
 
         testTask?.cancel()
@@ -378,7 +393,8 @@ public class SpeedTestViewModel: ObservableObject {
                         packetLossPercent: self.packetLossPercent,
                         connectionKind: self.connectionKind,
                         wifiBandGHz: self.wifiBandGHz,
-                        wifiContext: self.wifiContext
+                        wifiContext: self.wifiContext,
+                        advancedWiFiDiagnostics: self.advancedWiFiDiagnostics
                     )
 
                     let m = NetworkMeasurement(
@@ -394,8 +410,10 @@ public class SpeedTestViewModel: ObservableObject {
                         connectionKind: self.connectionKind,
                         wifiBandGHz: self.wifiBandGHz,
                         wifiContext: self.wifiContext,
+                        advancedWiFiDiagnostics: self.advancedWiFiDiagnostics,
                         networkIdentifier: self.provider
                     )
+                    self.latestFinishedMeasurement = m
                     let repo = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
                     do {
                         try await repo.save(m)
@@ -554,6 +572,7 @@ public class SpeedTestViewModel: ObservableObject {
         connectionKind = snapshot.connectionKind
         wifiBandGHz = snapshot.wifiBandGHz
         wifiContext = snapshot.wifiContext
+        advancedWiFiDiagnostics = snapshot.advancedWiFiDiagnostics
         progress = 1.0
         uiPhase = .done
     }
@@ -577,6 +596,7 @@ public class SpeedTestViewModel: ObservableObject {
         endingKind: NetworkConnectionKind,
         startingWiFiContext: WiFiNetworkContext? = nil,
         endingWiFiContext: WiFiNetworkContext? = nil,
+        advancedWiFiDiagnostics: AdvancedWiFiDiagnostics? = nil,
         generation: Int
     ) {
         if self.testGeneration == generation {
@@ -589,8 +609,92 @@ public class SpeedTestViewModel: ObservableObject {
                 end: endingWiFiContext,
                 connectionKind: self.connectionKind
             )
+            let imported = advancedWiFiDiagnostics ?? AdvancedWiFiDiagnosticsInbox.takePending()
+            let startedAt = self.measurementStartedAt ?? Date()
+            let endedAt = Date()
+            self.advancedWiFiDiagnostics = imported.flatMap { diagnostics in
+                guard self.connectionKind == .wifi,
+                      diagnostics.isEligible(
+                        forMeasurementStartedAt: startedAt,
+                        endedAt: endedAt,
+                        nativeSSID: self.wifiContext?.ssid
+                      ) else { return nil }
+                return diagnostics
+            }
         }
         self.update(with: state)
+    }
+
+    /// Consome um callback vindo do App Intent/URL. Se uma medição estiver
+    /// em andamento, o dado fica no inbox até o resultado; se ela já acabou,
+    /// atualiza somente a última medição local quando a mesma janela temporal
+    /// comprova a associação. Nunca cria uma nova medição por conta própria.
+    func consumePendingAdvancedWiFiDiagnostics() {
+        guard let diagnostics = AdvancedWiFiDiagnosticsInbox.takePending() else { return }
+        if isTesting {
+            // Recoloca o dado para a resolução no resultado. A serialização
+            // local não contém BSSID/MAC e expira de qualquer forma.
+            AdvancedWiFiDiagnosticsInbox.requeue(diagnostics)
+            return
+        }
+        guard connectionKind == .wifi,
+              let snapshot = lastValidResultSnapshot,
+              let finishedMeasurement = latestFinishedMeasurement else { return }
+        let endedAt = finishedMeasurement.measuredAt
+        let startedAt = endedAt.addingTimeInterval(-Double(finishedMeasurement.durationMs ?? 0) / 1_000)
+        guard diagnostics.isEligible(
+            forMeasurementStartedAt: startedAt,
+            endedAt: endedAt,
+            nativeSSID: wifiContext?.ssid
+        ) else { return }
+        self.advancedWiFiDiagnostics = diagnostics
+        persist(diagnostics, onto: latestFinishedMeasurement)
+        self.lastValidResultSnapshot = ResultSnapshot(
+            downloadSpeed: snapshot.downloadSpeed,
+            uploadSpeed: snapshot.uploadSpeed,
+            ping: snapshot.ping,
+            jitter: snapshot.jitter,
+            provider: snapshot.provider,
+            networkType: snapshot.networkType,
+            testDuration: snapshot.testDuration,
+            packetLossPercent: snapshot.packetLossPercent,
+            connectionKind: snapshot.connectionKind,
+            wifiBandGHz: snapshot.wifiBandGHz,
+            wifiContext: snapshot.wifiContext,
+            advancedWiFiDiagnostics: diagnostics
+        )
+    }
+
+    private func persist(_ diagnostics: AdvancedWiFiDiagnostics, onto measurement: NetworkMeasurement?) {
+        guard let measurement else { return }
+        let updated = NetworkMeasurement(
+            schemaVersion: measurement.schemaVersion,
+            id: measurement.id,
+            measuredAt: measurement.measuredAt,
+            outcome: measurement.outcome,
+            downloadMbps: measurement.downloadMbps,
+            uploadMbps: measurement.uploadMbps,
+            latencyMs: measurement.latencyMs,
+            jitterMs: measurement.jitterMs,
+            packetLossPercent: measurement.packetLossPercent,
+            loadedLatencyMs: measurement.loadedLatencyMs,
+            loadedLatencyUploadMs: measurement.loadedLatencyUploadMs,
+            durationMs: measurement.durationMs,
+            connectionKind: measurement.connectionKind,
+            wifiBandGHz: measurement.wifiBandGHz,
+            wifiContext: measurement.wifiContext,
+            advancedWiFiDiagnostics: diagnostics,
+            networkIdentifier: measurement.networkIdentifier,
+            serverIdentifier: measurement.serverIdentifier,
+            engineVersion: measurement.engineVersion,
+            location: measurement.location
+        )
+        latestFinishedMeasurement = updated
+        recentMeasurements = recentMeasurements.map { $0.id == updated.id ? updated : $0 }
+        Task { @MainActor in
+            let repository = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
+            try? await repository.save(updated)
+        }
     }
 
     private func update(with state: MeasurementState) {

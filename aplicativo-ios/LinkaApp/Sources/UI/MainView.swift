@@ -27,6 +27,7 @@ struct MainView: View {
     // mudança de fase vive em `viewModel.handleScenePhaseChange(_:)` — esta
     // view só repassa o valor.
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openURL) private var openURL
 
     private var currentMeasurement: NetworkMeasurement? {
         guard viewModel.uiPhase == .done else { return nil }
@@ -46,6 +47,7 @@ struct MainView: View {
             connectionKind: viewModel.connectionKind,
             wifiBandGHz: viewModel.wifiBandGHz,
             wifiContext: viewModel.wifiContext,
+            advancedWiFiDiagnostics: viewModel.advancedWiFiDiagnostics,
             networkIdentifier: viewModel.provider.isEmpty ? nil : viewModel.provider
         )
     }
@@ -62,6 +64,13 @@ struct MainView: View {
             for: .assist,
             snapshot: entitlements.snapshot,
             at: Date()
+        ).isGranted
+    }
+
+    private var canUseAdvancedWiFiDiagnostics: Bool {
+        LinkaEntitlementPolicy.decision(
+            for: .advancedWiFiDiagnostics,
+            snapshot: entitlements.snapshot
         ).isGranted
     }
 
@@ -274,11 +283,16 @@ struct MainView: View {
                                     connectionKind: viewModel.connectionKind,
                                     wifiBandGHz: viewModel.wifiBandGHz,
                                     wifiContext: viewModel.wifiContext,
+                                    advancedWiFiDiagnostics: viewModel.advancedWiFiDiagnostics,
+                                    advancedWiFiEnabled: canUseAdvancedWiFiDiagnostics,
                                     jitter: viewModel.jitter,
                                     packetLossPercent: viewModel.packetLossPercent,
                                     loadedLatencyMs: viewModel.loadedLatencyMs,
                                     loadedLatencyUploadMs: viewModel.loadedLatencyUploadMs,
-                                    onIdentifyNetwork: WiFiNetworkPermission.requestIdentification
+                                    onIdentifyNetwork: WiFiNetworkPermission.requestIdentification,
+                                    onRunAdvancedWiFi: {
+                                        if let url = URL(string: "shortcuts://") { openURL(url) }
+                                    }
                                 )
                                 .padding(.horizontal, 24)
                                 .padding(.bottom, 16)
@@ -404,6 +418,11 @@ struct MainView: View {
             guard pending else { return }
             viewModel.startTest()
             intentCoordinator.consumeStartSpeedTestRequest()
+        }
+        .onChange(of: intentCoordinator.pendingAdvancedWiFiDiagnosticsImport) { pending in
+            guard pending else { return }
+            viewModel.consumePendingAdvancedWiFiDiagnostics()
+            intentCoordinator.consumeAdvancedWiFiDiagnosticsImport()
         }
         .onChange(of: intentCoordinator.pendingPurchasePrompt) { pending in
             guard pending else { return }
@@ -544,6 +563,8 @@ private struct InlineResultDetails: View {
     let connectionKind: NetworkConnectionKind?
     let wifiBandGHz: Double?
     let wifiContext: WiFiNetworkContext?
+    let advancedWiFiDiagnostics: AdvancedWiFiDiagnostics?
+    let advancedWiFiEnabled: Bool
     let jitter: Double
     let packetLossPercent: Double?
     let loadedLatencyMs: Double?
@@ -551,6 +572,7 @@ private struct InlineResultDetails: View {
     /// `loadedLatencyMs`: `nil` some, sem "--".
     let loadedLatencyUploadMs: Double?
     let onIdentifyNetwork: () -> Void
+    let onRunAdvancedWiFi: () -> Void
 
     /// Categoria de responsividade sob carga (issue #128) — `nil`
     /// (`.notAssessed`) some da tela, mesmo padrão de qualquer métrica
@@ -589,6 +611,24 @@ private struct InlineResultDetails: View {
                             .frame(minHeight: 44)
                     }
                 }
+                if let advancedWiFiDiagnostics {
+                    advancedWiFiRows(advancedWiFiDiagnostics)
+                } else {
+                    HStack(spacing: 12) {
+                        InlineResultDetailRow(
+                            label: "Wi-Fi avançado",
+                            value: advancedWiFiEnabled ? "Não executado" : "Linka Plus"
+                        )
+                        #if os(iOS)
+                        if advancedWiFiEnabled {
+                            Button("Obter detalhes Wi-Fi", action: onRunAdvancedWiFi)
+                                .font(.bodySmallStrong)
+                                .foregroundColor(.brandAccentWarm)
+                                .frame(minHeight: 44)
+                        }
+                        #endif
+                    }
+                }
             }
             InlineResultDetailRow(label: "Rede", value: networkLabel)
             InlineResultDetailRow(label: "Provedor", value: provider)
@@ -621,6 +661,30 @@ private struct InlineResultDetails: View {
                 .stroke(Color.borderDefault, lineWidth: 0.5)
         }
         .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder
+    private func advancedWiFiRows(_ diagnostics: AdvancedWiFiDiagnostics) -> some View {
+        if let standard = diagnostics.wifiStandard {
+            InlineResultDetailRow(label: "Padrão", value: standard)
+        }
+        if let rssi = diagnostics.rssiDbm {
+            InlineResultDetailRow(label: "Sinal", value: String(format: "%.0f dBm", rssi))
+        }
+        if let noise = diagnostics.noiseDbm {
+            InlineResultDetailRow(label: "Ruído", value: String(format: "%.0f dBm", noise))
+        }
+        if let snr = diagnostics.snrDb {
+            InlineResultDetailRow(label: "SNR", value: String(format: "%.0f dB", snr))
+        }
+        if let channel = diagnostics.channelNumber {
+            InlineResultDetailRow(label: "Canal", value: "\(channel)")
+        }
+        if diagnostics.txRateMbps != nil || diagnostics.rxRateMbps != nil {
+            let tx = diagnostics.txRateMbps.map { String(format: "TX %.0f Mbps", $0) }
+            let rx = diagnostics.rxRateMbps.map { String(format: "RX %.0f Mbps", $0) }
+            InlineResultDetailRow(label: "Taxa Wi-Fi", value: [tx, rx].compactMap { $0 }.joined(separator: " · "))
+        }
     }
 }
 
