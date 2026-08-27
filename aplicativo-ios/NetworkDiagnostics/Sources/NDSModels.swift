@@ -246,6 +246,11 @@ public struct NDSModuleData: Codable, Equatable, Sendable {
     public var veredicto: String?
     public var observedDimensions: Int?
     public var dimensoes: [NDSDimensao]?
+    /// IDs dos achados que sustentam `explanation`, quando o módulo é `ai`
+    /// (issue #129). Antes deste campo, o Codable descartava
+    /// `source_finding_ids` do módulo `ai` silenciosamente — o Linka não
+    /// tinha como saber se uma explicação de IA tinha evidência por trás.
+    public var sourceFindingIds: [String]?
 
     enum CodingKeys: String, CodingKey {
         case score
@@ -253,14 +258,16 @@ public struct NDSModuleData: Codable, Equatable, Sendable {
         case veredicto
         case observedDimensions = "observed_dimensions"
         case dimensoes
+        case sourceFindingIds = "source_finding_ids"
     }
 
-    public init(score: Int? = nil, explanation: NDSExplanation? = nil, veredicto: String? = nil, observedDimensions: Int? = nil, dimensoes: [NDSDimensao]? = nil) {
+    public init(score: Int? = nil, explanation: NDSExplanation? = nil, veredicto: String? = nil, observedDimensions: Int? = nil, dimensoes: [NDSDimensao]? = nil, sourceFindingIds: [String]? = nil) {
         self.score = score
         self.explanation = explanation
         self.veredicto = veredicto
         self.observedDimensions = observedDimensions
         self.dimensoes = dimensoes
+        self.sourceFindingIds = sourceFindingIds
     }
 }
 

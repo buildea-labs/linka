@@ -36,7 +36,17 @@ public struct NDSRequestBuilder: Sendable {
             context: diagnosticContext,
             connection: mapConnection(current.connectionKind, hasInternet: hasInternet),
             wifi: mapWifi(platformHints.wifi, kind: current.connectionKind, band: bandStr),
-            speed: NDSRequest.Speed(downloadMbps: current.downloadMbps, uploadMbps: current.uploadMbps),
+            // `speed: {}` (objeto presente, campos vazios) é rejeitado pelo
+            // relay do NDS com RELAY_INVALID_REQUEST — confirmado testando
+            // o payload real contra o serviço em produção (issue #129).
+            // Um teste que aborta antes do download/upload (outcome
+            // .partial) chega aqui com as duas velocidades nil; omitir a
+            // chave inteira (em vez de mandar o objeto vazio) é o mesmo
+            // "dado ausente permanece ausente" já aplicado a `wifi` e
+            // `connection` acima, e é o único formato que o relay aceita.
+            speed: (current.downloadMbps != nil || current.uploadMbps != nil)
+                ? NDSRequest.Speed(downloadMbps: current.downloadMbps, uploadMbps: current.uploadMbps)
+                : nil,
             quality: NDSRequest.Quality(
                 latencyMs: current.latencyMs,
                 loadedLatencyMs: current.loadedLatencyMs,

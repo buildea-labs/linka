@@ -79,4 +79,51 @@ final class NDSRequestBuilderTests: XCTestCase {
         XCTAssertEqual(request.capabilities, ["historical"])
         XCTAssertEqual(request.historical, historical)
     }
+
+    /// Issue #129: `speed: {}` (objeto presente, campos vazios) é rejeitado
+    /// pelo relay do NDS com RELAY_INVALID_REQUEST — confirmado testando o
+    /// payload real contra o serviço em produção. Um teste que aborta antes
+    /// do download/upload (`outcome: .partial`) tem as duas velocidades
+    /// nil; a chave `speed` precisa ficar ausente, não virar objeto vazio.
+    func testBuildRequest_omitsSpeedWhenBothDownloadAndUploadAreNil() throws {
+        let measurement = NetworkMeasurement(
+            outcome: .partial,
+            latencyMs: 22
+        )
+
+        let request = NDSRequestBuilder().buildRequest(
+            current: measurement,
+            platformHints: PlatformHints(),
+            appVersion: nil,
+            platformIdentifier: "ios",
+            requestAI: false
+        )
+
+        XCTAssertNil(request.speed)
+
+        let encoded = try JSONEncoder().encode(request)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertNil(json["speed"])
+    }
+
+    /// Basta uma das duas velocidades existir para o objeto `speed` ser
+    /// enviado — só as duas ausentes ao mesmo tempo omitem a chave.
+    func testBuildRequest_includesSpeedWhenOnlyDownloadIsKnown() throws {
+        let measurement = NetworkMeasurement(
+            outcome: .partial,
+            downloadMbps: 50,
+            latencyMs: 22
+        )
+
+        let request = NDSRequestBuilder().buildRequest(
+            current: measurement,
+            platformHints: PlatformHints(),
+            appVersion: nil,
+            platformIdentifier: "ios",
+            requestAI: false
+        )
+
+        XCTAssertEqual(request.speed?.downloadMbps, 50)
+        XCTAssertNil(request.speed?.uploadMbps)
+    }
 }
