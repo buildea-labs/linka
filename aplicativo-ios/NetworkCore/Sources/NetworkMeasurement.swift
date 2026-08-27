@@ -42,6 +42,10 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
     /// Não contém BSSID cru: `accessPointIdentifier`, quando existir, é um
     /// identificador local derivado (issue #133).
     public let wifiContext: WiFiNetworkContext?
+    /// Telemetria Wi-Fi avançada importada conscientemente pelo app Atalhos.
+    /// É separada de `wifiContext`, que é a leitura nativa da plataforma.
+    /// Nunca contém BSSID ou MAC crus (issue #134).
+    public let advancedWiFiDiagnostics: AdvancedWiFiDiagnostics?
     public let networkIdentifier: String?
     public let serverIdentifier: String?
     public let engineVersion: String?
@@ -63,6 +67,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         connectionKind: NetworkConnectionKind? = nil,
         wifiBandGHz: Double? = nil,
         wifiContext: WiFiNetworkContext? = nil,
+        advancedWiFiDiagnostics: AdvancedWiFiDiagnostics? = nil,
         networkIdentifier: String? = nil,
         serverIdentifier: String? = nil,
         engineVersion: String? = nil,
@@ -83,6 +88,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         self.connectionKind = connectionKind
         self.wifiBandGHz = wifiBandGHz
         self.wifiContext = wifiContext
+        self.advancedWiFiDiagnostics = advancedWiFiDiagnostics
         self.networkIdentifier = networkIdentifier
         self.serverIdentifier = serverIdentifier
         self.engineVersion = engineVersion
@@ -153,6 +159,96 @@ public enum WiFiSecurityType: String, Codable, Equatable, Hashable, Sendable {
     case personal
     case enterprise
     case unknown
+}
+
+/// Fatos de Wi-Fi que o usuário escolheu importar por um atalho oficial.
+/// O contrato não representa capacidade privada: campos que o Atalhos não
+/// expõe permanecem ausentes, e nenhuma métrica ausente vira zero.
+public struct AdvancedWiFiDiagnostics: Codable, Equatable, Hashable, Sendable {
+    public static let currentSchemaVersion = 1
+    public static let currentShortcutVersion = 1
+
+    public let schemaVersion: Int
+    public let shortcutVersion: Int
+    public let captureIdentifier: UUID
+    public let capturedAt: Date
+    public let ssid: String?
+    public let accessPointIdentifier: String?
+    public let wifiStandard: String?
+    public let rxRateMbps: Double?
+    public let txRateMbps: Double?
+    public let rssiDbm: Double?
+    public let noiseDbm: Double?
+    public let channelNumber: Int?
+    public let bandGHz: Double?
+    public let snrDb: Double?
+
+    public init(
+        schemaVersion: Int = AdvancedWiFiDiagnostics.currentSchemaVersion,
+        shortcutVersion: Int = AdvancedWiFiDiagnostics.currentShortcutVersion,
+        captureIdentifier: UUID = UUID(),
+        capturedAt: Date,
+        ssid: String? = nil,
+        accessPointIdentifier: String? = nil,
+        wifiStandard: String? = nil,
+        rxRateMbps: Double? = nil,
+        txRateMbps: Double? = nil,
+        rssiDbm: Double? = nil,
+        noiseDbm: Double? = nil,
+        channelNumber: Int? = nil,
+        bandGHz: Double? = nil,
+        snrDb: Double? = nil
+    ) {
+        self.schemaVersion = schemaVersion
+        self.shortcutVersion = shortcutVersion
+        self.captureIdentifier = captureIdentifier
+        self.capturedAt = capturedAt
+        self.ssid = ssid
+        self.accessPointIdentifier = accessPointIdentifier
+        self.wifiStandard = wifiStandard
+        self.rxRateMbps = rxRateMbps
+        self.txRateMbps = txRateMbps
+        self.rssiDbm = rssiDbm
+        self.noiseDbm = noiseDbm
+        self.channelNumber = channelNumber
+        self.bandGHz = bandGHz
+        self.snrDb = snrDb
+    }
+
+    /// A faixa é inferida exclusivamente do número de canal IEEE 802.11.
+    /// Canais sem mapeamento inequívoco (por exemplo 6 GHz) ficam ausentes;
+    /// o Linka nunca usa SSID, RSSI ou taxa para inventar uma banda.
+    public static func bandGHz(forChannel channel: Int?) -> Double? {
+        guard let channel else { return nil }
+        switch channel {
+        case 1...14: return 2.4
+        case 32...177: return 5
+        default: return nil
+        }
+    }
+
+    public static func snrDb(rssiDbm: Double?, noiseDbm: Double?) -> Double? {
+        guard let rssiDbm, let noiseDbm,
+              rssiDbm.isFinite, noiseDbm.isFinite else { return nil }
+        return rssiDbm - noiseDbm
+    }
+
+    /// Janela temporal da issue #134. A captura só pode acompanhar uma
+    /// medição quando cai até 30 s antes do começo, durante ela ou até 10 s
+    /// depois do fim. O SSID nativo, quando ambos existem, é uma segunda
+    /// proteção contra associação cruzada.
+    public func isEligible(
+        forMeasurementStartedAt startedAt: Date,
+        endedAt: Date,
+        nativeSSID: String?
+    ) -> Bool {
+        guard capturedAt >= startedAt.addingTimeInterval(-30),
+              capturedAt <= endedAt.addingTimeInterval(10) else {
+            return false
+        }
+        guard let ssid, let nativeSSID else { return true }
+        return ssid == nativeSSID
+    }
 }
 
 public enum MeasurementOutcome: String, Codable, Equatable, Hashable, Sendable {
@@ -243,6 +339,26 @@ public enum NetworkMeasurementContract {
 
         if measurement.wifiContext != nil, measurement.connectionKind != .wifi {
             result.append("wifiContext")
+        }
+
+        if let advanced = measurement.advancedWiFiDiagnostics {
+            if measurement.connectionKind != .wifi {
+                result.append("advancedWiFiDiagnostics")
+            }
+            if advanced.schemaVersion != AdvancedWiFiDiagnostics.currentSchemaVersion {
+                result.append("advancedWiFiDiagnostics")
+            }
+            if advanced.shortcutVersion > AdvancedWiFiDiagnostics.currentShortcutVersion || advanced.shortcutVersion < 1 {
+                result.append("advancedWiFiDiagnostics")
+            }
+            for value in [advanced.rxRateMbps, advanced.txRateMbps, advanced.rssiDbm, advanced.noiseDbm, advanced.bandGHz, advanced.snrDb] {
+                if let value, !value.isFinite {
+                    result.append("advancedWiFiDiagnostics")
+                }
+            }
+            if let rxRate = advanced.rxRateMbps, rxRate < 0 { result.append("advancedWiFiDiagnostics") }
+            if let txRate = advanced.txRateMbps, txRate < 0 { result.append("advancedWiFiDiagnostics") }
+            if let channel = advanced.channelNumber, channel <= 0 { result.append("advancedWiFiDiagnostics") }
         }
 
         switch measurement.outcome {

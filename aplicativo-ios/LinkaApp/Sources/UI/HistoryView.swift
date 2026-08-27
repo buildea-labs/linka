@@ -276,9 +276,16 @@ struct HistoryRow: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         if measurement.connectionKind == .wifi {
-                            Text(measurement.wifiContext?.ssid ?? "Wi-Fi")
-                                .font(.bodySmall.weight(.medium))
-                                .foregroundColor(.textPrimary)
+                            HStack(spacing: 6) {
+                                Text(measurement.wifiContext?.ssid ?? "Wi-Fi")
+                                    .font(.bodySmall.weight(.medium))
+                                    .foregroundColor(.textPrimary)
+                                if measurement.advancedWiFiDiagnostics != nil {
+                                    Text("Wi-Fi detalhado")
+                                        .font(.caption2.weight(.medium))
+                                        .foregroundColor(.textSecondary)
+                                }
+                            }
                         }
                         Text(formatDate(measurement.measuredAt))
                             .font(.bodySmall.weight(.medium))
@@ -393,6 +400,33 @@ struct HistoryRow: View {
                             Spacer()
                             if let security = wifi.securityType {
                                 DetailItem(label: "SEGURANÇA", value: security.displayLabel)
+                            }
+                        }
+                    }
+
+                    if let advanced = measurement.advancedWiFiDiagnostics {
+                        HStack {
+                            if let standard = advanced.wifiStandard {
+                                DetailItem(label: "PADRÃO", value: standard)
+                                Spacer()
+                            }
+                            if let rssi = advanced.rssiDbm {
+                                DetailItem(label: "SINAL", value: String(format: "%.0f dBm", rssi))
+                                Spacer()
+                            }
+                            if let snr = advanced.snrDb {
+                                DetailItem(label: "SNR", value: String(format: "%.0f dB", snr))
+                            }
+                        }
+                        HStack {
+                            if let channel = advanced.channelNumber {
+                                DetailItem(label: "CANAL", value: "\(channel)")
+                                Spacer()
+                            }
+                            if advanced.txRateMbps != nil || advanced.rxRateMbps != nil {
+                                let tx = advanced.txRateMbps.map { String(format: "TX %.0f", $0) }
+                                let rx = advanced.rxRateMbps.map { String(format: "RX %.0f", $0) }
+                                DetailItem(label: "TAXA WI-FI", value: [tx, rx].compactMap { $0 }.joined(separator: " · "))
                             }
                         }
                     }

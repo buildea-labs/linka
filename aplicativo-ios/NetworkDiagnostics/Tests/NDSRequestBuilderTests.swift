@@ -60,7 +60,15 @@ final class NDSRequestBuilderTests: XCTestCase {
             uploadMbps: 50,
             latencyMs: 20,
             connectionKind: .wifi,
-            wifiContext: WiFiNetworkContext(ssid: "Casa", accessPointIdentifier: "derived-ap")
+            wifiContext: WiFiNetworkContext(ssid: "Casa", accessPointIdentifier: "derived-ap"),
+            advancedWiFiDiagnostics: AdvancedWiFiDiagnostics(
+                capturedAt: Date(),
+                ssid: "Casa",
+                accessPointIdentifier: "advanced-derived-ap",
+                rssiDbm: -51,
+                noiseDbm: -92,
+                snrDb: 41
+            )
         )
         let hints = PlatformHints(wifi: .init(ssid: "Casa", bssid: "AA:BB:CC:DD:EE:FF", rssiDbm: -51))
 
@@ -77,6 +85,7 @@ final class NDSRequestBuilderTests: XCTestCase {
         XCTAssertFalse(json.contains("Casa"))
         XCTAssertFalse(json.contains("AA:BB:CC:DD:EE:FF"))
         XCTAssertFalse(json.contains("derived-ap"))
+        XCTAssertFalse(json.contains("advanced-derived-ap"))
     }
 
     func testBuildRequest_forwardsHistoricalEvidenceAsCapability() throws {

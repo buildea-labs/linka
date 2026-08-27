@@ -581,6 +581,14 @@ final class CloudKitMeasurementSyncTests: XCTestCase {
                 ssid: "Casa",
                 accessPointIdentifier: "derived-ap",
                 securityType: .personal
+            ),
+            advancedWiFiDiagnostics: AdvancedWiFiDiagnostics(
+                capturedAt: Date(timeIntervalSince1970: 100_000),
+                ssid: "Casa",
+                accessPointIdentifier: "advanced-derived-ap",
+                rssiDbm: -54,
+                noiseDbm: -92,
+                snrDb: 38
             )
         )
 
@@ -588,6 +596,7 @@ final class CloudKitMeasurementSyncTests: XCTestCase {
         let roundTripped = MeasurementRecordMapper.measurement(from: record)
 
         XCTAssertNil(roundTripped?.wifiContext)
+        XCTAssertNil(roundTripped?.advancedWiFiDiagnostics)
     }
 
     func testRecordIDUsesMeasurementIDAsRecordName() {
@@ -609,6 +618,7 @@ final class CloudKitMeasurementSyncTests: XCTestCase {
         wifiBand: Double? = nil,
         networkIdentifier: String? = nil,
         wifiContext: WiFiNetworkContext? = nil,
+        advancedWiFiDiagnostics: AdvancedWiFiDiagnostics? = nil,
         serverIdentifier: String? = nil,
         engineVersion: String? = nil
     ) -> NetworkMeasurement {
@@ -624,6 +634,7 @@ final class CloudKitMeasurementSyncTests: XCTestCase {
             connectionKind: connectionKind,
             wifiBandGHz: wifiBand,
             wifiContext: wifiContext,
+            advancedWiFiDiagnostics: advancedWiFiDiagnostics,
             networkIdentifier: networkIdentifier,
             serverIdentifier: serverIdentifier,
             engineVersion: engineVersion

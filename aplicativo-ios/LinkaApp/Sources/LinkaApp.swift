@@ -31,6 +31,15 @@ struct LinkaApp: App {
                 }
             }
             .environmentObject(entitlements)
+            .onOpenURL { url in
+                guard url.scheme?.lowercased() == "linka",
+                      url.host == "wifi-advanced",
+                      let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                      let payload = components.queryItems?.first(where: { $0.name == "payload" })?.value else { return }
+                if (try? AdvancedWiFiDiagnosticsInbox.importPayload(payload, entitlement: entitlements.snapshot)) != nil {
+                    AppIntentCoordinator.shared.requestAdvancedWiFiDiagnosticsImport()
+                }
+            }
             .task {
                 await entitlements.refreshSnapshot()
                 #if DEBUG

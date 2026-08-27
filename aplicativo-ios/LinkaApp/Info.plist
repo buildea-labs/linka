@@ -20,6 +20,17 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.linka.wifi-advanced</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>linka</string>
+			</array>
+		</dict>
+	</array>
 	<key>NDAssistRelayEndpoint</key>
 	<string>https://linka-assist-relay.buildealabs.workers.dev/v1/assist</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

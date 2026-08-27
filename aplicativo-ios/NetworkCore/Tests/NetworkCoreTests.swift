@@ -2,6 +2,50 @@ import XCTest
 @testable import NetworkCore
 
 final class NetworkCoreTests: XCTestCase {
+    func testAdvancedWiFiDiagnosticsRoundTripsWithoutRawIdentifiers() throws {
+        let diagnostics = AdvancedWiFiDiagnostics(
+            capturedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            ssid: "Casa",
+            accessPointIdentifier: "local-derived-id",
+            wifiStandard: "Wi-Fi 6",
+            rxRateMbps: 720,
+            txRateMbps: 866,
+            rssiDbm: -54,
+            noiseDbm: -92,
+            channelNumber: 44,
+            bandGHz: 5,
+            snrDb: 38
+        )
+        let measurement = NetworkMeasurement(
+            latencyMs: 12,
+            connectionKind: .wifi,
+            advancedWiFiDiagnostics: diagnostics
+        )
+        let decoded = try JSONDecoder().decode(NetworkMeasurement.self, from: JSONEncoder().encode(measurement))
+        XCTAssertEqual(decoded.advancedWiFiDiagnostics, diagnostics)
+        let json = String(decoding: try JSONEncoder().encode(measurement), as: UTF8.self)
+        XCTAssertFalse(json.localizedCaseInsensitiveContains("bssid"))
+        XCTAssertFalse(json.localizedCaseInsensitiveContains("hardwareMac"))
+    }
+
+    func testAdvancedWiFiDiagnosticsDerivesOnlyDocumentedFacts() {
+        XCTAssertEqual(AdvancedWiFiDiagnostics.bandGHz(forChannel: 11), 2.4)
+        XCTAssertEqual(AdvancedWiFiDiagnostics.bandGHz(forChannel: 44), 5)
+        XCTAssertNil(AdvancedWiFiDiagnostics.bandGHz(forChannel: 201))
+        XCTAssertEqual(AdvancedWiFiDiagnostics.snrDb(rssiDbm: -54, noiseDbm: -92), 38)
+        XCTAssertNil(AdvancedWiFiDiagnostics.snrDb(rssiDbm: nil, noiseDbm: -92))
+    }
+
+    func testAdvancedWiFiDiagnosticsRequiresTemporalAndSSIDConfidence() {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let end = start.addingTimeInterval(20)
+        let eligible = AdvancedWiFiDiagnostics(capturedAt: start.addingTimeInterval(-30), ssid: "Casa")
+        XCTAssertTrue(eligible.isEligible(forMeasurementStartedAt: start, endedAt: end, nativeSSID: "Casa"))
+        XCTAssertFalse(eligible.isEligible(forMeasurementStartedAt: start, endedAt: end, nativeSSID: "Trabalho"))
+        let stale = AdvancedWiFiDiagnostics(capturedAt: start.addingTimeInterval(-31))
+        XCTAssertFalse(stale.isEligible(forMeasurementStartedAt: start, endedAt: end, nativeSSID: nil))
+    }
+
     func testWiFiContextRoundTripsAndLegacyJSONRemainsCompatible() throws {
         let context = WiFiNetworkContext(
             ssid: "Casa",

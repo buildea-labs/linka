@@ -14,6 +14,7 @@ struct SettingsSheet: View {
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @State private var showPurchase = false
     @State private var testCount: Int = 0
+    @AppStorage("linka.advanced-wifi.configured.v1") private var advancedWiFiConfigured = false
     
     var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -41,6 +42,23 @@ struct SettingsSheet: View {
                             )
                         }
                         Text("Permite ao Linka mostrar o nome da rede usada nas medições e identificar padrões no histórico.")
+                            .font(.bodySmall)
+                            .foregroundColor(.textSecondary)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 16)
+                    }
+                    #endif
+
+                    #if os(iOS)
+                    SettingsSection(header: "WI-FI AVANÇADO") {
+                        Button(action: configureAdvancedWiFi) {
+                            SettingsRowContent(
+                                title: "Diagnóstico Wi-Fi avançado",
+                                subtitle: advancedWiFiStatusText,
+                                showChevron: true
+                            )
+                        }
+                        Text("O iPhone permite ao app Atalhos acessar informações extras da conexão, como sinal, canal e taxa Wi-Fi. Ative uma vez para o Linka usar esses dados nas análises.")
                             .font(.bodySmall)
                             .foregroundColor(.textSecondary)
                             .padding(.horizontal, 16)
@@ -129,6 +147,24 @@ struct SettingsSheet: View {
                 self.testCount = count
             }
         }
+    }
+
+    private var advancedWiFiStatusText: String {
+        let decision = LinkaEntitlementPolicy.decision(for: .advancedWiFiDiagnostics, snapshot: entitlements.snapshot)
+        guard decision.isGranted else { return "Linka Plus" }
+        return advancedWiFiConfigured ? "Ativo" : "Configurar"
+    }
+
+    private func configureAdvancedWiFi() {
+        let decision = LinkaEntitlementPolicy.decision(for: .advancedWiFiDiagnostics, snapshot: entitlements.snapshot)
+        guard decision.isGranted else {
+            showPurchase = true
+            return
+        }
+        guard let url = URL(string: "shortcuts://") else { return }
+        #if canImport(UIKit)
+        UIApplication.shared.open(url)
+        #endif
     }
 }
 
