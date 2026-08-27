@@ -15,6 +15,20 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
     public let jitterMs: Double?
     public let packetLossPercent: Double?
     public let loadedLatencyMs: Double?
+    /// Latência sob carga (ms) durante a fase de upload — issue #128,
+    /// paridade com `loadedLatencyMs` (que hoje só cobre download). Campo
+    /// aditivo: opcional, `nil` por padrão, não muda `schemaVersion`. Uma
+    /// medição antiga (persistida antes desta issue) simplesmente não tem
+    /// esta chave no JSON e decodifica com `nil` — mesmo padrão já usado
+    /// por `wifiBandGHz` (issue #51) e `durationMs` (issue #50), cobertos
+    /// pelos testes `testDecodesLegacyJSONWithout*Field` em
+    /// `NetworkCoreTests`. Não reaproveita `loadedLatencyMs` para as duas
+    /// fases porque download e upload sob carga são fatos independentes: um
+    /// pode existir sem o outro (ex.: sondagem de upload falhou mas a de
+    /// download não), e a comparação parada-vs-carga por fase
+    /// (`NetworkInsights.LoadResponsivenessEvaluator`) precisa dos dois
+    /// valores separadamente, não de um único campo ambíguo.
+    public let loadedLatencyUploadMs: Double?
     public let durationMs: Int?
     public let connectionKind: NetworkConnectionKind?
     /// Banda Wi-Fi confirmada pelo sistema, em GHz (ex.: `2.4`, `5`) —
@@ -39,6 +53,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         jitterMs: Double? = nil,
         packetLossPercent: Double? = nil,
         loadedLatencyMs: Double? = nil,
+        loadedLatencyUploadMs: Double? = nil,
         durationMs: Int? = nil,
         connectionKind: NetworkConnectionKind? = nil,
         wifiBandGHz: Double? = nil,
@@ -57,6 +72,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         self.jitterMs = jitterMs
         self.packetLossPercent = packetLossPercent
         self.loadedLatencyMs = loadedLatencyMs
+        self.loadedLatencyUploadMs = loadedLatencyUploadMs
         self.durationMs = durationMs
         self.connectionKind = connectionKind
         self.wifiBandGHz = wifiBandGHz
@@ -123,7 +139,8 @@ public enum NetworkMeasurementContract {
             ("latencyMs", measurement.latencyMs),
             ("jitterMs", measurement.jitterMs),
             ("packetLossPercent", measurement.packetLossPercent),
-            ("loadedLatencyMs", measurement.loadedLatencyMs)
+            ("loadedLatencyMs", measurement.loadedLatencyMs),
+            ("loadedLatencyUploadMs", measurement.loadedLatencyUploadMs)
         ]
 
         for (name, value) in metrics {

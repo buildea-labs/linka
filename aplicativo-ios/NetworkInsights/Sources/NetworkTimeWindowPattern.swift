@@ -20,6 +20,8 @@ extension NetworkMetric {
             return measurement.packetLossPercent
         case .loadedLatencyMs:
             return measurement.loadedLatencyMs
+        case .loadedLatencyUploadMs:
+            return measurement.loadedLatencyUploadMs
         }
     }
 }

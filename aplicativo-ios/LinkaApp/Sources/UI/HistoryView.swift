@@ -347,9 +347,36 @@ struct HistoryRow: View {
                     if let loadedLatencyMs = measurement.loadedLatencyMs {
                         HStack {
                             DetailItem(
-                                label: "LATÊNCIA SOB CARGA",
+                                label: "LATÊNCIA SOB CARGA (DOWNLOAD)",
                                 value: String(format: "%.0f ms", loadedLatencyMs),
                                 explanation: MetricExplanation.loadedLatency
+                            )
+                            Spacer()
+                        }
+                    }
+
+                    // Paridade de upload (issue #128) — mesma medição do
+                    // motor, mesma superfície, mesmo tratamento de ausência.
+                    if let loadedLatencyUploadMs = measurement.loadedLatencyUploadMs {
+                        HStack {
+                            DetailItem(
+                                label: "LATÊNCIA SOB CARGA (UPLOAD)",
+                                value: String(format: "%.0f ms", loadedLatencyUploadMs),
+                                explanation: MetricExplanation.loadedLatencyUpload
+                            )
+                            Spacer()
+                        }
+                    }
+
+                    // Categoria de responsividade (issue #128) — deriva das
+                    // duas latências acima; `.notAssessed` some, mesmo
+                    // tratamento das demais métricas ausentes nesta lista.
+                    if let responsiveness = loadResponsivenessCategory(for: measurement) {
+                        HStack {
+                            DetailItem(
+                                label: "RESPONSIVIDADE SOB CARGA",
+                                value: LoadResponsivenessCopy.label(for: responsiveness),
+                                explanation: LoadResponsivenessCopy.explanation
                             )
                             Spacer()
                         }
@@ -448,6 +475,21 @@ struct HistoryRow: View {
             ? String(format: "%.0f", ghz)
             : String(format: "%.1f", ghz)
         return "\(value)GHz"
+    }
+
+    /// Issue #128: reconstrói a categoria a partir dos três campos já salvos
+    /// na medição — não é uma segunda fonte de dado, só remonta o que já
+    /// está no registro para o classificador puro de `NetworkInsights`
+    /// (mesmo espírito de `usageSuitabilityMeasurement` em
+    /// `DetailsDisclosure`). `.notAssessed` vira `nil` para a linha simplesmente
+    /// não aparecer, mesmo tratamento das demais métricas ausentes aqui.
+    private func loadResponsivenessCategory(for measurement: NetworkMeasurement) -> LoadResponsivenessCategory? {
+        let result = LoadResponsivenessEvaluator.evaluate(
+            idleLatencyMs: measurement.latencyMs,
+            loadedDownloadLatencyMs: measurement.loadedLatencyMs,
+            loadedUploadLatencyMs: measurement.loadedLatencyUploadMs
+        )
+        return result.category == .notAssessed ? nil : result.category
     }
 }
 

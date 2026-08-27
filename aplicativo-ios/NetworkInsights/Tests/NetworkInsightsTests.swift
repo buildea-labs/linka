@@ -115,6 +115,25 @@ final class NetworkInsightsTests: XCTestCase {
         )
     }
 
+    /// Issue #128: `loadedLatencyUploadMs` vira `NetworkMetric` de primeira
+    /// classe, então precisa se comportar como qualquer outra métrica já
+    /// coberta por `testComparisonRespectsMetricSemantics` — mesma
+    /// semântica `lowerIsBetter`, mesmo cálculo de `percentDelta` via
+    /// `MetricComparator`.
+    func testLoadedLatencyUploadComparisonRespectsMetricSemantics() throws {
+        let baseline = NetworkMeasurement(outcome: .partial, loadedLatencyUploadMs: 20)
+        let current = NetworkMeasurement(outcome: .partial, loadedLatencyUploadMs: 30)
+
+        let comparison = try BasicNetworkInsightsAnalyzer().compare(
+            current: current,
+            against: baseline
+        )
+
+        let metricComparison = try XCTUnwrap(comparison.comparison(for: .loadedLatencyUploadMs))
+        XCTAssertEqual(metricComparison.direction, .worsened)
+        XCTAssertEqual(metricComparison.percentDelta ?? 0, 50, accuracy: 0.001)
+    }
+
     func testInvalidMeasurementFailsExplicitly() {
         let invalid = NetworkMeasurement(outcome: .complete, downloadMbps: 100)
 

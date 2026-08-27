@@ -130,7 +130,7 @@ public struct BasicNetworkStabilityPatternAnalyzer: NetworkStabilityPatternAnaly
             return .latencyMs
         case .packetLossPercent:
             return .packetLossPercent
-        case .downloadMbps, .uploadMbps, .loadedLatencyMs:
+        case .downloadMbps, .uploadMbps, .loadedLatencyMs, .loadedLatencyUploadMs:
             return nil
         }
     }
