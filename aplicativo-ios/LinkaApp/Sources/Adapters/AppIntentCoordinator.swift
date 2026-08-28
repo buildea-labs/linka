@@ -103,6 +103,7 @@ enum AdvancedWiFiDiagnosticsInbox {
 
     enum ImportError: Error, Equatable {
         case notEntitled
+        case integrationDisabled
         case invalidPayload
         case unsupportedSchema
         case expiredTimestamp
@@ -115,6 +116,10 @@ enum AdvancedWiFiDiagnosticsInbox {
         now: Date = Date(),
         defaults: UserDefaults = .standard
     ) throws -> AdvancedWiFiDiagnostics {
+        guard defaults.object(forKey: LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) == nil ||
+                defaults.bool(forKey: LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) else {
+            throw ImportError.integrationDisabled
+        }
         guard LinkaEntitlementPolicy.decision(
             for: .advancedWiFiDiagnostics,
             snapshot: entitlement,

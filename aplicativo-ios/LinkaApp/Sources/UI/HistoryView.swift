@@ -21,6 +21,7 @@ struct HistoryView: View {
     @State private var hasPlus = false
     @State private var showAssist = false
     @State private var showPurchase = false
+    @State private var purchaseEntryPoint: PurchaseEntryPoint = .historyInsights
     @State private var insightText: String?
     @State private var displayMode: HistoryDisplayMode = .list
 
@@ -83,6 +84,7 @@ struct HistoryView: View {
                                     if assistDecision.isGranted {
                                         showAssist = true
                                     } else {
+                                        purchaseEntryPoint = .historyInsights
                                         showPurchase = true
                                     }
                                 }) {
@@ -180,8 +182,10 @@ struct HistoryView: View {
             )
         }
         .sheet(isPresented: $showPurchase) {
-            PurchaseSheet()
-                .environmentObject(entitlements)
+            PurchaseSheet(entryPoint: purchaseEntryPoint) {
+                showAssist = true
+            }
+            .environmentObject(entitlements)
         }
         .onAppear {
             loadData()

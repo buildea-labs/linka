@@ -59,6 +59,24 @@ final class SpeedTestViewModelResultTimingTests: XCTestCase {
         XCTAssertThrowsError(try AdvancedWiFiDiagnosticsInbox.importPayload(payload, entitlement: .plus(status: .active, source: .promotion), now: now, defaults: defaults))
     }
 
+    func test_advancedWiFiInboxRejectsShortcutAfterIntegrationWasDisabled() {
+        let suite = "linka-issue-135-\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suite) else { return XCTFail("suite de teste indisponível") }
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(false, forKey: LinkaWiFiPreferences.advancedDiagnosticsEnabledKey)
+        let payload = "{\"schemaVersion\":1,\"shortcutVersion\":1,\"captureIdentifier\":\"550E8400-E29B-41D4-A716-446655440000\",\"capturedAt\":\"\(ISO8601DateFormatter().string(from: Date()))\"}"
+
+        XCTAssertThrowsError(
+            try AdvancedWiFiDiagnosticsInbox.importPayload(
+                payload,
+                entitlement: .plus(status: .active, source: .promotion),
+                defaults: defaults
+            )
+        ) { error in
+            XCTAssertEqual(error as? AdvancedWiFiDiagnosticsInbox.ImportError, .integrationDisabled)
+        }
+    }
+
     private func resultState() -> MeasurementState {
         MeasurementState(
             ping: 14,

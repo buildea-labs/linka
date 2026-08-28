@@ -756,6 +756,7 @@ public class SpeedTestViewModel: ObservableObject {
     /// iPhone/iPad `fetchCurrent()` devolve nil até que o usuário conceda a
     /// capability e a localização precisa; esta chamada não pede permissão.
     private static func sampleWiFiContext() async -> WiFiNetworkContext? {
+        guard LinkaWiFiPreferences.isIdentificationEnabled else { return nil }
         let hints = await ApplePlatformSignalProvider().currentHints()
         guard let wifi = hints.wifi, let ssid = wifi.ssid else { return nil }
 

@@ -11,13 +11,14 @@ import LinkaEntitlements
 
 struct MainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
-    @AppStorage("appAppearance") private var appAppearance: String = "system"
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     // Ponte para o pedido de "Testar" vindo do Widget/Siri/Shortcuts via
     // `StartSpeedTestIntent` (issue #55) — ver `AppIntentCoordinator`.
     @ObservedObject private var intentCoordinator = AppIntentCoordinator.shared
     @State private var detailsOpen: Bool = false
     @State private var showPurchase: Bool = false
+    @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
+    @State private var showAssist: Bool = false
     @State private var ringScale: CGFloat = 1.0
     @Namespace private var animation
     // Sinal de ciclo de vida (issue #65) — `@Environment(\.scenePhase)` é
@@ -299,36 +300,27 @@ struct MainView: View {
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                             }
                             
-                            // O resultado não duplica a medição em uma linha
-                            // de "Último teste" nem promete uma resposta do
-                            // Assist por meio de skeleton. O Assist continua
-                            // disponível para Plus como ação secundária,
-                            // somente quando pode ser aberto de verdade.
-                            if isPlusActive {
-                                NavigationLink {
-                                    AssistView(
-                                        currentMeasurement: currentMeasurement,
-                                        recentMeasurements: viewModel.recentMeasurements,
-                                        onRetry: { viewModel.startTest() },
-                                        entitlements: entitlements
-                                    )
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "sparkles")
-                                        Text("Abrir Assist")
-                                            .font(.bodySmallStrong)
-                                        Spacer()
-                                        Image(systemName: "chevron.right")
-                                            .font(.captionStrong)
-                                    }
-                                    .foregroundColor(.textPrimary)
-                                    .frame(minHeight: 44)
-                                    .contentShape(Rectangle())
+                            Button {
+                                if isPlusActive {
+                                    showAssist = true
+                                } else {
+                                    purchaseEntryPoint = .assist
+                                    showPurchase = true
                                 }
-                                .buttonStyle(.plain)
-                                .padding(.horizontal, 32)
-                                .padding(.top, 4)
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "sparkles")
+                                    Text("Entender este resultado").font(.bodySmallStrong)
+                                    Spacer()
+                                    Image(systemName: "chevron.right").font(.captionStrong)
+                                }
+                                .foregroundColor(.textPrimary)
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
                             }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 32)
+                            .padding(.top, 4)
                             
                             Spacer(minLength: 16)
 
@@ -429,6 +421,7 @@ struct MainView: View {
             // Widget/Siri disparado por usuário Free (decisão do Luiz
             // 2026-08-15: acionar via integração Apple é Plus-only) — abre
             // paywall em vez de rodar medição.
+            purchaseEntryPoint = .settings
             showPurchase = true
             intentCoordinator.consumePurchasePrompt()
         }
@@ -436,8 +429,20 @@ struct MainView: View {
         // (feedback do Luiz: tela de resultado carregada demais). A UX de
         // compartilhar por medição individual vive só lá agora.
         .sheet(isPresented: $showPurchase) {
-            PurchaseSheet()
-                .environmentObject(entitlements)
+            PurchaseSheet(entryPoint: purchaseEntryPoint) {
+                if purchaseEntryPoint == .assist { showAssist = true }
+            }
+            .environmentObject(entitlements)
+        }
+        .sheet(isPresented: $showAssist) {
+            NavigationStack {
+                AssistView(
+                    currentMeasurement: currentMeasurement,
+                    recentMeasurements: viewModel.recentMeasurements,
+                    onRetry: { viewModel.startTest() },
+                    entitlements: entitlements
+                )
+            }
         }
         .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: scenePhase) { newPhase in

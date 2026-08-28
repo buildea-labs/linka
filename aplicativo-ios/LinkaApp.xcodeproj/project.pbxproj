@@ -7,24 +7,29 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00A7755F227C8F2E95585610 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 8B33A51CB0672AFF8EF05F84 /* GoogleMobileAds */; };
 		074A78EB05FB73EAA13BFF42 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86E6389194D1938B09BEE51 /* HistoryView.swift */; };
 		080B674A908A6C5DA086E6FB /* StatDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240C677AB8218C3DE05600FB /* StatDisplay.swift */; };
 		0F37916D5092D2B27FFB484D /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7798E2D1800A4FF1C0E30E /* ShareCardView.swift */; };
+		12E02BB6A2E493EAC2C1D151 /* LinkaAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8ADAB36D0CC32BA436AFE3 /* LinkaAppShortcuts.swift */; };
 		17E73DA323A120A6FECBD6A1 /* BannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6C710FA9D415DDBB3316F9 /* BannerView.swift */; };
 		1CF90733709BEB4D8C2F28D4 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D72124FDD0CB4E07F4E7B5 /* ShareSheet.swift */; };
 		1F40D1C6737FB0E30B0EB7EE /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86E6389194D1938B09BEE51 /* HistoryView.swift */; };
 		22ACBF6A87B265E99D871533 /* MetricRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179DA64F9C7059B7A140B92E /* MetricRing.swift */; };
 		251732D2D655E2FC6E8896B6 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A27A3A416A9EAF5A075A2C /* FeatureFlags.swift */; };
 		2AD6E6F6C8A5849D189EFFD5 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60A040FE4E49231CD858102 /* MainView.swift */; };
+		2C291F8573C9E0671BC7752F /* LinkaAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8ADAB36D0CC32BA436AFE3 /* LinkaAppShortcuts.swift */; };
 		2D978D5BAD95A0E29AE7AE85 /* LinkaModules in Frameworks */ = {isa = PBXBuildFile; productRef = 2A1ED27B4CE61C438B43B40C /* LinkaModules */; };
 		2F7AC1D0FB4C81453B1B1EC7 /* PurchaseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1056216026BABB240C8AC371 /* PurchaseSheet.swift */; };
 		368C7157F6ECC02B56BC655D /* BannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6C710FA9D415DDBB3316F9 /* BannerView.swift */; };
 		3780733E2BDF1FB538D9CC35 /* SpeedTestViewModelScenePhaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A955FDE679C032C5443EEF5D /* SpeedTestViewModelScenePhaseTests.swift */; };
 		3FC6EBD2875ECA30B3DF34B0 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D72124FDD0CB4E07F4E7B5 /* ShareSheet.swift */; };
+		4284F5C312145E4BFB3DC18B /* PurchaseEntryPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44FD51918BF9314D06858F94 /* PurchaseEntryPoint.swift */; };
 		4378BEF71D28CF01DB5C21C8 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A27A3A416A9EAF5A075A2C /* FeatureFlags.swift */; };
 		44C648122F593A279BF4190E /* AppIntentCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7921F180B5C7EC49B0B1D48 /* AppIntentCoordinator.swift */; };
 		45C0F482F56FF0A25084CBD1 /* PurchaseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1056216026BABB240C8AC371 /* PurchaseSheet.swift */; };
 		460A04738C58DD0F7081552C /* LinkaEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 32F32DAB5F80BE2584F3A3DB /* LinkaEngine */; };
+		488426897164BFA011DA2076 /* LinkaExternalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8AF9B7DA6D4CDD2574E7338 /* LinkaExternalLinks.swift */; };
 		50C85316B3E53EB821D140B2 /* PhaseDots.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */; };
 		58AAEC10AB55272DF16453E3 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3234D1B179CE201E17961385 /* SplashView.swift */; };
 		5B0458DD58805571D30AC3EC /* SpeedTestViewModelResultTimingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB32ED976CC4BE668BB83D5C /* SpeedTestViewModelResultTimingTests.swift */; };
@@ -53,19 +58,22 @@
 		A64CA2655143AAA37EDFB39A /* AssistTeaserCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647AB617F0B68B7D63BE2191 /* AssistTeaserCard.swift */; };
 		B49CE021825E80DC95B954AA /* AssistContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD4A980DC574793818E97A1 /* AssistContainer.swift */; };
 		BB664E873410EAC7F101D24B /* ApplePlatformSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */; };
-		C52F715538667A43E3CCA1CA /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 8B33A51CB0672AFF8EF05F84 /* GoogleMobileAds */; };
+		C52F715538667A43E3CCA1CA /* LinkaAppIntents in Frameworks */ = {isa = PBXBuildFile; productRef = 4010F854F0753756FEF0C5F0 /* LinkaAppIntents */; };
 		C795EB7B3D3C235CC07EB505 /* AssistViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78285EB65890B076CF8D41D4 /* AssistViewModelTests.swift */; };
 		CDD3F59B3B734268681868EA /* AssistTeaserCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647AB617F0B68B7D63BE2191 /* AssistTeaserCard.swift */; };
 		CF3CD7092B1A2A05068FD02F /* LinkaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C35725E79C96780D745AB7 /* LinkaApp.swift */; };
+		CF756CF19A8EA39ED487FAD2 /* LinkaAppIntents in Frameworks */ = {isa = PBXBuildFile; productRef = 4EC464D2A27C018FC431B081 /* LinkaAppIntents */; };
 		D023E595162ADE7D1452F5EC /* LinkaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C35725E79C96780D745AB7 /* LinkaApp.swift */; };
 		D1F96FFD9A366D9F61AD5F96 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */; };
 		DDDA516AB439EF732458C5F6 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */; };
 		E1CC58942197732477D20D52 /* SpeedTestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E816515881C246C6E28B0653 /* SpeedTestViewModel.swift */; };
 		E8738446F6E9EC9EAF2DFDE5 /* ApplePlatformSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */; };
 		EB421BFDB3D4D610383923F1 /* ApplePlatformSignalProviderCWChannelBandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */; };
+		EDEF20B20E5B665AE314BE04 /* LinkaExternalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8AF9B7DA6D4CDD2574E7338 /* LinkaExternalLinks.swift */; };
 		EFE90B32EE9F3C3441921A5D /* LinkaModules in Frameworks */ = {isa = PBXBuildFile; productRef = F9AA1524670AA76CD25C8EE7 /* LinkaModules */; };
 		F492A685388DF380C07F0B86 /* AssistViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD77BB89224BDA9466A65983 /* AssistViewModel.swift */; };
 		FB04D476B3C59CD38514B55C /* NetworkStabilityPatternsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641020ADE92F07BF8F597BD6 /* NetworkStabilityPatternsViewModel.swift */; };
+		FD6BAD30F4F388AEBF0AAB9F /* PurchaseEntryPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44FD51918BF9314D06858F94 /* PurchaseEntryPoint.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -82,9 +90,12 @@
 		1056216026BABB240C8AC371 /* PurchaseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseSheet.swift; sourceTree = "<group>"; };
 		179DA64F9C7059B7A140B92E /* MetricRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricRing.swift; sourceTree = "<group>"; };
 		240C677AB8218C3DE05600FB /* StatDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatDisplay.swift; sourceTree = "<group>"; };
+		2C0AD568FBC4A919681763D6 /* LinkaAppIntents */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaAppIntents; path = LinkaAppIntents; sourceTree = SOURCE_ROOT; };
+		2C8ADAB36D0CC32BA436AFE3 /* LinkaAppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaAppShortcuts.swift; sourceTree = "<group>"; };
 		3234D1B179CE201E17961385 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		407C59990EED2DC1040BF42E /* AssistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistView.swift; sourceTree = "<group>"; };
 		43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		44FD51918BF9314D06858F94 /* PurchaseEntryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseEntryPoint.swift; sourceTree = "<group>"; };
 		4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePlatformSignalProviderCWChannelBandTests.swift; sourceTree = "<group>"; };
 		4AA2E4A391D36FDA86E36727 /* LinkaEngine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaEngine; path = LinkaEngine; sourceTree = SOURCE_ROOT; };
 		4D0615340FFF59EAAF050BE2 /* LinkaModules */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaModules; path = LinkaModules; sourceTree = SOURCE_ROOT; };
@@ -99,6 +110,7 @@
 		78285EB65890B076CF8D41D4 /* AssistViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistViewModelTests.swift; sourceTree = "<group>"; };
 		8041784263895147F69C02D2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8DD4A980DC574793818E97A1 /* AssistContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistContainer.swift; sourceTree = "<group>"; };
+		A8AF9B7DA6D4CDD2574E7338 /* LinkaExternalLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaExternalLinks.swift; sourceTree = "<group>"; };
 		A955FDE679C032C5443EEF5D /* SpeedTestViewModelScenePhaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestViewModelScenePhaseTests.swift; sourceTree = "<group>"; };
 		B7921F180B5C7EC49B0B1D48 /* AppIntentCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntentCoordinator.swift; sourceTree = "<group>"; };
 		B8A27A3A416A9EAF5A075A2C /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
@@ -122,7 +134,8 @@
 			files = (
 				460A04738C58DD0F7081552C /* LinkaEngine in Frameworks */,
 				EFE90B32EE9F3C3441921A5D /* LinkaModules in Frameworks */,
-				C52F715538667A43E3CCA1CA /* GoogleMobileAds in Frameworks */,
+				C52F715538667A43E3CCA1CA /* LinkaAppIntents in Frameworks */,
+				00A7755F227C8F2E95585610 /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,6 +145,7 @@
 			files = (
 				847E859C6B4B4BC90D19D8BE /* LinkaEngine in Frameworks */,
 				2D978D5BAD95A0E29AE7AE85 /* LinkaModules in Frameworks */,
+				CF756CF19A8EA39ED487FAD2 /* LinkaAppIntents in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -144,6 +158,7 @@
 				8041784263895147F69C02D2 /* Assets.xcassets */,
 				72C35725E79C96780D745AB7 /* LinkaApp.swift */,
 				FE806FE8DD746C3F89D8F698 /* Adapters */,
+				1DA7592233D0036B407FD342 /* Support */,
 				10937898CCD45A4354EAA6CF /* UI */,
 			);
 			name = Sources;
@@ -162,6 +177,7 @@
 				C60A040FE4E49231CD858102 /* MainView.swift */,
 				179DA64F9C7059B7A140B92E /* MetricRing.swift */,
 				F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */,
+				44FD51918BF9314D06858F94 /* PurchaseEntryPoint.swift */,
 				1056216026BABB240C8AC371 /* PurchaseSheet.swift */,
 				736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */,
 				5D7798E2D1800A4FF1C0E30E /* ShareCardView.swift */,
@@ -170,6 +186,14 @@
 				240C677AB8218C3DE05600FB /* StatDisplay.swift */,
 			);
 			path = UI;
+			sourceTree = "<group>";
+		};
+		1DA7592233D0036B407FD342 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				A8AF9B7DA6D4CDD2574E7338 /* LinkaExternalLinks.swift */,
+			);
+			path = Support;
 			sourceTree = "<group>";
 		};
 		24BB651090AE1FE408377D7B /* Tests */ = {
@@ -197,6 +221,7 @@
 		74BE8B9347AA0733AE0FE973 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				2C0AD568FBC4A919681763D6 /* LinkaAppIntents */,
 				4AA2E4A391D36FDA86E36727 /* LinkaEngine */,
 				4D0615340FFF59EAAF050BE2 /* LinkaModules */,
 			);
@@ -222,6 +247,7 @@
 				D0E2413E81B1C0AF7D31BBC0 /* AssistFailureSignalMapping.swift */,
 				DD77BB89224BDA9466A65983 /* AssistViewModel.swift */,
 				B8A27A3A416A9EAF5A075A2C /* FeatureFlags.swift */,
+				2C8ADAB36D0CC32BA436AFE3 /* LinkaAppShortcuts.swift */,
 				641020ADE92F07BF8F597BD6 /* NetworkStabilityPatternsViewModel.swift */,
 				E816515881C246C6E28B0653 /* SpeedTestViewModel.swift */,
 			);
@@ -265,6 +291,7 @@
 			packageProductDependencies = (
 				32F32DAB5F80BE2584F3A3DB /* LinkaEngine */,
 				F9AA1524670AA76CD25C8EE7 /* LinkaModules */,
+				4010F854F0753756FEF0C5F0 /* LinkaAppIntents */,
 				8B33A51CB0672AFF8EF05F84 /* GoogleMobileAds */,
 			);
 			productName = LinkaApp_iOS;
@@ -287,6 +314,7 @@
 			packageProductDependencies = (
 				86760C16968147ADE1D36961 /* LinkaEngine */,
 				2A1ED27B4CE61C438B43B40C /* LinkaModules */,
+				4EC464D2A27C018FC431B081 /* LinkaAppIntents */,
 			);
 			productName = LinkaApp_macOS;
 			productReference = E3B3AA7959A5149C12DAD039 /* LinkaApp.app */;
@@ -322,6 +350,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				E3FA5A1F81215844743FCBDF /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+				1DC1DDFFCC2B5E70B0C79419 /* XCLocalSwiftPackageReference "LinkaAppIntents" */,
 				501DCE8450FC9C3F97A936C6 /* XCLocalSwiftPackageReference "LinkaEngine" */,
 				622D20AD0BCF2FAAC6BFF7A8 /* XCLocalSwiftPackageReference "LinkaModules" */,
 			);
@@ -374,10 +403,13 @@
 				4378BEF71D28CF01DB5C21C8 /* FeatureFlags.swift in Sources */,
 				1F40D1C6737FB0E30B0EB7EE /* HistoryView.swift in Sources */,
 				CF3CD7092B1A2A05068FD02F /* LinkaApp.swift in Sources */,
+				2C291F8573C9E0671BC7752F /* LinkaAppShortcuts.swift in Sources */,
+				488426897164BFA011DA2076 /* LinkaExternalLinks.swift in Sources */,
 				2AD6E6F6C8A5849D189EFFD5 /* MainView.swift in Sources */,
 				99DC47095EFAC9A6C617FE64 /* MetricRing.swift in Sources */,
 				917E9E7322E9130BA3223569 /* NetworkStabilityPatternsViewModel.swift in Sources */,
 				50C85316B3E53EB821D140B2 /* PhaseDots.swift in Sources */,
+				4284F5C312145E4BFB3DC18B /* PurchaseEntryPoint.swift in Sources */,
 				45C0F482F56FF0A25084CBD1 /* PurchaseSheet.swift in Sources */,
 				D1F96FFD9A366D9F61AD5F96 /* SettingsSheet.swift in Sources */,
 				0F37916D5092D2B27FFB484D /* ShareCardView.swift in Sources */,
@@ -416,10 +448,13 @@
 				251732D2D655E2FC6E8896B6 /* FeatureFlags.swift in Sources */,
 				074A78EB05FB73EAA13BFF42 /* HistoryView.swift in Sources */,
 				D023E595162ADE7D1452F5EC /* LinkaApp.swift in Sources */,
+				12E02BB6A2E493EAC2C1D151 /* LinkaAppShortcuts.swift in Sources */,
+				EDEF20B20E5B665AE314BE04 /* LinkaExternalLinks.swift in Sources */,
 				9D9CAA41523C5B4063A18FF2 /* MainView.swift in Sources */,
 				22ACBF6A87B265E99D871533 /* MetricRing.swift in Sources */,
 				FB04D476B3C59CD38514B55C /* NetworkStabilityPatternsViewModel.swift in Sources */,
 				7F7970BA85081796F66C73DB /* PhaseDots.swift in Sources */,
+				FD6BAD30F4F388AEBF0AAB9F /* PurchaseEntryPoint.swift in Sources */,
 				2F7AC1D0FB4C81453B1B1EC7 /* PurchaseSheet.swift in Sources */,
 				6F17598AD7C151721E54AB92 /* SettingsSheet.swift in Sources */,
 				8FA33CB5620B468DC00D3C18 /* ShareCardView.swift in Sources */,
@@ -726,6 +761,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		1DC1DDFFCC2B5E70B0C79419 /* XCLocalSwiftPackageReference "LinkaAppIntents" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LinkaAppIntents;
+		};
 		501DCE8450FC9C3F97A936C6 /* XCLocalSwiftPackageReference "LinkaEngine" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = LinkaEngine;
@@ -755,6 +794,14 @@
 		32F32DAB5F80BE2584F3A3DB /* LinkaEngine */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LinkaEngine;
+		};
+		4010F854F0753756FEF0C5F0 /* LinkaAppIntents */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LinkaAppIntents;
+		};
+		4EC464D2A27C018FC431B081 /* LinkaAppIntents */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LinkaAppIntents;
 		};
 		86760C16968147ADE1D36961 /* LinkaEngine */ = {
 			isa = XCSwiftPackageProductDependency;
