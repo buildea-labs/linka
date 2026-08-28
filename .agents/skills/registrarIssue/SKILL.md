@@ -7,7 +7,7 @@ description: Como o Linka escreve issue, PR e commit — linguagem direta, sem c
 
 Issue, PR e commit do Linka são **texto de trabalho** — direto, factual, curto. Não são documento de banco, não são ticket de service desk, não são história de sprint.
 
-Quem abre issue normalmente é o **Giam** (é ele quem planeja e prioriza). PR e commit são do **Guinho**. A voz é a mesma para os três.
+Quem abre issue normalmente é o **Giammattey** (é ele quem planeja e prioriza). PR e commit são do **Tiago**. A voz é a mesma para os três.
 
 Tudo aqui passa obrigatoriamente pela [`matarCheiroDeIA`](../matarCheiroDeIA/SKILL.md).
 
@@ -46,7 +46,7 @@ O que essa mudança NÃO pode virar. Escreve mesmo. É o que segura o escopo.
 
 ## Aceite
 
-Lista que o Giam vai conferir. Cada linha conferível — não princípio.
+Lista que o Giammattey vai conferir. Cada linha conferível — não princípio.
 ```
 
 Critério técnico, contrato, segurança e detalhes de execução entram **onde forem necessários para fazer** — não dominam a história.
@@ -110,8 +110,8 @@ Escopos comuns: `engine`, `core`, `history`, `insights`, `assist`, `app`, `ui`, 
 
 Mesma voz. Corpo do PR carrega, além da história:
 
-- **Relatório do Marcelo** ([`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)), separando: verificado automaticamente (`swift test`, `build`), verificado por leitura, verificado em aparelho real, e o que **não** foi verificado.
-- **Aceite do Giam** contra o `Aceite` da issue.
+- **Relatório do Igor** ([`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)), separando: verificado automaticamente (`swift test`, `build`), verificado por leitura, verificado em aparelho real, e o que **não** foi verificado.
+- **Aceite do Giammattey** contra o `Aceite` da issue.
 - **Test plan** — passos para o revisor conferir.
 
 Essas partes podem ser secas e diretas. Relatório não é lugar de piada nem de enfeite.

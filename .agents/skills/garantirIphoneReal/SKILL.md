@@ -1,11 +1,11 @@
 ---
 name: garantir-iphone-real
-description: Procedimento do Guinho para o Linka funcionar em iPhone/iPad/Mac reais — não simulador — com atenção às condições que o desktop e o simulador não reproduzem.
+description: Procedimento do Tiago para o Linka funcionar em iPhone/iPad/Mac reais — não simulador — com atenção às condições que o desktop e o simulador não reproduzem.
 ---
 
 # Skill: garantirIphoneReal
 
-Procedimento do **Guinho** para o Linka funcionar **no aparelho de verdade** — iPhone, iPad e Mac — e não só no simulador ou no Mac de desenvolvimento.
+Procedimento do **Tiago** para o Linka funcionar **no aparelho de verdade** — iPhone, iPad e Mac — e não só no simulador ou no Mac de desenvolvimento.
 
 > ## SIMULADOR NÃO PROVA MEDIÇÃO
 >
@@ -17,7 +17,7 @@ Autoridade: [`AGENTS.md`](../../../AGENTS.md) §2 (Apple-only), §6 (precisão a
 
 ## 1. Aparelho real é alvo de validação, não "quando der"
 
-Cada mudança que toca o motor, a medição ou o resultado precisa de teste no aparelho antes do aceite. É o item mais fácil de pular e o mais fácil de esconder no PR — Marcelo vai perguntar diretamente.
+Cada mudança que toca o motor, a medição ou o resultado precisa de teste no aparelho antes do aceite. É o item mais fácil de pular e o mais fácil de esconder no PR — Igor vai perguntar diretamente.
 
 ## 2. Layout que não quebra no dispositivo
 
@@ -53,7 +53,7 @@ Cada mudança que toca o motor, a medição ou o resultado precisa de teste no a
 
 Se o Linka pedir alguma permissão nova (localização precisa, rede local, etc.), pedir no gesto do usuário, com string clara no `Info.plist`, com caminho de recuperação quando negada. Negar duas vezes silencia o diálogo — se acontecer, o app precisa mandar para Ajustes com explicação.
 
-Hoje o Linka não pede permissão sensível para o fluxo principal (medição não exige localização nem microfone). Se for adicionar, isso é discussão de escopo com o Giam antes.
+Hoje o Linka não pede permissão sensível para o fluxo principal (medição não exige localização nem microfone). Se for adicionar, isso é discussão de escopo com o Giammattey antes.
 
 ## 5. Compartilhamento e integrações do sistema
 

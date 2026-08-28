@@ -1,11 +1,11 @@
 ---
 name: validar-modularidade
-description: Runbook do Marcelo para detectar acoplamento, responsabilidades misturadas e duplicação de regra no código do Linka.
+description: Runbook do Igor para detectar acoplamento, responsabilidades misturadas e duplicação de regra no código do Linka.
 ---
 
 # Skill: validarModularidade
 
-Ferramenta de revisão do **Marcelo (Qualidade)** para impedir que o Linka vire um bloco impossível de mexer.
+Ferramenta de revisão do **Igor (Qualidade)** para impedir que o Linka vire um bloco impossível de mexer.
 
 ## 1. O que é monólito aqui
 
@@ -72,7 +72,7 @@ Quando houver duas implementações inevitáveis (ex.: Swift do motor + JavaScri
 
 Leia [`AGENTS.md`](../../../AGENTS.md) §1-2 e [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md).
 
-Não aprove refatoração que, para "organizar melhor", **antecipa** infraestrutura de diagnóstico, Assist, análise Wi-Fi ou chatbot sem constar do `plano.md` aprovado. Interpretação e Assist são bem-vindos no Linka desde que passem pela Full‑flow com Architect (Giam) e aprovação do Luiz — não entram silenciosamente por dentro de uma refatoração.
+Não aprove refatoração que, para "organizar melhor", **antecipa** infraestrutura de diagnóstico, Assist, análise Wi-Fi ou chatbot sem constar do `plano.md` aprovado. Interpretação e Assist são bem-vindos no Linka desde que passem pela Full‑flow com Architect (Giammattey) e aprovação do Luiz — não entram silenciosamente por dentro de uma refatoração.
 
 Refatoração boa reduz risco da fatia atual. Não usa limpeza como desculpa para reabrir o que foi fechado.
 

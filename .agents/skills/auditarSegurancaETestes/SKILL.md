@@ -1,19 +1,19 @@
 ---
 name: auditar-seguranca-e-testes
-description: Runbook do Marcelo para validar robustez do LinkaEngine, comportamento em rede real e integridade da separação motor/interpretação.
+description: Runbook do Igor para validar robustez do LinkaEngine, comportamento em rede real e integridade da separação motor/interpretação.
 ---
 
 # Skill: auditarSegurancaETestes
 
-Runbook do **Marcelo (Qualidade)** antes de responder com verdict tipado (`BLOQUEIA` / `AJUSTA` / `ISSUE_FUTURA`) para uma entrega do Linka.
+Runbook do **Igor (Qualidade)** antes de responder com verdict tipado (`BLOQUEIA` / `AJUSTA` / `ISSUE_FUTURA`) para uma entrega do Linka.
 
-Marcelo aprova qualidade e garante que ninguém está sendo enganado pelo próprio código. O **aceite** contra os requisitos é do Giam na Full‑flow ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 4).
+Igor aprova qualidade e garante que ninguém está sendo enganado pelo próprio código. O **aceite** contra os requisitos é do Giammattey na Full‑flow ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 4).
 
 Teste verde é necessário, não suficiente. Não prova que o produto funciona num iPhone 12 no 4G, dentro do metrô, no fim do dia útil.
 
 ## 0. Leia o escopo
 
-Marcelo barra **expansão silenciosa** e **cheiro de painel**. Interpretação, histórico e Assist são bem-vindos quando viáveis no Apple ([`AGENTS.md`](../../../AGENTS.md) §1 e §9), mas ele reprova se:
+Igor barra **expansão silenciosa** e **cheiro de painel**. Interpretação, histórico e Assist são bem-vindos quando viáveis no Apple ([`AGENTS.md`](../../../AGENTS.md) §1 e §9), mas ele reprova se:
 
 - capacidade nova aparece no PR sem constar no `plano.md` aprovado;
 - interpretação subiu ao primeiro frame do resultado em vez de ficar em superfície secundária;
@@ -48,7 +48,7 @@ npm run build
 
 ## 2. Teste do comportamento de rede (condições adversas)
 
-A maior mentira num SpeedTest é assumir que o socket nunca cai. Marcelo exige resposta para:
+A maior mentira num SpeedTest é assumir que o socket nunca cai. Igor exige resposta para:
 
 - E se o usuário trocar do Wi-Fi para 5G no meio do download?
 - E se o pacote de latência simplesmente não voltar (timeout)?
@@ -68,7 +68,7 @@ O pior bug de um SpeedTest não é o app fechar. É desenhar uma tela linda com 
 
 **iPhone real é padrão.** No simulador e no desktop a latência costuma ser 1 ms — não mostra o produto que o usuário vai ver.
 
-O Linka é distribuído exclusivamente para o ecossistema Apple ([`AGENTS.md`](../../../AGENTS.md) §2). Marcelo valida:
+O Linka é distribuído exclusivamente para o ecossistema Apple ([`AGENTS.md`](../../../AGENTS.md) §2). Igor valida:
 
 - iPhone real (idealmente entrada + topo): safe area, gestos, notch/Dynamic Island, retrato/paisagem se aplicável;
 - iPad: adaptação de layout, split view se relevante;
@@ -80,7 +80,7 @@ O Linka é distribuído exclusivamente para o ecossistema Apple ([`AGENTS.md`](.
 
 ## 5. Curadoria de minimalismo
 
-Marcelo é a última linha antes do aceite do Giam. Confere:
+Igor é a última linha antes do aceite do Giammattey. Confere:
 
 - copy da entrega não interpreta o resultado **no primeiro frame** (ver [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md));
 - nenhuma tela nova coloca "sua conexão está boa para X" antes do número medido;

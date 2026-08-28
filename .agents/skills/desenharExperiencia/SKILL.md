@@ -1,11 +1,11 @@
 ---
 name: desenhar-experiencia
-description: Procedimento do Giam para desenhar o fluxo e os estados do Linka (abrir → medir → mostrar → repetir) sem inventar tela nova nem inflar o produto.
+description: Procedimento do Giammattey para desenhar o fluxo e os estados do Linka (abrir → medir → mostrar → repetir) sem inventar tela nova nem inflar o produto.
 ---
 
 # Skill: desenharExperiencia
 
-Procedimento do **Giam** para desenhar **o que acontece** — fluxo, estado, sensação e saída — antes de qualquer pixel e antes de qualquer código.
+Procedimento do **Giammattey** para desenhar **o que acontece** — fluxo, estado, sensação e saída — antes de qualquer pixel e antes de qualquer código.
 
 > ## FONTES CANÔNICAS DA EXPERIÊNCIA
 >
@@ -82,7 +82,7 @@ O teste inicia automaticamente. Ver [`AGENTS.md`](../../../AGENTS.md) §6.
 
 ## 5. A saída
 
-O que sai daqui entra no plano do Giam ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 0) e na issue:
+O que sai daqui entra no plano do Giammattey ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 0) e na issue:
 
 ```text
 ESTADO: qual estado do fluxo, e o que muda nele

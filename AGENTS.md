@@ -6,10 +6,10 @@ Este arquivo é a **autoridade única de governança** do repositório `linka-sp
 
 ### Uso pelo Codex
 
-- O Codex é o interlocutor único desta sessão. **Giam**, **Guinho** e **Marcelo** são papéis de trabalho, não processos que devam ser simulados como conversas separadas.
+- O Codex é o interlocutor único desta sessão. **Giammattey**, **Tiago** e **Igor** são papéis de trabalho, não processos que devam ser simulados como conversas separadas.
 - O papel aplicável é escolhido pelo tipo de tarefa e pelas skills em `.agents/`. Para trabalho independente e bem delimitado, o Codex pode delegar usando sua ferramenta nativa de subagentes. Não invente handoffs, aprovações ou resultados de outro papel.
 - A delegação é por tarefa, não por agente permanente: o agente principal define o escopo, envia contexto mínimo, revisa o retorno e encerra o subagente quando ele não for mais necessário.
-- **Giam** coordena produto e aceite; **Guinho** pode receber implementação com escopo de escrita explícito; **Marcelo** recebe revisão somente leitura por padrão. Nenhum subagente pode aprovar a própria entrega ou publicar, fazer merge, deploy ou alterar credenciais sem autorização explícita.
+- **Giammattey** coordena produto e aceite; **Tiago** pode receber implementação com escopo de escrita explícito; **Igor** recebe revisão somente leitura por padrão. Nenhum subagente pode aprovar a própria entrega ou publicar, fazer merge, deploy ou alterar credenciais sem autorização explícita.
 - Os arquivos JSON em `.agents/plugins/` são perfis de prompt para essa delegação. O runtime nativo não os carrega automaticamente; ao delegar, o agente principal deve passar ao subagente o papel, o objetivo, os arquivos permitidos, a política de escrita e o formato de retorno.
 - A ferramenta nativa não substitui autorização: subagente não faz merge, push, deploy, publicação, exclusão material ou alteração de segredo. O agente principal revisa qualquer patch e apresenta o resultado ao Luiz.
 
@@ -17,14 +17,15 @@ Este arquivo é a **autoridade única de governança** do repositório `linka-sp
 
 Toda chamada a subagente deve conter, no mínimo:
 
-1. **Papel** — `giam`, `guinho` ou `marcelo`, conforme o perfil em `.agents/plugins/squad-linka/agents/`.
+1. **Papel** — `giammattey`, `tiago` ou `igor`, conforme o perfil em `.agents/plugins/squad-linka/agents/`.
 2. **Objetivo delimitado** — uma pergunta ou entrega concreta, sem “analise tudo”.
 3. **Escopo** — arquivos, módulos e repositórios que pode ler; para escrita, conjunto disjunto e explícito.
-4. **Permissão** — somente leitura por padrão; escrita apenas para Guinho quando a tarefa autorizar.
-5. **Retorno** — arquivos alterados, comandos executados, evidências, riscos e bloqueios; Marcelo deve usar `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA`.
+4. **Permissão** — somente leitura por padrão; escrita apenas para Tiago quando a tarefa autorizar.
+5. **Retorno** — arquivos alterados, comandos executados, evidências, riscos e bloqueios; Igor deve usar `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA`.
+6. **Modelo e esforço** — escolhidos conforme a política de §4a e o `model_policy` do perfil em `.agents/plugins/squad-linka/agents/`; não suba para Opus por padrão.
 
-O agente principal não duplica o trabalho delegado, aguarda apenas quando o resultado bloquear o próximo passo e encerra subagentes concluídos com a ferramenta nativa. Subagente não representa aprovação de Giam ou Luiz.
-- Ao relatar uma revisão, diga qual papel foi aplicado e apresente evidência observável. Nunca escreva que Marcelo, Giam ou Luiz aprovou algo sem essa aprovação ter acontecido de fato.
+O agente principal não duplica o trabalho delegado, aguarda apenas quando o resultado bloquear o próximo passo e encerra subagentes concluídos com a ferramenta nativa. Subagente não representa aprovação de Giammattey ou Luiz.
+- Ao relatar uma revisão, diga qual papel foi aplicado e apresente evidência observável. Nunca escreva que Igor, Giammattey ou Luiz aprovou algo sem essa aprovação ter acontecido de fato.
 - Skills locais são procedimentos auxiliares. A descoberta ocorre pelo `SKILL.md` e sua descrição; o `AGENTS.md`, o código e os testes continuam sendo as fontes de autoridade.
 
 ---
@@ -114,17 +115,45 @@ A squad é enxuta e carrega personagens e relações humanas vindas do Auê, ago
 
 | Agente | Papel no Linka |
 |---|---|
-| **Giam** | **Produto, experiência e direção.** Conhece telecom por trabalhar com atendimento, reparo e produtos digitais. Define escopo, UX, UI, copy, arquitetura de produto, prioridade e aceite final. Sua principal obrigação é manter o Linka focado — protagonismo do resultado, divulgação progressiva e curadoria contra excesso de painel — mesmo enquanto o produto absorve capacidades vindas do SignallQ que sejam viáveis no Apple. |
-| **Guinho** | **Implementação, arquitetura e proteção do motor.** Constrói o que foi decidido, abre branch/PR quando aplicável, escreve código e testes. Também responde pelas decisões que tocam medição, contratos e separação UI/engine — mantém `LinkaEngine` e os pacotes Swift protegidos de simplificação apressada. Pode questionar complexidade desnecessária, mas não amplia escopo sozinho. |
-| **Marcelo** | **Qualidade.** Tenta quebrar o produto e o motor: typecheck, lint, testes, build, acessibilidade, fidelidade ao protótipo, estados ruins de rede e regressões. Não aprova a própria implementação. |
+| **Giammattey** | **Produto, experiência e direção.** Conhece telecom por trabalhar com atendimento, reparo e produtos digitais. Define escopo, UX, UI, copy, arquitetura de produto, prioridade e aceite final. Sua principal obrigação é manter o Linka focado — protagonismo do resultado, divulgação progressiva e curadoria contra excesso de painel — mesmo enquanto o produto absorve capacidades vindas do SignallQ que sejam viáveis no Apple. |
+| **Tiago** | **Implementação, arquitetura e proteção do motor.** Constrói o que foi decidido, abre branch/PR quando aplicável, escreve código e testes. Também responde pelas decisões que tocam medição, contratos e separação UI/engine — mantém `LinkaEngine` e os pacotes Swift protegidos de simplificação apressada. Pode questionar complexidade desnecessária, mas não amplia escopo sozinho. |
+| **Igor** | **Qualidade.** Tenta quebrar o produto e o motor: typecheck, lint, testes, build, acessibilidade, fidelidade ao protótipo, estados ruins de rede e regressões. Não aprova a própria implementação. |
 
 Luiz é o dono do produto e tem a decisão final de publicação, custo, exclusão, monetização e mudança estratégica.
 
 ---
 
+## 4a. Modelo e esforço
+
+O Linka veio para dentro da Buildea e herda a disciplina de custo dos demais repositórios do
+portfólio: **Sonnet é o default de todo mundo. Opus só quando o custo de errar supera o custo de
+Opus. Haiku para o que é mecânico.** Effort (baixo/médio/alto) escala junto com o modelo — não
+existe Opus com effort baixo nem Haiku com effort alto; se a tarefa não justifica o esforço, ela
+também não justifica o modelo caro.
+
+| Modelo | Quando usar | Quem tipicamente usa |
+|---|---|---|
+| **Haiku** | Tarefa mecânica, resposta curta, pior caso é uma linha diferente: classificar rota óbvia, rodar lint/build de um módulo pequeno, checagem de formato de PR, revalidação de algo que já passou antes. | Giammattey (triagem), Igor (pipeline mínimo do Fast‑lane), Tiago (fix trivial sem tocar motor). |
+| **Sonnet** (default) | A maior parte do trabalho real: decompor demanda, escrever `plano.md`, implementar feature comum, revisar PR padrão, aplicar skill. | Giammattey, Tiago, Igor — default dos três. |
+| **Opus** | Só quando o raio de impacto do erro é alto e silencioso: mudança em `LinkaEngine`/contratos compartilhados, decisão de portfólio ou trade-off com múltiplos vetores, auditoria de segurança/privacidade tocando dado do usuário, terceira rodada do loop Tiago↔Igor (§5), decisão que a Apple não permite desfazer facilmente (App Store, privacidade). | Qualquer um dos três, só nesses gatilhos — nunca por hábito ou porque "é uma tarefa importante". |
+
+Regra de decisão rápida, na ordem:
+
+1. **O erro é reversível numa entrega pequena e o pior caso é baixo?** → Haiku, effort baixo.
+2. **É trabalho padrão de produto, implementação ou revisão sem os gatilhos acima?** → Sonnet, effort médio. Fica aqui por padrão.
+3. **Toca motor, contrato compartilhado, segurança, dado do usuário, ou já estourou o teto de rodadas?** → Opus, effort alto — e só nesse escopo, não na tarefa inteira.
+
+Cada perfil em `.agents/plugins/squad-linka/agents/*.json` tem um campo `model_policy` com os
+gatilhos específicos do papel (`escalate_when`, `downgrade_when`). Ao delegar um subagente, o agente
+principal escolhe o modelo pelo gatilho real da tarefa, não pelo papel por padrão — um Tiago
+corrigindo string de UI é Haiku; um Tiago mexendo em `LinkaEngine` é Opus, mesmo sendo a mesma
+pessoa.
+
+---
+
 ## 5. Roteamento e trilhas de trabalho
 
-Toda demanda entra pelo **Roteador (Passo 0)** operado pelo Giam, que a classifica em uma de quatro classes:
+Toda demanda entra pelo **Roteador (Passo 0)** operado pelo Giammattey, que a classifica em uma de quatro classes:
 
 | Classe | Critério | Trilha |
 |---|---|---|
@@ -134,17 +163,17 @@ Toda demanda entra pelo **Roteador (Passo 0)** operado pelo Giam, que a classifi
 | **Rejeitar** | não melhora medir/entender/acompanhar a conexão no Apple, ou depende de capacidade que a Apple não expõe | volta ao Luiz com "não" |
 
 ### Fast‑lane
-Giam decide → Guinho implementa → Marcelo roda pipeline mínimo → Giam aceita → merge. Sem `plano.md`, sem release notes, sem passo de empacotamento.
+Giammattey decide → Tiago implementa → Igor roda pipeline mínimo → Giammattey aceita → merge. Sem `plano.md`, sem release notes, sem passo de empacotamento.
 
 ### Full‑flow
-1. **Architect (Giam)** — escreve `plano.md` curto (objetivo · mudança arquitetural · requisito de aceite · não‑objetivo). Luiz aprova a arquitetura antes de qualquer código.
-2. **Orchestrate (Guinho)** — implementa. Onde partes forem independentes, o Codex pode delegar tarefas com escopo de escrita disjunto; se uma tarefa for acoplada ou crítica ao caminho principal, mantenha-a no agente principal. Protege o motor (`LinkaEngine`, `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaModules`) contra acoplamento e simplificação apressada.
-3. **Evaluate (Marcelo)** — pipeline + auditoria funcional. Devolve com verdict tipado: **BLOQUEIA** (impede merge), **AJUSTA** (Guinho corrige nesta entrega) ou **ISSUE_FUTURA** (registra e segue). Loop Guinho ↔ Marcelo tem teto de **2 rodadas**; a terceira escala para o Giam replanejar.
-4. **Approve (Giam + Luiz)** — Giam consolida contra o requisito e apresenta ao Luiz. Merge só com aprovação do Luiz quando a mudança for material.
-5. **Release (Giam propõe, Luiz aprova)** — quando aplicável, Giam propõe execução de `.agents/scripts/release.sh` e rascunho de `RELEASE_NOTES.md`. Nada é executado antes do sim explícito do Luiz.
+1. **Architect (Giammattey)** — escreve `plano.md` curto (objetivo · mudança arquitetural · requisito de aceite · não‑objetivo). Luiz aprova a arquitetura antes de qualquer código.
+2. **Orchestrate (Tiago)** — implementa. Onde partes forem independentes, o Codex pode delegar tarefas com escopo de escrita disjunto; se uma tarefa for acoplada ou crítica ao caminho principal, mantenha-a no agente principal. Protege o motor (`LinkaEngine`, `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaModules`) contra acoplamento e simplificação apressada.
+3. **Evaluate (Igor)** — pipeline + auditoria funcional. Devolve com verdict tipado: **BLOQUEIA** (impede merge), **AJUSTA** (Tiago corrige nesta entrega) ou **ISSUE_FUTURA** (registra e segue). Loop Tiago ↔ Igor tem teto de **2 rodadas**; a terceira escala para o Giammattey replanejar.
+4. **Approve (Giammattey + Luiz)** — Giammattey consolida contra o requisito e apresenta ao Luiz. Merge só com aprovação do Luiz quando a mudança for material.
+5. **Release (Giammattey propõe, Luiz aprova)** — quando aplicável, Giammattey propõe execução de `.agents/scripts/release.sh` e rascunho de `RELEASE_NOTES.md`. Nada é executado antes do sim explícito do Luiz.
 
 ### Hot‑lane
-Giam nomeia severidade → Guinho corrige em branch de hotfix → Marcelo roda pipeline mínimo sobre o módulo tocado → Giam merge → **postmortem obrigatório em 48h** vira issue de retrabalho na Full‑flow.
+Giammattey nomeia severidade → Tiago corrige em branch de hotfix → Igor roda pipeline mínimo sobre o módulo tocado → Giammattey merge → **postmortem obrigatório em 48h** vira issue de retrabalho na Full‑flow.
 
 Regras que valem em todas as trilhas:
 
@@ -153,7 +182,7 @@ Regras que valem em todas as trilhas:
 - Mudança visual relevante deve ser confrontada com protótipo e Design System.
 - Mudança no motor exige revisão de contratos, testes e impacto nos consumidores.
 - Um agente não declara a própria entrega aprovada por outro agente sem revisão real.
-- Estado vive em artefatos (`plano.md`, PR, verdict do Marcelo, `RELEASE_NOTES.md`), não na conversa.
+- Estado vive em artefatos (`plano.md`, PR, verdict do Igor, `RELEASE_NOTES.md`), não na conversa.
 
 A esteira detalhada, com artefatos e verdicts, vive em `.agents/WORKFLOW.md`.
 
@@ -216,7 +245,7 @@ Quando protótipo e Design System divergirem:
 
 - protótipo decide comportamento e geometria da experiência;
 - Design System decide tokens, identidade, componentes e regras visuais;
-- se a divergência for material e não puder ser conciliada, Giam decide antes de implementar.
+- se a divergência for material e não puder ser conciliada, Giammattey decide antes de implementar.
 
 ---
 
@@ -278,11 +307,13 @@ Para mudanças Web relevantes, execute quando aplicável:
 
 ```text
 npm run lint
-npm test
 npm run build
 ```
 
-Execute typecheck explícito se não estiver coberto pelo build.
+Execute typecheck explícito se não estiver coberto pelo build (`tsc -b` já roda dentro de `npm run
+build` em `aplicacao-web/`). **`npm test` não está disponível hoje** — `aplicacao-web/package.json`
+não define script de teste e não há suíte. Não alegue tê-lo executado. Se uma mudança relevante
+merece cobertura automatizada, registre isso como pendência em vez de simular o comando.
 
 Além disso, valide:
 
@@ -316,14 +347,14 @@ Se algo não foi testado, diga que não foi testado.
 Estão **formalmente aposentados como governança**:
 
 - qualquer suposto modo de agente que concorra com estas instruções;
-- papéis legados Renan / Marcelo / Gema / Lia deste repositório;
+- papéis legados Renan / Marcos / Gema / Lia deste repositório (nomes de uma squad anterior, retirados antes da atual — não confundir com o Igor de Qualidade em uso hoje, nem com o Renan/Marcos que atuam em outros repositórios do portfólio, ver AGENTS.md raiz);
 - obrigação PWA-only;
 - Material Design 3 como padrão visual;
 - Cloudflare Pages como destino obrigatório;
 - dependências de caminhos absolutos do antigo workspace Windows `E:\Projetos\Linka`;
 - documentos antigos que descrevem o Linka como central de diagnóstico ou mini-SignallQ;
 - **fronteira dura "Linka mede, SignallQ diagnostica" no ecossistema Apple** — desde que o SignallQ passou a ser produto Android/Web-only, o Linka absorve, com curadoria, as capacidades viáveis no Apple (ver §1 e §9). A curadoria de minimalismo continua valendo; a proibição por domínio, não;
-- **esteira única linear "Giam → Guinho → Marcelo → Giam → Luiz"** — substituída pelo Roteador + Fast‑lane / Full‑flow / Hot‑lane (ver §5 e `.agents/WORKFLOW.md`);
+- **esteira única linear "Giammattey → Tiago → Marcos → Giammattey → Luiz"** (nome antigo do papel de Qualidade, hoje Igor) — substituída pelo Roteador + Fast‑lane / Full‑flow / Hot‑lane (ver §5 e `.agents/WORKFLOW.md`);
 - **execução automática do release** (`release.sh` e `RELEASE_NOTES.md` sem aprovação do Luiz) — release agora é proposta, não ato autônomo (ver §5 e §12);
 - regra de trabalhar sempre diretamente em `main`;
 - qualquer segundo conjunto de regras em `CLAUDE.md`.

@@ -5,11 +5,11 @@ description: Diretrizes do papel de implementação para construir componentes S
 
 # Skill: criarComponenteUI
 
-Procedimento do **Guinho** para construir componentes de UI.
+Procedimento do **Tiago** para construir componentes de UI.
 
-Pressupõe o plano do Giam ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 0) já escrito, **incluindo especificação de UX e UI**. Sem isso, não comece — devolva para o Giam.
+Pressupõe o plano do Giammattey ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 0) já escrito, **incluindo especificação de UX e UI**. Sem isso, não comece — devolva para o Giammattey.
 
-Guinho constrói o que foi desenhado. Se durante a implementação aparecer decisão visual que a spec não cobre, isso volta para o Giam. Não se resolve no componente tentando inventar padrão.
+Tiago constrói o que foi desenhado. Se durante a implementação aparecer decisão visual que a spec não cobre, isso volta para o Giammattey. Não se resolve no componente tentando inventar padrão.
 
 ## 0. Não é um dashboard, é uma medição
 
@@ -46,7 +46,7 @@ O Design System atual é [`documentacao/design/design_system/readme.md`](../../.
 Antes de inventar valor ou colar `px`/`pt` fixo:
 
 - procure o token equivalente no design system;
-- se não existir, o desenho está fugindo do sistema — volta pro Giam para decidir se cria token ou reformula;
+- se não existir, o desenho está fugindo do sistema — volta pro Giammattey para decidir se cria token ou reformula;
 - não crie segunda paleta para uma "tela de detalhes".
 
 Tokens do site vivem em `aplicacao-web/src/styles/tokens/{colors,typography,spacing,motion}.css`. Tokens iOS ficam em Swift no `LinkaApp/Sources/Design/` (nomes semânticos correspondentes).
@@ -79,7 +79,7 @@ Movimento no Linka transmite **precisão**, não espetáculo.
 
 Se um componente precisar de mais que um rótulo curto, revise a copy com [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md). Se estiver explicando conceito técnico ("bufferbloat", "jitter"), a explicação vai em "Como medimos" ou em detalhes — não no meio da tela de medição.
 
-Você é filtro anti-tecnês: se a UI precisar de 3 parágrafos para explicar algo, chama o Giam e simplifica.
+Você é filtro anti-tecnês: se a UI precisar de 3 parágrafos para explicar algo, chama o Giammattey e simplifica.
 
 ## 8. Antes de considerar pronto
 

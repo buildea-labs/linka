@@ -1,13 +1,13 @@
 ---
 name: escrever-testes
-description: Procedimento do Guinho para escrever testes junto com a implementação do Linka — motor, conversões de rede, política de retenção e estados do adapter. Ferramenta padrão é swift test (XCTest) nos pacotes Swift.
+description: Procedimento do Tiago para escrever testes junto com a implementação do Linka — motor, conversões de rede, política de retenção e estados do adapter. Ferramenta padrão é swift test (XCTest) nos pacotes Swift.
 ---
 
 # Skill: escreverTestes
 
-Procedimento do **Guinho** para escrever teste **junto** com a implementação — não depois, não "na próxima".
+Procedimento do **Tiago** para escrever teste **junto** com a implementação — não depois, não "na próxima".
 
-Quem audita a suíte no fim é o Marcelo ([`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)). Esta skill é sobre escrever.
+Quem audita a suíte no fim é o Igor ([`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)). Esta skill é sobre escrever.
 
 Ferramentas por camada:
 

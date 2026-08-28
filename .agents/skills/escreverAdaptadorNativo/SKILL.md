@@ -1,11 +1,11 @@
 ---
 name: escrever-adaptador-nativo
-description: Procedimento do Guinho para adaptar SwiftUI a capacidades do LinkaEngine e dos pacotes Swift sem acoplar a View ao motor nem quebrar a fronteira Engine/Adapter/UI.
+description: Procedimento do Tiago para adaptar SwiftUI a capacidades do LinkaEngine e dos pacotes Swift sem acoplar a View ao motor nem quebrar a fronteira Engine/Adapter/UI.
 ---
 
 # Skill: escreverAdaptadorNativo
 
-Procedimento do **Guinho** para quando uma capacidade do sistema Apple (histórico persistente, App Intents, background task, App Group, Widget, notificação) precisa ser ligada ao produto **sem** contaminar `LinkaEngine` ou as `View`s do `LinkaApp`.
+Procedimento do **Tiago** para quando uma capacidade do sistema Apple (histórico persistente, App Intents, background task, App Group, Widget, notificação) precisa ser ligada ao produto **sem** contaminar `LinkaEngine` ou as `View`s do `LinkaApp`.
 
 A regra que decide tudo:
 
@@ -20,7 +20,7 @@ Autoridade: [`AGENTS.md`](../../../AGENTS.md) §4, §8; padrão Engine-Adapter-U
 **Existe um pacote (`NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaEngine`, `LinkaModules`) cujo contrato já expõe o que a UI precisa?**
 
 - **Existe** → é adaptador. Segue esta skill.
-- **Não existe** → **pare.** Capacidade nova de motor não se resolve escrevendo `URLSession` dentro de uma `View`. Volta para o Giam para decidir se estende um pacote existente ou se abre outro.
+- **Não existe** → **pare.** Capacidade nova de motor não se resolve escrevendo `URLSession` dentro de uma `View`. Volta para o Giammattey para decidir se estende um pacote existente ou se abre outro.
 
 Criar shim ad-hoc dentro da `View` para "só desta vez" é como o app vira mistura.
 

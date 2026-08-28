@@ -1,11 +1,11 @@
 ---
 name: pensar-como-medicao
-description: Curadoria do Giam para julgar se uma mudança fortalece o Linka como SpeedTest mínimo no ecossistema Apple, ou se está inchando o produto em painel/dashboard.
+description: Curadoria do Giammattey para julgar se uma mudança fortalece o Linka como SpeedTest mínimo no ecossistema Apple, ou se está inchando o produto em painel/dashboard.
 ---
 
 # Skill: pensarComoMedicao
 
-Curadoria do **Giam**: isto aqui melhora **medir, entender ou acompanhar** a conexão no Apple, sem competir com o resultado?
+Curadoria do **Giammattey**: isto aqui melhora **medir, entender ou acompanhar** a conexão no Apple, sem competir com o resultado?
 
 O Linka é um **SpeedTest minimalista**, exclusivo do ecossistema Apple, com núcleo em **medir a qualidade da conexão e apresentar o resultado de forma imediata, clara e bonita** ([`AGENTS.md`](../../../AGENTS.md) §1). Com o SignallQ agora exclusivo Android/Web, o Linka **pode** absorver capacidades vindas de lá que sejam viáveis no Apple (histórico, comparação, tendências, interpretação sustentada, Assist, Widgets, App Intents). O que não muda é a curadoria: nada vira dashboard, nada compete com o resultado, nada entra só porque é possível.
 

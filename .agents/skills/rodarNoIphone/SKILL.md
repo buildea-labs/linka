@@ -1,11 +1,11 @@
 ---
 name: rodar-no-iphone
-description: Procedimento do Guinho para construir, assinar e instalar o Linka num iPhone/iPad/Mac de verdade, com os portões do Xcode que travam o caminho.
+description: Procedimento do Tiago para construir, assinar e instalar o Linka num iPhone/iPad/Mac de verdade, com os portões do Xcode que travam o caminho.
 ---
 
 # Skill: rodarNoIphone
 
-Procedimento do **Guinho** para pôr o Linka rodando **no aparelho de verdade** — iPhone, iPad ou Mac.
+Procedimento do **Tiago** para pôr o Linka rodando **no aparelho de verdade** — iPhone, iPad ou Mac.
 
 O que decide se o produto funciona não é o build. É o comportamento em rede real, a permissão iOS, o ciclo de vida do app. Simulador não prova medição ([`garantirIphoneReal`](../garantirIphoneReal/SKILL.md)).
 
@@ -125,7 +125,7 @@ O que não foi testado **vai escrito como não testado** no relatório do PR ([`
 ## 8. O que esta skill NÃO autoriza
 
 - publicar em App Store, TestFlight ou distribuir fora sem autorização do Luiz;
-- adicionar entitlement ou capability nova sem discutir escopo com o Giam;
+- adicionar entitlement ou capability nova sem discutir escopo com o Giammattey;
 - mudar `Info.plist` de forma que exija permissão sensível nova sem alinhamento;
 - desabilitar teste ou pipeline "para o build passar".
 
