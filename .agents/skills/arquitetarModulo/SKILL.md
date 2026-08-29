@@ -1,17 +1,17 @@
 ---
 name: arquitetar-modulo
-description: Guia do Giam para desenhar mudanças modulares no Linka sem ampliar o escopo por acidente, respeitando a separação Engine/Adapter/UI e a curadoria de minimalismo.
+description: Guia do Giammattey para desenhar mudanças modulares no Linka sem ampliar o escopo por acidente, respeitando a separação Engine/Adapter/UI e a curadoria de minimalismo.
 ---
 
 # Skill: arquitetarModulo
 
-Procedimento do **Giam** para desenhar uma mudança antes do Guinho implementar.
+Procedimento do **Giammattey** para desenhar uma mudança antes do Tiago implementar.
 
 A saída desta skill é a **parte técnica** do `plano.md` exigido pela Full‑flow em [`.agents/WORKFLOW.md`](../../WORKFLOW.md) (Passo 1 — Architect): arquitetura decidida, recorte da implementação, prioridade e requisitos de aceite. Sem ele, o Luiz não aprova a arquitetura e nenhuma branch é aberta.
 
 A parte de produto e desenho sai de [`desenharExperiencia`](../desenharExperiencia/SKILL.md), [`desenharInterface`](../desenharInterface/SKILL.md), [`pensarComoMedicao`](../pensarComoMedicao/SKILL.md) e [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md).
 
-**A decisão técnica é do Giam, tomada sozinho, avaliando o produto.** O que não decide sozinho é dúvida de produto — aí pergunta ao Luiz, do jeito da [`conversarComOLuiz`](../conversarComOLuiz/SKILL.md), e espera resposta em vez de preencher.
+**A decisão técnica é do Giammattey, tomada sozinho, avaliando o produto.** O que não decide sozinho é dúvida de produto — aí pergunta ao Luiz, do jeito da [`conversarComOLuiz`](../conversarComOLuiz/SKILL.md), e espera resposta em vez de preencher.
 
 ## 0. Escopo antes da arquitetura
 

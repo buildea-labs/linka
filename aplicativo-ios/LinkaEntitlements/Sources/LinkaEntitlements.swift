@@ -13,6 +13,14 @@ public enum LinkaCapability: String, Codable, CaseIterable, Hashable, Sendable {
     case appleIntegrations
     /// Importação opt-in de telemetria Wi-Fi pelo app Atalhos (issue #134).
     case advancedWiFiDiagnostics
+    /// Exibição de jitter, perda de pacotes e resolução DNS ("Modo Expert").
+    /// Gate de renderização de UI, não de cálculo — o motor sempre mede
+    /// essas métricas independentemente da capability.
+    case expertMode
+    /// Tela dedicada de diagnóstico de adequação por caso de uso (um
+    /// veredito por `UsageCase`, incluindo `workUpload`), além do resumo
+    /// estruturado enviado como evidência ao Assist.
+    case usageDiagnostics
 }
 
 public enum LinkaEntitlementStatus: String, Codable, Sendable {

@@ -77,43 +77,6 @@ public struct GetLatestResultIntent: AppIntent {
     }
 }
 
-/*
-public struct LinkaAppShortcuts: AppShortcutsProvider {
-    @AppShortcutsBuilder
-    public static var appShortcuts: [AppShortcut] {
-        AppShortcut(
-            intent: StartSpeedTestIntent(),
-            phrases: [
-                "Testar internet com \(.applicationName)",
-                "Medir minha conexão com \(.applicationName)"
-            ],
-            shortTitle: "Testar internet",
-            systemImageName: "gauge.with.dots.needle.50percent"
-        )
-
-        AppShortcut(
-            intent: GetLatestResultIntent(),
-            phrases: [
-                "Último teste no \(.applicationName)",
-                "Ver último resultado no \(.applicationName)"
-            ],
-            shortTitle: "Último resultado",
-            systemImageName: "clock.arrow.circlepath"
-        )
-
-        AppShortcut(
-            intent: MeasureNetworkSilentlyIntent(),
-            phrases: [
-                "Testar silenciosamente com \(.applicationName)",
-                "Medir rede silenciosamente no \(.applicationName)"
-            ],
-            shortTitle: "Testar silenciosamente",
-            systemImageName: "network"
-        )
-    }
-}
-*/
-
 public struct MeasureNetworkSilentlyIntent: AppIntent {
     public static var title: LocalizedStringResource { "Testar silenciosamente" }
     public static let description = IntentDescription("Mede a rede silenciosamente sem abrir o app.")

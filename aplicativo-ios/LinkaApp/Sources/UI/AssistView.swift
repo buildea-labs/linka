@@ -16,6 +16,17 @@ struct AssistView: View {
     let usageContext: String?
     let failureSignal: NetworkAssistFailureSignal?
     let onRetry: (() -> Void)?
+    /// Ação real de "Ver detalhes da medição" (issue UI Polish v2) — antes
+    /// esse botão só chamava `dismiss()`, sem navegar a lugar nenhum
+    /// (visualmente parecia ir a algum lugar, na prática só voltava).
+    /// Quando fornecido (hoje só por `MainView`, que tem um estado
+    /// `detailsOpen` para expandir), o botão abre os detalhes de verdade
+    /// antes de fechar este sheet. `nil` quando não existe um destino de
+    /// detalhes no contexto do chamador (ex.: `HistoryView`, que empurra
+    /// esta view numa `NavigationStack` sem resultado "vivo" para expandir)
+    /// — nesse caso o botão vira "Voltar", copy honesta para o que
+    /// `dismiss()` realmente faz.
+    let onShowDetails: (() -> Void)?
     let entitlements: StoreKitEntitlementProvider?
 
     init(
@@ -24,6 +35,7 @@ struct AssistView: View {
         usageContext: String? = nil,
         failureSignal: NetworkAssistFailureSignal? = nil,
         onRetry: (() -> Void)? = nil,
+        onShowDetails: (() -> Void)? = nil,
         entitlements: StoreKitEntitlementProvider? = nil,
         assistProvider: (any NetworkAssistProviding)? = nil,
         assistIsRemote: Bool = AssistContainer.isRemoteAssistEnabled()
@@ -33,6 +45,7 @@ struct AssistView: View {
         self.usageContext = usageContext
         self.failureSignal = failureSignal
         self.onRetry = onRetry
+        self.onShowDetails = onShowDetails
         self.entitlements = entitlements
 
         let resolvedProvider: any NetworkAssistProviding
@@ -88,7 +101,7 @@ struct AssistView: View {
             VStack(spacing: 16) {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 40))
-                    .foregroundColor(.orange)
+                    .foregroundColor(.statusAttention)
                 Text("Não foi possível concluir")
                     .font(.displayTitle)
                 Text(message)
@@ -100,65 +113,60 @@ struct AssistView: View {
             .frame(maxHeight: .infinity)
         case .success(let data):
             ScrollView {
-                VStack(alignment: .leading, spacing: 40) {
-                    
+                VStack(alignment: .leading, spacing: 32) {
+
                     // Status e Conclusão
                     VStack(alignment: .leading, spacing: 8) {
                         Text(data.headerStatus.uppercased())
                             .font(.captionStrong)
-                            .foregroundColor(data.headerStatus.contains("TUDO CERTO") ? .green : .orange)
-                        
+                            .foregroundColor(data.headerStatus.contains("TUDO CERTO") ? .statusGood : .statusAttention)
+
                         Text(data.title)
                             .font(.displayLarge)
                             .foregroundColor(.brandSurface)
                     }
                     .padding(.top, 24)
-                    
-                    // Evidências
+
+                    // O que encontramos — checklist compacto, sem círculo
+                    // decorativo por métrica (issue UI Polish v2).
                     if !data.dimensions.isEmpty {
-                        VStack(alignment: .leading, spacing: 20) {
-                            Text("Por que o Linka chegou nisso?")
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("O que encontramos")
                                 .font(.bodyRegularStrong)
                                 .foregroundColor(.textPrimary)
-                            
-                            VStack(spacing: 0) {
-                                ForEach(Array(data.dimensions.enumerated()), id: \.element.name) { index, dim in
+
+                            VStack(spacing: 10) {
+                                ForEach(data.dimensions, id: \.name) { dim in
                                     dimensionRow(dim)
-                                    
-                                    if index < data.dimensions.count - 1 {
-                                        Divider()
-                                            .padding(.leading, 56)
-                                            .padding(.vertical, 12)
-                                    }
                                 }
                             }
                         }
                     }
-                    
-                    // Impacto (Resumo)
+
+                    // O que isso significa
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("O que isso significa para você")
+                        Text("O que isso significa")
                             .font(.bodyRegularStrong)
                             .foregroundColor(.textPrimary)
-                        
+
                         Text(data.summary)
                             .font(.bodyRegular)
                             .foregroundColor(.textSecondary)
                             .lineSpacing(4)
                     }
-                    
-                    // Ação (Próximo Passo)
+
+                    // Próximo passo
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Próximo passo")
                             .font(.bodyRegularStrong)
                             .foregroundColor(.textPrimary)
-                        
+
                         if let rec = data.recommendation {
                             HStack(alignment: .top, spacing: 12) {
                                 Image(systemName: "exclamationmark.circle.fill")
                                     .font(.title2)
-                                    .foregroundColor(.orange)
-                                
+                                    .foregroundColor(.statusAttention)
+
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(rec.title)
                                         .font(.bodyRegularStrong)
@@ -179,13 +187,13 @@ struct AssistView: View {
                                     }
                                 }
                             }
-                            
+
                         } else {
                             HStack(alignment: .center, spacing: 12) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.title2)
-                                    .foregroundColor(.green)
-                                
+                                    .foregroundColor(.statusGood)
+
                                 Text("Nenhuma ação necessária.")
                                     .font(.bodyRegular)
                                 .foregroundColor(.textSecondary)
@@ -205,7 +213,7 @@ struct AssistView: View {
                                     .font(.buttonLabel)
                                     .frame(maxWidth: .infinity)
                                     .padding()
-                                    .background(Color.accentColor)
+                                    .background(Color.actionPrimary)
                                     .foregroundColor(.white)
                                     .cornerRadius(12)
                             }
@@ -219,20 +227,29 @@ struct AssistView: View {
                     // parecer parte da mesma conclusão do Assist remoto.
                     stabilityPatternsSection
 
-                    Divider()
-                        .padding(.top, 16)
-
-                    // Botão Detalhes da Medição
-                    Button(action: { dismiss() }) {
+                    // Botão Detalhes da Medição — issue UI Polish v2: quando
+                    // há um destino real de detalhes (`onShowDetails`),
+                    // navega de verdade em vez de só fechar o sheet; quando
+                    // não há (ex.: aberto a partir do Histórico), o botão é
+                    // honesto sobre o que faz.
+                    Button(action: {
+                        if let onShowDetails {
+                            onShowDetails()
+                        }
+                        dismiss()
+                    }) {
                         HStack(spacing: 8) {
-                            Image(systemName: "chart.xyaxis.line")
-                            Text("Ver detalhes da medição")
-                            Image(systemName: "chevron.right")
+                            Image(systemName: onShowDetails != nil ? "chart.xyaxis.line" : "chevron.left")
+                            Text(onShowDetails != nil ? "Ver detalhes da medição" : "Voltar")
+                            if onShowDetails != nil {
+                                Image(systemName: "chevron.right")
+                            }
                         }
                         .font(.bodySmallMedium)
-                        .foregroundColor(.blue) // The prototype uses a system blue color for this text button
+                        .foregroundColor(.actionPrimary)
                         .frame(maxWidth: .infinity, alignment: .center)
                     }
+                    .padding(.top, 8)
                     .padding(.bottom, 40)
                 }
                 .padding(.horizontal, 24)
@@ -268,7 +285,7 @@ struct AssistView: View {
                         HStack(alignment: .top, spacing: 12) {
                             Image(systemName: "clock.arrow.circlepath")
                                 .font(.title2)
-                                .foregroundColor(.orange)
+                                .foregroundColor(.statusAttention)
                             Text(sentence)
                                 .font(.bodyRegular)
                                 .foregroundColor(.textPrimary)
@@ -289,37 +306,36 @@ struct AssistView: View {
         }
     }
 
+    /// Checklist compacto (issue UI Polish v2) — antes cada dimensão tinha
+    /// um círculo de 40pt com ícone dentro; agora é uma linha simples, mais
+    /// próxima de um `Form`/lista nativa: um símbolo de estado + rótulo +
+    /// valor à direita.
     private func dimensionRow(_ dimension: NetworkAssistDimension) -> some View {
         let statusColor = colorForStatus(dimension.status)
-        return HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(statusColor.opacity(0.1))
-                    .frame(width: 40, height: 40)
-                
-                Image(systemName: iconForDimension(dimension.name))
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(statusColor)
-            }
-            
+        return HStack(spacing: 10) {
+            Image(systemName: iconForStatus(dimension.status))
+                .font(.bodyRegular)
+                .foregroundColor(statusColor)
+                .frame(width: 20)
+
             Text(labelForDimension(dimension.name))
                 .font(.bodyRegular)
                 .foregroundColor(.textPrimary)
-            
+
             Spacer()
-            
+
             Text(labelForStatus(dimension.status, metric: dimension.name))
                 .font(.bodyRegularStrong)
                 .foregroundColor(statusColor)
         }
+        .accessibilityElement(children: .combine)
     }
-    
-    private func iconForDimension(_ name: String) -> String {
-        switch name.lowercased() {
-        case "download": return "arrow.down"
-        case "upload": return "arrow.up"
-        case "latency": return "clock"
-        case "stability", "packet_loss", "perda": return "wifi"
+
+    private func iconForStatus(_ status: String) -> String {
+        switch status.lowercased() {
+        case "excellent", "good": return "checkmark.circle.fill"
+        case "attention": return "exclamationmark.circle.fill"
+        case "critical": return "xmark.circle.fill"
         default: return "circle"
         }
     }
@@ -358,9 +374,9 @@ struct AssistView: View {
     
     private func colorForStatus(_ status: String) -> Color {
         switch status.lowercased() {
-        case "excellent", "good": return .green
-        case "attention": return .orange
-        case "critical": return .red
+        case "excellent", "good": return .statusGood
+        case "attention": return .statusAttention
+        case "critical": return .statusCritical
         default: return .textSecondary
         }
     }

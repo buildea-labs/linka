@@ -15,6 +15,11 @@ public enum UsageCase: String, Codable, CaseIterable, Equatable, Sendable {
     case streamingHD
     case streaming4K
     case onlineGaming
+    /// Upload sustentado e sensível a estabilidade — envio de arquivos
+    /// grandes, backup, transmissão de vídeo, acesso remoto. Distinto de
+    /// `videoCall`, que tolera menos upload mas é mais sensível a latência
+    /// instantânea que a jitter sustentada.
+    case workUpload
 }
 
 /// Grau de confiança de um veredito de `UsageCase`.
@@ -75,6 +80,11 @@ public struct UsageSuitabilityThresholds: Equatable, Sendable {
     public var onlineGamingMaxJitterMs: Double
     public var onlineGamingMaxPacketLossPercent: Double
 
+    public var workUploadMinUploadMbps: Double
+    public var workUploadMaxJitterMs: Double
+    public var workUploadMaxLatencyMs: Double
+    public var workUploadMaxPacketLossPercent: Double
+
     public init(
         videoCallMinUploadMbps: Double = 3,
         videoCallMaxLatencyMs: Double = 150,
@@ -84,7 +94,11 @@ public struct UsageSuitabilityThresholds: Equatable, Sendable {
         streaming4KMaxPacketLossPercent: Double = 2,
         onlineGamingMaxLatencyMs: Double = 50,
         onlineGamingMaxJitterMs: Double = 30,
-        onlineGamingMaxPacketLossPercent: Double = 1
+        onlineGamingMaxPacketLossPercent: Double = 1,
+        workUploadMinUploadMbps: Double = 5,
+        workUploadMaxJitterMs: Double = 40,
+        workUploadMaxLatencyMs: Double = 200,
+        workUploadMaxPacketLossPercent: Double = 2
     ) {
         self.videoCallMinUploadMbps = videoCallMinUploadMbps
         self.videoCallMaxLatencyMs = videoCallMaxLatencyMs
@@ -95,6 +109,10 @@ public struct UsageSuitabilityThresholds: Equatable, Sendable {
         self.onlineGamingMaxLatencyMs = onlineGamingMaxLatencyMs
         self.onlineGamingMaxJitterMs = onlineGamingMaxJitterMs
         self.onlineGamingMaxPacketLossPercent = onlineGamingMaxPacketLossPercent
+        self.workUploadMinUploadMbps = workUploadMinUploadMbps
+        self.workUploadMaxJitterMs = workUploadMaxJitterMs
+        self.workUploadMaxLatencyMs = workUploadMaxLatencyMs
+        self.workUploadMaxPacketLossPercent = workUploadMaxPacketLossPercent
     }
 }
 
@@ -131,6 +149,8 @@ public struct UsageSuitabilityEvaluator: UsageSuitabilityEvaluating {
             return evaluateStreaming4K(measurement)
         case .onlineGaming:
             return evaluateOnlineGaming(measurement)
+        case .workUpload:
+            return evaluateWorkUpload(measurement)
         }
     }
 
@@ -221,6 +241,35 @@ public struct UsageSuitabilityEvaluator: UsageSuitabilityEvaluating {
             packetLossOutcome(
                 measurement.packetLossPercent,
                 maxAllowed: thresholds.onlineGamingMaxPacketLossPercent
+            )
+        )
+    }
+
+    // MARK: - Upload/trabalho
+
+    private func evaluateWorkUpload(_ measurement: NetworkMeasurement) -> UsageCaseVerdict {
+        guard let uploadMbps = measurement.uploadMbps else {
+            return verdict(.workUpload, .notAssessed, .uploadMbps)
+        }
+        guard let jitterMs = measurement.jitterMs else {
+            return verdict(.workUpload, .notAssessed, .jitterMs)
+        }
+
+        if uploadMbps < thresholds.workUploadMinUploadMbps {
+            return verdict(.workUpload, .limited, .uploadMbps)
+        }
+        if jitterMs > thresholds.workUploadMaxJitterMs {
+            return verdict(.workUpload, .limited, .jitterMs)
+        }
+        if let latencyMs = measurement.latencyMs, latencyMs > thresholds.workUploadMaxLatencyMs {
+            return verdict(.workUpload, .limited, .latencyMs)
+        }
+
+        return verdict(
+            .workUpload,
+            packetLossOutcome(
+                measurement.packetLossPercent,
+                maxAllowed: thresholds.workUploadMaxPacketLossPercent
             )
         )
     }

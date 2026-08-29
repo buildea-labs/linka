@@ -33,29 +33,27 @@ final class NetworkAssistInvestigationTests: XCTestCase {
         XCTAssertEqual(result.missingSignals, [.failureContext])
     }
 
-    // MARK: - Falha local aparente (offline)
+    // MARK: - Offline é fato, não causa
 
-    func testOfflineResolvesLocallyWithoutAnyHistory() {
+    func testOfflineIsInconclusiveWithoutAnyHistory() {
         let result = NetworkAssistInvestigationEngine.investigate(
             NetworkAssistInvestigationInput(failureSignal: .offline, recentMeasurements: [])
         )
 
-        XCTAssertEqual(result.disposition, .localSignalLikely)
+        XCTAssertEqual(result.disposition, .inconclusive)
         XCTAssertFalse(result.evidenceIDs.isEmpty)
         XCTAssertEqual(Set(result.evidenceIDs), Set(result.evidence.map(\.id)))
-        XCTAssertTrue(result.missingSignals.isEmpty)
+        XCTAssertTrue(result.missingSignals.contains(.connectionKind))
+        XCTAssertTrue(result.missingSignals.contains(.alternateNetworkSample))
     }
 
-    func testOfflineResolvesLocallyEvenWithStableHistory() {
-        // Caso simples (issue #56): `.offline` não precisa de teste em
-        // outra rede nem de histórico para resolver — o próprio sinal já é
-        // um fato local.
+    func testOfflineStaysInconclusiveEvenWithWifiHistory() {
         let history = [measurement(connectionKind: .wifi), measurement(connectionKind: .wifi)]
         let result = NetworkAssistInvestigationEngine.investigate(
             NetworkAssistInvestigationInput(failureSignal: .offline, recentMeasurements: history)
         )
 
-        XCTAssertEqual(result.disposition, .localSignalLikely)
+        XCTAssertEqual(result.disposition, .inconclusive)
     }
 
     // MARK: - Acesso externo indisponível aparente (connectionLost)

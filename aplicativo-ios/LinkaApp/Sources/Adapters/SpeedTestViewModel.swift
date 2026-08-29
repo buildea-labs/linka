@@ -80,6 +80,11 @@ public class SpeedTestViewModel: ObservableObject {
     /// `loadedLatencyMs`) — mesmo motivo de não ser `@Published`.
     public private(set) var loadedLatencyUploadMs: Double? = nil
 
+    /// Tempo de resolução DNS (ms) do host usado no teste — Expert Mode.
+    /// Mesmo motivo de não ser `@Published` que `loadedLatencyMs`: não deve
+    /// competir com o resultado por re-render.
+    public private(set) var dnsResolutionMs: Double? = nil
+
     /// Duração bruta do teste em segundos (issue #50), do jeito que o motor
     /// entrega em `MeasurementState.duration` — mesmo padrão de
     /// `loadedLatencyMs`: não-`@Published` para não competir com o
@@ -258,6 +263,7 @@ public class SpeedTestViewModel: ObservableObject {
         self.packetLossPercent = measurement.packetLossPercent
         self.loadedLatencyMs = measurement.loadedLatencyMs
         self.loadedLatencyUploadMs = measurement.loadedLatencyUploadMs
+        self.dnsResolutionMs = measurement.dnsResolutionMs
         self.connectionKind = measurement.connectionKind
         self.wifiBandGHz = measurement.wifiBandGHz
         self.wifiContext = measurement.wifiContext
@@ -297,6 +303,7 @@ public class SpeedTestViewModel: ObservableObject {
         testDuration = ""
         loadedLatencyMs = nil
         loadedLatencyUploadMs = nil
+        dnsResolutionMs = nil
         rawTestDuration = nil
         failureReason = nil
         connectionKind = nil
@@ -406,6 +413,7 @@ public class SpeedTestViewModel: ObservableObject {
                         packetLossPercent: self.packetLossPercent,
                         loadedLatencyMs: self.loadedLatencyMs,
                         loadedLatencyUploadMs: self.loadedLatencyUploadMs,
+                        dnsResolutionMs: self.dnsResolutionMs,
                         durationMs: self.rawTestDuration.map { Int(($0 * 1000).rounded()) },
                         connectionKind: self.connectionKind,
                         wifiBandGHz: self.wifiBandGHz,
@@ -679,6 +687,7 @@ public class SpeedTestViewModel: ObservableObject {
             packetLossPercent: measurement.packetLossPercent,
             loadedLatencyMs: measurement.loadedLatencyMs,
             loadedLatencyUploadMs: measurement.loadedLatencyUploadMs,
+            dnsResolutionMs: measurement.dnsResolutionMs,
             durationMs: measurement.durationMs,
             connectionKind: measurement.connectionKind,
             wifiBandGHz: measurement.wifiBandGHz,
@@ -711,6 +720,7 @@ public class SpeedTestViewModel: ObservableObject {
         }
         if let loss = state.packetLossPercent { self.packetLossPercent = loss }
         if let loadedLatency = state.loadedLatencyMs { self.loadedLatencyMs = loadedLatency }
+        if let dns = state.dnsResolutionMs { self.dnsResolutionMs = dns }
         if let reason = state.failureReason { self.failureReason = reason }
 
         switch state.phase {
@@ -756,6 +766,7 @@ public class SpeedTestViewModel: ObservableObject {
     /// iPhone/iPad `fetchCurrent()` devolve nil até que o usuário conceda a
     /// capability e a localização precisa; esta chamada não pede permissão.
     private static func sampleWiFiContext() async -> WiFiNetworkContext? {
+        guard LinkaWiFiPreferences.isIdentificationEnabled else { return nil }
         let hints = await ApplePlatformSignalProvider().currentHints()
         guard let wifi = hints.wifi, let ssid = wifi.ssid else { return nil }
 

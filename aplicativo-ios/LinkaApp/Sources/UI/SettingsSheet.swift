@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 import LinkaEntitlements
 import LinkaModules
 #if canImport(CoreLocation) && os(iOS)
@@ -12,291 +13,276 @@ import AppKit
 
 struct SettingsSheet: View {
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
+    @Environment(\.openURL) private var openURL
+    @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
     @State private var showPurchase = false
-    @State private var testCount: Int = 0
+    @State private var showSubscriptionManagement = false
+    @State private var showWiFiExplanation = false
+    @State private var showAdvancedActions = false
+    @State private var testCount = 0
+    @AppStorage("appAppearance") private var appAppearance = "system"
+    @AppStorage(LinkaWiFiPreferences.identificationEnabledKey) private var networkIdentificationEnabled = true
     @AppStorage("linka.advanced-wifi.configured.v1") private var advancedWiFiConfigured = false
-    
-    var appVersion: String {
+    @AppStorage(LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) private var advancedWiFiEnabled = true
+
+    // Issue UI Polish v2 (2026-08-29): `Form`/`Section`/`LabeledContent`
+    // nativos no lugar de `SettingsSection`/`SettingsRow` customizados —
+    // ganho automático de Dynamic Type, estados de interação e adaptação a
+    // versões futuras do iOS, ao custo de menos controle fino sobre o
+    // visual (aceitável: o visual customizado já convergia bastante para
+    // o padrão de lista do sistema). Mantém todas as ações, sheets e
+    // diálogos existentes — mudança é só de casca visual.
+    var body: some View {
+        Form {
+            Section("Linka Plus") {
+                Button(action: openSubscription) {
+                    settingsRow(title: "Linka Plus", value: subscriptionStatusText)
+                }
+            }
+
+            #if os(iOS)
+            Section("Rede e diagnóstico") {
+                Button(action: openNetworkIdentification) {
+                    settingsRow(title: "Identificação da rede Wi-Fi", value: WiFiNetworkPermission.statusText(enabled: networkIdentificationEnabled))
+                }
+                Button(action: openAdvancedWiFi) {
+                    settingsRow(title: "Diagnóstico Wi-Fi avançado", value: advancedWiFiStatusText)
+                }
+            }
+            #endif
+
+            Section("Preferências") {
+                Picker("Aparência", selection: $appAppearance) {
+                    Text("Sistema").tag("system")
+                    Text("Claro").tag("light")
+                    Text("Escuro").tag("dark")
+                }
+            }
+
+            Section("Atividade") {
+                NavigationLink(destination: HistoryView()) {
+                    LabeledContent("Histórico", value: "\(testCount) testes")
+                }
+            }
+
+            Section("Sobre o Linka") {
+                Link(destination: LinkaExternalLinks.website) {
+                    Label("Sobre o Linka", systemImage: "info.circle")
+                }
+                Link(destination: LinkaExternalLinks.howWeMeasure) {
+                    Label("Como medimos", systemImage: "speedometer")
+                }
+                Link(destination: LinkaExternalLinks.privacy) {
+                    Label("Privacidade", systemImage: "hand.raised")
+                }
+                Link(destination: LinkaExternalLinks.terms) {
+                    Label("Termos de Uso", systemImage: "doc.text")
+                }
+                if let support = LinkaExternalLinks.support {
+                    Link(destination: support) {
+                        Label("Suporte", systemImage: "questionmark.circle")
+                    }
+                }
+            }
+
+            #if DEBUG
+            Section {
+                Button("Simular Linka Free (DEBUG)") { entitlements.debugResetToFree() }
+                Button("Simular Linka Plus (DEBUG)") { entitlements.debugForcePlus() }
+            } header: {
+                Text("Debug interno").foregroundColor(.brandAccentWarm)
+            }
+            #endif
+
+            Section {
+                Text("Versão \(appVersion)")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .navigationTitle("Ajustes")
+        #if canImport(UIKit)
+        .navigationBarTitleDisplayMode(.large)
+        #endif
+        .onAppear(perform: loadTestCount)
+        .sheet(isPresented: $showPurchase) { PurchaseSheet(entryPoint: purchaseEntryPoint) }
+        .sheet(isPresented: $showSubscriptionManagement) { SubscriptionManagementSheet() }
+        .confirmationDialog("Identificação da rede Wi-Fi", isPresented: $showWiFiExplanation, titleVisibility: .visible) {
+            Button("Ativar identificação") {
+                networkIdentificationEnabled = true
+                WiFiNetworkPermission.requestIdentification()
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("Mostra o nome da rede usada nas medições e ajuda a identificar padrões no histórico.")
+        }
+        .confirmationDialog("Diagnóstico Wi-Fi avançado", isPresented: $showAdvancedActions, titleVisibility: .visible) {
+            Button("Executar diagnóstico Wi-Fi") { openShortcuts() }
+            Button("Atualizar atalho") { openShortcuts() }
+            Button("Desativar integração", role: .destructive) { advancedWiFiEnabled = false }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("O Atalhos fornece dados extras quando você executa a integração.")
+        }
+    }
+
+    /// Linha de `Button` que abre um sheet/diálogo (não uma navegação real)
+    /// — mantém o indicador de "isso leva a algum lugar" que `NavigationLink`
+    /// dá de graça, mas que `Button` sozinho dentro de `Form` não mostra.
+    private func settingsRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title).foregroundColor(.primary)
+            Spacer()
+            Text(value).foregroundColor(.secondary)
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.textSecondary.opacity(0.6))
+        }
+    }
+
+    private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "\(version) (build \(build))"
     }
-    
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                VStack(spacing: 24) {
-                    SettingsSection(header: "ATIVIDADE") {
-                        NavigationLink(destination: HistoryView()) {
-                            SettingsRowContent(title: "Histórico", subtitle: "\(testCount) testes", showChevron: false)
-                        }
-                    }
 
-                    #if os(iOS)
-                    SettingsSection(header: "REDE WI-FI") {
-                        Button(action: { WiFiNetworkPermission.requestIdentification() }) {
-                            SettingsRowContent(
-                                title: "Identificação de rede Wi-Fi",
-                                subtitle: WiFiNetworkPermission.statusText,
-                                showChevron: true
-                            )
-                        }
-                        Text("Permite ao Linka mostrar o nome da rede usada nas medições e identificar padrões no histórico.")
-                            .font(.bodySmall)
-                            .foregroundColor(.textSecondary)
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
-                    }
-                    #endif
-
-                    #if os(iOS)
-                    SettingsSection(header: "WI-FI AVANÇADO") {
-                        Button(action: configureAdvancedWiFi) {
-                            SettingsRowContent(
-                                title: "Diagnóstico Wi-Fi avançado",
-                                subtitle: advancedWiFiStatusText,
-                                showChevron: true
-                            )
-                        }
-                        Text("O iPhone permite ao app Atalhos acessar informações extras da conexão, como sinal, canal e taxa Wi-Fi. Ative uma vez para o Linka usar esses dados nas análises.")
-                            .font(.bodySmall)
-                            .foregroundColor(.textSecondary)
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
-                    }
-                    #endif
-
-                    SettingsSection(header: "ASSINATURA") {
-                        Button(action: { showPurchase = true }) {
-                            SettingsRowContent(title: "Linka Plus", subtitle: subscriptionStatusText, showChevron: true)
-                        }
-                    }
-
-                    SettingsSection(header: "SOBRE O APP") {
-                        SettingsRow(icon: "info.circle.fill", color: Color(red: 0.1, green: 0.2, blue: 0.4), title: "Sobre o Linka", url: "https://linka-speedtest.web.app")
-                        Divider().padding(.leading, 56)
-                        SettingsRow(icon: "speedometer", color: .orange, title: "Como medimos", url: "https://linka-speedtest.web.app/como-medimos")
-                        Divider().padding(.leading, 56)
-                        SettingsRow(icon: "lock.fill", color: .gray, title: "Privacidade & Termos", url: "https://linka-speedtest.web.app/privacidade")
-                    }
-
-                    #if DEBUG
-                    SettingsSection(header: "DEBUG INTERNO", headerColor: .brandAccentWarm) {
-                        Button(action: { entitlements.debugResetToFree() }) {
-                            HStack {
-                                Image(systemName: "bolt.fill")
-                                    .foregroundColor(.brandAccentWarm)
-                                Text("Simular Linka Free (DEBUG)")
-                                    .foregroundColor(.textPrimary)
-                                Spacer()
-                            }
-                            .padding(.vertical, 16)
-                            .padding(.horizontal, 16)
-                        }
-                        Divider().padding(.leading, 16)
-                        Button(action: { entitlements.debugForcePlus() }) {
-                            HStack {
-                                Image(systemName: "bolt.fill")
-                                    .foregroundColor(.brandAccentWarm)
-                                Text("Simular Linka Plus (DEBUG)")
-                                    .foregroundColor(.textPrimary)
-                                Spacer()
-                            }
-                            .padding(.vertical, 16)
-                            .padding(.horizontal, 16)
-                        }
-                    }
-                    #endif
-
-                    Text("Versão \(appVersion)")
-                        .font(.captionMedium)
-                        .foregroundColor(.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 16)
-                        .padding(.bottom, 40)
-                }
-            }
-        }
-        .background(Color.surfacePage.ignoresSafeArea())
-        .navigationTitle("Ajustes")
-        #if canImport(UIKit)
-        .navigationBarTitleDisplayMode(.large)
-        .toolbarBackground(Color.surfacePage, for: .navigationBar)
-        #endif
-        .onAppear {
-            loadTestCount()
-        }
-        .sheet(isPresented: $showPurchase) {
-            PurchaseSheet()
-        }
-    }
-    
     private var subscriptionStatusText: String {
         switch entitlements.snapshot.plan {
-        case .free:
-            return "Conhecer"
-        case .plus:
-            return entitlements.snapshot.status == .active ? "Ativo" : "Expirado"
-        }
-    }
-
-    private func loadTestCount() {
-        Task { @MainActor in
-            let repo = LinkaMeasurementHistory.makeRepository(entitlements: entitlements)
-            if let count = try? await repo.totalCount() {
-                self.testCount = count
-            }
+        case .free: "Conhecer o Linka Plus"
+        case .plus: entitlements.snapshot.status == .active ? "Ativo" : "Assinatura inativa"
         }
     }
 
     private var advancedWiFiStatusText: String {
         let decision = LinkaEntitlementPolicy.decision(for: .advancedWiFiDiagnostics, snapshot: entitlements.snapshot)
         guard decision.isGranted else { return "Linka Plus" }
-        return advancedWiFiConfigured ? "Ativo" : "Configurar"
+        return advancedWiFiConfigured && advancedWiFiEnabled ? "Ativo" : "Configurar"
     }
 
-    private func configureAdvancedWiFi() {
+    private func openSubscription() {
+        guard entitlements.snapshot.plan == .plus, entitlements.snapshot.status == .active else {
+            purchaseEntryPoint = .settings; showPurchase = true; return
+        }
+        showSubscriptionManagement = true
+    }
+
+    private func openNetworkIdentification() {
+        if !networkIdentificationEnabled {
+            showWiFiExplanation = true
+        } else if WiFiNetworkPermission.canOpenSystemSettings {
+            WiFiNetworkPermission.openSystemSettings()
+        } else if WiFiNetworkPermission.isAuthorized {
+            networkIdentificationEnabled = false
+        } else {
+            WiFiNetworkPermission.requestIdentification()
+        }
+    }
+
+    private func openAdvancedWiFi() {
         let decision = LinkaEntitlementPolicy.decision(for: .advancedWiFiDiagnostics, snapshot: entitlements.snapshot)
         guard decision.isGranted else {
-            showPurchase = true
-            return
+            purchaseEntryPoint = .advancedWiFi; showPurchase = true; return
         }
+        if advancedWiFiConfigured && advancedWiFiEnabled {
+            showAdvancedActions = true
+        } else {
+            advancedWiFiEnabled = true
+            openShortcuts()
+        }
+    }
+
+    private func openShortcuts() {
         guard let url = URL(string: "shortcuts://") else { return }
-        #if canImport(UIKit)
-        UIApplication.shared.open(url)
-        #endif
+        openURL(url)
+    }
+
+    private func loadTestCount() {
+        Task { @MainActor in
+            let repository = LinkaMeasurementHistory.makeRepository(entitlements: entitlements)
+            testCount = (try? await repository.totalCount()) ?? 0
+        }
     }
 }
 
-/// `fetchCurrent()` só retorna a rede no iPhone quando a capability de Wi-Fi
-/// e localização precisa foram concedidas. O prompt acontece exclusivamente
-/// após ação do usuário nesta tela ou em "Identificar rede" no resultado.
+struct SubscriptionManagementSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
+    @State private var isRestoring = false
+    @State private var message: String?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    #if canImport(UIKit)
+                    Button("Gerenciar assinatura", action: manageSubscription)
+                    #else
+                    Link("Gerenciar assinatura", destination: LinkaExternalLinks.subscriptionManagement)
+                    #endif
+                    Button(isRestoring ? "Restaurando…" : "Restaurar compra", action: restore)
+                        .disabled(isRestoring)
+                } footer: {
+                    Text("A renovação e o cancelamento são gerenciados pela Apple.")
+                }
+                if let message { Section { Text(message).foregroundColor(.textSecondary) } }
+            }
+            .navigationTitle("Linka Plus")
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { dismiss() } } }
+        }
+    }
+
+    #if canImport(UIKit)
+    private func manageSubscription() {
+        guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else { return }
+        Task { try? await AppStore.showManageSubscriptions(in: scene) }
+    }
+    #endif
+
+    private func restore() {
+        isRestoring = true; message = nil
+        Task {
+            do {
+                let restored = try await entitlements.restore()
+                isRestoring = false
+                message = restored ? "Compra restaurada." : "Nenhuma compra ativa foi encontrada."
+            } catch {
+                isRestoring = false; message = "Não foi possível restaurar a compra agora."
+            }
+        }
+    }
+}
+
 enum WiFiNetworkPermission {
     #if canImport(CoreLocation) && os(iOS)
     private static let manager = CLLocationManager()
-
-    static var statusText: String {
+    static func statusText(enabled: Bool) -> String {
+        guard enabled else { return "Desativada" }
         switch manager.authorizationStatus {
         case .authorizedWhenInUse, .authorizedAlways:
             return manager.accuracyAuthorization == .fullAccuracy ? "Ativada" : "Permissão necessária"
-        case .denied, .restricted:
-            return "Desativada"
-        case .notDetermined:
-            return "Permissão necessária"
-        @unknown default:
-            return "Permissão necessária"
+        case .denied, .restricted: return "Permissão necessária"
+        case .notDetermined: return "Permissão necessária"
+        @unknown default: return "Permissão necessária"
         }
     }
-
-    @MainActor
-    static func requestIdentification() {
-        guard manager.authorizationStatus == .notDetermined else {
-            guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-            UIApplication.shared.open(url)
-            return
-        }
-        manager.requestWhenInUseAuthorization()
+    static var canOpenSystemSettings: Bool { manager.authorizationStatus == .denied || manager.authorizationStatus == .restricted }
+    static var isAuthorized: Bool {
+        manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways
+    }
+    @MainActor static func requestIdentification() {
+        if manager.authorizationStatus == .notDetermined { manager.requestWhenInUseAuthorization() }
+        else { openSystemSettings() }
+    }
+    @MainActor static func openSystemSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
     #else
-    static var statusText: String { "Não disponível" }
+    static func statusText(enabled: Bool) -> String { "Não disponível" }
+    static var canOpenSystemSettings: Bool { false }
+    static var isAuthorized: Bool { false }
     static func requestIdentification() {}
+    static func openSystemSettings() {}
     #endif
 }
 
-private extension Color {
-    static var chevronAffordance: Color {
-        #if canImport(UIKit)
-        Color(UIColor.tertiaryLabel)
-        #elseif canImport(AppKit)
-        Color(NSColor.tertiaryLabelColor)
-        #else
-        Color.textSecondary
-        #endif
-    }
-}
-
-struct SettingsSection<Content: View>: View {
-    var header: String
-    var headerColor: Color = .textSecondary
-    @ViewBuilder var content: Content
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(header.uppercased())
-                .font(.monoCaption)
-                .foregroundColor(headerColor)
-                .padding(.horizontal, 24)
-            
-            VStack(spacing: 0) {
-                content
-            }
-            .background(Color.surfaceCard)
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
-            .padding(.horizontal, 24)
-        }
-    }
-}
-
-struct SettingsRowContent: View {
-    var title: String
-    var subtitle: String?
-    var showChevron: Bool
-    
-    var body: some View {
-        HStack {
-            Text(title)
-                .foregroundColor(.textPrimary)
-            Spacer()
-            if let subtitle = subtitle {
-                Text(subtitle)
-                    .foregroundColor(.textSecondary)
-            }
-            if showChevron {
-                Image(systemName: "chevron.right")
-                    .font(.bodySmallStrong)
-                    .foregroundColor(.chevronAffordance)
-            }
-        }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 16)
-    }
-}
-
-struct SettingsRow: View {
-    @Environment(\.openURL) var openURL
-    var icon: String
-    var color: Color
-    var title: String
-    var url: String?
-    
-    var body: some View {
-        Button(action: {
-            if let urlString = url, let dest = URL(string: urlString) {
-                openURL(dest)
-            }
-        }) {
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(color)
-                        .frame(width: 30, height: 30)
-                    Image(systemName: icon)
-                        .foregroundColor(.white)
-                        .font(.bodySmallStrong)
-                }
-                
-                Text(title)
-                    .foregroundColor(.textPrimary)
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.bodySmallStrong)
-                    .foregroundColor(.chevronAffordance)
-            }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 16)
-        }
-    }
-}

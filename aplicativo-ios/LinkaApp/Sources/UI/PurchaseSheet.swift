@@ -3,320 +3,187 @@ import StoreKit
 import LinkaEntitlements
 
 struct PurchaseSheet: View {
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
+    let entryPoint: PurchaseEntryPoint
+    let onPurchaseCompleted: (() -> Void)?
     @State private var isPurchasing = false
     @State private var isRestoring = false
     @State private var errorMessage: String?
 
+    init(entryPoint: PurchaseEntryPoint = .settings, onPurchaseCompleted: (() -> Void)? = nil) {
+        self.entryPoint = entryPoint
+        self.onPurchaseCompleted = onPurchaseCompleted
+    }
+
     var body: some View {
         ZStack {
             Color.surfacePage.ignoresSafeArea()
-            
             VStack(spacing: 0) {
-                // Top Close Button
                 HStack {
                     Spacer()
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.bodySmallStrong)
-                            .foregroundColor(.textSecondary)
-                            .frame(width: 30, height: 30)
-                            .background(Color.textSecondary.opacity(0.14))
-                            .clipShape(Circle())
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(Rectangle())
-                            .accessibilityLabel("Fechar")
-                    }
+                    Button("Fechar", systemImage: "xmark") { dismiss() }
+                        .labelStyle(.iconOnly)
+                        .foregroundColor(.textSecondary)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .accessibilityLabel("Fechar")
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        // Header Hero
+                    VStack(alignment: .leading, spacing: 0) {
                         Image("Logo")
-                            .resizable()
-                            .renderingMode(.template)
-                            .scaledToFit()
-                            .frame(height: 32)
-                            .foregroundColor(.textPrimary)
-                            .padding(.top, 48)
-                        
-                        // Titles
-                        Text("Linka Plus")
-                            .font(.displayTitle)
-                            .foregroundColor(.textPrimary)
-                            .padding(.top, 24)
-                        
-                        Text("Uma medição limpa, sem interrupções, e tudo\no que vier depois.")
-                            .font(.bodyRegular)
-                            .foregroundColor(.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.top, 8)
-                            .padding(.horizontal, 32)
-                            
-                        // Grátis: o que já funciona sem Plus
-                        PurchaseSectionHeader(text: "LINKA GRÁTIS")
-                            .padding(.top, 32)
+                            .resizable().renderingMode(.template).scaledToFit()
+                            .frame(height: 30).foregroundColor(.textPrimary)
+                            .frame(maxWidth: .infinity).padding(.top, 22)
+                        Text(entryPoint.title)
+                            .font(.displayTitle).foregroundColor(.textPrimary)
+                            .frame(maxWidth: .infinity).padding(.top, 20)
+                        Text(entryPoint.subtitle)
+                            .font(.bodyRegular).foregroundColor(.textSecondary)
+                            .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                            .padding(.top, 8).padding(.horizontal, 28)
 
-                        VStack(spacing: 0) {
-                            PurchaseFeatureRow(
-                                text: "Medição de velocidade",
-                                showDivider: true
-                            )
-                            PurchaseFeatureRow(
-                                text: "Histórico de resultados",
-                                showDivider: false
-                            )
-                        }
-                        .padding(.vertical, 8)
-                        .background(Color.surfaceCard)
-                        .cornerRadius(16)
-                        .padding(.top, 8)
-                        .padding(.horizontal, 24)
-
-                        // Plus: capacidades hoje gateadas por LinkaCapability
-                        PurchaseSectionHeader(text: "LINKA PLUS")
-                            .padding(.top, 24)
-
-                        VStack(spacing: 0) {
-                            PurchaseFeatureRow(
-                                text: "Assist: intérprete IA",
-                                showDivider: true
-                            )
-                            PurchaseFeatureRow(
-                                text: "Insights e tendências",
-                                showDivider: false
-                            )
-                        }
-                        .padding(.vertical, 8)
-                        .background(Color.surfaceCard)
-                        .cornerRadius(16)
-                        .padding(.top, 8)
-                        .padding(.horizontal, 24)
-
-                        // Price Card
-                        VStack(spacing: 8) {
-                            if let product = entitlements.product {
-                                Text(product.displayPrice)
-                                    .font(.displayLarge)
-                                    .foregroundColor(.textPrimary)
-
-                                Text("Assinatura anual · renovação automática")
-                                    .font(.captionMedium)
-                                    .foregroundColor(.textSecondary)
-                            } else if entitlements.isLoadingProduct {
-                                ProgressView()
-                                    .padding(.vertical, 6)
-                            } else {
-                                Text("Não foi possível carregar o preço agora")
-                                    .font(.bodySmallMedium)
-                                    .foregroundColor(.textSecondary)
-
-                                Button(action: {
-                                    Task { await entitlements.loadProduct() }
-                                }) {
-                                    Text("Tentar novamente")
-                                        .font(.bodySmallStrong)
-                                        .foregroundColor(.textPrimary)
-                                }
-                                .padding(.top, 4)
-                            }
-                        }
-                        .padding(.vertical, 24)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.textPrimary, lineWidth: 1.5)
-                        )
-                        .padding(.top, 24)
-                        .padding(.horizontal, 24)
+                        PurchaseSectionHeader(text: "LINKA GRÁTIS").padding(.top, 32)
+                        featureList([
+                            "Medição de velocidade", "Histórico de resultados",
+                            "Detalhes básicos da conexão", "Identificação da rede Wi-Fi quando disponível"
+                        ])
+                        PurchaseSectionHeader(text: "LINKA PLUS").padding(.top, 24)
+                        featureList([
+                            "Entenda o seu resultado", "Descubra problemas que se repetem",
+                            "Acompanhe cada rede no histórico", "Detalhes avançados do Wi-Fi"
+                        ])
+                        Text("O diagnóstico Wi-Fi avançado requer configuração opcional no app Atalhos.")
+                            .font(.captionMedium).foregroundColor(.textSecondary)
+                            .padding(.top, 12).padding(.horizontal, 28)
+                        priceState.padding(.top, 24).padding(.horizontal, 24)
                     }
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 28)
                 }
-                
-                // Bottom CTA and Disclaimer
+
                 VStack(spacing: 0) {
                     if let errorMessage {
-                        Text(errorMessage)
-                            .font(.captionMedium)
-                            .foregroundColor(.brandAccentWarm)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
-                            .padding(.bottom, 12)
-                            .transition(.opacity)
+                        Text(errorMessage).font(.captionMedium).foregroundColor(.brandAccentWarm)
+                            .multilineTextAlignment(.center).padding(.horizontal, 28).padding(.bottom, 10)
                     }
-
                     Button(action: purchase) {
-                        Group {
-                            if isPurchasing {
-                                ProgressView()
-                                    .tint(Color.surfacePage)
-                            } else if let product = entitlements.product {
-                                Text("Comprar por \(product.displayPrice)/ano")
-                                    .font(.buttonLabel)
-                            } else {
-                                Text("Carregando preço…")
-                                    .font(.buttonLabel)
-                            }
-                        }
-                        .foregroundColor(Color.surfacePage)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(Color.textPrimary)
-                        .cornerRadius(12)
+                        if isPurchasing { ProgressView().tint(Color.surfacePage) }
+                        else if let product = entitlements.product { Text("Assinar por \(product.displayPrice)/ano").font(.buttonLabel) }
+                        else { Text("Carregando preço…").font(.buttonLabel) }
                     }
-                    .disabled(isPurchasing || isRestoring || entitlements.product == nil)
-                    .padding(.horizontal, 24)
-
+                    .foregroundColor(Color.surfacePage).frame(maxWidth: .infinity).padding(.vertical, 18)
+                    .background(Color.textPrimary).clipShape(RoundedRectangle(cornerRadius: 12))
+                    .disabled(isPurchasing || isRestoring || entitlements.product == nil).padding(.horizontal, 24)
                     Button(action: restore) {
-                        if isRestoring {
-                            ProgressView()
-                        } else {
-                            Text("Restaurar compra")
-                                .font(.bodySmallMedium)
-                                .foregroundColor(.textSecondary)
-                        }
+                        if isRestoring { ProgressView() } else { Text("Restaurar compra") }
                     }
-                    .disabled(isPurchasing || isRestoring)
-                    .padding(.top, 16)
-
-                    Text(disclaimerText)
-                        .font(.captionSmall)
-                        .foregroundColor(.textSecondary.opacity(0.6))
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 16)
-                        .padding(.horizontal, 32)
-                        
+                    .font(.bodySmallMedium).foregroundColor(.textSecondary)
+                    .disabled(isPurchasing || isRestoring).padding(.top, 14)
+                    Text(disclaimerText).font(.captionSmall).foregroundColor(.textSecondary)
+                        .multilineTextAlignment(.center).padding(.top, 14).padding(.horizontal, 28)
                     HStack(spacing: 4) {
-                        Link("Termos de Uso", destination: URL(string: "https://linka-speedtest.web.app/termos")!)
-                            .font(.captionSmall)
-                        
-                        Text("e")
-                            .font(.captionSmall)
-                            .foregroundColor(.textSecondary.opacity(0.6))
-                        
-                        Link("Política de Privacidade", destination: URL(string: "https://linka-speedtest.web.app/privacidade")!)
-                            .font(.captionSmall)
+                        Link("Termos de Uso", destination: LinkaExternalLinks.terms)
+                        Text("e").foregroundColor(.textSecondary)
+                        Link("Política de Privacidade", destination: LinkaExternalLinks.privacy)
                     }
-                    .foregroundColor(.brandSurface)
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
+                    .font(.captionSmall).foregroundColor(.brandSurface).padding(.top, 8).padding(.bottom, 20)
                 }
-                .padding(.top, 16)
             }
         }
     }
 
-    /// Descreve a assinatura auto-renovável.
+    // Issue UI Polish v2 (2026-08-29): sem card por seção — "hero +
+    // benefícios + preço + CTA", não "card, card, card". O conteúdo
+    // (o que é grátis, o que é Plus, preço) continua o mesmo; só a moldura
+    // visual em volta de cada bloco foi removida.
+    private func featureList(_ features: [String]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(features.enumerated()), id: \.offset) { index, feature in
+                PurchaseFeatureRow(text: feature, showDivider: index < features.count - 1)
+            }
+        }
+        .padding(.top, 8).padding(.horizontal, 24)
+    }
+
+    @ViewBuilder private var priceState: some View {
+        VStack(spacing: 8) {
+            if let product = entitlements.product {
+                Text(product.displayPrice).font(.displayLarge).foregroundColor(.textPrimary)
+                Text("Assinatura anual com renovação automática").font(.captionMedium).foregroundColor(.textSecondary)
+            } else if entitlements.isLoadingProduct {
+                ProgressView().padding(.vertical, 6)
+            } else {
+                Text("Não foi possível carregar o preço agora").font(.bodySmallMedium).foregroundColor(.textSecondary)
+                Button("Tentar novamente") { Task { await entitlements.loadProduct() } }
+                    .font(.bodySmallStrong).foregroundColor(.textPrimary)
+            }
+        }
+        .padding(.vertical, 22).frame(maxWidth: .infinity)
+    }
+
     private var disclaimerText: String {
         if let product = entitlements.product {
-            return "Valor de \(product.displayPrice) cobrado anualmente, com renovação automática. Você pode cancelar ou gerenciar sua assinatura nos Ajustes do Apple ID a qualquer momento."
+            return "Valor de \(product.displayPrice) cobrado anualmente, com renovação automática. Gerencie a assinatura pela Apple."
         }
-        return "Valor anual cobrado com renovação automática. Você pode cancelar ou gerenciar sua assinatura nos Ajustes do Apple ID a qualquer momento."
+        return "Assinatura anual com renovação automática. Gerencie a assinatura pela Apple."
     }
 
     private func purchase() {
         guard !isPurchasing, !isRestoring else { return }
-        isPurchasing = true
-        errorMessage = nil
-
+        isPurchasing = true; errorMessage = nil
         Task {
             do {
                 let outcome = try await entitlements.purchase()
-                await MainActor.run {
-                    isPurchasing = false
-                    switch outcome {
-                    case .purchased:
-                        dismiss()
-                    case .userCancelled:
-                        // Cancelamento silencioso: o usuário desistiu do
-                        // fluxo nativo da App Store, sem estado de erro.
-                        break
-                    case .pending:
-                        errorMessage = "Sua compra está pendente de aprovação (ex.: Compras Familiares). Você será avisado quando ela for concluída."
-                    }
+                isPurchasing = false
+                switch outcome {
+                case .purchased: dismiss(); onPurchaseCompleted?()
+                case .userCancelled: break
+                case .pending: errorMessage = "A compra está pendente de aprovação."
                 }
             } catch {
-                await MainActor.run {
-                    isPurchasing = false
-                    errorMessage = "Não foi possível concluir a compra agora. Tente novamente em instantes."
-                }
+                isPurchasing = false; errorMessage = "Não foi possível concluir a compra agora. Tente novamente."
             }
         }
     }
 
     private func restore() {
         guard !isPurchasing, !isRestoring else { return }
-        isRestoring = true
-        errorMessage = nil
-
+        isRestoring = true; errorMessage = nil
         Task {
             do {
                 let restored = try await entitlements.restore()
-                await MainActor.run {
-                    isRestoring = false
-                    if restored {
-                        dismiss()
-                    } else {
-                        errorMessage = "Nenhuma compra ativa foi encontrada para restaurar."
-                    }
-                }
+                isRestoring = false
+                if restored { dismiss(); onPurchaseCompleted?() }
+                else { errorMessage = "Nenhuma compra ativa foi encontrada." }
             } catch {
-                await MainActor.run {
-                    isRestoring = false
-                    errorMessage = "Não foi possível restaurar sua compra agora. Tente novamente em instantes."
-                }
+                isRestoring = false; errorMessage = "Não foi possível restaurar a compra agora. Tente novamente."
             }
         }
     }
 }
 
-/// Cabeçalho que separa visualmente o que é grátis do que é Plus — os dois
-/// nunca aparecem misturados numa lista única.
 struct PurchaseSectionHeader: View {
     var text: String
-
     var body: some View {
-        HStack {
-            Text(text.uppercased())
-                .font(.captionSmallStrong)
-                .foregroundColor(.textSecondary)
-                .tracking(0.5)
-
-            Spacer()
-        }
-        .padding(.horizontal, 28)
+        Text(text).font(.captionSmallStrong).foregroundColor(.textSecondary).tracking(0.5).padding(.horizontal, 28)
     }
 }
 
 struct PurchaseFeatureRow: View {
     var text: String
     var showDivider: Bool
-    
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Image(systemName: "checkmark")
-                    .font(.bodySmallStrong)
-                    .foregroundColor(.textPrimary)
-                
-                Text(text)
-                    .font(.bodySmallMedium)
-                    .foregroundColor(.textPrimary)
-                
+                Image(systemName: "checkmark").font(.bodySmallStrong).foregroundColor(.textPrimary)
+                Text(text).font(.bodySmallMedium).foregroundColor(.textPrimary)
                 Spacer()
             }
-            .padding(.vertical, 16)
-            .padding(.horizontal, 20)
-            
-            if showDivider {
-                Divider()
-                    .padding(.horizontal, 20)
-            }
+            .padding(.vertical, 14).padding(.horizontal, 20)
+            if showDivider { Divider().padding(.horizontal, 20) }
         }
+        .accessibilityElement(children: .combine)
     }
 }

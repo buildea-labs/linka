@@ -1,13 +1,13 @@
 ---
 name: desenhar-interface
-description: Procedimento do Giam para especificar a UI do Linka a partir do protótipo canônico e do Design System, antes do Guinho implementar.
+description: Procedimento do Giammattey para especificar a UI do Linka a partir do protótipo canônico e do Design System, antes do Tiago implementar.
 ---
 
 # Skill: desenharInterface
 
-Procedimento do **Giam** para transformar a experiência desenhada em **especificação visual** — a coisa que o Guinho recebe e constrói.
+Procedimento do **Giammattey** para transformar a experiência desenhada em **especificação visual** — a coisa que o Tiago recebe e constrói.
 
-Giam desenha. Guinho implementa. Quem constrói o componente usa a [`criarComponenteUI`](../criarComponenteUI/SKILL.md).
+Giammattey desenha. Tiago implementa. Quem constrói o componente usa a [`criarComponenteUI`](../criarComponenteUI/SKILL.md).
 
 > ## AS DUAS FONTES
 >
@@ -16,7 +16,7 @@ Giam desenha. Guinho implementa. Quem constrói o componente usa a [`criarCompon
 >
 > **Divergiu? O protótipo vence** (per [`AGENTS.md`](../../../AGENTS.md) §3 e §7). O Design System existe para documentar o protótipo, não para competir com ele.
 >
-> Se a divergência for material e não puder ser conciliada, o Giam decide antes de implementar.
+> Se a divergência for material e não puder ser conciliada, o Giammattey decide antes de implementar.
 
 ## 1. Token existente ou o desenho está errado
 
@@ -58,7 +58,7 @@ Esta lista diz o que conferir. **Os valores ficam no `readme.md` do Design Syste
 
 ## 4. A saída
 
-A especificação que o Guinho recebe:
+A especificação que o Tiago recebe:
 
 ```text
 ESTADO: qual estado do fluxo, e qual região muda

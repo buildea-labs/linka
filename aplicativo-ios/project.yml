@@ -21,8 +21,13 @@ targets:
       properties:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleURLTypes:
+          - CFBundleURLName: com.linka.wifi-advanced
+            CFBundleURLSchemes:
+              - linka
         GADApplicationIdentifier: "ca-app-pub-3940256099942544~1458002511"
         NDAssistRelayEndpoint: "https://linka-assist-relay.buildealabs.workers.dev/v1/assist"
+        NSLocationWhenInUseUsageDescription: "O Linka usa a localização apenas porque o iPhone exige essa autorização para informar o nome da rede Wi-Fi atual. Sua localização não é salva para identificar a rede."
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -36,6 +41,8 @@ targets:
     dependencies:
       - package: LinkaEngine
       - package: LinkaModules
+      - package: NetworkConnectivityTriage
+      - package: LinkaAppIntents
       - package: GoogleMobileAds
         platforms: [iOS]
   LinkaAppTests:
@@ -55,6 +62,10 @@ packages:
     path: LinkaEngine
   LinkaModules:
     path: LinkaModules
+  NetworkConnectivityTriage:
+    path: NetworkConnectivityTriage
+  LinkaAppIntents:
+    path: LinkaAppIntents
   GoogleMobileAds:
     url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
     exactVersion: 11.8.0

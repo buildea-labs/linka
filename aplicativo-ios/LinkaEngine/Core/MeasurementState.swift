@@ -29,6 +29,11 @@ public struct MeasurementState {
     /// #128, `NetworkInsights.LoadResponsivenessEvaluator`) precisa dos dois
     /// separadamente. Espelha o campo homônimo em `NetworkMeasurement`.
     public var loadedLatencyUploadMs: Double?
+    /// Tempo de resolução DNS (ms) do host usado no teste — Expert Mode.
+    /// Sondagem única via `SpeedTestCore.resolveDNS`, roda em paralelo ao
+    /// ping. `nil` em falha ou timeout — nunca `0` (ausência não é zero).
+    /// Espelha o campo homônimo em `NetworkMeasurement`.
+    public var dnsResolutionMs: Double?
     /// Coeficiente de variação da vazão de download (desvio padrão relativo
     /// à média, janela estável) — issue #52. Propriedade motor-interna
     /// nesta primeira entrega, não faz parte do contrato canônico
@@ -43,7 +48,7 @@ public struct MeasurementState {
     
     public var location: (latitude: Double, longitude: Double)?
 
-    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: String? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, loadedLatencyUploadMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil, failureReason: EngineFailureReason? = nil, location: (latitude: Double, longitude: Double)? = nil) {
+    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: String? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, loadedLatencyUploadMs: Double? = nil, dnsResolutionMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil, failureReason: EngineFailureReason? = nil, location: (latitude: Double, longitude: Double)? = nil) {
         self.ping = ping
         self.jitter = jitter
         self.packetLossPercent = packetLossPercent
@@ -56,6 +61,7 @@ public struct MeasurementState {
         self.duration = duration
         self.loadedLatencyMs = loadedLatencyMs
         self.loadedLatencyUploadMs = loadedLatencyUploadMs
+        self.dnsResolutionMs = dnsResolutionMs
         self.downloadThroughputVariation = downloadThroughputVariation
         self.uploadThroughputVariation = uploadThroughputVariation
         self.failureReason = failureReason

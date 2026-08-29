@@ -1,6 +1,6 @@
 ---
 name: delegar-subagente
-description: Delegar uma tarefa independente a um subagente nativo do Codex usando os perfis Giam, Guinho ou Marcelo, com escopo, permissões e retorno verificáveis.
+description: Delegar uma tarefa independente a um subagente nativo do Codex usando os perfis Giammattey, Tiago ou Igor, com escopo, permissões e retorno verificáveis.
 ---
 
 # Skill: delegar-subagente
@@ -9,9 +9,9 @@ Use esta skill quando uma parte do trabalho for independente, concreta e suficie
 
 ## Escolha do perfil
 
-- **Giam**: produto, experiência, curadoria, plano e aceite contra requisito.
-- **Guinho**: implementação e testes, com arquivos de escrita explicitamente autorizados.
-- **Marcelo**: auditoria, testes e verificação; somente leitura por padrão.
+- **Giammattey**: produto, experiência, curadoria, plano e aceite contra requisito.
+- **Tiago**: implementação e testes, com arquivos de escrita explicitamente autorizados.
+- **Igor**: auditoria, testes e verificação; somente leitura por padrão.
 
 ## Antes de delegar
 
@@ -20,7 +20,7 @@ Defina objetivo, contexto mínimo, arquivos permitidos, política de escrita e f
 ## Mensagem mínima
 
 ```text
-Papel: <giam|guinho|marcelo>
+Papel: <giammattey|tiago|igor>
 Objetivo: <entrega concreta>
 Escopo de leitura: <arquivos ou módulos>
 Escopo de escrita: <somente leitura ou arquivos exatos>
@@ -28,7 +28,7 @@ Restrições: preserve mudanças existentes; não faça merge, push, deploy ou p
 Retorno: arquivos alterados, comandos/testes, evidências, riscos e bloqueios.
 ```
 
-Para Marcelo, exigir `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA` com evidência. Para Guinho, revisar o diff retornado antes de integrar. Para qualquer perfil, o retorno não é aprovação de Giam ou Luiz.
+Para Igor, exigir `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA` com evidência. Para Tiago, revisar o diff retornado antes de integrar. Para qualquer perfil, o retorno não é aprovação de Giammattey ou Luiz.
 
 ## Depois de delegar
 
