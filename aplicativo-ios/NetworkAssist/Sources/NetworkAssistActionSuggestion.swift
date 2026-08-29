@@ -70,8 +70,6 @@ public enum NetworkAssistActionSuggestion: Equatable, Sendable {
 /// `NetworkAssistInvestigationEngine`: mesma entrada sempre produz a mesma
 /// saída, sem I/O, sem `async`, sem depender de nenhum transport remoto.
 public enum NetworkAssistActionEngine {
-    private static let failureSignalMetricKey = "failureSignal"
-    private static let offlineDirection = "offline"
     private static let connectionKindMetricKey = "connectionKind"
     private static let wifiDirection = "wifi"
     private static let recentOutcomeStabilityMetricKey = "recentOutcomeStability"
@@ -108,12 +106,7 @@ public enum NetworkAssistActionEngine {
 
     /// Indício local. Dois cenários com evidência suficiente para agir:
     ///
-    /// 1. A falha foi `.offline` (nenhuma rede detectada antes do teste
-    ///    nem começar) — o único passo honesto sem mais evidência é checar
-    ///    conectividade básica do aparelho (Wi-Fi/dados móveis/modo
-    ///    avião); não existe API pública para automatizar isso, então é
-    ///    sempre `.manualGuidance`.
-    /// 2. A falha foi `.connectionLost` e a evidência de `connectionKind`
+    /// A falha foi `.connectionLost` e a evidência de `connectionKind`
     ///    aponta Wi-Fi como conexão recente predominante — abrir a página
     ///    do app em Ajustes é uma ação real e pública com relação objetiva
     ///    ao que foi observado.
@@ -125,9 +118,6 @@ public enum NetworkAssistActionEngine {
     private static func suggestForLocalSignal(
         _ result: NetworkAssistInvestigationResult
     ) -> NetworkAssistActionSuggestion? {
-        if hasOfflineFailureEvidence(result) {
-            return .manualGuidance(topic: .wifiConnectivity)
-        }
         if hasWifiConnectionKindEvidence(result) {
             return .openAppSettings
         }
@@ -145,12 +135,6 @@ public enum NetworkAssistActionEngine {
     ) -> NetworkAssistActionSuggestion? {
         guard hasStableRecentHistoryEvidence(result) else { return nil }
         return .retryMeasurement
-    }
-
-    private static func hasOfflineFailureEvidence(_ result: NetworkAssistInvestigationResult) -> Bool {
-        result.evidence.contains {
-            $0.metricKey == failureSignalMetricKey && $0.direction == offlineDirection
-        }
     }
 
     private static func hasWifiConnectionKindEvidence(_ result: NetworkAssistInvestigationResult) -> Bool {

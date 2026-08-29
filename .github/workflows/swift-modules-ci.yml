@@ -46,6 +46,10 @@ jobs:
         working-directory: aplicativo-ios/NetworkDiagnostics
         run: swift test
 
+      - name: Test NetworkConnectivityTriage
+        working-directory: aplicativo-ios/NetworkConnectivityTriage
+        run: swift test
+
       - name: Test LinkaEntitlements
         working-directory: aplicativo-ios/LinkaEntitlements
         run: swift test

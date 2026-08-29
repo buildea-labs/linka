@@ -29,6 +29,13 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
     /// (`NetworkInsights.LoadResponsivenessEvaluator`) precisa dos dois
     /// valores separadamente, não de um único campo ambíguo.
     public let loadedLatencyUploadMs: Double?
+    /// Tempo de resolução DNS (ms) do host usado no teste — issue Expert
+    /// Mode. Campo aditivo: opcional, `nil` por padrão, não muda
+    /// `schemaVersion`. Uma medição antiga decodifica com `nil`, mesmo
+    /// padrão de `loadedLatencyUploadMs`/`wifiBandGHz`/`durationMs`. `nil`
+    /// representa falha ou timeout de resolução — nunca é normalizado para
+    /// `0` (AGENTS.md §8: ausência não é zero).
+    public let dnsResolutionMs: Double?
     public let durationMs: Int?
     public let connectionKind: NetworkConnectionKind?
     /// Banda Wi-Fi confirmada pelo sistema, em GHz (ex.: `2.4`, `5`) —
@@ -63,6 +70,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         packetLossPercent: Double? = nil,
         loadedLatencyMs: Double? = nil,
         loadedLatencyUploadMs: Double? = nil,
+        dnsResolutionMs: Double? = nil,
         durationMs: Int? = nil,
         connectionKind: NetworkConnectionKind? = nil,
         wifiBandGHz: Double? = nil,
@@ -84,6 +92,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         self.packetLossPercent = packetLossPercent
         self.loadedLatencyMs = loadedLatencyMs
         self.loadedLatencyUploadMs = loadedLatencyUploadMs
+        self.dnsResolutionMs = dnsResolutionMs
         self.durationMs = durationMs
         self.connectionKind = connectionKind
         self.wifiBandGHz = wifiBandGHz
@@ -308,7 +317,8 @@ public enum NetworkMeasurementContract {
             ("jitterMs", measurement.jitterMs),
             ("packetLossPercent", measurement.packetLossPercent),
             ("loadedLatencyMs", measurement.loadedLatencyMs),
-            ("loadedLatencyUploadMs", measurement.loadedLatencyUploadMs)
+            ("loadedLatencyUploadMs", measurement.loadedLatencyUploadMs),
+            ("dnsResolutionMs", measurement.dnsResolutionMs)
         ]
 
         for (name, value) in metrics {

@@ -236,6 +236,79 @@ final class UsageSuitabilityTests: XCTestCase {
         XCTAssertEqual(evaluator.evaluate(justAbovePacketLoss).verdict(for: .onlineGaming)?.level, .limited)
     }
 
+    // MARK: - workUpload
+
+    func testWorkUploadFlagsUploadWhenOnlyUploadFailsThreshold() {
+        let measurement = measurement(download: 120, upload: 4, latency: 20, jitter: 5, packetLoss: 0)
+
+        let verdict = evaluator.evaluate(measurement).verdict(for: .workUpload)
+
+        XCTAssertEqual(verdict?.level, .limited)
+        XCTAssertEqual(verdict?.limitingMetric, .uploadMbps)
+    }
+
+    func testWorkUploadFlagsJitterWhenOnlyJitterFailsThreshold() {
+        let measurement = measurement(download: 120, upload: 20, latency: 20, jitter: 41, packetLoss: 0)
+
+        let verdict = evaluator.evaluate(measurement).verdict(for: .workUpload)
+
+        XCTAssertEqual(verdict?.level, .limited)
+        XCTAssertEqual(verdict?.limitingMetric, .jitterMs)
+    }
+
+    func testWorkUploadFlagsLatencyWhenOnlyLatencyFailsThreshold() {
+        let measurement = measurement(download: 120, upload: 20, latency: 201, jitter: 5, packetLoss: 0)
+
+        let verdict = evaluator.evaluate(measurement).verdict(for: .workUpload)
+
+        XCTAssertEqual(verdict?.level, .limited)
+        XCTAssertEqual(verdict?.limitingMetric, .latencyMs)
+    }
+
+    func testWorkUploadFlagsPacketLossWhenOnlyPacketLossFailsThreshold() {
+        let measurement = measurement(download: 120, upload: 20, latency: 20, jitter: 5, packetLoss: 3)
+
+        let verdict = evaluator.evaluate(measurement).verdict(for: .workUpload)
+
+        XCTAssertEqual(verdict?.level, .limited)
+        XCTAssertEqual(verdict?.limitingMetric, .packetLossPercent)
+    }
+
+    func testWorkUploadIsNotAssessedWhenUploadIsMissing() {
+        let measurement = measurement(download: 120, upload: nil, latency: 20, jitter: 5, packetLoss: 0)
+
+        let verdict = evaluator.evaluate(measurement).verdict(for: .workUpload)
+
+        XCTAssertEqual(verdict?.level, .notAssessed)
+        XCTAssertEqual(verdict?.limitingMetric, .uploadMbps)
+    }
+
+    func testWorkUploadIsNotAssessedWhenJitterIsMissingEvenWithGoodUpload() {
+        let measurement = measurement(download: 120, upload: 20, latency: 20, jitter: nil, packetLoss: 0)
+
+        let verdict = evaluator.evaluate(measurement).verdict(for: .workUpload)
+
+        XCTAssertEqual(verdict?.level, .notAssessed)
+        XCTAssertEqual(verdict?.limitingMetric, .jitterMs)
+    }
+
+    func testWorkUploadThresholdsAreInclusiveAtTheBoundary() {
+        let atBoundary = measurement(download: 120, upload: 5, latency: 200, jitter: 40, packetLoss: 2)
+        XCTAssertEqual(evaluator.evaluate(atBoundary).verdict(for: .workUpload)?.level, .adequate)
+
+        let justBelowUpload = measurement(download: 120, upload: 4.99, latency: 200, jitter: 40, packetLoss: 2)
+        XCTAssertEqual(evaluator.evaluate(justBelowUpload).verdict(for: .workUpload)?.level, .limited)
+
+        let justAboveJitter = measurement(download: 120, upload: 5, latency: 200, jitter: 40.01, packetLoss: 2)
+        XCTAssertEqual(evaluator.evaluate(justAboveJitter).verdict(for: .workUpload)?.level, .limited)
+
+        let justAboveLatency = measurement(download: 120, upload: 5, latency: 200.01, jitter: 40, packetLoss: 2)
+        XCTAssertEqual(evaluator.evaluate(justAboveLatency).verdict(for: .workUpload)?.level, .limited)
+
+        let justAbovePacketLoss = measurement(download: 120, upload: 5, latency: 200, jitter: 40, packetLoss: 2.01)
+        XCTAssertEqual(evaluator.evaluate(justAbovePacketLoss).verdict(for: .workUpload)?.level, .limited)
+    }
+
     // MARK: - Helper
 
     private func measurement(

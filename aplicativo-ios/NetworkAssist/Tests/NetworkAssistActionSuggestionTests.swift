@@ -45,29 +45,26 @@ final class NetworkAssistActionSuggestionTests: XCTestCase {
         XCTAssertNil(NetworkAssistActionEngine.suggest(for: result))
     }
 
-    // MARK: - Local: offline vira orientação manual, nunca automação
+    // MARK: - Offline não produz orientação causal
 
-    func testOfflineSuggestsManualWifiConnectivityGuidance() {
+    func testOfflineDoesNotSuggestWifiGuidanceWithoutEvidence() {
         let result = NetworkAssistInvestigationEngine.investigate(
             NetworkAssistInvestigationInput(failureSignal: .offline, recentMeasurements: [])
         )
-        XCTAssertEqual(result.disposition, .localSignalLikely)
+        XCTAssertEqual(result.disposition, .inconclusive)
 
         let suggestion = NetworkAssistActionEngine.suggest(for: result)
-        XCTAssertEqual(suggestion, .manualGuidance(topic: .wifiConnectivity))
+        XCTAssertNil(suggestion)
     }
 
-    func testOfflineNeverSuggestsOpenAppSettings() {
-        // `.offline` nunca tem evidência de `connectionKind` (a conexão
-        // nunca chegou a se estabelecer) — não pode virar `.openAppSettings`
-        // mesmo que o histórico recente seja todo Wi-Fi.
+    func testOfflineWithWifiHistoryStillDoesNotSuggestSettings() {
         let history = [measurement(connectionKind: .wifi), measurement(connectionKind: .wifi)]
         let result = NetworkAssistInvestigationEngine.investigate(
             NetworkAssistInvestigationInput(failureSignal: .offline, recentMeasurements: history)
         )
 
         let suggestion = NetworkAssistActionEngine.suggest(for: result)
-        XCTAssertEqual(suggestion, .manualGuidance(topic: .wifiConnectivity))
+        XCTAssertNil(suggestion)
     }
 
     // MARK: - Local: connectionLost com Wi-Fi evidenciado abre Ajustes

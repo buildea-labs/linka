@@ -42,51 +42,98 @@ public extension Color {
         return PlatformColor(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: CGFloat(a) / 255)
     }
 
-    private static let lightBg = hex("#FCFCFD")
-    private static let lightSurface = hex("#FFFFFF")
     private static let lightInk = hex("#102245")
     private static let lightAccentWarm = hex("#C15300") // Darkened to meet 4.5:1 contrast in Light Mode
-    private static let lightMuted = hex("#5F6C88")
-    private static let lightBorder = hex("#E6E8ED")
     private static let lightBorderStrong = hex("#7C859B")
-    
-    private static let darkBg = hex("#000000")
-    private static let darkSurface = hex("#262629")
+
     private static let darkInk = hex("#F6F6F9")
     private static let darkAccentWarm = hex("#FF9552")
-    private static let darkMuted = hex("#9BA3B4")
-    private static let darkBorder = hex("#25272D")
     private static let darkBorderStrong = hex("#5C6577")
-    
-    static let surfacePage = dynamicColor(light: lightBg, dark: darkBg)
-    static let surfaceCard = dynamicColor(light: lightSurface, dark: darkSurface)
-    static let textPrimary = dynamicColor(light: lightInk, dark: darkInk)
-    static let textSecondary = dynamicColor(light: lightMuted, dark: darkMuted)
-    static let borderDefault = dynamicColor(light: lightBorder, dark: darkBorder)
+
+    // UI Polish v2 (2026-08-29): surfacePage/surfaceCard/textPrimary/
+    // textSecondary/borderDefault deixaram de ser hex custom e passaram a
+    // apoiar nas cores dinâmicas nativas do sistema — ganho automático de
+    // contraste correto em Light/Dark/Aumentar Contraste e de "parecer
+    // nativo" sem redesenhar o UIKit/AppKit inteiro (decisão de produto,
+    // análise de UI Polish v2). A identidade Linka permanece só em
+    // brandSurface/brandOnSurface/brandAccentWarm/borderStrong.
+    #if canImport(UIKit)
+    static let surfacePage = Color(UIColor.systemBackground)
+    static let surfaceCard = Color(UIColor.secondarySystemBackground)
+    static let textPrimary = Color(UIColor.label)
+    static let textSecondary = Color(UIColor.secondaryLabel)
+    static let borderDefault = Color(UIColor.separator)
+    static let statusGood = Color(UIColor.systemGreen)
+    static let statusAttention = Color(UIColor.systemOrange)
+    static let statusCritical = Color(UIColor.systemRed)
+    #elseif canImport(AppKit)
+    static let surfacePage = Color(NSColor.windowBackgroundColor)
+    static let surfaceCard = Color(NSColor.controlBackgroundColor)
+    static let textPrimary = Color(NSColor.labelColor)
+    static let textSecondary = Color(NSColor.secondaryLabelColor)
+    static let borderDefault = Color(NSColor.separatorColor)
+    static let statusGood = Color(NSColor.systemGreen)
+    static let statusAttention = Color(NSColor.systemOrange)
+    static let statusCritical = Color(NSColor.systemRed)
+    #endif
+
     static let borderStrong = dynamicColor(light: lightBorderStrong, dark: darkBorderStrong)
     static let brandSurface = dynamicColor(light: lightInk, dark: darkInk)
     static let brandOnSurface = dynamicColor(light: hex("#FFFFFF"), dark: hex("#000000"))
     static let brandAccentWarm = dynamicColor(light: lightAccentWarm, dark: darkAccentWarm)
+    /// Cor de ação primária semântica (issue UI Polish v2) — substitui usos
+    /// soltos de `Color.accentColor`/`.blue` em `AssistView`. Reaproveita a
+    /// cor de marca em vez de introduzir um quarto tom de laranja/azul.
+    static let actionPrimary = brandAccentWarm
 }
 
 public extension Font {
+    // UI Polish v2 (2026-08-29): `.rounded` fica reservado a números de
+    // métrica de verdade (MetricRing, preço do paywall) — `displayTitle`/
+    // `displayMedium` são usados como títulos de conteúdo/prosa (ex.:
+    // AssistView, UsageDiagnosticsView, PurchaseSheet), onde o design
+    // padrão do sistema lê mais como um app nativo, não uma métrica.
     static let displayHuge = Font.system(.largeTitle, design: .rounded, weight: .bold)
     static let displayLarge = Font.system(.title, design: .rounded, weight: .bold)
-    static let displayTitle = Font.system(.title2, design: .rounded, weight: .bold)
-    static let displayMedium = Font.system(.title3, design: .rounded, weight: .bold)
+    static let displayTitle = Font.system(.title2, design: .default, weight: .bold)
+    static let displayMedium = Font.system(.title3, design: .default, weight: .bold)
     static let buttonLabel = Font.system(.headline, design: .default, weight: .semibold)
     static let metricSecondary = Font.system(.headline, design: .default, weight: .bold)
+
+    // Revisão da escala tipográfica (2026-08-29): o Linka usava tamanhos
+    // pequenos demais como padrão secundário (Subheadline/Footnote/
+    // Caption2 — 15/13/11pt) em texto funcional real (ping, jitter, rede,
+    // histórico, Ajustes), não só em decoração. Regra adotada:
+    //   texto funcional nunca abaixo de 13pt (Footnote);
+    //   informação importante nunca abaixo de 15pt (Subheadline);
+    //   corpo principal em 17pt (Body).
+    // Caption2 (11pt) fica reservado a conteúdo realmente descartável
+    // (ex.: versão do app) — a maioria dos usos antigos de `captionSmall`/
+    // `captionSmallStrong`/`monoCaption` subiu para Footnote (13pt).
     static let bodyRegular = Font.system(.body, design: .default, weight: .regular)
     static let bodyRegularStrong = Font.system(.body, design: .default, weight: .semibold)
-    static let bodySmall = Font.system(.subheadline, design: .default, weight: .regular)
-    static let bodySmallStrong = Font.system(.subheadline, design: .default, weight: .semibold)
-    static let bodySmallMedium = Font.system(.subheadline, design: .default, weight: .medium)
-    static let captionStrong = Font.system(.footnote, design: .default, weight: .bold)
-    static let captionMedium = Font.system(.caption, design: .default, weight: .medium)
-    static let captionSmall = Font.system(.caption2, design: .default, weight: .regular)
-    static let captionSmallStrong = Font.system(.caption2, design: .default, weight: .semibold)
-    static let monoEyebrow = Font.system(.footnote, design: .monospaced, weight: .regular)
-    static let monoCaption = Font.system(.caption2, design: .monospaced, weight: .regular)
+    static let bodySmall = Font.system(.body, design: .default, weight: .regular)
+    static let bodySmallStrong = Font.system(.body, design: .default, weight: .semibold)
+    static let bodySmallMedium = Font.system(.body, design: .default, weight: .medium)
+    static let captionStrong = Font.system(.subheadline, design: .default, weight: .bold)
+    static let captionMedium = Font.system(.footnote, design: .default, weight: .medium)
+    static let captionSmall = Font.system(.footnote, design: .default, weight: .regular)
+    static let captionSmallStrong = Font.system(.footnote, design: .default, weight: .bold)
+    static let monoEyebrow = Font.system(.subheadline, design: .monospaced, weight: .regular)
+    static let monoCaption = Font.system(.footnote, design: .monospaced, weight: .regular)
+
+    // Hierarquia hero da tela de resultado (issue "Hero do resultado",
+    // 2026-08-29): a conclusão do diagnóstico abre a tela, o número de
+    // download continua sendo o maior elemento, Upload/Ping ganham mais
+    // presença. Tamanhos literais (não presos a um textStyle padrão do
+    // sistema) porque a composição pede uma escala própria entre os
+    // níveis — ainda participam do Dynamic Type via `Font.system(size:)`.
+    static let heroConclusion = Font.system(size: 25, weight: .semibold, design: .default)
+    static let heroValueHuge = Font.system(size: 58, weight: .bold, design: .rounded)
+    static let heroValueLarge = Font.system(size: 25, weight: .semibold, design: .rounded)
+    static let heroText17 = Font.system(size: 17, weight: .regular, design: .default)
+    static let heroText17Semibold = Font.system(size: 17, weight: .semibold, design: .default)
+    static let heroText15 = Font.system(size: 15, weight: .regular, design: .default)
 }
 
 public struct LinkaMotion {

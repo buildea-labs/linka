@@ -220,6 +220,14 @@ public actor SpeedTestCore {
 
                     continuation.yield(state)
 
+                    // Resolução DNS cronometrada (Expert Mode) — dispara em
+                    // paralelo ao ping, nunca soma ao tempo da fase: mesma
+                    // filosofia do `providerTask` acima (desacoplado do
+                    // caminho crítico, timeout próprio menor que a fase).
+                    let dnsTask = Task.detached(priority: .utility) {
+                        await SpeedTestCore.resolveDNS()
+                    }
+
                     // Measure Ping and Packet Loss
                     let pingOutcome = await performPingTest()
 
@@ -245,11 +253,18 @@ public actor SpeedTestCore {
                         // transporte. Nenhum dado real foi medido ainda
                         // nesta fase, então não há nada além do offline check
                         // anterior para preservar.
+                        dnsTask.cancel()
                         let errored = Self.errorState(preserving: state, reason: reason)
                         continuation.yield(errored)
                         continuation.finish()
                         return
                     }
+
+                    // `performPingTest` (~10 sondagens sequenciais, até ~1s
+                    // cada) já deve ter dado tempo de sobra ao DNS (timeout
+                    // de 2s). Se não, aguardamos o restante aqui — sem
+                    // bloquear além do timeout próprio da sondagem.
+                    state.dnsResolutionMs = await dnsTask.value
 
                     state.phase = .download
                     state.progress = 0.1
@@ -931,6 +946,56 @@ public actor SpeedTestCore {
         }
 
         return .measured(latency: avgLatency, jitter: 0.0, packetLossPercent: lossPercent)
+    }
+
+    /// Resolução DNS cronometrada do host usado no teste — Expert Mode. Uma
+    /// única sondagem (não uma janela como o ping). Roda em `Task.detached`
+    /// porque `getaddrinfo` é uma chamada bloqueante do sistema (POSIX); o
+    /// custo de uma thread do pool por teste é aceitável para uma sondagem
+    /// única. Preferimos isso a `CFHost`, cujo callback assíncrono depende
+    /// de agendar num `CFRunLoop` ativo — garantia frágil fora da main
+    /// thread e em ambiente de teste headless.
+    ///
+    /// Cache de DNS do sistema pode deixar medições repetidas
+    /// artificialmente otimistas em execuções seguidas contra o mesmo host;
+    /// não há API pública confiável para contornar isso.
+    ///
+    /// Retorna `nil` em falha ou timeout — nunca `0` (ausência não é zero,
+    /// AGENTS.md §8/§9). Falha aqui não aborta o teste inteiro: é chamado
+    /// em paralelo ao ping, fora do caminho crítico de `performPingTest`.
+    nonisolated static func resolveDNS(
+        host: String = "speed.cloudflare.com",
+        timeoutMs: Double = 2000
+    ) async -> Double? {
+        await withTaskGroup(of: Double?.self) { group in
+            group.addTask {
+                let start = Date()
+                var hints = addrinfo(
+                    ai_flags: 0,
+                    ai_family: AF_UNSPEC,
+                    ai_socktype: SOCK_STREAM,
+                    ai_protocol: 0,
+                    ai_addrlen: 0,
+                    ai_canonname: nil,
+                    ai_addr: nil,
+                    ai_next: nil
+                )
+                var result: UnsafeMutablePointer<addrinfo>?
+                let status = getaddrinfo(host, nil, &hints, &result)
+                defer { if let result { freeaddrinfo(result) } }
+                guard status == 0, result != nil else { return nil }
+                let elapsed = Date().timeIntervalSince(start) * 1000.0
+                guard elapsed.isFinite, elapsed >= 0 else { return nil }
+                return elapsed
+            }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: UInt64(timeoutMs * 1_000_000))
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
     }
 
     /// Uma única sondagem de latência sob carga (issue #52): HEAD leve

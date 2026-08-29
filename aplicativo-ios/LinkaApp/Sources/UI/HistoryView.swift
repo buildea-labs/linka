@@ -44,35 +44,14 @@ struct HistoryView: View {
                 VStack(spacing: 0) {
                     if displayMode == .list {
                         List {
-                            // Assist Insight Card
+                            // Resumo da semana — issue UI Polish v2: deixou
+                            // de ter fundo/sombra/corner radius próprios
+                            // (antes idênticos ao card de cada linha do
+                            // histórico, mas com padding maior — parecia um
+                            // anúncio dentro do próprio app por acidente de
+                            // composição). Agora é uma seção simples, do
+                            // mesmo peso visual do resto da lista.
                             Section {
-                                HStack(alignment: .top, spacing: 16) {
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.brandAccentWarm)
-
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("Insight da Semana")
-                                            .font(.bodyRegularStrong)
-                                            .foregroundColor(.textPrimary)
-
-                                        if !hasPlus {
-                                            Text("Veja tendências e comparações com Linka Plus")
-                                                .font(.bodySmall)
-                                                .foregroundColor(.textSecondary)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        } else if let insightText {
-                                            Text(insightText)
-                                                .font(.bodySmall)
-                                                .foregroundColor(.textSecondary)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        } else {
-                                            Text("Ainda não há dados suficientes para um resumo semanal — faça alguns testes ao longo dos dias.")
-                                                .font(.bodySmall)
-                                                .foregroundColor(.textSecondary)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        }
-
                                 Button(action: {
                                     // Assist é Plus. Free vai direto pra
                                     // tela de assinatura em vez de sheet.
@@ -88,24 +67,41 @@ struct HistoryView: View {
                                         showPurchase = true
                                     }
                                 }) {
-                                    Text("Perguntar ao Assist")
-                                        .font(.captionSmallStrong)
-                                        .foregroundColor(.brandAccentWarm)
-                                }
-                                .padding(.top, 4)
-                            }
-                        }
-                        .padding(.vertical, 16)
-                        .padding(.horizontal, 20)
-                        .background(Color.surfaceCard)
-                        .cornerRadius(16)
-                        .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
-                    }
-                    .listRowInsets(EdgeInsets(top: 16, leading: 24, bottom: 16, trailing: 24))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+                                    HStack(alignment: .top, spacing: 12) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Resumo da semana")
+                                                .font(.bodyRegularStrong)
+                                                .foregroundColor(.textPrimary)
 
-                    // History List
+                                            if !hasPlus {
+                                                Text("Veja tendências e comparações com Linka Plus")
+                                                    .font(.bodySmall)
+                                                    .foregroundColor(.textSecondary)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            } else if let insightText {
+                                                Text(insightText)
+                                                    .font(.bodySmall)
+                                                    .foregroundColor(.textSecondary)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            } else {
+                                                Text("Ainda não há dados suficientes para um resumo semanal — faça alguns testes ao longo dos dias.")
+                                                    .font(.bodySmall)
+                                                    .foregroundColor(.textSecondary)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+                                        }
+                                        Spacer(minLength: 8)
+                                        Image(systemName: "chevron.right")
+                                            .font(.captionStrong)
+                                            .foregroundColor(.textSecondary)
+                                    }
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .listRowInsets(EdgeInsets(top: 12, leading: 24, bottom: 12, trailing: 24))
+
+                            // History List
                     Section(header: Text("MÊS ATUAL").font(.monoCaption).foregroundColor(.textSecondary)) {
                         if measurements.isEmpty {
                             Text("Nenhuma medição encontrada.")
@@ -286,7 +282,7 @@ struct HistoryRow: View {
                                     .foregroundColor(.textPrimary)
                                 if measurement.advancedWiFiDiagnostics != nil {
                                     Text("Wi-Fi detalhado")
-                                        .font(.caption2.weight(.medium))
+                                        .font(.captionMedium)
                                         .foregroundColor(.textSecondary)
                                 }
                             }
@@ -565,7 +561,7 @@ struct DetailItem: View {
                 .foregroundColor(.textPrimary)
             if let explanation {
                 Text(explanation)
-                    .font(.caption2)
+                    .font(.captionSmall)
                     .foregroundColor(.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

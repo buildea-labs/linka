@@ -94,13 +94,16 @@ struct PurchaseSheet: View {
         }
     }
 
+    // Issue UI Polish v2 (2026-08-29): sem card por seção — "hero +
+    // benefícios + preço + CTA", não "card, card, card". O conteúdo
+    // (o que é grátis, o que é Plus, preço) continua o mesmo; só a moldura
+    // visual em volta de cada bloco foi removida.
     private func featureList(_ features: [String]) -> some View {
         VStack(spacing: 0) {
             ForEach(Array(features.enumerated()), id: \.offset) { index, feature in
                 PurchaseFeatureRow(text: feature, showDivider: index < features.count - 1)
             }
         }
-        .padding(.vertical, 6).background(Color.surfaceCard).clipShape(RoundedRectangle(cornerRadius: 16))
         .padding(.top, 8).padding(.horizontal, 24)
     }
 
@@ -118,7 +121,6 @@ struct PurchaseSheet: View {
             }
         }
         .padding(.vertical, 22).frame(maxWidth: .infinity)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.textPrimary, lineWidth: 1))
     }
 
     private var disclaimerText: String {

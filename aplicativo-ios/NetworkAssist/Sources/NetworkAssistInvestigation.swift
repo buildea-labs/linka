@@ -140,9 +140,9 @@ public struct NetworkAssistInvestigationResult: Equatable, Sendable {
 
 /// Motor de regras determinístico e puro: mesma entrada sempre produz a
 /// mesma saída, sem I/O, sem `async`, sem depender de nenhum transport
-/// remoto (`NetworkDiagnostics`/SignallQ). Resolve casos simples (ex.:
-/// `.offline`) sem precisar de histórico; só recorre às medições recentes
-/// quando o sinal de falha sozinho não basta.
+/// remoto (`NetworkDiagnostics`/SignallQ). Um sinal de falha nunca é uma
+/// causa: quando ele não basta para diferenciar o problema, devolve
+/// `.inconclusive` com o fato observado.
 public enum NetworkAssistInvestigationEngine {
     /// Quantidade de medições recentes efetivamente consideradas. Limitado
     /// para manter o motor barato e a evidência legível — não é uma
@@ -171,18 +171,17 @@ public enum NetworkAssistInvestigationEngine {
         }
     }
 
-    /// `.offline` significa que o motor não encontrou nenhuma conectividade
-    /// de rede antes sequer de começar — por definição, um fato do
-    /// aparelho/rede local (Wi-Fi ou dados desligados, modo avião, sem
-    /// sinal). Não há "além do acesso" possível quando não existe acesso
-    /// algum ainda, então este caso resolve sozinho, sem olhar histórico —
-    /// o exemplo de "caso simples" citado no plano da issue #56.
+    /// `.offline` só comprova que não havia caminho de rede disponível antes
+    /// de a medição começar. Não diferencia Wi-Fi, celular, portal cativo,
+    /// modo avião ou indisponibilidade além do aparelho; portanto não pode
+    /// produzir hipótese causal nem orientação específica.
     private static func offlineResult() -> NetworkAssistInvestigationResult {
         let evidence = failureSignalEvidence(direction: "offline")
         return NetworkAssistInvestigationResult(
-            disposition: .localSignalLikely,
+            disposition: .inconclusive,
             evidence: [evidence],
-            evidenceIDs: [evidence.id]
+            evidenceIDs: [evidence.id],
+            missingSignals: [.connectionKind, .alternateNetworkSample]
         )
     }
 

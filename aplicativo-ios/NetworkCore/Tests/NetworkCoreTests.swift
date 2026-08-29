@@ -369,6 +369,80 @@ final class NetworkCoreTests: XCTestCase {
         XCTAssertTrue(NetworkMeasurementContract.violations(for: measurement).contains("loadedLatencyUploadMs"))
     }
 
+    /// Expert Mode: `dnsResolutionMs` é o novo campo aditivo (tempo de
+    /// resolução DNS do host do teste). Round-trip comprova que, uma vez
+    /// populado, sobrevive à serialização — mesmo padrão de
+    /// `testLoadedLatencyUploadRoundTripsThroughJSON`.
+    func testDNSResolutionRoundTripsThroughJSON() throws {
+        let original = NetworkMeasurement(
+            id: UUID(uuidString: "4A5F9B63-E4F4-4D90-904F-3E618FC92C32")!,
+            measuredAt: Date(timeIntervalSince1970: 1_786_428_000),
+            outcome: .complete,
+            downloadMbps: 512.4,
+            uploadMbps: 104.8,
+            latencyMs: 11.7,
+            dnsResolutionMs: 14.3,
+            connectionKind: .wifi,
+            serverIdentifier: "cloudflare"
+        )
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(original)
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(NetworkMeasurement.self, from: data)
+
+        XCTAssertEqual(decoded, original)
+        XCTAssertEqual(decoded.dnsResolutionMs, 14.3)
+    }
+
+    /// Um registro antigo (sem `dnsResolutionMs` no JSON, campo que não
+    /// existia antes do Expert Mode) precisa continuar decodificando sem
+    /// quebrar — mesmo padrão de
+    /// `testDecodesLegacyJSONWithoutLoadedLatencyUploadField`.
+    /// `schemaVersion` permanece `1`: campo aditivo, opcional, `nil` por
+    /// padrão, não exige bump de versão de schema.
+    func testDecodesLegacyJSONWithoutDNSResolutionField() throws {
+        let legacyJSON = """
+        {
+            "schemaVersion": 1,
+            "id": "4A5F9B63-E4F4-4D90-904F-3E618FC92C32",
+            "measuredAt": "2026-08-01T12:00:00Z",
+            "outcome": "complete",
+            "downloadMbps": 512.4,
+            "uploadMbps": 104.8,
+            "latencyMs": 11.7,
+            "connectionKind": "wifi",
+            "serverIdentifier": "cloudflare"
+        }
+        """
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(NetworkMeasurement.self, from: Data(legacyJSON.utf8))
+
+        XCTAssertNil(decoded.dnsResolutionMs)
+        XCTAssertTrue(NetworkMeasurementContract.isValid(decoded))
+    }
+
+    /// `dnsResolutionMs` segue a mesma regra de faixa válida das demais
+    /// métricas de latência — negativo, infinito ou NaN é violação de
+    /// contrato; ausência (`nil`, falha/timeout de resolução) não é.
+    func testDNSResolutionMustBeFiniteAndNonNegative() {
+        let negative = NetworkMeasurement(latencyMs: 15, dnsResolutionMs: -1)
+        XCTAssertTrue(NetworkMeasurementContract.violations(for: negative).contains("dnsResolutionMs"))
+
+        let infinite = NetworkMeasurement(latencyMs: 15, dnsResolutionMs: .infinity)
+        XCTAssertTrue(NetworkMeasurementContract.violations(for: infinite).contains("dnsResolutionMs"))
+
+        let nan = NetworkMeasurement(latencyMs: 15, dnsResolutionMs: .nan)
+        XCTAssertTrue(NetworkMeasurementContract.violations(for: nan).contains("dnsResolutionMs"))
+
+        let valid = NetworkMeasurement(latencyMs: 15, dnsResolutionMs: 14.3)
+        XCTAssertFalse(NetworkMeasurementContract.violations(for: valid).contains("dnsResolutionMs"))
+    }
+
     // MARK: - NetworkConnectionKind.resolve(start:end:) — issue #51
 
     /// Troca de rede durante o teste (início ≠ fim) deve persistir `nil`

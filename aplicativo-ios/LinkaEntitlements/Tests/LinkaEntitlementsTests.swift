@@ -24,7 +24,9 @@ final class LinkaEntitlementsTests: XCTestCase {
             LinkaCapability.insights,
             .assist,
             .appleIntegrations,
-            .advancedWiFiDiagnostics
+            .advancedWiFiDiagnostics,
+            .expertMode,
+            .usageDiagnostics
         ] {
             let decision = LinkaEntitlementPolicy.decision(
                 for: capability,

@@ -25,81 +25,84 @@ struct SettingsSheet: View {
     @AppStorage("linka.advanced-wifi.configured.v1") private var advancedWiFiConfigured = false
     @AppStorage(LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) private var advancedWiFiEnabled = true
 
+    // Issue UI Polish v2 (2026-08-29): `Form`/`Section`/`LabeledContent`
+    // nativos no lugar de `SettingsSection`/`SettingsRow` customizados —
+    // ganho automático de Dynamic Type, estados de interação e adaptação a
+    // versões futuras do iOS, ao custo de menos controle fino sobre o
+    // visual (aceitável: o visual customizado já convergia bastante para
+    // o padrão de lista do sistema). Mantém todas as ações, sheets e
+    // diálogos existentes — mudança é só de casca visual.
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                SettingsSection(header: "LINKA PLUS") {
-                    Button(action: openSubscription) {
-                        SettingsRowContent(title: "Linka Plus", subtitle: subscriptionStatusText, showChevron: true)
-                    }
+        Form {
+            Section("Linka Plus") {
+                Button(action: openSubscription) {
+                    settingsRow(title: "Linka Plus", value: subscriptionStatusText)
                 }
-
-                #if os(iOS)
-                SettingsSection(header: "REDE E DIAGNÓSTICO") {
-                    Button(action: openNetworkIdentification) {
-                        SettingsRowContent(title: "Identificação da rede Wi-Fi", subtitle: WiFiNetworkPermission.statusText(enabled: networkIdentificationEnabled), showChevron: true)
-                    }
-                    Divider().padding(.leading, 16)
-                    Button(action: openAdvancedWiFi) {
-                        SettingsRowContent(title: "Diagnóstico Wi-Fi avançado", subtitle: advancedWiFiStatusText, showChevron: true)
-                    }
-                }
-                #endif
-
-                SettingsSection(header: "PREFERÊNCIAS") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Aparência").font(.bodyRegular).foregroundColor(.textPrimary)
-                        Picker("Aparência", selection: $appAppearance) {
-                            Text("Sistema").tag("system")
-                            Text("Claro").tag("light")
-                            Text("Escuro").tag("dark")
-                        }
-                        .pickerStyle(.segmented)
-                    }
-                    .padding(16)
-                }
-
-                SettingsSection(header: "ATIVIDADE") {
-                    NavigationLink(destination: HistoryView()) {
-                        SettingsRowContent(title: "Histórico", subtitle: "\(testCount) testes", showChevron: true)
-                    }
-                }
-
-                SettingsSection(header: "SOBRE O LINKA") {
-                    SettingsRow(icon: "info.circle", title: "Sobre o Linka", url: LinkaExternalLinks.website)
-                    Divider().padding(.leading, 56)
-                    SettingsRow(icon: "speedometer", title: "Como medimos", url: LinkaExternalLinks.howWeMeasure)
-                    Divider().padding(.leading, 56)
-                    SettingsRow(icon: "hand.raised", title: "Privacidade", url: LinkaExternalLinks.privacy)
-                    Divider().padding(.leading, 56)
-                    SettingsRow(icon: "doc.text", title: "Termos de Uso", url: LinkaExternalLinks.terms)
-                    if let support = LinkaExternalLinks.support {
-                        Divider().padding(.leading, 56)
-                        SettingsRow(icon: "questionmark.circle", title: "Suporte", url: support)
-                    }
-                }
-
-                #if DEBUG
-                SettingsSection(header: "DEBUG INTERNO", headerColor: .brandAccentWarm) {
-                    Button("Simular Linka Free (DEBUG)") { entitlements.debugResetToFree() }
-                        .foregroundColor(.textPrimary).frame(maxWidth: .infinity, alignment: .leading).padding(16)
-                    Divider().padding(.leading, 16)
-                    Button("Simular Linka Plus (DEBUG)") { entitlements.debugForcePlus() }
-                        .foregroundColor(.textPrimary).frame(maxWidth: .infinity, alignment: .leading).padding(16)
-                }
-                #endif
-
-                Text("Versão \(appVersion)")
-                    .font(.captionMedium).foregroundColor(.textSecondary)
-                    .padding(.top, 4).padding(.bottom, 32)
             }
-            .padding(.top, 24)
+
+            #if os(iOS)
+            Section("Rede e diagnóstico") {
+                Button(action: openNetworkIdentification) {
+                    settingsRow(title: "Identificação da rede Wi-Fi", value: WiFiNetworkPermission.statusText(enabled: networkIdentificationEnabled))
+                }
+                Button(action: openAdvancedWiFi) {
+                    settingsRow(title: "Diagnóstico Wi-Fi avançado", value: advancedWiFiStatusText)
+                }
+            }
+            #endif
+
+            Section("Preferências") {
+                Picker("Aparência", selection: $appAppearance) {
+                    Text("Sistema").tag("system")
+                    Text("Claro").tag("light")
+                    Text("Escuro").tag("dark")
+                }
+            }
+
+            Section("Atividade") {
+                NavigationLink(destination: HistoryView()) {
+                    LabeledContent("Histórico", value: "\(testCount) testes")
+                }
+            }
+
+            Section("Sobre o Linka") {
+                Link(destination: LinkaExternalLinks.website) {
+                    Label("Sobre o Linka", systemImage: "info.circle")
+                }
+                Link(destination: LinkaExternalLinks.howWeMeasure) {
+                    Label("Como medimos", systemImage: "speedometer")
+                }
+                Link(destination: LinkaExternalLinks.privacy) {
+                    Label("Privacidade", systemImage: "hand.raised")
+                }
+                Link(destination: LinkaExternalLinks.terms) {
+                    Label("Termos de Uso", systemImage: "doc.text")
+                }
+                if let support = LinkaExternalLinks.support {
+                    Link(destination: support) {
+                        Label("Suporte", systemImage: "questionmark.circle")
+                    }
+                }
+            }
+
+            #if DEBUG
+            Section {
+                Button("Simular Linka Free (DEBUG)") { entitlements.debugResetToFree() }
+                Button("Simular Linka Plus (DEBUG)") { entitlements.debugForcePlus() }
+            } header: {
+                Text("Debug interno").foregroundColor(.brandAccentWarm)
+            }
+            #endif
+
+            Section {
+                Text("Versão \(appVersion)")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+            }
         }
-        .background(Color.surfacePage.ignoresSafeArea())
         .navigationTitle("Ajustes")
         #if canImport(UIKit)
         .navigationBarTitleDisplayMode(.large)
-        .toolbarBackground(Color.surfacePage, for: .navigationBar)
         #endif
         .onAppear(perform: loadTestCount)
         .sheet(isPresented: $showPurchase) { PurchaseSheet(entryPoint: purchaseEntryPoint) }
@@ -120,6 +123,20 @@ struct SettingsSheet: View {
             Button("Cancelar", role: .cancel) {}
         } message: {
             Text("O Atalhos fornece dados extras quando você executa a integração.")
+        }
+    }
+
+    /// Linha de `Button` que abre um sheet/diálogo (não uma navegação real)
+    /// — mantém o indicador de "isso leva a algum lugar" que `NavigationLink`
+    /// dá de graça, mas que `Button` sozinho dentro de `Form` não mostra.
+    private func settingsRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title).foregroundColor(.primary)
+            Spacer()
+            Text(value).foregroundColor(.secondary)
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.textSecondary.opacity(0.6))
         }
     }
 
@@ -269,45 +286,3 @@ enum WiFiNetworkPermission {
     #endif
 }
 
-struct SettingsSection<Content: View>: View {
-    var header: String
-    var headerColor: Color = .textSecondary
-    @ViewBuilder var content: Content
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(header).font(.monoCaption).foregroundColor(headerColor).padding(.horizontal, 24)
-            VStack(spacing: 0) { content }
-                .background(Color.surfaceCard).clipShape(RoundedRectangle(cornerRadius: 16)).padding(.horizontal, 24)
-        }
-    }
-}
-
-struct SettingsRowContent: View {
-    var title: String
-    var subtitle: String?
-    var showChevron: Bool
-    var body: some View {
-        HStack {
-            Text(title).foregroundColor(.textPrimary); Spacer()
-            if let subtitle { Text(subtitle).foregroundColor(.textSecondary).multilineTextAlignment(.trailing) }
-            if showChevron { Image(systemName: "chevron.right").font(.bodySmallStrong).foregroundColor(.textSecondary) }
-        }
-        .padding(.vertical, 16).padding(.horizontal, 16).contentShape(Rectangle())
-    }
-}
-
-struct SettingsRow: View {
-    var icon: String
-    var title: String
-    var url: URL
-    var body: some View {
-        Link(destination: url) {
-            HStack(spacing: 12) {
-                Image(systemName: icon).frame(width: 30).foregroundColor(.textSecondary)
-                Text(title).foregroundColor(.textPrimary); Spacer()
-                Image(systemName: "chevron.right").font(.bodySmallStrong).foregroundColor(.textSecondary)
-            }
-            .padding(.vertical, 14).padding(.horizontal, 16).contentShape(Rectangle())
-        }
-    }
-}
