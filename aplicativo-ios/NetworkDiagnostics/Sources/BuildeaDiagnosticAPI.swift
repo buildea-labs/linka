@@ -42,11 +42,9 @@ public struct BuildeaDiagnosticAPI: Sendable {
         encoder.outputFormatting = [.sortedKeys]
         let body = try encoder.encode(payload)
 
-        // v2 exige objective E subcategory — qualquer requisição com só um
-        // dos dois (inclusive o fluxo observacional puro, que só manda
-        // objective) permanece em v1 sem mudar de comportamento.
-        let usesV2 = diagnosticContext?.objective != nil && diagnosticContext?.subcategory != nil
-        let endpoint = usesV2 ? configuration.v2RulesEndpoint : configuration.rulesEndpoint
+        // O servidor V2 aceita tanto contexto completo quanto a medição pura;
+        // manter uma única rota evita que o app recaia no motor V1.
+        let endpoint = configuration.v2RulesEndpoint
 
         let (data, status) = try await httpClient.postJSON(
             url: endpoint,

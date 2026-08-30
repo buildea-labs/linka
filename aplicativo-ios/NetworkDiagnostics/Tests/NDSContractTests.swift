@@ -256,10 +256,7 @@ final class NDSContractTests: XCTestCase {
         XCTAssertNil(bearerToken)
     }
 
-    /// v2 exige objective E subcategory — qualquer requisição faltando um
-    /// dos dois (inclusive o fluxo observacional puro, que só manda
-    /// `objective`) permanece em v1, sem mudar o comportamento de hoje.
-    func testEvaluateUsesV2EndpointOnlyWhenObjectiveAndSubcategoryArePresent() async throws {
+    func testEvaluateAlwaysUsesV2Endpoint() async throws {
         let client = URLRecordingDiagnosticHTTPClient(
             data: try JSONEncoder().encode(NDSResponse()),
             status: 200
@@ -275,25 +272,9 @@ final class NDSContractTests: XCTestCase {
             latencyMs: 20, connectionKind: .wifi
         )
 
-        _ = try await api.evaluate(
-            measurement,
-            requestAI: true,
-            diagnosticContext: NDSRequest.DiagnosticContext(objective: "JOGOS_COM_LAG", subcategory: "PING_ALTO")
-        )
-        var calledURL = await client.calledURL
-        XCTAssertEqual(calledURL, URL(string: "https://example.com/v2/diagnostics/evaluate")!)
-
-        _ = try await api.evaluate(
-            measurement,
-            requestAI: true,
-            diagnosticContext: NDSRequest.DiagnosticContext(objective: "JOGOS_COM_LAG")
-        )
-        calledURL = await client.calledURL
-        XCTAssertEqual(calledURL, URL(string: "https://example.com/v1/diagnostics/evaluate")!)
-
         _ = try await api.evaluate(measurement, requestAI: true)
-        calledURL = await client.calledURL
-        XCTAssertEqual(calledURL, URL(string: "https://example.com/v1/diagnostics/evaluate")!)
+        let calledURL = await client.calledURL
+        XCTAssertEqual(calledURL, URL(string: "https://example.com/v2/diagnostics/evaluate")!)
     }
 
     func testTransportSummarizesRecentMeasurementsForNDS() {

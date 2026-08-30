@@ -152,9 +152,9 @@ final class BuildeaDiagnosticTransportV2Tests: XCTestCase {
 
     /// "Outro problema": só `reportedProblem` chega ao transporte (sem
     /// objective/subcategory) — precisa virar `context.reported_problem` no
-    /// payload do NDS, e continuar em v1 (v2 exige objective+subcategory
-    /// juntos, que aqui não existem).
-    func testAnswerSendsReportedProblemWithoutObjectiveAsV1() async throws {
+    /// payload do NDS e ainda seguir pela V2, que aceita a medição sem contexto
+    /// guiado completo.
+    func testAnswerSendsReportedProblemWithoutObjectiveThroughV2() async throws {
         let json = """
         {
           "recommendation": null,
@@ -176,7 +176,7 @@ final class BuildeaDiagnosticTransportV2Tests: XCTestCase {
         _ = try await transport.answer(request)
 
         let capturedURL = await client.capturedURL
-        XCTAssertEqual(capturedURL, configuration.rulesEndpoint, "sem objective+subcategory, deve continuar em v1")
+        XCTAssertEqual(capturedURL, configuration.v2RulesEndpoint)
 
         let capturedBody = await client.capturedBody
         let payload = try JSONSerialization.jsonObject(with: capturedBody ?? Data()) as? [String: Any]

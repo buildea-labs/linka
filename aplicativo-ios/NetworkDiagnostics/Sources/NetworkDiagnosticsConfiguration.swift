@@ -7,11 +7,8 @@ public enum NetworkDiagnosticsTransportAuth: Equatable, Sendable {
 
 public struct NetworkDiagnosticsConfiguration: Sendable {
     public let rulesEndpoint: URL
-    /// Endpoint do contrato `/v2/diagnostics/evaluate` (`context.objective`
-    /// + `context.subcategory` → `raw`/`explanation`). Usado só quando o
-    /// transporte tem objective E subcategory; qualquer chamada sem as
-    /// duas cai em `rulesEndpoint` (v1), preservando o fluxo observacional
-    /// hoje em produção. Derivado de `rulesEndpoint` por padrão
+    /// Endpoint do contrato `/v2/diagnostics/evaluate` (`raw`/`explanation`).
+    /// Todo diagnóstico usa V2. Derivado de `rulesEndpoint` por padrão
     /// (troca `/v1/` por `/v2/`), com override explícito quando fornecido —
     /// o servidor v2 ainda pode não estar deployado (ver AGENTS.md deste
     /// repositório e o contrato documentado na issue), então este valor é
@@ -30,7 +27,7 @@ public struct NetworkDiagnosticsConfiguration: Sendable {
         v2RulesEndpoint: URL? = nil,
         bearerToken: String? = nil,
         transportAuth: NetworkDiagnosticsTransportAuth = .bearer,
-        requestTimeout: TimeInterval = 8,
+        requestTimeout: TimeInterval = 55,
         appVersion: String? = nil,
         platformIdentifier: String,
         historyLookbackDays: Int = 30,
@@ -49,13 +46,10 @@ public struct NetworkDiagnosticsConfiguration: Sendable {
 
     public static let defaultRulesEndpoint = URL(string: "https://network-diagnostics-service.buildealabs.workers.dev/v1/diagnostics/evaluate")!
     public static let defaultV2RulesEndpoint = URL(string: "https://network-diagnostics-service.buildealabs.workers.dev/v2/diagnostics/evaluate")!
-    public static let defaultAssistRelayEndpoint = URL(string: "https://linka-assist-relay.buildealabs.workers.dev/v1/assist")!
+    public static let defaultAssistRelayEndpoint = URL(string: "https://linka-assist-relay.buildealabs.workers.dev/v2/assist")!
 
     /// `.../v1/diagnostics/evaluate` → `.../v2/diagnostics/evaluate`.
-    /// Quando o endpoint de origem não contém `/v1/` (ex.: relay do
-    /// Assist, que fala outro contrato), devolve o próprio v1 sem
-    /// inventar um path — só um `rulesEndpoint` que segue esse padrão
-    /// realmente ganha um v2 derivado.
+    /// Para endpoints que não têm `/v1/`, preserva o endereço informado.
     static func derivedV2Endpoint(from v1: URL) -> URL {
         let absolute = v1.absoluteString
         guard absolute.contains("/v1/") else { return v1 }

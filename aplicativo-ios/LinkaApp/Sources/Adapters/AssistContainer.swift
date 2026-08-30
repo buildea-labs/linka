@@ -55,7 +55,7 @@ enum AssistContainer {
         return NetworkDiagnosticsConfiguration(
             rulesEndpoint: endpoint,
             transportAuth: .relay,
-            requestTimeout: 30,
+            requestTimeout: 55,
             appVersion: appVersion,
             platformIdentifier: platformID
         )
