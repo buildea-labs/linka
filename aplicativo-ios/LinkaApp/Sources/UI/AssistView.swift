@@ -7,9 +7,10 @@ import LinkaModules
 
 struct AssistView: View {
     @Environment(\.dismiss) var dismiss
-    
+
     @StateObject private var viewModel: AssistViewModel
     @StateObject private var stabilityViewModel: NetworkStabilityPatternsViewModel
+    @State private var showRecommendationDetails = false
 
     let currentMeasurement: NetworkMeasurement?
     let recentMeasurements: [NetworkMeasurement]
@@ -28,12 +29,20 @@ struct AssistView: View {
     /// `dismiss()` realmente faz.
     let onShowDetails: (() -> Void)?
     let entitlements: StoreKitEntitlementProvider?
+    /// Macro-grupo e subcategoria coletados por `AssistProblemSelectionView`
+    /// antes de abrir esta tela, quando o usuário passou pela seleção
+    /// guiada. `nil`/`nil` no fluxo observacional puro (comportamento de
+    /// hoje, sem mudança).
+    let objective: String?
+    let subcategory: String?
 
     init(
         currentMeasurement: NetworkMeasurement?,
         recentMeasurements: [NetworkMeasurement] = [],
         usageContext: String? = nil,
         failureSignal: NetworkAssistFailureSignal? = nil,
+        objective: String? = nil,
+        subcategory: String? = nil,
         onRetry: (() -> Void)? = nil,
         onShowDetails: (() -> Void)? = nil,
         entitlements: StoreKitEntitlementProvider? = nil,
@@ -44,6 +53,8 @@ struct AssistView: View {
         self.recentMeasurements = recentMeasurements
         self.usageContext = usageContext
         self.failureSignal = failureSignal
+        self.objective = objective
+        self.subcategory = subcategory
         self.onRetry = onRetry
         self.onShowDetails = onShowDetails
         self.entitlements = entitlements
@@ -82,7 +93,9 @@ struct AssistView: View {
                 currentMeasurement: currentMeasurement,
                 recentMeasurements: recentMeasurements,
                 usageContext: usageContext,
-                failureSignal: failureSignal
+                failureSignal: failureSignal,
+                objective: objective,
+                subcategory: subcategory
             )
         }
         .task {
@@ -115,15 +128,24 @@ struct AssistView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
 
-                    // Status e Conclusão
+                    // Status e Conclusão — indicador discreto em vez de um
+                    // rótulo em caixa alta (issue UI Polish v2): a Hero
+                    // (data.title) já conta a história, o indicador só marca
+                    // o estado sem repetir ou contradizer o título.
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(data.headerStatus.uppercased())
-                            .font(.captionStrong)
-                            .foregroundColor(data.headerStatus.contains("TUDO CERTO") ? .statusGood : .statusAttention)
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(data.headerStatus.contains("TUDO CERTO") ? Color.statusGood : Color.statusAttention)
+                                .frame(width: 8, height: 8)
+                            Text(data.headerStatus.contains("TUDO CERTO") ? "Diagnóstico concluído" : "Precisa de atenção")
+                                .font(.captionStrong)
+                                .foregroundColor(.textSecondary)
+                        }
 
                         Text(data.title)
                             .font(.displayLarge)
                             .foregroundColor(.brandSurface)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.top, 24)
 
@@ -162,28 +184,42 @@ struct AssistView: View {
                             .foregroundColor(.textPrimary)
 
                         if let rec = data.recommendation {
+                            // Uma única recomendação, sem repetir o mesmo
+                            // conteúdo em título + descrição + passos
+                            // (issue UI Polish v2). Descrição e passos ficam
+                            // atrás de "Por que recomendamos isso?".
                             HStack(alignment: .top, spacing: 12) {
                                 Image(systemName: "exclamationmark.circle.fill")
                                     .font(.title2)
                                     .foregroundColor(.statusAttention)
 
-                                VStack(alignment: .leading, spacing: 4) {
+                                VStack(alignment: .leading, spacing: 6) {
                                     Text(rec.title)
                                         .font(.bodyRegularStrong)
                                         .foregroundColor(.textPrimary)
-                                    Text(rec.description)
-                                        .font(.bodyRegular)
-                                        .foregroundColor(.textSecondary)
 
-                                    if !rec.steps.isEmpty {
-                                        VStack(alignment: .leading, spacing: 6) {
-                                            ForEach(Array(rec.steps.enumerated()), id: \.offset) { index, step in
-                                                Text("\(index + 1). \(step)")
-                                                    .font(.bodySmall)
-                                                    .foregroundColor(.textSecondary)
+                                    let detailLines = recommendationDetailLines(rec, summary: data.summary)
+                                    if !detailLines.isEmpty {
+                                        Button(action: { showRecommendationDetails.toggle() }) {
+                                            HStack(spacing: 4) {
+                                                Text("Por que recomendamos isso?")
+                                                Image(systemName: showRecommendationDetails ? "chevron.up" : "chevron.right")
+                                                    .font(.caption2)
                                             }
+                                            .font(.bodySmallMedium)
+                                            .foregroundColor(.actionPrimary)
                                         }
-                                        .padding(.top, 6)
+
+                                        if showRecommendationDetails {
+                                            VStack(alignment: .leading, spacing: 6) {
+                                                ForEach(Array(detailLines.enumerated()), id: \.offset) { index, line in
+                                                    Text(detailLines.count > 1 ? "\(index + 1). \(line)" : line)
+                                                        .font(.bodySmall)
+                                                        .foregroundColor(.textSecondary)
+                                                }
+                                            }
+                                            .padding(.top, 2)
+                                        }
                                     }
                                 }
                             }
@@ -372,6 +408,22 @@ struct AssistView: View {
         }
     }
     
+    /// A resposta do NDS costuma repetir a mesma frase em
+    /// `recommendation.description` e em `recommendation.steps` (e às vezes
+    /// no próprio `summary` da Hero) — issue UI Polish v2. Aqui a UI escolhe
+    /// uma única fonte de detalhe por recomendação: os passos quando
+    /// existem (são a forma mais acionável), senão a descrição, e nunca a
+    /// descrição se ela só repete o que "O que isso significa" já disse.
+    private func recommendationDetailLines(_ rec: NetworkAssistRecommendation, summary: String) -> [String] {
+        if !rec.steps.isEmpty {
+            return rec.steps
+        }
+        let trimmedDescription = rec.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedSummary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedDescription.isEmpty, trimmedDescription != trimmedSummary else { return [] }
+        return [rec.description]
+    }
+
     private func colorForStatus(_ status: String) -> Color {
         switch status.lowercased() {
         case "excellent", "good": return .statusGood

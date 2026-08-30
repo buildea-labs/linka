@@ -31,21 +31,25 @@ final class AssistViewModel: ObservableObject {
         currentMeasurement: NetworkMeasurement?,
         recentMeasurements: [NetworkMeasurement] = [],
         usageContext: String? = nil,
-        failureSignal: NetworkAssistFailureSignal?
+        failureSignal: NetworkAssistFailureSignal?,
+        objective: String? = nil,
+        subcategory: String? = nil
     ) async {
         guard case .idle = state else { return }
-        
+
         guard let current = currentMeasurement else {
             state = .error("Nenhuma medição encontrada para diagnóstico.")
             return
         }
 
         state = .loading
-        
+
         let context = Self.makeContext(
             currentMeasurement: current,
             recentMeasurements: recentMeasurements,
-            usageContext: usageContext
+            usageContext: usageContext,
+            objective: objective,
+            subcategory: subcategory
         )
 
         do {
@@ -107,7 +111,9 @@ final class AssistViewModel: ObservableObject {
     static func makeContext(
         currentMeasurement: NetworkMeasurement,
         recentMeasurements: [NetworkMeasurement],
-        usageContext: String? = nil
+        usageContext: String? = nil,
+        objective: String? = nil,
+        subcategory: String? = nil
     ) -> NetworkAssistContext {
         let recent = recentMeasurements
             .filter { $0.id != currentMeasurement.id }
@@ -133,7 +139,9 @@ final class AssistViewModel: ObservableObject {
             currentMeasurement: currentMeasurement,
             recentMeasurements: Array(recent),
             evidence: [currentEvidence] + recentEvidence,
-            usageContext: usageContext?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+            usageContext: usageContext?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            objective: objective,
+            subcategory: subcategory
         )
     }
 

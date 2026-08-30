@@ -72,12 +72,18 @@ public struct NDSRequest: Codable, Equatable, Sendable {
     public struct DiagnosticContext: Codable, Equatable, Sendable {
         public var reportedProblem: String?
         public var objective: String?
+        /// Subcategoria fechada dentro de `objective`, coletada pelo fluxo
+        /// guiado (`AssistProblemSelectionView`) no app. Opcional e
+        /// compatível com v1: quando ausente, o NDS não vê diferença de
+        /// payload em relação ao formato anterior a esta issue.
+        public var subcategory: String?
         public var symptoms: [String]?
         public var answers: [String: String]?
 
         public enum CodingKeys: String, CodingKey {
             case reportedProblem = "reported_problem"
             case objective
+            case subcategory
             case symptoms
             case answers
         }
@@ -85,11 +91,13 @@ public struct NDSRequest: Codable, Equatable, Sendable {
         public init(
             reportedProblem: String? = nil,
             objective: String? = nil,
+            subcategory: String? = nil,
             symptoms: [String]? = nil,
             answers: [String: String]? = nil
         ) {
             self.reportedProblem = reportedProblem
             self.objective = objective
+            self.subcategory = subcategory
             self.symptoms = symptoms
             self.answers = answers
         }
@@ -182,11 +190,89 @@ public struct NDSResponse: Codable, Equatable, Sendable {
     public var results: [NDSResult]?
     public var traces: [NDSTrace]?
     public var recommendation: NDSRecommendation?
-    
+    /// Bloco `raw` do contrato `/v2/diagnostics/evaluate` — a mesma análise
+    /// crua determinística do v1 (`results`/`traces`/`recommendation`),
+    /// só que aninhada. Ausente numa resposta v1 pura.
+    public var raw: NDSRawPayload?
+    /// Bloco `explanation` do contrato v2 — texto tratado (`titulo`,
+    /// `descricao`, `dados`, `acao_usuario`) ou `sem_causa_identificada`.
+    /// Ausente numa resposta v1 pura.
+    public var explanation: NDSV2Explanation?
+
+    public init(
+        results: [NDSResult]? = nil,
+        traces: [NDSTrace]? = nil,
+        recommendation: NDSRecommendation? = nil,
+        raw: NDSRawPayload? = nil,
+        explanation: NDSV2Explanation? = nil
+    ) {
+        self.results = results
+        self.traces = traces
+        self.recommendation = recommendation
+        self.raw = raw
+        self.explanation = explanation
+    }
+
+    /// `results` do v2 (`raw.results`) quando presente, senão o `results`
+    /// de topo do v1 — único ponto de leitura para quem consome achados
+    /// independente da versão de contrato que respondeu.
+    public var effectiveResults: [NDSResult]? {
+        raw?.results ?? results
+    }
+
+    /// Mesma ideia de `effectiveResults`, para `recommendation`.
+    public var effectiveRecommendation: NDSRecommendation? {
+        raw?.recommendation ?? recommendation
+    }
+}
+
+/// Análise crua determinística devolvida no bloco `raw` do contrato v2 —
+/// mesma forma de `results`/`traces`/`recommendation` do v1, só aninhada
+/// sob a chave `raw` em vez de ficar no nível raiz da resposta.
+public struct NDSRawPayload: Codable, Equatable, Sendable {
+    public var results: [NDSResult]?
+    public var traces: [NDSTrace]?
+    public var recommendation: NDSRecommendation?
+
     public init(results: [NDSResult]? = nil, traces: [NDSTrace]? = nil, recommendation: NDSRecommendation? = nil) {
         self.results = results
         self.traces = traces
         self.recommendation = recommendation
+    }
+}
+
+/// Texto tratado do bloco `explanation` do contrato v2. Quando
+/// `semCausaIdentificada == true`, nenhuma regra disparou — `titulo`/
+/// `descricao`/`dados`/`acaoUsuario` podem vir ausentes nesse caso, e o
+/// consumidor deve mostrar uma mensagem transparente em vez de inventar
+/// uma causa (AGENTS.md §9 — nada de opinião fabricada).
+public struct NDSV2Explanation: Codable, Equatable, Sendable {
+    public var titulo: String?
+    public var descricao: String?
+    public var dados: String?
+    public var acaoUsuario: String?
+    public var semCausaIdentificada: Bool?
+
+    public enum CodingKeys: String, CodingKey {
+        case titulo
+        case descricao
+        case dados
+        case acaoUsuario = "acao_usuario"
+        case semCausaIdentificada = "sem_causa_identificada"
+    }
+
+    public init(
+        titulo: String? = nil,
+        descricao: String? = nil,
+        dados: String? = nil,
+        acaoUsuario: String? = nil,
+        semCausaIdentificada: Bool? = nil
+    ) {
+        self.titulo = titulo
+        self.descricao = descricao
+        self.dados = dados
+        self.acaoUsuario = acaoUsuario
+        self.semCausaIdentificada = semCausaIdentificada
     }
 }
 

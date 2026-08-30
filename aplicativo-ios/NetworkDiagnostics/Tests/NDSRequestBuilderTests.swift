@@ -53,6 +53,61 @@ final class NDSRequestBuilderTests: XCTestCase {
         XCTAssertEqual(request.context, context)
     }
 
+    /// `subcategory` (issue objective+subcategory guiado) só existe quando
+    /// o app coletou a seleção guiada — precisa aparecer no JSON quando
+    /// fornecido e ficar totalmente ausente (não `null`) quando não.
+    func testBuildRequest_includesSubcategoryWhenProvided() throws {
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 100,
+            uploadMbps: 50,
+            latencyMs: 20
+        )
+        let context = NDSRequest.DiagnosticContext(objective: "JOGOS_COM_LAG", subcategory: "PING_ALTO")
+
+        let request = NDSRequestBuilder().buildRequest(
+            current: measurement,
+            platformHints: PlatformHints(),
+            appVersion: nil,
+            platformIdentifier: "ios",
+            requestAI: true,
+            diagnosticContext: context
+        )
+
+        XCTAssertEqual(request.context?.subcategory, "PING_ALTO")
+
+        let encoded = try JSONEncoder().encode(request)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        let contextJSON = try XCTUnwrap(json["context"] as? [String: Any])
+        XCTAssertEqual(contextJSON["subcategory"] as? String, "PING_ALTO")
+    }
+
+    func testBuildRequest_omitsSubcategoryWhenNil() throws {
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 100,
+            uploadMbps: 50,
+            latencyMs: 20
+        )
+        let context = NDSRequest.DiagnosticContext(objective: "JOGOS_COM_LAG")
+
+        let request = NDSRequestBuilder().buildRequest(
+            current: measurement,
+            platformHints: PlatformHints(),
+            appVersion: nil,
+            platformIdentifier: "ios",
+            requestAI: true,
+            diagnosticContext: context
+        )
+
+        XCTAssertNil(request.context?.subcategory)
+
+        let encoded = try JSONEncoder().encode(request)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        let contextJSON = try XCTUnwrap(json["context"] as? [String: Any])
+        XCTAssertNil(contextJSON["subcategory"])
+    }
+
     func testBuildRequestNeverSendsSSIDOrBSSID() throws {
         let measurement = NetworkMeasurement(
             outcome: .complete,

@@ -76,6 +76,15 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
     public let usageContext: String?
     public let diagnosticPayload: String?
     public let locale: String?
+    /// Macro-grupo do problema escolhido pelo usuário no fluxo guiado
+    /// (`AssistProblemSelectionView`), ex.: `"JOGOS_COM_LAG"`. `nil` no
+    /// fluxo observacional puro — o Assist continua funcionando sem essa
+    /// seleção, só sem o contrato v2 do NDS.
+    public let objective: String?
+    /// Subcategoria fechada dentro de `objective`, ex.: `"PING_ALTO"`.
+    /// Só existe quando `objective` também existe — o fluxo guiado sempre
+    /// coleta as duas etapas antes de invocar o Assist.
+    public let subcategory: String?
 
     public init(
         question: String,
@@ -84,7 +93,9 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
         evidence: [NetworkAssistEvidence] = [],
         usageContext: String? = nil,
         diagnosticPayload: String? = nil,
-        locale: String? = nil
+        locale: String? = nil,
+        objective: String? = nil,
+        subcategory: String? = nil
     ) {
         self.question = question
         self.currentMeasurement = currentMeasurement
@@ -93,6 +104,8 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
         self.usageContext = usageContext
         self.diagnosticPayload = diagnosticPayload
         self.locale = locale
+        self.objective = objective
+        self.subcategory = subcategory
     }
 }
 
@@ -104,6 +117,8 @@ public struct NetworkAssistRequest: Codable, Equatable, Sendable {
     public let usageContext: String?
     public let locale: String?
     public let policy: NetworkAssistPolicy
+    public let objective: String?
+    public let subcategory: String?
 
     init(validated context: NetworkAssistContext) {
         self.question = context.question.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -113,6 +128,8 @@ public struct NetworkAssistRequest: Codable, Equatable, Sendable {
         self.usageContext = context.usageContext
         self.locale = context.locale
         self.policy = .measurementUnderstanding
+        self.objective = context.objective
+        self.subcategory = context.subcategory
     }
 
     public var knownEvidenceIDs: Set<String> {
