@@ -42,6 +42,66 @@ final class AssistViewModelTests: XCTestCase {
         XCTAssertNil(context.usageContext)
     }
 
+    func test_makeContext_propagatesObjectiveAndSubcategory() {
+        let current = measurement(id: UUID())
+
+        let context = AssistViewModel.makeContext(
+            currentMeasurement: current,
+            recentMeasurements: [],
+            objective: "JOGOS_COM_LAG",
+            subcategory: "PING_ALTO"
+        )
+
+        XCTAssertEqual(context.objective, "JOGOS_COM_LAG")
+        XCTAssertEqual(context.subcategory, "PING_ALTO")
+        XCTAssertNil(context.reportedProblem)
+    }
+
+    /// "Pular" a etapa 1 ou a etapa 2 (`AssistProblemSelectionView`) deve
+    /// produzir o mesmo contrato observacional de sempre: sem
+    /// objective/subcategory/reportedProblem, sem quebrar o fluxo.
+    func test_makeContext_withoutGuidedSelection_hasNoObjectiveSubcategoryOrReportedProblem() {
+        let current = measurement(id: UUID())
+
+        let context = AssistViewModel.makeContext(
+            currentMeasurement: current,
+            recentMeasurements: []
+        )
+
+        XCTAssertNil(context.objective)
+        XCTAssertNil(context.subcategory)
+        XCTAssertNil(context.reportedProblem)
+    }
+
+    /// "Outro problema": objective/subcategory ficam nil, só o texto livre
+    /// (aparado) vai para o contexto.
+    func test_makeContext_propagatesTrimmedReportedProblem_withoutObjectiveOrSubcategory() {
+        let current = measurement(id: UUID())
+
+        let context = AssistViewModel.makeContext(
+            currentMeasurement: current,
+            recentMeasurements: [],
+            reportedProblem: "  Minha internet cai só quando chove.  "
+        )
+
+        XCTAssertNil(context.objective)
+        XCTAssertNil(context.subcategory)
+        XCTAssertEqual(context.reportedProblem, "Minha internet cai só quando chove.")
+    }
+
+    /// Texto vazio (só espaço) vira `nil`, igual a `usageContext`.
+    func test_makeContext_blankReportedProblem_becomesNil() {
+        let current = measurement(id: UUID())
+
+        let context = AssistViewModel.makeContext(
+            currentMeasurement: current,
+            recentMeasurements: [],
+            reportedProblem: "   "
+        )
+
+        XCTAssertNil(context.reportedProblem)
+    }
+
     func test_load_insufficientEvidence_becomesExplicitError() async {
         let provider = StubAssistProvider(
             response: NetworkAssistResponse(

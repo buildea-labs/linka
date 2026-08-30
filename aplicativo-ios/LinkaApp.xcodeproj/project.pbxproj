@@ -38,9 +38,11 @@
 		58AAEC10AB55272DF16453E3 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3234D1B179CE201E17961385 /* SplashView.swift */; };
 		5B0458DD58805571D30AC3EC /* SpeedTestViewModelResultTimingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB32ED976CC4BE668BB83D5C /* SpeedTestViewModelResultTimingTests.swift */; };
 		5D2A6786BBAEFBF394159623 /* AssistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 407C59990EED2DC1040BF42E /* AssistView.swift */; };
+		DA144099CC824748B614C7C4 /* AssistProblemSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A86DD6DB04B46EB9A4D6896 /* AssistProblemSelectionView.swift */; };
 		5D7BDF1FC123A9F789F0B323 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 8B33A51CB0672AFF8EF05F84 /* GoogleMobileAds */; };
 		6F17598AD7C151721E54AB92 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */; };
 		77AA437F88B4E181F75F6B6E /* AssistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 407C59990EED2DC1040BF42E /* AssistView.swift */; };
+		8D2EB0554AA94CA58EC29954 /* AssistProblemSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A86DD6DB04B46EB9A4D6896 /* AssistProblemSelectionView.swift */; };
 		7D2E75A9C2B6677164470767 /* ExpertModeMigrationBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41173010B41EF48DE2606B1 /* ExpertModeMigrationBanner.swift */; };
 		7E4521DEE028B6E2786623C9 /* AssistContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD4A980DC574793818E97A1 /* AssistContainer.swift */; };
 		7F7970BA85081796F66C73DB /* PhaseDots.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */; };
@@ -67,6 +69,7 @@
 		BB664E873410EAC7F101D24B /* ApplePlatformSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */; };
 		C52F715538667A43E3CCA1CA /* NetworkConnectivityTriage in Frameworks */ = {isa = PBXBuildFile; productRef = CAACD50C2B8842A2FFB7FDB9 /* NetworkConnectivityTriage */; };
 		C795EB7B3D3C235CC07EB505 /* AssistViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78285EB65890B076CF8D41D4 /* AssistViewModelTests.swift */; };
+		69F0326FF66B4F08B24A7944 /* AssistViewCloseSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D7D93695FC4D948B5F009A /* AssistViewCloseSheetTests.swift */; };
 		CA9681EC9AC366A5AF3E5A71 /* ConnectionPathView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF377B5E1688176727142AF /* ConnectionPathView.swift */; };
 		CDD3F59B3B734268681868EA /* AssistTeaserCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647AB617F0B68B7D63BE2191 /* AssistTeaserCard.swift */; };
 		CF3CD7092B1A2A05068FD02F /* LinkaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72C35725E79C96780D745AB7 /* LinkaApp.swift */; };
@@ -106,6 +109,7 @@
 		2C8ADAB36D0CC32BA436AFE3 /* LinkaAppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaAppShortcuts.swift; sourceTree = "<group>"; };
 		3234D1B179CE201E17961385 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		407C59990EED2DC1040BF42E /* AssistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistView.swift; sourceTree = "<group>"; };
+		7A86DD6DB04B46EB9A4D6896 /* AssistProblemSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistProblemSelectionView.swift; sourceTree = "<group>"; };
 		43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		44FD51918BF9314D06858F94 /* PurchaseEntryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseEntryPoint.swift; sourceTree = "<group>"; };
 		4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePlatformSignalProviderCWChannelBandTests.swift; sourceTree = "<group>"; };
@@ -121,6 +125,7 @@
 		72C35725E79C96780D745AB7 /* LinkaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaApp.swift; sourceTree = "<group>"; };
 		736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		78285EB65890B076CF8D41D4 /* AssistViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistViewModelTests.swift; sourceTree = "<group>"; };
+		94D7D93695FC4D948B5F009A /* AssistViewCloseSheetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistViewCloseSheetTests.swift; sourceTree = "<group>"; };
 		8041784263895147F69C02D2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8DD4A980DC574793818E97A1 /* AssistContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistContainer.swift; sourceTree = "<group>"; };
 		A41173010B41EF48DE2606B1 /* ExpertModeMigrationBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpertModeMigrationBanner.swift; sourceTree = "<group>"; };
@@ -189,6 +194,7 @@
 			children = (
 				647AB617F0B68B7D63BE2191 /* AssistTeaserCard.swift */,
 				407C59990EED2DC1040BF42E /* AssistView.swift */,
+				7A86DD6DB04B46EB9A4D6896 /* AssistProblemSelectionView.swift */,
 				4F6C710FA9D415DDBB3316F9 /* BannerView.swift */,
 				0BF377B5E1688176727142AF /* ConnectionPathView.swift */,
 				DE87CDDD63F493ADD2C14B84 /* ConnectivityTriageView.swift */,
@@ -224,6 +230,7 @@
 			children = (
 				4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */,
 				78285EB65890B076CF8D41D4 /* AssistViewModelTests.swift */,
+				94D7D93695FC4D948B5F009A /* AssistViewCloseSheetTests.swift */,
 				FB32ED976CC4BE668BB83D5C /* SpeedTestViewModelResultTimingTests.swift */,
 				A955FDE679C032C5443EEF5D /* SpeedTestViewModelScenePhaseTests.swift */,
 				E7936AC36AB6A238A31BCF85 /* UsageSuitabilityCopyQualityLevelTests.swift */,
@@ -424,6 +431,7 @@
 				8A98ED69419E179DC57A582C /* AssistFailureSignalMapping.swift in Sources */,
 				CDD3F59B3B734268681868EA /* AssistTeaserCard.swift in Sources */,
 				5D2A6786BBAEFBF394159623 /* AssistView.swift in Sources */,
+				DA144099CC824748B614C7C4 /* AssistProblemSelectionView.swift in Sources */,
 				A625BB41043014209F3CF3B5 /* AssistViewModel.swift in Sources */,
 				368C7157F6ECC02B56BC655D /* BannerView.swift in Sources */,
 				D3535A4ADB8FFC83D989D434 /* ConnectionPathView.swift in Sources */,
@@ -458,6 +466,7 @@
 			files = (
 				EB421BFDB3D4D610383923F1 /* ApplePlatformSignalProviderCWChannelBandTests.swift in Sources */,
 				C795EB7B3D3C235CC07EB505 /* AssistViewModelTests.swift in Sources */,
+				69F0326FF66B4F08B24A7944 /* AssistViewCloseSheetTests.swift in Sources */,
 				5B0458DD58805571D30AC3EC /* SpeedTestViewModelResultTimingTests.swift in Sources */,
 				3780733E2BDF1FB538D9CC35 /* SpeedTestViewModelScenePhaseTests.swift in Sources */,
 				01291A72D1AE05FDD8B56EAD /* UsageSuitabilityCopyQualityLevelTests.swift in Sources */,
@@ -474,6 +483,7 @@
 				9FFFA7A4330D0D605C30667E /* AssistFailureSignalMapping.swift in Sources */,
 				A64CA2655143AAA37EDFB39A /* AssistTeaserCard.swift in Sources */,
 				77AA437F88B4E181F75F6B6E /* AssistView.swift in Sources */,
+				8D2EB0554AA94CA58EC29954 /* AssistProblemSelectionView.swift in Sources */,
 				F492A685388DF380C07F0B86 /* AssistViewModel.swift in Sources */,
 				17E73DA323A120A6FECBD6A1 /* BannerView.swift in Sources */,
 				CA9681EC9AC366A5AF3E5A71 /* ConnectionPathView.swift in Sources */,

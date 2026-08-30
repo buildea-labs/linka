@@ -654,16 +654,14 @@ struct MainView: View {
             .environmentObject(entitlements)
         }
         .sheet(isPresented: $showAssist) {
-            NavigationStack {
-                AssistView(
-                    currentMeasurement: currentMeasurement,
-                    recentMeasurements: viewModel.recentMeasurements,
-                    usageContext: usageContextForAssist,
-                    onRetry: { viewModel.startTest() },
-                    onShowDetails: { detailsOpen = true },
-                    entitlements: entitlements
-                )
-            }
+            AssistProblemSelectionView(
+                currentMeasurement: currentMeasurement,
+                recentMeasurements: viewModel.recentMeasurements,
+                usageContext: usageContextForAssist,
+                onRetry: { viewModel.startTest() },
+                onShowDetails: { detailsOpen = true },
+                entitlements: entitlements
+            )
         }
         .sheet(isPresented: $showConnectivityTriage) {
             NavigationStack {

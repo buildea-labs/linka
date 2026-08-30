@@ -68,6 +68,75 @@ final class NDSContractTests: XCTestCase {
         XCTAssertEqual(response.results?.first(where: { $0.module == "diagnostics.wifi" })?.cards?.first?.mensagemUsuario, "Latência elevada")
     }
 
+    /// Contrato v2 (`raw` + `explanation`): `explanation.titulo`/`descricao`
+    /// mapeiam para title/summary, e o `raw` carrega a mesma análise crua
+    /// do v1 (`results`/`recommendation`), só aninhada.
+    func testDecodeNDSV2Response() throws {
+        let json = """
+        {
+          "raw": {
+            "results": [
+              { "module": "scoring", "result": { "score": 40, "veredicto": "ruim" } }
+            ],
+            "recommendation": { "id": "REC_X", "type": "x", "title": "t", "description": "d", "steps": [] }
+          },
+          "explanation": {
+            "titulo": "Ping alto identificado",
+            "descricao": "Seu ping está bem acima do esperado para jogos.",
+            "dados": "Ping médio de 180ms nos últimos testes.",
+            "acao_usuario": "Conecte o console por cabo em vez de Wi-Fi."
+          }
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(NDSResponse.self, from: json)
+
+        XCTAssertEqual(response.explanation?.titulo, "Ping alto identificado")
+        XCTAssertEqual(response.explanation?.descricao, "Seu ping está bem acima do esperado para jogos.")
+        XCTAssertEqual(response.explanation?.dados, "Ping médio de 180ms nos últimos testes.")
+        XCTAssertEqual(response.explanation?.acaoUsuario, "Conecte o console por cabo em vez de Wi-Fi.")
+        XCTAssertNil(response.explanation?.semCausaIdentificada)
+        XCTAssertEqual(response.effectiveResults?.first?.result?.score, 40)
+        XCTAssertEqual(response.effectiveRecommendation?.id, "REC_X")
+    }
+
+    /// `sem_causa_identificada == true`: nenhuma regra disparou. O
+    /// decoder precisa expor isso sem exigir `titulo`/`descricao`.
+    func testDecodeNDSV2ResponseSemCausaIdentificada() throws {
+        let json = """
+        {
+          "raw": { "results": [], "recommendation": null },
+          "explanation": { "sem_causa_identificada": true }
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(NDSResponse.self, from: json)
+
+        XCTAssertEqual(response.explanation?.semCausaIdentificada, true)
+        XCTAssertNil(response.explanation?.titulo)
+    }
+
+    /// Regressão: uma resposta v1 pura (sem `raw`/`explanation`) continua
+    /// decodificando e `effectiveResults`/`effectiveRecommendation` caem
+    /// para os campos de topo, exatamente como antes desta issue.
+    func testDecodeNDSV1ResponseStillWorksAndEffectiveFieldsFallBackToTopLevel() throws {
+        let json = """
+        {
+          "recommendation": { "id": "REC_V1", "type": "x", "title": "t", "description": "d", "steps": [] },
+          "results": [
+            { "module": "scoring", "result": { "score": 90, "veredicto": "bom" } }
+          ]
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(NDSResponse.self, from: json)
+
+        XCTAssertNil(response.raw)
+        XCTAssertNil(response.explanation)
+        XCTAssertEqual(response.effectiveRecommendation?.id, "REC_V1")
+        XCTAssertEqual(response.effectiveResults?.first?.result?.score, 90)
+    }
+
     func testDecodeCanonicalErrorEnvelope() throws {
         let json = """
         {
@@ -187,6 +256,46 @@ final class NDSContractTests: XCTestCase {
         XCTAssertNil(bearerToken)
     }
 
+    /// v2 exige objective E subcategory — qualquer requisição faltando um
+    /// dos dois (inclusive o fluxo observacional puro, que só manda
+    /// `objective`) permanece em v1, sem mudar o comportamento de hoje.
+    func testEvaluateUsesV2EndpointOnlyWhenObjectiveAndSubcategoryArePresent() async throws {
+        let client = URLRecordingDiagnosticHTTPClient(
+            data: try JSONEncoder().encode(NDSResponse()),
+            status: 200
+        )
+        let configuration = NetworkDiagnosticsConfiguration(
+            rulesEndpoint: URL(string: "https://example.com/v1/diagnostics/evaluate")!,
+            transportAuth: .relay,
+            platformIdentifier: "ios"
+        )
+        let api = BuildeaDiagnosticAPI(configuration: configuration, httpClient: client)
+        let measurement = NetworkMeasurement(
+            id: UUID(), outcome: .complete, downloadMbps: 100, uploadMbps: 50,
+            latencyMs: 20, connectionKind: .wifi
+        )
+
+        _ = try await api.evaluate(
+            measurement,
+            requestAI: true,
+            diagnosticContext: NDSRequest.DiagnosticContext(objective: "JOGOS_COM_LAG", subcategory: "PING_ALTO")
+        )
+        var calledURL = await client.calledURL
+        XCTAssertEqual(calledURL, URL(string: "https://example.com/v2/diagnostics/evaluate")!)
+
+        _ = try await api.evaluate(
+            measurement,
+            requestAI: true,
+            diagnosticContext: NDSRequest.DiagnosticContext(objective: "JOGOS_COM_LAG")
+        )
+        calledURL = await client.calledURL
+        XCTAssertEqual(calledURL, URL(string: "https://example.com/v1/diagnostics/evaluate")!)
+
+        _ = try await api.evaluate(measurement, requestAI: true)
+        calledURL = await client.calledURL
+        XCTAssertEqual(calledURL, URL(string: "https://example.com/v1/diagnostics/evaluate")!)
+    }
+
     func testTransportSummarizesRecentMeasurementsForNDS() {
         let reference = Date(timeIntervalSince1970: 1_000_000)
         let current = NetworkMeasurement(
@@ -234,6 +343,22 @@ private struct StubDiagnosticHTTPClient: DiagnosticHTTPClient {
 
     func postJSON(url: URL, body: Data, timeout: TimeInterval, bearerToken: String?) async throws -> (Data, Int) {
         (data, status)
+    }
+}
+
+private actor URLRecordingDiagnosticHTTPClient: DiagnosticHTTPClient {
+    let data: Data
+    let status: Int
+    private(set) var calledURL: URL?
+
+    init(data: Data, status: Int) {
+        self.data = data
+        self.status = status
+    }
+
+    func postJSON(url: URL, body: Data, timeout: TimeInterval, bearerToken: String?) async throws -> (Data, Int) {
+        self.calledURL = url
+        return (data, status)
     }
 }
 
