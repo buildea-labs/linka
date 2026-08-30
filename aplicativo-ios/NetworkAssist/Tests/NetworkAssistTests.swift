@@ -130,6 +130,78 @@ final class NetworkAssistTests: XCTestCase {
         }
     }
 
+    /// "Outro problema" com texto dentro do limite (200) é aceito e chega
+    /// aparado (trim) ao transporte — sem `objective`/`subcategory`.
+    func testReportedProblemWithinLimitReachesTransportTrimmed() async throws {
+        let measurement = completeMeasurement()
+        let transport = RecordingTransport { request in
+            XCTAssertEqual(request.reportedProblem, "Minha internet cai só quando chove.")
+            XCTAssertNil(request.objective)
+            XCTAssertNil(request.subcategory)
+            return NetworkAssistResponse(
+                text: "A medição foi interpretada.",
+                disposition: .answered,
+                evidenceIDs: [NetworkAssistRequest.currentMeasurementEvidenceID(measurement.id)]
+            )
+        }
+        let service = NetworkAssistService(transport: transport)
+
+        _ = try await service.answer(
+            NetworkAssistContext(
+                question: "Como foi?",
+                currentMeasurement: measurement,
+                reportedProblem: "  Minha internet cai só quando chove.  "
+            )
+        )
+    }
+
+    /// Texto acima de 200 caracteres é rejeitado pelo service, mesmo que o
+    /// client já devesse ter truncado antes — o server-side (aqui, o
+    /// `NetworkAssistService` local) não confia cegamente no chamador.
+    func testReportedProblemOverLimitIsRejected() async {
+        let measurement = completeMeasurement()
+        let service = NetworkAssistService(transport: FailingIfCalledTransport())
+        let oversized = String(repeating: "a", count: 201)
+
+        do {
+            _ = try await service.answer(
+                NetworkAssistContext(
+                    question: "Como foi?",
+                    currentMeasurement: measurement,
+                    reportedProblem: oversized
+                )
+            )
+            XCTFail("Expected reportedProblemTooLong")
+        } catch let error as NetworkAssistError {
+            XCTAssertEqual(error, .reportedProblemTooLong(maximum: 200))
+        } catch {
+            XCTFail("Unexpected error: \(error)")
+        }
+    }
+
+    /// Exatamente 200 caracteres é o limite aceito (borda inclusiva).
+    func testReportedProblemAtExactLimitIsAccepted() async throws {
+        let measurement = completeMeasurement()
+        let exactly200 = String(repeating: "a", count: 200)
+        let transport = RecordingTransport { request in
+            XCTAssertEqual(request.reportedProblem?.count, 200)
+            return NetworkAssistResponse(
+                text: "A medição foi interpretada.",
+                disposition: .answered,
+                evidenceIDs: [NetworkAssistRequest.currentMeasurementEvidenceID(measurement.id)]
+            )
+        }
+        let service = NetworkAssistService(transport: transport)
+
+        _ = try await service.answer(
+            NetworkAssistContext(
+                question: "Como foi?",
+                currentMeasurement: measurement,
+                reportedProblem: exactly200
+            )
+        )
+    }
+
     func testEvidenceCannotReferenceUnknownMeasurement() async {
         let measurement = completeMeasurement()
         let evidence = NetworkAssistEvidence(

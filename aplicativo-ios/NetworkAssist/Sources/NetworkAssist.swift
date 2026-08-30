@@ -85,6 +85,17 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
     /// Só existe quando `objective` também existe — o fluxo guiado sempre
     /// coleta as duas etapas antes de invocar o Assist.
     public let subcategory: String?
+    /// Texto livre digitado pelo usuário quando escolhe "Outro problema" na
+    /// primeira tripleta (`AssistProblemSelectionView`), em vez de um
+    /// `objective` fechado. Limitado a 200 caracteres (ver
+    /// `NetworkAssistConfiguration.maximumReportedProblemLength`) — validado
+    /// tanto no client (view) quanto aqui, no `NetworkAssistService`.
+    /// IMPORTANTE: este texto NÃO influencia a priorização de regras do
+    /// NDS — é usado só como contexto adicional pela IA na explicação
+    /// (`context.reported_problem`, ortogonal a `objective`/`subcategory`).
+    /// `nil` quando o usuário escolheu um `objective` fechado ou pulou a
+    /// seleção.
+    public let reportedProblem: String?
 
     public init(
         question: String,
@@ -95,7 +106,8 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
         diagnosticPayload: String? = nil,
         locale: String? = nil,
         objective: String? = nil,
-        subcategory: String? = nil
+        subcategory: String? = nil,
+        reportedProblem: String? = nil
     ) {
         self.question = question
         self.currentMeasurement = currentMeasurement
@@ -106,6 +118,7 @@ public struct NetworkAssistContext: Codable, Equatable, Sendable {
         self.locale = locale
         self.objective = objective
         self.subcategory = subcategory
+        self.reportedProblem = reportedProblem
     }
 }
 
@@ -119,6 +132,10 @@ public struct NetworkAssistRequest: Codable, Equatable, Sendable {
     public let policy: NetworkAssistPolicy
     public let objective: String?
     public let subcategory: String?
+    /// Ver `NetworkAssistContext.reportedProblem` — mesmo contrato, já
+    /// aparado (trim) e validado quanto ao limite de 200 caracteres antes
+    /// de chegar aqui (`NetworkAssistService.validate(context:)`).
+    public let reportedProblem: String?
 
     init(validated context: NetworkAssistContext) {
         self.question = context.question.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -130,6 +147,9 @@ public struct NetworkAssistRequest: Codable, Equatable, Sendable {
         self.policy = .measurementUnderstanding
         self.objective = context.objective
         self.subcategory = context.subcategory
+        self.reportedProblem = context.reportedProblem?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .nilIfEmpty
     }
 
     public var knownEvidenceIDs: Set<String> {
@@ -241,15 +261,23 @@ public struct NetworkAssistConfiguration: Equatable, Sendable {
     public let maximumQuestionLength: Int
     public let maximumRecentMeasurements: Int
     public let maximumEvidenceItems: Int
+    /// Limite de caracteres para `NetworkAssistContext.reportedProblem`
+    /// ("Outro problema" em `AssistProblemSelectionView`). Espelha o limite
+    /// já validado no client (contador de 200 caracteres na tela) — server
+    /// e client concordam no mesmo número, o client só evita a viagem de
+    /// rede que já sabe que vai falhar aqui.
+    public let maximumReportedProblemLength: Int
 
     public init(
         maximumQuestionLength: Int = 500,
         maximumRecentMeasurements: Int = 20,
-        maximumEvidenceItems: Int = 50
+        maximumEvidenceItems: Int = 50,
+        maximumReportedProblemLength: Int = 200
     ) {
         self.maximumQuestionLength = max(1, maximumQuestionLength)
         self.maximumRecentMeasurements = max(0, maximumRecentMeasurements)
         self.maximumEvidenceItems = max(0, maximumEvidenceItems)
+        self.maximumReportedProblemLength = max(1, maximumReportedProblemLength)
     }
 }
 
@@ -266,6 +294,11 @@ public enum NetworkAssistError: Error, Equatable, Sendable {
     case emptyResponse
     case unknownResponseEvidenceID(String)
     case answeredWithoutEvidence
+    /// `reportedProblem` (texto livre de "Outro problema") ultrapassou
+    /// `NetworkAssistConfiguration.maximumReportedProblemLength` mesmo após
+    /// trim — o client já valida isso na tela, mas o service não confia
+    /// cegamente em quem chama `answer(_:)`/`streamAnswer(_:)`.
+    case reportedProblemTooLong(maximum: Int)
 
     /// Não é lançado por `NetworkAssistService` — este pacote não conhece
     /// entitlement. Reservado para consumidores que envolvem
@@ -442,6 +475,11 @@ public struct NetworkAssistService<Transport: NetworkAssistTransport>: NetworkAs
         guard context.evidence.count <= configuration.maximumEvidenceItems else {
             throw NetworkAssistError.tooManyEvidenceItems(maximum: configuration.maximumEvidenceItems)
         }
+        if let reportedProblem = context.reportedProblem?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !reportedProblem.isEmpty,
+           reportedProblem.count > configuration.maximumReportedProblemLength {
+            throw NetworkAssistError.reportedProblemTooLong(maximum: configuration.maximumReportedProblemLength)
+        }
 
         let knownMeasurementIDs = Set([context.currentMeasurement.id] + context.recentMeasurements.map(\.id))
         var evidenceIDs = Set<String>()
@@ -491,4 +529,8 @@ public struct UnconfiguredNetworkAssistTransport: NetworkAssistTransport {
     public func answer(_ request: NetworkAssistRequest) async throws -> NetworkAssistResponse {
         throw NetworkAssistError.notConfigured
     }
+}
+
+private extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

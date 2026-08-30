@@ -33,7 +33,8 @@ final class AssistViewModel: ObservableObject {
         usageContext: String? = nil,
         failureSignal: NetworkAssistFailureSignal?,
         objective: String? = nil,
-        subcategory: String? = nil
+        subcategory: String? = nil,
+        reportedProblem: String? = nil
     ) async {
         guard case .idle = state else { return }
 
@@ -49,7 +50,8 @@ final class AssistViewModel: ObservableObject {
             recentMeasurements: recentMeasurements,
             usageContext: usageContext,
             objective: objective,
-            subcategory: subcategory
+            subcategory: subcategory,
+            reportedProblem: reportedProblem
         )
 
         do {
@@ -113,7 +115,8 @@ final class AssistViewModel: ObservableObject {
         recentMeasurements: [NetworkMeasurement],
         usageContext: String? = nil,
         objective: String? = nil,
-        subcategory: String? = nil
+        subcategory: String? = nil,
+        reportedProblem: String? = nil
     ) -> NetworkAssistContext {
         let recent = recentMeasurements
             .filter { $0.id != currentMeasurement.id }
@@ -141,7 +144,8 @@ final class AssistViewModel: ObservableObject {
             evidence: [currentEvidence] + recentEvidence,
             usageContext: usageContext?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             objective: objective,
-            subcategory: subcategory
+            subcategory: subcategory,
+            reportedProblem: reportedProblem?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
         )
     }
 

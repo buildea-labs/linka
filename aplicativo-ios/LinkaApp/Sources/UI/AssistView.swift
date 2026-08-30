@@ -35,6 +35,11 @@ struct AssistView: View {
     /// hoje, sem mudança).
     let objective: String?
     let subcategory: String?
+    /// Texto livre de "Outro problema" (ver `AssistProblemSelectionView`),
+    /// quando o usuário optou por descrever em vez de escolher um
+    /// `objective` fechado. Mutuamente exclusivo com `objective`/
+    /// `subcategory` na prática — o fluxo guiado nunca preenche os dois.
+    let reportedProblem: String?
 
     init(
         currentMeasurement: NetworkMeasurement?,
@@ -43,6 +48,7 @@ struct AssistView: View {
         failureSignal: NetworkAssistFailureSignal? = nil,
         objective: String? = nil,
         subcategory: String? = nil,
+        reportedProblem: String? = nil,
         onRetry: (() -> Void)? = nil,
         onShowDetails: (() -> Void)? = nil,
         entitlements: StoreKitEntitlementProvider? = nil,
@@ -55,6 +61,7 @@ struct AssistView: View {
         self.failureSignal = failureSignal
         self.objective = objective
         self.subcategory = subcategory
+        self.reportedProblem = reportedProblem
         self.onRetry = onRetry
         self.onShowDetails = onShowDetails
         self.entitlements = entitlements
@@ -95,7 +102,8 @@ struct AssistView: View {
                 usageContext: usageContext,
                 failureSignal: failureSignal,
                 objective: objective,
-                subcategory: subcategory
+                subcategory: subcategory,
+                reportedProblem: reportedProblem
             )
         }
         .task {

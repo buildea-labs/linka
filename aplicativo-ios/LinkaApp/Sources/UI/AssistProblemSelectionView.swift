@@ -106,9 +106,20 @@ struct AssistProblemSubcategory: Identifiable, Hashable {
 struct AssistProblemSelectionView: View {
     private enum Step: Hashable {
         case subcategory(AssistProblemObjective)
-        case result(AssistProblemObjective, AssistProblemSubcategory)
+        /// Campo de texto livre para "Outro problema" — só existe quando o
+        /// usuário escolhe explicitamente esta opção na etapa 1, em vez de
+        /// um `objective` fechado. Não leva a uma etapa de subcategoria:
+        /// não existe subcategoria fechada para um problema não catalogado.
+        case reportedProblemInput
+        case result(objective: String?, subcategory: String?, reportedProblem: String?)
         case observational
     }
+
+    /// Limite de caracteres do campo "Outro problema", espelhando
+    /// `NetworkAssistConfiguration.maximumReportedProblemLength` no lado do
+    /// client — trunca no client para nunca deixar passar mais que isso
+    /// (o server também valida, mas a tela não deveria depender só dele).
+    private static let reportedProblemMaxLength = 200
 
     let currentMeasurement: NetworkMeasurement?
     let recentMeasurements: [NetworkMeasurement]
@@ -118,6 +129,7 @@ struct AssistProblemSelectionView: View {
     let entitlements: StoreKitEntitlementProvider?
 
     @State private var path: [Step] = []
+    @State private var reportedProblemText: String = ""
 
     init(
         currentMeasurement: NetworkMeasurement?,
@@ -142,10 +154,12 @@ struct AssistProblemSelectionView: View {
                     switch step {
                     case .subcategory(let objective):
                         subcategoryStep(for: objective)
-                    case .result(let objective, let subcategory):
-                        assistDestination(objective: objective.rawValue, subcategory: subcategory.key)
+                    case .reportedProblemInput:
+                        reportedProblemStep
+                    case .result(let objective, let subcategory, let reportedProblem):
+                        assistDestination(objective: objective, subcategory: subcategory, reportedProblem: reportedProblem)
                     case .observational:
-                        assistDestination(objective: nil, subcategory: nil)
+                        assistDestination(objective: nil, subcategory: nil, reportedProblem: nil)
                     }
                 }
         }
@@ -174,6 +188,16 @@ struct AssistProblemSelectionView: View {
                         } label: {
                             problemRow(icon: objective.systemImage, label: objective.label)
                         }
+                    }
+
+                    // "Outro problema": não é um macro-grupo fechado, então
+                    // não tem `subcategories` — vai direto para o campo de
+                    // texto livre em vez da etapa 2.
+                    Button {
+                        reportedProblemText = ""
+                        path.append(.reportedProblemInput)
+                    } label: {
+                        problemRow(icon: "ellipsis.bubble", label: "Outro problema")
                     }
                 }
 
@@ -216,12 +240,94 @@ struct AssistProblemSelectionView: View {
                 VStack(spacing: 12) {
                     ForEach(objective.subcategories) { subcategory in
                         Button {
-                            path.append(.result(objective, subcategory))
+                            path.append(.result(objective: objective.rawValue, subcategory: subcategory.key, reportedProblem: nil))
                         } label: {
                             problemRow(icon: "chevron.right.circle", label: subcategory.label)
                         }
                     }
                 }
+
+                // Pular a etapa 2: mantém o `objective` já escolhido, mas
+                // segue para o Assist sem subcategoria (contrato v1 —
+                // `BuildeaDiagnosticAPI.usesV2` exige as duas chaves juntas).
+                Button {
+                    path.append(.result(objective: objective.rawValue, subcategory: nil, reportedProblem: nil))
+                } label: {
+                    Text("Pular esta pergunta")
+                        .font(.bodySmallMedium)
+                        .foregroundColor(.actionPrimary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .padding(.top, 4)
+                .padding(.bottom, 40)
+            }
+            .padding(.horizontal, 24)
+        }
+        .background(Color.surfacePage.ignoresSafeArea())
+        .navigationTitle("Assist")
+        #if canImport(UIKit)
+        .navigationBarTitleDisplayMode(.large)
+        #endif
+    }
+
+    // MARK: - Etapa alternativa — "Outro problema" (texto livre)
+
+    /// Campo de texto livre para quando nenhum macro-grupo catalogado
+    /// descreve o problema. Limitado a `reportedProblemMaxLength`
+    /// caracteres, com contador visível e truncamento no client
+    /// (`.onChange`) — nunca deixa passar mais que isso para o Assist.
+    /// Este texto é só contexto para a explicação da IA: NÃO influencia a
+    /// priorização de regras do NDS (essa continua vindo de
+    /// objective/subcategory/métricas, que aqui são `nil`).
+    private var reportedProblemStep: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Descreva o que está acontecendo")
+                        .font(.displayLarge)
+                        .foregroundColor(.brandSurface)
+
+                    Text("Conte com suas palavras — isso ajuda o Assist a explicar melhor o resultado, mas não muda o diagnóstico técnico.")
+                        .font(.bodyRegular)
+                        .foregroundColor(.textSecondary)
+                }
+                .padding(.top, 24)
+
+                VStack(alignment: .trailing, spacing: 8) {
+                    TextEditor(text: $reportedProblemText)
+                        .font(.bodyRegular)
+                        .foregroundColor(.textPrimary)
+                        .frame(minHeight: 120)
+                        .padding(12)
+                        .background(Color.surfaceCard)
+                        .cornerRadius(12)
+                        .onChange(of: reportedProblemText) { newValue in
+                            if newValue.count > Self.reportedProblemMaxLength {
+                                reportedProblemText = String(newValue.prefix(Self.reportedProblemMaxLength))
+                            }
+                        }
+
+                    Text("\(reportedProblemText.count)/\(Self.reportedProblemMaxLength)")
+                        .font(.caption2)
+                        .foregroundColor(.textSecondary)
+                }
+
+                Button {
+                    let trimmed = reportedProblemText
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                        .prefix(Self.reportedProblemMaxLength)
+                    path.append(.result(objective: nil, subcategory: nil, reportedProblem: String(trimmed)))
+                } label: {
+                    Text("Continuar")
+                        .font(.bodyRegularStrong)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.actionPrimary)
+                        .cornerRadius(12)
+                }
+                .disabled(reportedProblemText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .opacity(reportedProblemText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1)
                 .padding(.bottom, 40)
             }
             .padding(.horizontal, 24)
@@ -235,13 +341,14 @@ struct AssistProblemSelectionView: View {
 
     // MARK: - Destino final — fluxo observacional existente
 
-    private func assistDestination(objective: String?, subcategory: String?) -> some View {
+    private func assistDestination(objective: String?, subcategory: String?, reportedProblem: String?) -> some View {
         AssistView(
             currentMeasurement: currentMeasurement,
             recentMeasurements: recentMeasurements,
             usageContext: usageContext,
             objective: objective,
             subcategory: subcategory,
+            reportedProblem: reportedProblem,
             onRetry: onRetry,
             onShowDetails: onShowDetails,
             entitlements: entitlements

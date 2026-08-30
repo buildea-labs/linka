@@ -19,9 +19,21 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         // Sem seleção guiada, o comportamento observacional de hoje
         // continua idêntico — só `objective` (texto de `usageContext`),
         // sem `subcategory`, o que mantém a requisição em v1.
+        // "Outro problema" (texto livre) chega em `request.reportedProblem`
+        // sem `objective`/`subcategory` — vai só como `reported_problem`,
+        // que o NDS usa como contexto adicional para a IA na explicação,
+        // NUNCA para priorizar regras (isso continua vindo só de
+        // objective/subcategory/métricas). Como não há objective, a
+        // requisição segue em v1 (ver `BuildeaDiagnosticAPI.usesV2`).
         let diagnosticContext: NDSRequest.DiagnosticContext?
         if let objective = request.objective {
-            diagnosticContext = NDSRequest.DiagnosticContext(objective: objective, subcategory: request.subcategory)
+            diagnosticContext = NDSRequest.DiagnosticContext(
+                reportedProblem: request.reportedProblem,
+                objective: objective,
+                subcategory: request.subcategory
+            )
+        } else if let reportedProblem = request.reportedProblem {
+            diagnosticContext = NDSRequest.DiagnosticContext(reportedProblem: reportedProblem)
         } else if let usageContext = request.usageContext {
             diagnosticContext = NDSRequest.DiagnosticContext(objective: usageContext)
         } else {
