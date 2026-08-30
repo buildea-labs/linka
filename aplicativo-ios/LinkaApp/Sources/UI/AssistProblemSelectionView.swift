@@ -104,6 +104,17 @@ struct AssistProblemSubcategory: Identifiable, Hashable {
 /// observacional puro, sem objective/subcategory, idêntico ao comportamento
 /// anterior a esta issue.
 struct AssistProblemSelectionView: View {
+    /// Capturado na RAIZ do `NavigationStack` desta tela — é o `dismiss` que
+    /// fecha o sheet inteiro apresentado por `MainView`. Repassado a
+    /// `AssistView` como `onCloseSheet` (correção da regressão do PR #141):
+    /// sem isso, o `@Environment(\.dismiss)` local de `AssistView`, quando
+    /// ela é empurrada por `navigationDestination` dentro do
+    /// `NavigationStack` desta tela, só faz pop de volta para a seleção em
+    /// vez de fechar o sheet — "Testar novamente" reinicia o teste atrás do
+    /// sheet ainda aberto, e "Ver detalhes da medição" abre escondido atrás
+    /// dele.
+    @Environment(\.dismiss) private var dismissSheet
+
     private enum Step: Hashable {
         case subcategory(AssistProblemObjective)
         /// Campo de texto livre para "Outro problema" — só existe quando o
@@ -351,7 +362,8 @@ struct AssistProblemSelectionView: View {
             reportedProblem: reportedProblem,
             onRetry: onRetry,
             onShowDetails: onShowDetails,
-            entitlements: entitlements
+            entitlements: entitlements,
+            onCloseSheet: { dismissSheet() }
         )
     }
 

@@ -12,6 +12,17 @@ struct AssistView: View {
     @StateObject private var stabilityViewModel: NetworkStabilityPatternsViewModel
     @State private var showRecommendationDetails = false
 
+    /// Fecha o sheet inteiro: usa `onCloseSheet` (fluxo guiado via
+    /// `AssistProblemSelectionView`) quando fornecido, senão cai no
+    /// `dismiss()` local (fluxo direto de `HistoryView`/`MainView` legado).
+    private func closeSheet() {
+        if let onCloseSheet {
+            onCloseSheet()
+        } else {
+            dismiss()
+        }
+    }
+
     let currentMeasurement: NetworkMeasurement?
     let recentMeasurements: [NetworkMeasurement]
     let usageContext: String?
@@ -40,6 +51,19 @@ struct AssistView: View {
     /// `objective` fechado. Mutuamente exclusivo com `objective`/
     /// `subcategory` na prática — o fluxo guiado nunca preenche os dois.
     let reportedProblem: String?
+    /// Fecha o sheet INTEIRO em vez de só dar pop dentro do `NavigationStack`
+    /// local (bug reportado na revisão do PR #141): quando `AssistView` é
+    /// empurrada por `AssistProblemSelectionView.swift` via
+    /// `navigationDestination` dentro do próprio `NavigationStack` daquela
+    /// tela, `@Environment(\.dismiss)` capturado aqui só faz pop de volta
+    /// para a seleção — não fecha o sheet apresentado por `MainView`.
+    /// `AssistProblemSelectionView` passa aqui o `dismiss` capturado na
+    /// RAIZ do seu próprio `NavigationStack` (que sim fecha o sheet).
+    /// `nil` (default) preserva o comportamento existente de `HistoryView`,
+    /// que empurra `AssistView` no seu próprio `NavigationStack` direto,
+    /// sem tela de seleção no meio — lá `dismiss()` local já faz a coisa
+    /// certa.
+    let onCloseSheet: (() -> Void)?
 
     init(
         currentMeasurement: NetworkMeasurement?,
@@ -53,7 +77,8 @@ struct AssistView: View {
         onShowDetails: (() -> Void)? = nil,
         entitlements: StoreKitEntitlementProvider? = nil,
         assistProvider: (any NetworkAssistProviding)? = nil,
-        assistIsRemote: Bool = AssistContainer.isRemoteAssistEnabled()
+        assistIsRemote: Bool = AssistContainer.isRemoteAssistEnabled(),
+        onCloseSheet: (() -> Void)? = nil
     ) {
         self.currentMeasurement = currentMeasurement
         self.recentMeasurements = recentMeasurements
@@ -65,6 +90,7 @@ struct AssistView: View {
         self.onRetry = onRetry
         self.onShowDetails = onShowDetails
         self.entitlements = entitlements
+        self.onCloseSheet = onCloseSheet
 
         let resolvedProvider: any NetworkAssistProviding
         if let assistProvider {
@@ -251,7 +277,7 @@ struct AssistView: View {
                         if let retry = onRetry {
                             Button(action: {
                                 retry()
-                                dismiss()
+                                closeSheet()
                             }) {
                                 Text("Testar novamente")
                                     .font(.buttonLabel)
@@ -280,7 +306,7 @@ struct AssistView: View {
                         if let onShowDetails {
                             onShowDetails()
                         }
-                        dismiss()
+                        closeSheet()
                     }) {
                         HStack(spacing: 8) {
                             Image(systemName: onShowDetails != nil ? "chart.xyaxis.line" : "chevron.left")
