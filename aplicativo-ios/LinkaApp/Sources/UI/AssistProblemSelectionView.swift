@@ -104,15 +104,16 @@ struct AssistProblemSubcategory: Identifiable, Hashable {
 /// observacional puro, sem objective/subcategory, idêntico ao comportamento
 /// anterior a esta issue.
 struct AssistProblemSelectionView: View {
-    /// Capturado na RAIZ do `NavigationStack` desta tela — é o `dismiss` que
-    /// fecha o sheet inteiro apresentado por `MainView`. Repassado a
-    /// `AssistView` como `onCloseSheet` (correção da regressão do PR #141):
-    /// sem isso, o `@Environment(\.dismiss)` local de `AssistView`, quando
-    /// ela é empurrada por `navigationDestination` dentro do
-    /// `NavigationStack` desta tela, só faz pop de volta para a seleção em
-    /// vez de fechar o sheet — "Testar novamente" reinicia o teste atrás do
-    /// sheet ainda aberto, e "Ver detalhes da medição" abre escondido atrás
-    /// dele.
+    /// Capturado bem no ponto em que `MainView` empurra esta tela via
+    /// `.navigationDestination(isPresented: $showAssist)` — chamar este
+    /// `dismiss` sempre volta para antes desse push, não importa quantas
+    /// etapas (`Step`) o usuário empilhou depois na MESMA stack ambiente de
+    /// `MainView`. Repassado a `AssistView` como `onCloseSheet` (correção da
+    /// regressão do PR #141): sem isso, o `@Environment(\.dismiss)` local de
+    /// `AssistView` só dá pop de uma etapa (de volta pra seleção), em vez de
+    /// fechar o fluxo inteiro do Assist — "Testar novamente" reiniciaria o
+    /// teste no meio do fluxo guiado, e "Ver detalhes da medição" abriria
+    /// atrás dele.
     @Environment(\.dismiss) private var dismissSheet
 
     private enum Step: Hashable {
@@ -139,7 +140,6 @@ struct AssistProblemSelectionView: View {
     let onShowDetails: (() -> Void)?
     let entitlements: StoreKitEntitlementProvider?
 
-    @State private var path: [Step] = []
     @State private var reportedProblemText: String = ""
 
     init(
@@ -159,6 +159,16 @@ struct AssistProblemSelectionView: View {
     }
 
     var body: some View {
+        // Esta view é empurrada SEM `path:` próprio pelo `NavigationStack` de
+        // `MainView` (via `.navigationDestination(isPresented:)`). Por isso
+        // as etapas usam `NavigationLink(value:)` — que empurra na stack
+        // ambiente (a de `MainView`) — em vez de um array `path` local: um
+        // `NavigationStack` aninhado aqui dentro chegou a ser tentado, mas
+        // cria dois UINavigationController encaixados, e o gesto de
+        // "voltar" (swipe/back) de um nível interno é interpretado como pop
+        // do stack EXTERNO inteiro, fechando o Assist de volta pra Home ao
+        // invés de só voltar uma etapa. Só existe uma stack real: a de
+        // `MainView`.
         objectiveStep
             .navigationDestination(for: Step.self) { step in
                 switch step {
@@ -186,27 +196,22 @@ struct AssistProblemSelectionView: View {
 
                 VStack(spacing: 12) {
                     ForEach(AssistProblemObjective.allCases) { objective in
-                        Button {
-                            path.append(.subcategory(objective))
-                        } label: {
+                        NavigationLink(value: Step.subcategory(objective)) {
                             problemRow(icon: objective.systemImage, label: objective.label)
                         }
                     }
 
                     // "Outro problema": não é um macro-grupo fechado, então
                     // não tem `subcategories` — vai direto para o campo de
-                    // texto livre em vez da etapa 2.
-                    Button {
-                        reportedProblemText = ""
-                        path.append(.reportedProblemInput)
-                    } label: {
+                    // texto livre em vez da etapa 2. `reportedProblemText` é
+                    // limpo no `.onAppear` de `reportedProblemStep`, não
+                    // aqui — `NavigationLink` não tem closure de ação.
+                    NavigationLink(value: Step.reportedProblemInput) {
                         problemRow(icon: "ellipsis.bubble", label: "Outro problema")
                     }
                 }
 
-                Button {
-                    path.append(.observational)
-                } label: {
+                NavigationLink(value: Step.observational) {
                     Text("Pular e ver o diagnóstico geral")
                         .font(.bodySmallMedium)
                         .foregroundColor(.actionPrimary)
@@ -242,20 +247,19 @@ struct AssistProblemSelectionView: View {
 
                 VStack(spacing: 12) {
                     ForEach(objective.subcategories) { subcategory in
-                        Button {
-                            path.append(.result(objective: objective.rawValue, subcategory: subcategory.key, reportedProblem: nil))
-                        } label: {
+                        NavigationLink(
+                            value: Step.result(objective: objective.rawValue, subcategory: subcategory.key, reportedProblem: nil)
+                        ) {
                             problemRow(icon: "chevron.right.circle", label: subcategory.label)
                         }
                     }
                 }
 
                 // Pular a etapa 2: mantém o `objective` já escolhido, mas
-                // segue para o Assist sem subcategoria (contrato v1 —
-                // `BuildeaDiagnosticAPI.usesV2` exige as duas chaves juntas).
-                Button {
-                    path.append(.result(objective: objective.rawValue, subcategory: nil, reportedProblem: nil))
-                } label: {
+                // segue para o Assist sem subcategoria.
+                NavigationLink(
+                    value: Step.result(objective: objective.rawValue, subcategory: nil, reportedProblem: nil)
+                ) {
                     Text("Pular esta pergunta")
                         .font(.bodySmallMedium)
                         .foregroundColor(.actionPrimary)
@@ -315,12 +319,17 @@ struct AssistProblemSelectionView: View {
                         .foregroundColor(.textSecondary)
                 }
 
-                Button {
-                    let trimmed = reportedProblemText
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                        .prefix(Self.reportedProblemMaxLength)
-                    path.append(.result(objective: nil, subcategory: nil, reportedProblem: String(trimmed)))
-                } label: {
+                NavigationLink(
+                    value: Step.result(
+                        objective: nil,
+                        subcategory: nil,
+                        reportedProblem: String(
+                            reportedProblemText
+                                .trimmingCharacters(in: .whitespacesAndNewlines)
+                                .prefix(Self.reportedProblemMaxLength)
+                        )
+                    )
+                ) {
                     Text("Continuar")
                         .font(.bodyRegularStrong)
                         .foregroundColor(.white)
@@ -335,6 +344,10 @@ struct AssistProblemSelectionView: View {
             }
             .padding(.horizontal, 24)
         }
+        // Limpa o rascunho anterior ao entrar nesta etapa — antes isso
+        // acontecia no botão "Outro problema" da etapa 1; virou `onAppear`
+        // porque esse botão agora é um `NavigationLink` sem closure de ação.
+        .onAppear { reportedProblemText = "" }
         .background(Color.surfacePage.ignoresSafeArea())
         .navigationTitle("Assist")
         #if canImport(UIKit)

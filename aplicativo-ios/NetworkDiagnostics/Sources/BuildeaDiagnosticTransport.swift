@@ -18,13 +18,13 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         // fechadas do contrato v2, não um texto livre derivado da medição.
         // Sem seleção guiada, o comportamento observacional de hoje
         // continua idêntico — só `objective` (texto de `usageContext`),
-        // sem `subcategory`, o que mantém a requisição em v1.
-        // "Outro problema" (texto livre) chega em `request.reportedProblem`
-        // sem `objective`/`subcategory` — vai só como `reported_problem`,
-        // que o NDS usa como contexto adicional para a IA na explicação,
-        // NUNCA para priorizar regras (isso continua vindo só de
-        // objective/subcategory/métricas). Como não há objective, a
-        // requisição segue em v1 (ver `BuildeaDiagnosticAPI.usesV2`).
+        // sem `subcategory`. "Outro problema" (texto livre) chega em
+        // `request.reportedProblem` sem `objective`/`subcategory` — vai só
+        // como `reported_problem`, que o NDS usa como contexto adicional
+        // para a IA na explicação, NUNCA para priorizar regras (isso
+        // continua vindo só de objective/subcategory/métricas). Toda
+        // requisição vai sempre para o endpoint v2 (`BuildeaDiagnosticAPI`
+        // não tem mais fallback v1).
         let diagnosticContext: NDSRequest.DiagnosticContext?
         if let objective = request.objective {
             diagnosticContext = NDSRequest.DiagnosticContext(
