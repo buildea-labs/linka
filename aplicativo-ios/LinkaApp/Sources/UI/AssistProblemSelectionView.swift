@@ -116,17 +116,6 @@ struct AssistProblemSelectionView: View {
     /// atrás dele.
     @Environment(\.dismiss) private var dismissSheet
 
-    private enum Step: Hashable {
-        case subcategory(AssistProblemObjective)
-        /// Campo de texto livre para "Outro problema" — só existe quando o
-        /// usuário escolhe explicitamente esta opção na etapa 1, em vez de
-        /// um `objective` fechado. Não leva a uma etapa de subcategoria:
-        /// não existe subcategoria fechada para um problema não catalogado.
-        case reportedProblemInput
-        case result(objective: String?, subcategory: String?, reportedProblem: String?)
-        case observational
-    }
-
     /// Limite de caracteres do campo "Outro problema", espelhando
     /// `NetworkAssistConfiguration.maximumReportedProblemLength` no lado do
     /// client — trunca no client para nunca deixar passar mais que isso
@@ -161,27 +150,10 @@ struct AssistProblemSelectionView: View {
     var body: some View {
         // Esta view é empurrada SEM `path:` próprio pelo `NavigationStack` de
         // `MainView` (via `.navigationDestination(isPresented:)`). Por isso
-        // as etapas usam `NavigationLink(value:)` — que empurra na stack
-        // ambiente (a de `MainView`) — em vez de um array `path` local: um
-        // `NavigationStack` aninhado aqui dentro chegou a ser tentado, mas
-        // cria dois UINavigationController encaixados, e o gesto de
-        // "voltar" (swipe/back) de um nível interno é interpretado como pop
-        // do stack EXTERNO inteiro, fechando o Assist de volta pra Home ao
-        // invés de só voltar uma etapa. Só existe uma stack real: a de
-        // `MainView`.
+        // usamos `NavigationLink(destination:)` — que empurra na stack ambiente
+        // — evitando o uso de `.navigationDestination(for:)`, que gera
+        // duplicação e avisos do SwiftUI quando aplicado a uma view não-raiz.
         objectiveStep
-            .navigationDestination(for: Step.self) { step in
-                switch step {
-                case .subcategory(let objective):
-                    subcategoryStep(for: objective)
-                case .reportedProblemInput:
-                    reportedProblemStep
-                case .result(let objective, let subcategory, let reportedProblem):
-                    assistDestination(objective: objective, subcategory: subcategory, reportedProblem: reportedProblem)
-                case .observational:
-                    assistDestination(objective: nil, subcategory: nil, reportedProblem: nil)
-                }
-            }
     }
 
     // MARK: - Etapa 1 — macro-grupo
@@ -196,7 +168,7 @@ struct AssistProblemSelectionView: View {
 
                 VStack(spacing: 12) {
                     ForEach(AssistProblemObjective.allCases) { objective in
-                        NavigationLink(value: Step.subcategory(objective)) {
+                        NavigationLink(destination: subcategoryStep(for: objective)) {
                             problemRow(icon: objective.systemImage, label: objective.label)
                         }
                     }
@@ -206,12 +178,12 @@ struct AssistProblemSelectionView: View {
                     // texto livre em vez da etapa 2. `reportedProblemText` é
                     // limpo no `.onAppear` de `reportedProblemStep`, não
                     // aqui — `NavigationLink` não tem closure de ação.
-                    NavigationLink(value: Step.reportedProblemInput) {
+                    NavigationLink(destination: reportedProblemStep) {
                         problemRow(icon: "ellipsis.bubble", label: "Outro problema")
                     }
                 }
 
-                NavigationLink(value: Step.observational) {
+                NavigationLink(destination: assistDestination(objective: nil, subcategory: nil, reportedProblem: nil)) {
                     Text("Pular e ver o diagnóstico geral")
                         .font(.bodySmallMedium)
                         .foregroundColor(.actionPrimary)
@@ -248,7 +220,7 @@ struct AssistProblemSelectionView: View {
                 VStack(spacing: 12) {
                     ForEach(objective.subcategories) { subcategory in
                         NavigationLink(
-                            value: Step.result(objective: objective.rawValue, subcategory: subcategory.key, reportedProblem: nil)
+                            destination: assistDestination(objective: objective.rawValue, subcategory: subcategory.key, reportedProblem: nil)
                         ) {
                             problemRow(icon: "chevron.right.circle", label: subcategory.label)
                         }
@@ -258,7 +230,7 @@ struct AssistProblemSelectionView: View {
                 // Pular a etapa 2: mantém o `objective` já escolhido, mas
                 // segue para o Assist sem subcategoria.
                 NavigationLink(
-                    value: Step.result(objective: objective.rawValue, subcategory: nil, reportedProblem: nil)
+                    destination: assistDestination(objective: objective.rawValue, subcategory: nil, reportedProblem: nil)
                 ) {
                     Text("Pular esta pergunta")
                         .font(.bodySmallMedium)
@@ -320,7 +292,7 @@ struct AssistProblemSelectionView: View {
                 }
 
                 NavigationLink(
-                    value: Step.result(
+                    destination: assistDestination(
                         objective: nil,
                         subcategory: nil,
                         reportedProblem: String(
