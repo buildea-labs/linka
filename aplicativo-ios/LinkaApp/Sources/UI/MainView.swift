@@ -170,6 +170,9 @@ struct MainView: View {
             )
             .presentationDetents([.medium])
         }
+        .onAppear {
+            viewModel.refreshLiveNetwork()
+        }
         .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: scenePhase) { newPhase in
             viewModel.handleScenePhaseChange(newPhase)
@@ -228,11 +231,10 @@ struct MainView: View {
                     .foregroundColor(.textPrimary)
                     .multilineTextAlignment(.center)
 
-                if let context = simpleNetworkContext {
-                    Text(context)
-                        .font(.bodyRegular)
-                        .foregroundColor(.textSecondary)
-                }
+                let networkText = !viewModel.liveNetworkLabel.isEmpty ? viewModel.liveNetworkLabel : (simpleNetworkContext ?? "Conexão de rede")
+                Text(networkText)
+                    .font(.bodyRegular)
+                    .foregroundColor(.textSecondary)
             }
             .padding(.horizontal, 24)
 
