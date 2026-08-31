@@ -132,14 +132,7 @@ struct AssistView: View {
             }
         }
         .onChange(of: inlineTestViewModel.uiPhase) { newPhase in
-            if newPhase == .done {
-                if let m = inlineTestViewModel.latestFinishedMeasurement {
-                    Task {
-                        await loadAssist(with: m)
-                        isRunningInlineTest = false
-                    }
-                }
-            } else if newPhase == .error {
+            if newPhase == .error {
                 isRunningInlineTest = false
                 // Simula o erro nativo do AssistViewModel ao injetar nil
                 Task {
@@ -153,6 +146,17 @@ struct AssistView: View {
                         reportedProblem: reportedProblem
                     )
                 }
+            }
+        }
+        // latestFinishedMeasurement é setado de forma assíncrona DEPOIS que
+        // uiPhase = .done é publicado (após o loop do motor terminar). Observar
+        // esse campo diretamente evita a corrida onde uiPhase dispara onChange
+        // antes da medição estar disponível.
+        .onChange(of: inlineTestViewModel.latestFinishedMeasurement) { measurement in
+            guard isRunningInlineTest, let measurement else { return }
+            Task {
+                await loadAssist(with: measurement)
+                isRunningInlineTest = false
             }
         }
         .task {
@@ -364,7 +368,8 @@ struct AssistView: View {
             }
         }
     }
-    
+    }
+
     @ViewBuilder
     private var stabilityPatternsSection: some View {
         switch stabilityViewModel.state {
@@ -560,11 +565,11 @@ struct AssistView: View {
             } else {
                 Image(systemName: "circle")
                     .font(.bodyRegularStrong)
-                    .foregroundColor(.textTertiary)
+                    .foregroundColor(.textSecondary)
             }
             Text(title)
                 .font(.bodyRegular)
-                .foregroundColor(isActive || isDone ? .textPrimary : .textTertiary)
+                .foregroundColor(isActive || isDone ? .textPrimary : .textSecondary)
             Spacer()
         }
     }
