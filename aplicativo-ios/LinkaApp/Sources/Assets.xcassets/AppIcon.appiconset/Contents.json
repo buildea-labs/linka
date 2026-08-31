@@ -7,13 +7,13 @@
       "size" : "1024x1024"
     },
     {
-      "filename" : "AppIcon-Mac.png",
+      "filename" : "AppIcon-Mac-1x.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "512x512"
     },
     {
-      "filename" : "AppIcon-Mac.png",
+      "filename" : "AppIcon-Mac@2x.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"

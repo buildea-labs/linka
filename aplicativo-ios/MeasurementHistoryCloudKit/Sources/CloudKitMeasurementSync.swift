@@ -316,16 +316,16 @@ public final class CloudKitMeasurementRemoteStore: MeasurementRemoteStore, @unch
     }
 
     private static func hasICloudContainerEntitlement(for id: String) -> Bool {
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return false
+        }
+        
         #if targetEnvironment(simulator)
-        // Com conta Apple Developer paga ativa, podemos habilitar CloudKit no simulator
-        // assumindo que os entitlements adequados foram configurados no target do Xcode.
         return true
         #else
         #if DEBUG
-        // Habilita também em DEBUG em device físico
         return true
         #else
-        // Em device release, mantemos a verificação do mobileprovision por segurança
         return Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision") != nil
         #endif
         #endif
