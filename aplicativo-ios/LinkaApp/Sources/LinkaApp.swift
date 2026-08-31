@@ -12,7 +12,6 @@ import LinkaAppIntents
 
 @main
 struct LinkaApp: App {
-    @State private var showSplash = true
     @StateObject private var entitlements: StoreKitEntitlementProvider
     @AppStorage("appAppearance") private var appAppearance = "system"
 
@@ -48,20 +47,9 @@ struct LinkaApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if showSplash {
-                    SplashView(onComplete: {
-                        withAnimation(.easeInOut(duration: 0.4)) {
-                            showSplash = false
-                        }
-                    })
-                } else {
-                    MainView()
-                        .transition(.opacity)
-                }
-            }
-            .environmentObject(entitlements)
-            .preferredColorScheme(preferredColorScheme)
+            MainView()
+                .environmentObject(entitlements)
+                .preferredColorScheme(preferredColorScheme)
             .onOpenURL { url in
                 guard url.scheme?.lowercased() == "linka",
                       url.host == "wifi-advanced",
@@ -74,9 +62,6 @@ struct LinkaApp: App {
             .task {
                 await entitlements.refreshSnapshot()
                 #if DEBUG
-                // O build de desenvolvimento começa simulando Plus. O
-                // cenário Free fica disponível apenas no menu DEBUG interno.
-                entitlements.debugForcePlus()
                 #endif
             }
         }

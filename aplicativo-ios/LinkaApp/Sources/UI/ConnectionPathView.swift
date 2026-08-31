@@ -2,114 +2,58 @@ import SwiftUI
 import NetworkInsights
 
 /// Caminho da Conexão — leitura visual simplificada de "onde provavelmente
-/// está o problema", entre as métricas principais e "Ver detalhes da
-/// medição" (issue Caminho da Conexão, 2026-08-29). Não é traceroute nem
-/// mapa técnico: é a interpretação de `ConnectionPathReport`
-/// (`NetworkInsights`, classificador puro) em cinco etapas didáticas.
+/// está o problema", entre o diagnóstico curto e as ações de navegação.
 ///
-/// Deliberadamente quase sem card: fundo da página, divisores sutis,
-/// tipografia do sistema, espaço generoso — parte natural da tela de
-/// resultado, não um dashboard. Disponível no Linka gratuito (issue #57 já
-/// estabeleceu esse padrão para diagnóstico básico de uso).
-///
-/// Issue "Hero do resultado" (2026-08-29): a conclusão ("Tudo parece
-/// normal.", etc.) saiu daqui — ela agora abre a tela de resultado, antes
-/// do número de download. Repeti-la debaixo do caminho seria redundante;
-/// este componente vira só a representação visual das etapas.
+/// Mostra a sequência de 5 etapas com glifos discretos:
+/// iPhone → Wi-Fi → Roteador → Operadora → Internet
+/// Ao tocar, navega diretamente para `ConnectionPathDetailView`.
 struct ConnectionPathView: View {
     let report: ConnectionPathReport
-    @Binding var expanded: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var visibleStages: [ConnectionPathStage] {
         report.stages.map { $0.stage }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button {
-                withAnimation(reduceMotion ? nil : LinkaMotion.spring) {
-                    expanded.toggle()
-                }
-            } label: {
-                HStack(spacing: 0) {
-                    ForEach(Array(visibleStages.enumerated()), id: \.element) { index, stage in
-                        if let verdict = report.verdict(for: stage) {
-                            stageGlyph(verdict, highlighted: report.highlightedStage == stage)
-                            if index < visibleStages.count - 1 {
-                                Image(systemName: "chevron.right")
-                                    .font(.captionSmall)
-                                    .foregroundColor(.textSecondary.opacity(0.5))
-                                    .frame(maxWidth: .infinity)
-                            }
+        NavigationLink(destination: ConnectionPathDetailView(report: report)) {
+            HStack(spacing: 0) {
+                ForEach(Array(visibleStages.enumerated()), id: \.element) { index, stage in
+                    if let verdict = report.verdict(for: stage) {
+                        stageGlyph(verdict, highlighted: report.highlightedStage == stage)
+                        if index < visibleStages.count - 1 {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.textSecondary.opacity(0.35))
+                                .frame(maxWidth: .infinity)
                         }
                     }
                 }
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(ConnectionPathCopy.accessibilitySummary(for: report))
-            .accessibilityHint(expanded ? "Toque para recolher" : "Toque para expandir")
-
-            if expanded {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(visibleStages.enumerated()), id: \.element) { index, stage in
-                        if let verdict = report.verdict(for: stage) {
-                            stageDetailRow(verdict, highlighted: report.highlightedStage == stage)
-                            if index < visibleStages.count - 1 {
-                                Divider()
-                            }
-                        }
-                    }
-                }
-                .padding(.top, 4)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 8)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(ConnectionPathCopy.accessibilitySummary(for: report))
+        .accessibilityHint("Toque para ver o caminho da conexão em detalhes")
     }
 
     @ViewBuilder
     private func stageGlyph(_ verdict: ConnectionPathStageVerdict, highlighted: Bool) -> some View {
-        // Ícones maiores sem crescer a altura do bloco (issue "ajuste fino
-        // do hero", 2026-08-29) — a `.frame(width:height:)` fixa abaixo
-        // fixa a caixa do glifo em 32pt independente do tamanho de fonte
-        // escolhido, então aumentar o símbolo não empurra o resto da tela.
         ZStack(alignment: .bottomTrailing) {
             Image(systemName: ConnectionPathCopy.icon(for: verdict.stage))
-                .font(.system(size: highlighted ? 24 : 21, weight: .medium))
+                .font(.system(size: 18, weight: .regular))
                 .foregroundColor(highlighted ? statusColor(verdict.status) : .textSecondary)
+
             Image(systemName: ConnectionPathCopy.statusSymbol(for: verdict.status))
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: 9, weight: .bold))
                 .foregroundColor(statusColor(verdict.status))
-                .background(Circle().fill(Color.surfacePage).frame(width: 14, height: 14))
-                .offset(x: 7, y: 5)
+                .background(Circle().fill(Color.surfacePage).frame(width: 11, height: 11))
+                .offset(x: 5, y: 4)
         }
-        .frame(width: 32, height: 32)
+        .frame(width: 26, height: 26)
         .frame(maxWidth: .infinity)
-    }
-
-    @ViewBuilder
-    private func stageDetailRow(_ verdict: ConnectionPathStageVerdict, highlighted: Bool) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: ConnectionPathCopy.icon(for: verdict.stage))
-                .font(.bodyRegular)
-                .foregroundColor(highlighted ? statusColor(verdict.status) : .textSecondary)
-                .frame(width: 24)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(ConnectionPathCopy.title(for: verdict.stage))
-                    .font(.bodySmallStrong)
-                    .foregroundColor(.textPrimary)
-                Text(ConnectionPathCopy.explanation(for: verdict))
-                    .font(.bodySmall)
-                    .foregroundColor(.textSecondary)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 10)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(ConnectionPathCopy.title(for: verdict.stage)): \(ConnectionPathCopy.explanation(for: verdict))")
     }
 
     private func statusColor(_ status: ConnectionPathStageStatus) -> Color {
@@ -122,11 +66,7 @@ struct ConnectionPathView: View {
     }
 }
 
-/// Copy do Caminho da Conexão — vive só na UI, mesmo padrão de
-/// `UsageSuitabilityCopy`: o pacote de classificação (`NetworkInsights`)
-/// não conhece texto nem marca. Nunca usa termos técnicos (hops, TTL,
-/// traceroute, ASN, gateway latency) na camada principal — só na etapa
-/// expandida, e mesmo assim em linguagem comum.
+/// Copy do Caminho da Conexão — vive só na UI.
 enum ConnectionPathCopy {
     static let orderedStages: [ConnectionPathStage] = [.device, .wifi, .router, .carrier, .internet]
 
@@ -204,10 +144,25 @@ enum ConnectionPathCopy {
             ?? "Não foi possível verificar esta etapa."
     }
 
-    /// Frase única de conclusão (mais importante que os dados técnicos) —
-    /// usa níveis de confiança ("parece", "há sinais de") em vez de
-    /// afirmação categórica, exceto quando a medição sustenta certeza
-    /// razoável (uma única etapa problemática clara).
+    /// Diagnóstico curto para a tela principal (Apple-style)
+    static func shortConclusion(for report: ConnectionPathReport) -> String {
+        switch report.category {
+        case .healthy:
+            return "Tudo parece normal"
+        case .inconclusive:
+            return "Sinais de instabilidade"
+        case .local:
+            return "Possível problema no aparelho"
+        case .wifi:
+            return "Possível problema no Wi-Fi"
+        case .carrier:
+            return "Possível problema na operadora"
+        case .external:
+            return "Possível instabilidade na internet"
+        }
+    }
+
+    /// Frase detalhada de conclusão (usada em telas de detalhe e acessibilidade)
     static func conclusion(for report: ConnectionPathReport) -> String {
         switch report.category {
         case .healthy:

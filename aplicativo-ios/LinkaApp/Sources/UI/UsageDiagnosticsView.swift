@@ -2,17 +2,9 @@ import SwiftUI
 import NetworkCore
 import NetworkInsights
 
-/// Diagnóstico de adequação completo — um veredito por `UsageCase`, em vez
-/// da frase única de "para que serve" já mostrada em `DetailsDisclosure`
-/// (issue Expert Mode). Tela própria (não espremida em "Ver detalhes") para
-/// não virar painel: só existe atrás de um botão dedicado, nunca no
-/// primeiro frame do resultado (AGENTS.md §6/§9).
+/// Tela de Diagnóstico de Adequação por Uso.
+/// Apresenta a qualidade da rede para cada caso de uso em uma List nativa.
 struct UsageDiagnosticsView: View {
-    @Environment(\.dismiss) var dismiss
-
-    /// Medição atual, já com os fatos que o motor mediu. `nil` quando não
-    /// há teste concluído — a tela mostra um estado vazio em vez de
-    /// inventar veredictos.
     let measurement: NetworkMeasurement?
 
     private var report: UsageSuitabilityReport? {
@@ -20,59 +12,57 @@ struct UsageDiagnosticsView: View {
         return UsageSuitabilityEvaluator().evaluate(measurement)
     }
 
-    var body: some View {
-        ZStack {
-            Color.surfacePage.ignoresSafeArea()
+    private var summarySubtitle: String {
+        guard let report else { return "Faça uma medição para avaliar o uso." }
+        let quality = UsageSuitabilityCopy.qualityLevel(for: report)
+        switch quality {
+        case .good:
+            return "Sua conexão está boa para a maioria dos usos."
+        case .medium:
+            return "Sua conexão é suficiente para usos básicos, mas pode oscilar sob demanda."
+        case .poor:
+            return "Sua conexão apresenta limitações perceptíveis para usos exigentes."
+        case nil:
+            return "Avaliação dos principais casos de uso da sua rede."
+        }
+    }
 
-            VStack(spacing: 0) {
-                HStack {
-                    Spacer()
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.bodySmallStrong)
-                            .foregroundColor(.textSecondary)
-                            .frame(width: 30, height: 30)
-                            .background(Color.textSecondary.opacity(0.14))
-                            .clipShape(Circle())
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(Rectangle())
-                            .accessibilityLabel("Fechar")
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Resumo")
+                        .font(.captionSmallStrong)
+                        .foregroundColor(.textSecondary)
+                        .textCase(.uppercase)
+
+                    Text(summarySubtitle)
+                        .font(.bodyRegularStrong)
+                        .foregroundColor(.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 4)
+            }
+
+            if let report {
+                Section("Casos de uso") {
+                    ForEach(UsageCase.allCases, id: \.self) { usageCase in
+                        if let verdict = report.verdict(for: usageCase) {
+                            UsageVerdictRow(usageCase: usageCase, verdict: verdict)
+                        }
                     }
                 }
-                .padding(.trailing, 16)
-                .padding(.top, 16)
-
-                if let report {
-                    ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("Qualidade para o meu uso")
-                                .font(.displayMedium)
-                                .foregroundColor(.textPrimary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            VStack(alignment: .leading, spacing: 10) {
-                                ForEach(UsageCase.allCases, id: \.self) { usageCase in
-                                    if let verdict = report.verdict(for: usageCase) {
-                                        UsageVerdictRow(usageCase: usageCase, verdict: verdict)
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.top, 8)
-                        .padding(.bottom, 32)
-                    }
-                } else {
-                    Spacer()
-                    Text("Faça um teste para ver o diagnóstico de uso.")
-                        .font(.bodyRegular)
+            } else {
+                Section {
+                    Text("Nenhuma medição disponível.")
                         .foregroundColor(.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                    Spacer()
                 }
             }
         }
+        .navigationTitle("Qualidade de uso")
+        #if canImport(UIKit)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }
 
@@ -82,9 +72,17 @@ private struct UsageVerdictRow: View {
 
     private var badgeColor: Color {
         switch verdict.level {
-        case .adequate: return .brandAccentWarm
-        case .limited: return .textSecondary
-        case .notAssessed: return .textSecondary.opacity(0.6)
+        case .adequate: return .statusGood
+        case .limited: return .statusAttention
+        case .notAssessed: return .textSecondary
+        }
+    }
+
+    private var statusIcon: String {
+        switch verdict.level {
+        case .adequate: return "checkmark.circle.fill"
+        case .limited: return "exclamationmark.triangle.fill"
+        case .notAssessed: return "questionmark.circle.fill"
         }
     }
 
@@ -100,19 +98,31 @@ private struct UsageVerdictRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 Text(UsageSuitabilityCopy.title(for: usageCase))
-                    .font(.bodySmallStrong)
+                    .font(.bodyRegularStrong)
                     .foregroundColor(.textPrimary)
+
                 Spacer()
-                Text(badgeLabel)
-                    .font(.captionStrong)
-                    .foregroundColor(badgeColor)
+
+                HStack(spacing: 4) {
+                    Text(badgeLabel)
+                        .font(.bodySmallStrong)
+                        .foregroundColor(badgeColor)
+
+                    Image(systemName: statusIcon)
+                        .font(.captionSmallStrong)
+                        .foregroundColor(badgeColor)
+                }
             }
-            Text(UsageSuitabilityCopy.detail(for: verdict))
-                .font(.bodySmall)
-                .foregroundColor(.textSecondary)
+
+            let detail = UsageSuitabilityCopy.detail(for: verdict)
+            if !detail.isEmpty {
+                Text(detail)
+                    .font(.bodySmall)
+                    .foregroundColor(.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(UsageSuitabilityCopy.title(for: usageCase)): \(badgeLabel). \(UsageSuitabilityCopy.detail(for: verdict))")
     }

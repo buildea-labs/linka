@@ -19,19 +19,11 @@ struct SettingsSheet: View {
     @State private var showSubscriptionManagement = false
     @State private var showWiFiExplanation = false
     @State private var showAdvancedActions = false
-    @State private var testCount = 0
     @AppStorage("appAppearance") private var appAppearance = "system"
     @AppStorage(LinkaWiFiPreferences.identificationEnabledKey) private var networkIdentificationEnabled = true
     @AppStorage("linka.advanced-wifi.configured.v1") private var advancedWiFiConfigured = false
     @AppStorage(LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) private var advancedWiFiEnabled = true
 
-    // Issue UI Polish v2 (2026-08-29): `Form`/`Section`/`LabeledContent`
-    // nativos no lugar de `SettingsSection`/`SettingsRow` customizados —
-    // ganho automático de Dynamic Type, estados de interação e adaptação a
-    // versões futuras do iOS, ao custo de menos controle fino sobre o
-    // visual (aceitável: o visual customizado já convergia bastante para
-    // o padrão de lista do sistema). Mantém todas as ações, sheets e
-    // diálogos existentes — mudança é só de casca visual.
     var body: some View {
         Form {
             Section("Linka Plus") {
@@ -56,12 +48,6 @@ struct SettingsSheet: View {
                     Text("Sistema").tag("system")
                     Text("Claro").tag("light")
                     Text("Escuro").tag("dark")
-                }
-            }
-
-            Section("Atividade") {
-                NavigationLink(destination: HistoryView()) {
-                    LabeledContent("Histórico", value: "\(testCount) testes")
                 }
             }
 
@@ -104,7 +90,6 @@ struct SettingsSheet: View {
         #if canImport(UIKit)
         .navigationBarTitleDisplayMode(.large)
         #endif
-        .onAppear(perform: loadTestCount)
         .sheet(isPresented: $showPurchase) { PurchaseSheet(entryPoint: purchaseEntryPoint) }
         .sheet(isPresented: $showSubscriptionManagement) { SubscriptionManagementSheet() }
         .confirmationDialog("Identificação da rede Wi-Fi", isPresented: $showWiFiExplanation, titleVisibility: .visible) {
@@ -126,9 +111,6 @@ struct SettingsSheet: View {
         }
     }
 
-    /// Linha de `Button` que abre um sheet/diálogo (não uma navegação real)
-    /// — mantém o indicador de "isso leva a algum lugar" que `NavigationLink`
-    /// dá de graça, mas que `Button` sozinho dentro de `Form` não mostra.
     private func settingsRow(title: String, value: String) -> some View {
         HStack {
             Text(title).foregroundColor(.primary)
@@ -195,13 +177,6 @@ struct SettingsSheet: View {
         guard let url = URL(string: "shortcuts://") else { return }
         openURL(url)
     }
-
-    private func loadTestCount() {
-        Task { @MainActor in
-            let repository = LinkaMeasurementHistory.makeRepository(entitlements: entitlements)
-            testCount = (try? await repository.totalCount()) ?? 0
-        }
-    }
 }
 
 struct SubscriptionManagementSheet: View {
@@ -251,38 +226,3 @@ struct SubscriptionManagementSheet: View {
         }
     }
 }
-
-enum WiFiNetworkPermission {
-    #if canImport(CoreLocation) && os(iOS)
-    private static let manager = CLLocationManager()
-    static func statusText(enabled: Bool) -> String {
-        guard enabled else { return "Desativada" }
-        switch manager.authorizationStatus {
-        case .authorizedWhenInUse, .authorizedAlways:
-            return manager.accuracyAuthorization == .fullAccuracy ? "Ativada" : "Permissão necessária"
-        case .denied, .restricted: return "Permissão necessária"
-        case .notDetermined: return "Permissão necessária"
-        @unknown default: return "Permissão necessária"
-        }
-    }
-    static var canOpenSystemSettings: Bool { manager.authorizationStatus == .denied || manager.authorizationStatus == .restricted }
-    static var isAuthorized: Bool {
-        manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways
-    }
-    @MainActor static func requestIdentification() {
-        if manager.authorizationStatus == .notDetermined { manager.requestWhenInUseAuthorization() }
-        else { openSystemSettings() }
-    }
-    @MainActor static func openSystemSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
-    }
-    #else
-    static func statusText(enabled: Bool) -> String { "Não disponível" }
-    static var canOpenSystemSettings: Bool { false }
-    static var isAuthorized: Bool { false }
-    static func requestIdentification() {}
-    static func openSystemSettings() {}
-    #endif
-}
-

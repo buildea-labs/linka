@@ -1,6 +1,3 @@
-// Justificativa de Arquitetura (validarModularidade):
-// Este arquivo contém tanto a listagem quanto a renderização do mapa em uma só tela.
-// Manter junto facilita transições de dados e escopo de binding do histórico.
 import SwiftUI
 import MapKit
 import MeasurementHistory
@@ -25,10 +22,6 @@ struct HistoryView: View {
     @State private var insightText: String?
     @State private var displayMode: HistoryDisplayMode = .list
 
-    // Computada (não `let`) de propósito: `entitlements` vem de
-    // `@EnvironmentObject` e ainda não está disponível no momento em que
-    // as outras propriedades armazenadas desta `View` seriam inicializadas
-    // — uma `let` aqui referenciando `entitlements` não compilaria.
     private var repository: any MeasurementHistoryRepository {
         LinkaMeasurementHistory.makeRepository(entitlements: entitlements)
     }
@@ -44,17 +37,9 @@ struct HistoryView: View {
                 VStack(spacing: 0) {
                     if displayMode == .list {
                         List {
-                            // Resumo da semana — issue UI Polish v2: deixou
-                            // de ter fundo/sombra/corner radius próprios
-                            // (antes idênticos ao card de cada linha do
-                            // histórico, mas com padding maior — parecia um
-                            // anúncio dentro do próprio app por acidente de
-                            // composição). Agora é uma seção simples, do
-                            // mesmo peso visual do resto da lista.
+                            // Resumo da semana
                             Section {
                                 Button(action: {
-                                    // Assist é Plus. Free vai direto pra
-                                    // tela de assinatura em vez de sheet.
                                     let assistDecision = LinkaEntitlementPolicy.decision(
                                         for: .assist,
                                         snapshot: entitlements.snapshot,
@@ -99,35 +84,28 @@ struct HistoryView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
-                            .listRowInsets(EdgeInsets(top: 12, leading: 24, bottom: 12, trailing: 24))
 
-                            // History List
-                    Section(header: Text("MÊS ATUAL").font(.monoCaption).foregroundColor(.textSecondary)) {
-                        if measurements.isEmpty {
-                            Text("Nenhuma medição encontrada.")
-                                .font(.bodySmall)
-                                .foregroundColor(.textSecondary)
-                                .padding(.vertical, 8)
-                        } else {
-                            ForEach(measurements, id: \.id) { measurement in
-                                HistoryRow(measurement: measurement)
-                                    .listRowInsets(EdgeInsets(top: 8, leading: 24, bottom: 8, trailing: 24))
-                                    .listRowSeparator(.hidden)
-                                    .listRowBackground(Color.clear)
+                            // Lista de medições
+                            Section("Histórico de medições") {
+                                if measurements.isEmpty {
+                                    Text("Nenhuma medição encontrada.")
+                                        .font(.bodySmall)
+                                        .foregroundColor(.textSecondary)
+                                        .padding(.vertical, 8)
+                                } else {
+                                    ForEach(measurements, id: \.id) { measurement in
+                                        NavigationLink(destination: HistoricalMeasurementDetailView(measurement: measurement)) {
+                                            HistoryRow(measurement: measurement)
+                                        }
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-                #if canImport(UIKit)
-                .listStyle(.plain)
-                #else
-                // `.insetGrouped` é iOS-only (issue #108); no macOS o estilo
-                // padrão da `List` já se comporta como sidebar/inset nativo,
-                // sem equivalente 1:1 que valha a pena forçar aqui.
-                .listStyle(.automatic)
-                #endif
-                .scrollContentBackground(.hidden)
-                .background(Color.surfacePage)
+                        #if canImport(UIKit)
+                        .listStyle(.insetGrouped)
+                        #else
+                        .listStyle(.automatic)
+                        #endif
                     } else {
                         MapHistoryView(measurements: measurements)
                     }
@@ -161,16 +139,9 @@ struct HistoryView: View {
         }
         .navigationTitle("Histórico")
         #if canImport(UIKit)
-        // `navigationBarTitleDisplayMode` não existe no macOS — lá a
-        // titlebar não tem os modos large/inline do UIKit (issue #108).
         .navigationBarTitleDisplayMode(.large)
         #endif
         .navigationDestination(isPresented: $showAssist) {
-            // `onRetry` fica de fora deliberadamente (issue #58): esta tela
-            // só olha medições passadas, sem caminho de início de teste
-            // disponível no contexto. Sem esse closure, `AssistView` nem
-            // calcula a sugestão `.retryMeasurement` — decisão explícita no
-            // adapter, não um botão escondido depois de calculado.
             AssistView(
                 currentMeasurement: measurements.first,
                 recentMeasurements: Array(measurements.dropFirst().prefix(20)),
@@ -219,9 +190,6 @@ struct HistoryView: View {
 
         guard last7.count >= 2, baseline.count >= 2 else { return nil }
 
-        // Insights (comparação de períodos) é uma capacidade Plus própria,
-        // separada de `.history` — consulta a mesma fonte de entitlement
-        // antes de calcular, sem duplicar a regra de acesso aqui.
         let insightsAnalyzer = EntitlementGatedNetworkInsightsAnalyzer(
             wrapping: BasicNetworkInsightsAnalyzer(),
             snapshot: entitlements.snapshot
@@ -252,224 +220,66 @@ struct HistoryView: View {
     }
 }
 
-struct HistoryView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            HistoryView()
-        }
-        .environmentObject(StoreKitEntitlementProvider())
-    }
-}
-
 struct HistoryRow: View {
     let measurement: NetworkMeasurement
-    @State private var isExpanded = false
-    @State private var showShareSheet = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            Button(action: {
-                withAnimation(LinkaMotion.spring) {
-                    isExpanded.toggle()
-                }
-            }) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if measurement.connectionKind == .wifi {
-                            HStack(spacing: 6) {
-                                Text(measurement.wifiContext?.ssid ?? "Wi-Fi")
-                                    .font(.bodySmall.weight(.medium))
-                                    .foregroundColor(.textPrimary)
-                                if measurement.advancedWiFiDiagnostics != nil {
-                                    Text("Wi-Fi detalhado")
-                                        .font(.captionMedium)
-                                        .foregroundColor(.textSecondary)
-                                }
-                            }
-                        }
-                        Text(formatDate(measurement.measuredAt))
-                            .font(.bodySmall.weight(.medium))
-                            .foregroundColor(.textPrimary)
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(networkTitle)
+                    .font(.bodyRegularStrong)
+                    .foregroundColor(.textPrimary)
+                    .lineLimit(1)
 
-                        HStack(spacing: 4) {
-                            Image(systemName: connectionIconName(for: measurement.connectionKind))
-                                .font(.captionSmallStrong)
-                            Text(connectionLabel(for: measurement.connectionKind))
-                                .font(.monoCaption)
-                        }
+                HStack(spacing: 4) {
+                    Text(formatDate(measurement.measuredAt))
+                        .font(.captionSmall)
                         .foregroundColor(.textSecondary)
-                    }
 
-                    Spacer()
+                    Text("·")
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
 
-                    VStack(alignment: .trailing, spacing: 4) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.down")
-                                .font(.monoEyebrow)
-                                .foregroundColor(.brandAccentWarm)
-                            Text(formatSpeed(measurement.downloadMbps))
-                                .font(.monoEyebrow)
-                                .foregroundColor(.textPrimary)
-                        }
-
-                        HStack(spacing: 4) {
-                            Image(systemName: "arrow.up")
-                                .font(.monoEyebrow)
-                                .foregroundColor(.textSecondary)
-                            Text(formatSpeed(measurement.uploadMbps))
-                                .font(.monoEyebrow)
-                                .foregroundColor(.textSecondary)
-                        }
-                    }
+                    Image(systemName: connectionIconName(for: measurement.connectionKind))
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
                 }
-                .padding(.vertical, 8)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
 
-            if isExpanded {
-                VStack(spacing: 12) {
-                    Divider()
-                        .background(Color.borderDefault)
-                        .padding(.top, 4)
+            Spacer()
 
-                    HStack(alignment: .top) {
-                        DetailItem(
-                            label: "PING",
-                            value: formatPing(measurement.latencyMs),
-                            explanation: measurement.latencyMs != nil ? MetricExplanation.ping : nil
-                        )
-                        Spacer()
-                        DetailItem(
-                            label: "JITTER",
-                            value: formatPing(measurement.jitterMs),
-                            explanation: measurement.jitterMs != nil ? MetricExplanation.jitter : nil
-                        )
-                        Spacer()
-                        DetailItem(
-                            label: "PERDA",
-                            value: measurement.packetLossPercent != nil ? "\(Int(measurement.packetLossPercent!))%" : "--",
-                            explanation: measurement.packetLossPercent != nil ? MetricExplanation.packetLoss : nil
-                        )
-                    }
-
-                    // Latência sob carga (issue #53) — dado já era salvo desde
-                    // a issue #52, só nunca tinha superfície de leitura no
-                    // Histórico. `nil` some, sem "--" ao lado de explicação.
-                    if let loadedLatencyMs = measurement.loadedLatencyMs {
-                        HStack {
-                            DetailItem(
-                                label: "LATÊNCIA SOB CARGA (DOWNLOAD)",
-                                value: String(format: "%.0f ms", loadedLatencyMs),
-                                explanation: MetricExplanation.loadedLatency
-                            )
-                            Spacer()
-                        }
-                    }
-
-                    // Paridade de upload (issue #128) — mesma medição do
-                    // motor, mesma superfície, mesmo tratamento de ausência.
-                    if let loadedLatencyUploadMs = measurement.loadedLatencyUploadMs {
-                        HStack {
-                            DetailItem(
-                                label: "LATÊNCIA SOB CARGA (UPLOAD)",
-                                value: String(format: "%.0f ms", loadedLatencyUploadMs),
-                                explanation: MetricExplanation.loadedLatencyUpload
-                            )
-                            Spacer()
-                        }
-                    }
-
-                    // Categoria de responsividade (issue #128) — deriva das
-                    // duas latências acima; `.notAssessed` some, mesmo
-                    // tratamento das demais métricas ausentes nesta lista.
-                    if let responsiveness = loadResponsivenessCategory(for: measurement) {
-                        HStack {
-                            DetailItem(
-                                label: "RESPONSIVIDADE SOB CARGA",
-                                value: LoadResponsivenessCopy.label(for: responsiveness),
-                                explanation: LoadResponsivenessCopy.explanation
-                            )
-                            Spacer()
-                        }
-                    }
-
-                    HStack {
-                        if let wifi = measurement.wifiContext {
-                            DetailItem(label: "REDE WI-FI", value: wifi.ssid ?? "Nome não disponível")
-                            Spacer()
-                            if let security = wifi.securityType {
-                                DetailItem(label: "SEGURANÇA", value: security.displayLabel)
-                            }
-                        }
-                    }
-
-                    if let advanced = measurement.advancedWiFiDiagnostics {
-                        HStack {
-                            if let standard = advanced.wifiStandard {
-                                DetailItem(label: "PADRÃO", value: standard)
-                                Spacer()
-                            }
-                            if let rssi = advanced.rssiDbm {
-                                DetailItem(label: "SINAL", value: String(format: "%.0f dBm", rssi))
-                                Spacer()
-                            }
-                            if let snr = advanced.snrDb {
-                                DetailItem(label: "SNR", value: String(format: "%.0f dB", snr))
-                            }
-                        }
-                        HStack {
-                            if let channel = advanced.channelNumber {
-                                DetailItem(label: "CANAL", value: "\(channel)")
-                                Spacer()
-                            }
-                            if advanced.txRateMbps != nil || advanced.rxRateMbps != nil {
-                                let tx = advanced.txRateMbps.map { String(format: "TX %.0f", $0) }
-                                let rx = advanced.rxRateMbps.map { String(format: "RX %.0f", $0) }
-                                DetailItem(label: "TAXA WI-FI", value: [tx, rx].compactMap { $0 }.joined(separator: " · "))
-                            }
-                        }
-                    }
-
-                    HStack {
-                        DetailItem(label: "SERVIDOR", value: measurement.serverIdentifier ?? "Automático")
-                        Spacer()
-                        // Duração real do teste (issue #50) — fato que o
-                        // motor já media e a ViewModel descartava antes de
-                        // chegar ao registro salvo. `nil` continua `nil`
-                        // (registro legado ou teste sem duração reportada),
-                        // nunca inferido.
-                        DetailItem(label: "DURAÇÃO", value: formatDuration(measurement.durationMs))
-                        Spacer()
-                        // Banda Wi-Fi confirmada pelo sistema (issue #51) —
-                        // só aparece quando a plataforma realmente informou
-                        // (hoje, Mac via CoreWLAN); ausência é normal e não
-                        // renderiza nada, sem competir por espaço.
-                        if let wifiBandGHz = measurement.wifiBandGHz {
-                            DetailItem(label: "BANDA WI-FI", value: formatBand(wifiBandGHz))
-                        }
-                    }
+            VStack(alignment: .trailing, spacing: 2) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.down")
+                        .font(.captionSmallStrong)
+                        .foregroundColor(.brandAccentWarm)
+                    Text("\(formatSpeed(measurement.downloadMbps)) Mbps")
+                        .font(.bodySmallStrong)
+                        .foregroundColor(.textPrimary)
                 }
-                .padding(.bottom, 8)
-                .padding(.top, 4)
+
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.up")
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
+                    Text("\(formatSpeed(measurement.uploadMbps)) Mbps")
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
+                }
             }
         }
-        .padding(16)
-        .background(Color.surfaceCard)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
-        // Compartilhar esta medição do Histórico (issue #54) — ação por
-        // linha, sem afetar o resto da lista nem competir com o toque que
-        // expande/recolhe os detalhes.
-        .swipeActions(edge: .trailing) {
-            Button {
-                showShareSheet = true
-            } label: {
-                Label("Compartilhar", systemImage: "square.and.arrow.up")
-            }
-            .tint(Color.brandAccentWarm)
+        .padding(.vertical, 4)
+    }
+
+    private var networkTitle: String {
+        if measurement.connectionKind == .wifi {
+            return measurement.wifiContext?.ssid ?? "Wi-Fi"
+        } else if measurement.connectionKind == .cellular {
+            return measurement.networkIdentifier ?? "Rede móvel"
+        } else if measurement.connectionKind == .ethernet {
+            return "Ethernet"
         }
-        .shareMeasurementSheet(isPresented: $showShareSheet, measurement: measurement)
+        return "Medição"
     }
 
     private func formatDate(_ date: Date) -> String {
@@ -482,101 +292,18 @@ struct HistoryRow: View {
 
     private func formatSpeed(_ speed: Double?) -> String {
         guard let speed = speed else { return "--" }
-        return String(format: "%.1f", speed)
+        return String(format: "%.0f", speed)
     }
 
-    private func formatPing(_ ping: Double?) -> String {
-        guard let ping = ping else { return "--" }
-        return String(format: "%.0f ms", ping)
-    }
-
-    private func connectionLabel(for kind: NetworkConnectionKind?) -> String {
-        switch kind {
-        case .wifi: return "WI-FI"
-        case .cellular: return "REDE MÓVEL"
-        case .ethernet: return "ETHERNET"
-        case .other, .none: return "OUTRA"
-        }
-    }
-
-    /// Issue #51: antes disso, Ethernet nunca era produzido de fato — o
-    /// ícone caía sempre no `else` de celular. Agora que Ethernet é uma
-    /// amostra real (`SpeedTestViewModel`), o ícone precisa refletir isso.
     private func connectionIconName(for kind: NetworkConnectionKind?) -> String {
         switch kind {
         case .wifi: return "wifi"
         case .cellular: return "cellularbars"
         case .ethernet: return "cable.connector"
-        case .other, .none: return "questionmark.circle"
+        case .other, .none: return "network"
         }
     }
-
-    /// Issue #50: `durationMs` só existe em registros salvos depois da
-    /// correção — `nil` é o estado normal para histórico antigo e continua
-    /// exibindo "--", sem inventar valor.
-    private func formatDuration(_ durationMs: Int?) -> String {
-        guard let durationMs = durationMs else { return "--" }
-        return String(format: "%.1fs", Double(durationMs) / 1000.0).replacingOccurrences(of: ".", with: ",")
-    }
-
-    private func formatBand(_ ghz: Double) -> String {
-        let value = ghz.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", ghz)
-            : String(format: "%.1f", ghz)
-        return "\(value)GHz"
-    }
-
-    /// Issue #128: reconstrói a categoria a partir dos três campos já salvos
-    /// na medição — não é uma segunda fonte de dado, só remonta o que já
-    /// está no registro para o classificador puro de `NetworkInsights`
-    /// (mesmo espírito de `usageSuitabilityMeasurement` em
-    /// `DetailsDisclosure`). `.notAssessed` vira `nil` para a linha simplesmente
-    /// não aparecer, mesmo tratamento das demais métricas ausentes aqui.
-    private func loadResponsivenessCategory(for measurement: NetworkMeasurement) -> LoadResponsivenessCategory? {
-        let result = LoadResponsivenessEvaluator.evaluate(
-            idleLatencyMs: measurement.latencyMs,
-            loadedDownloadLatencyMs: measurement.loadedLatencyMs,
-            loadedUploadLatencyMs: measurement.loadedLatencyUploadMs
-        )
-        return result.category == .notAssessed ? nil : result.category
-    }
 }
-
-
-struct DetailItem: View {
-    let label: String
-    let value: String
-    /// Explicação curta opcional (issue #53). `nil` quando a métrica não tem
-    /// explicação (ex.: SERVIDOR, DURAÇÃO, BANDA WI-FI) ou quando o valor
-    /// subjacente é ausente — nunca aparece ao lado de "--".
-    var explanation: String? = nil
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.monoCaption)
-                .foregroundColor(.textSecondary)
-            Text(value)
-                .font(.bodySmall.weight(.medium))
-                .foregroundColor(.textPrimary)
-            if let explanation {
-                Text(explanation)
-                    .font(.captionSmall)
-                    .foregroundColor(.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityText)
-    }
-
-    private var accessibilityText: String {
-        guard let explanation else { return "\(label): \(value)" }
-        return "\(label): \(value). \(explanation)"
-    }
-}
-
-
 
 struct MapLocationItem: Identifiable {
     let id: UUID
