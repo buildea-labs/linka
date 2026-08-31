@@ -10,6 +10,8 @@ struct AssistView: View {
 
     @StateObject private var viewModel: AssistViewModel
     @StateObject private var stabilityViewModel: NetworkStabilityPatternsViewModel
+    @StateObject private var inlineTestViewModel = SpeedTestViewModel()
+    @State private var isRunningInlineTest = false
     @State private var showRecommendationDetails = false
 
     /// Fecha o sheet inteiro: usa `onCloseSheet` (fluxo guiado via
@@ -122,24 +124,60 @@ struct AssistView: View {
         #endif
         .navigationBarBackButtonHidden(false)
         .task {
-            await viewModel.load(
-                currentMeasurement: currentMeasurement,
-                recentMeasurements: recentMeasurements,
-                usageContext: usageContext,
-                failureSignal: failureSignal,
-                objective: objective,
-                subcategory: subcategory,
-                reportedProblem: reportedProblem
-            )
+            if let current = currentMeasurement {
+                await loadAssist(with: current)
+            } else {
+                isRunningInlineTest = true
+                inlineTestViewModel.startTest()
+            }
+        }
+        .onChange(of: inlineTestViewModel.uiPhase) { newPhase in
+            if newPhase == .done {
+                if let m = inlineTestViewModel.latestFinishedMeasurement {
+                    Task {
+                        await loadAssist(with: m)
+                        isRunningInlineTest = false
+                    }
+                }
+            } else if newPhase == .error {
+                isRunningInlineTest = false
+                // Simula o erro nativo do AssistViewModel ao injetar nil
+                Task {
+                    await viewModel.load(
+                        currentMeasurement: nil,
+                        recentMeasurements: recentMeasurements,
+                        usageContext: usageContext,
+                        failureSignal: failureSignal,
+                        objective: objective,
+                        subcategory: subcategory,
+                        reportedProblem: reportedProblem
+                    )
+                }
+            }
         }
         .task {
             await stabilityViewModel.load()
         }
     }
+
+    private func loadAssist(with measurement: NetworkMeasurement) async {
+        await viewModel.load(
+            currentMeasurement: measurement,
+            recentMeasurements: recentMeasurements,
+            usageContext: usageContext,
+            failureSignal: failureSignal,
+            objective: objective,
+            subcategory: subcategory,
+            reportedProblem: reportedProblem
+        )
+    }
     
     @ViewBuilder
     private var contentView: some View {
-        switch viewModel.state {
+        if isRunningInlineTest {
+            inlineTestWidget
+        } else {
+            switch viewModel.state {
         case .idle, .loading:
             ProgressView("Analisando conexão...")
                 .foregroundColor(.textSecondary)
@@ -464,6 +502,70 @@ struct AssistView: View {
         case "attention": return .statusAttention
         case "critical": return .statusCritical
         default: return .textSecondary
+        }
+    }
+    
+    // MARK: - Inline Test Widget
+    
+    private var inlineTestWidget: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Coletando informações da rede")
+                    .font(.displayLarge)
+                    .foregroundColor(.brandSurface)
+                
+                Text("O Assist precisa de um diagnóstico atualizado para responder sua pergunta.")
+                    .font(.bodyRegular)
+                    .foregroundColor(.textSecondary)
+            }
+            .padding(.top, 24)
+            
+            VStack(spacing: 16) {
+                stepRow(
+                    title: "Iniciando diagnóstico e latência", 
+                    isActive: inlineTestViewModel.uiPhase == .connecting,
+                    isDone: [.downloading, .uploading, .done].contains(inlineTestViewModel.uiPhase)
+                )
+                stepRow(
+                    title: "Testando velocidade de download", 
+                    isActive: inlineTestViewModel.uiPhase == .downloading,
+                    isDone: [.uploading, .done].contains(inlineTestViewModel.uiPhase)
+                )
+                stepRow(
+                    title: "Testando velocidade de upload", 
+                    isActive: inlineTestViewModel.uiPhase == .uploading,
+                    isDone: inlineTestViewModel.uiPhase == .done
+                )
+            }
+            .padding(20)
+            .background(Color.surfaceCard)
+            .cornerRadius(16)
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+    
+    private func stepRow(title: String, isActive: Bool, isDone: Bool) -> some View {
+        HStack(spacing: 12) {
+            if isDone {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.bodyRegularStrong)
+                    .foregroundColor(.statusGood)
+            } else if isActive {
+                ProgressView()
+                    .scaleEffect(0.8)
+                    .frame(width: 20, height: 20)
+            } else {
+                Image(systemName: "circle")
+                    .font(.bodyRegularStrong)
+                    .foregroundColor(.textTertiary)
+            }
+            Text(title)
+                .font(.bodyRegular)
+                .foregroundColor(isActive || isDone ? .textPrimary : .textTertiary)
+            Spacer()
         }
     }
 }
