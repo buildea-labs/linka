@@ -63,6 +63,19 @@ public class SpeedTestViewModel: ObservableObject {
     /// no fim. Não substitui `provider`, que é o provedor do teste.
     @Published public var wifiContext: WiFiNetworkContext? = nil
 
+    /// Monitor de caminho de rede ao vivo para refletir o status real de conexão na tela inicial (Home/Idle).
+    private var livePathMonitor: NWPathMonitor?
+    private let livePathQueue = DispatchQueue(label: "com.linka.speedtest.viewmodel.live-path")
+
+    /// Conexão de rede ativa no aparelho em tempo real (independente de testes anteriores).
+    @Published public var liveConnectionKind: NetworkConnectionKind? = nil
+
+    /// Contexto Wi-Fi ativo no aparelho em tempo real.
+    @Published public var liveWiFiContext: WiFiNetworkContext? = nil
+
+    /// Rótulo descritivo da conexão ativa ao vivo (ex: "MinhaCasa · 5 GHz", "5G", "Wi-Fi", "Rede móvel").
+    @Published public var liveNetworkLabel: String = ""
+
     /// Fatos avançados importados explicitamente pelo app Atalhos. São
     /// secundários ao resultado e só existem quando a janela de associação
     /// temporal da issue #134 é satisfeita.
@@ -206,7 +219,12 @@ public class SpeedTestViewModel: ObservableObject {
     }
 
     public init() {
+        startLiveNetworkMonitoring()
         loadLastTest()
+    }
+
+    deinit {
+        livePathMonitor?.cancel()
     }
 
     public func loadLastTest() {
@@ -541,13 +559,7 @@ public class SpeedTestViewModel: ObservableObject {
             }
 
         case .active:
-            // Só reinicia quando `uiPhase` ficou `.idle` pelo branch acima:
-            // depois do primeiro `startTest()` em `MainView.onAppear`, o
-            // app nunca mais fica `.idle` sozinho por nenhum outro caminho,
-            // então este sinal é inequívoco. Resume "ABRIR → MEDIR"
-            // automático (AGENTS.md §6) sem nenhum banner/copy extra de
-            // "medição interrompida" — o próprio reinício já comunica o
-            // estado sem fricção adicional.
+            refreshLiveNetwork()
             if uiPhase == .idle {
                 startTest()
             }
@@ -796,5 +808,77 @@ public class SpeedTestViewModel: ObservableObject {
         }
         let digest = SHA256.hash(data: Data("\(salt)|\(bssid.lowercased())".utf8))
         return digest.prefix(16).map { String(format: "%02x", $0) }.joined()
+    }
+
+    // MARK: - Monitoramento em Tempo Real (Idle / Home)
+
+    private func startLiveNetworkMonitoring() {
+        let monitor = NWPathMonitor()
+        self.livePathMonitor = monitor
+        monitor.pathUpdateHandler = { [weak self] path in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                await self.updateLiveNetwork(with: path)
+            }
+        }
+        monitor.start(queue: livePathQueue)
+    }
+
+    public func refreshLiveNetwork() {
+        Task { @MainActor [weak self] in
+            guard let self, let monitor = self.livePathMonitor else { return }
+            await self.updateLiveNetwork(with: monitor.currentPath)
+        }
+    }
+
+    private func updateLiveNetwork(with path: NWPath) async {
+        let kind: NetworkConnectionKind?
+        if path.status != .satisfied {
+            kind = nil
+        } else if path.usesInterfaceType(.wifi) {
+            kind = .wifi
+        } else if path.usesInterfaceType(.cellular) {
+            kind = .cellular
+        } else if path.usesInterfaceType(.wiredEthernet) {
+            kind = .ethernet
+        } else {
+            kind = .other
+        }
+        self.liveConnectionKind = kind
+
+        if kind == .wifi {
+            let wifiCtx = await Self.sampleWiFiContext()
+            self.liveWiFiContext = wifiCtx
+            if let ssid = wifiCtx?.ssid {
+                let band = wifiCtx?.bandGHz ?? ApplePlatformSignalProvider.currentWifiBandGHz()
+                if let band {
+                    let bandStr = band.truncatingRemainder(dividingBy: 1) == 0
+                        ? String(format: "%.0f", band)
+                        : String(format: "%.1f", band)
+                    self.liveNetworkLabel = "\(ssid) · \(bandStr) GHz"
+                } else {
+                    self.liveNetworkLabel = ssid
+                }
+            } else {
+                self.liveNetworkLabel = "Wi-Fi"
+            }
+        } else if kind == .cellular {
+            self.liveWiFiContext = nil
+            let hints = await ApplePlatformSignalProvider().currentHints()
+            if let tech = hints.mobile?.technology {
+                self.liveNetworkLabel = tech
+            } else {
+                self.liveNetworkLabel = "Rede móvel"
+            }
+        } else if kind == .ethernet {
+            self.liveWiFiContext = nil
+            self.liveNetworkLabel = "Ethernet"
+        } else if path.status != .satisfied {
+            self.liveWiFiContext = nil
+            self.liveNetworkLabel = "Sem conexão"
+        } else {
+            self.liveWiFiContext = nil
+            self.liveNetworkLabel = "Conexão de rede"
+        }
     }
 }
