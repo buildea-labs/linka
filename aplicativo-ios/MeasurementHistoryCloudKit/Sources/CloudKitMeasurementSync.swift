@@ -320,14 +320,20 @@ public final class CloudKitMeasurementRemoteStore: MeasurementRemoteStore, @unch
             return false
         }
         
-        // Em device (Release ou Debug) e no Simulador, a inicialização do
-        // `CKContainer(identifier:)` sofre SIGTRAP duro (os_crash) se o binário
-        // não tiver o entitlement `com.apple.developer.icloud-services` embutido.
-        // Como o simulador sem code signing ou builds locais com Personal Team
-        // não provisionam esse entitlement corretamente, checamos a presença do
-        // `embedded.mobileprovision` como um proxy de segurança antes de tentar
-        // instanciar o container.
+        #if targetEnvironment(simulator)
+        // Com conta Apple Developer paga ativa, habilitamos CloudKit no simulator.
+        // Se houver crash (SIGTRAP) no CKContainer localmente, é sinal de que o Xcode
+        // gerou o build sem assinar (codeSigningTeamID vazio) — limpe o Derived Data.
+        return true
+        #else
+        #if DEBUG
+        // Habilita também em DEBUG em device físico (Personal Team / Conta Paga)
+        return true
+        #else
+        // Em device release, mantemos a verificação do mobileprovision por segurança
         return Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision") != nil
+        #endif
+        #endif
     }
 
     public func accountStatus() async -> CKAccountStatus {
