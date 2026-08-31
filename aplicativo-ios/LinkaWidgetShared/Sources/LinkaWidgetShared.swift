@@ -22,7 +22,7 @@ public enum LinkaWidgetShared {
     /// compartilhado) e `readLatestSummary`/`writeLatestSummary` falham em
     /// silêncio — o widget cai no estado "sem medição anterior" em vez de
     /// quebrar.
-    public static let appGroupIdentifier = "group.com.linka.speedtest"
+    public static let appGroupIdentifier = "group.com.linka.assist"
 
     /// `kind` do `WidgetConfiguration` declarado em `LinkaSpeedTestWidget`
     /// (target `LinkaWidget`, fora do grafo de build de `LinkaApp`) — usado

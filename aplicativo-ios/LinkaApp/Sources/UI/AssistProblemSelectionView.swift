@@ -159,21 +159,19 @@ struct AssistProblemSelectionView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            objectiveStep
-                .navigationDestination(for: Step.self) { step in
-                    switch step {
-                    case .subcategory(let objective):
-                        subcategoryStep(for: objective)
-                    case .reportedProblemInput:
-                        reportedProblemStep
-                    case .result(let objective, let subcategory, let reportedProblem):
-                        assistDestination(objective: objective, subcategory: subcategory, reportedProblem: reportedProblem)
-                    case .observational:
-                        assistDestination(objective: nil, subcategory: nil, reportedProblem: nil)
-                    }
+        objectiveStep
+            .navigationDestination(for: Step.self) { step in
+                switch step {
+                case .subcategory(let objective):
+                    subcategoryStep(for: objective)
+                case .reportedProblemInput:
+                    reportedProblemStep
+                case .result(let objective, let subcategory, let reportedProblem):
+                    assistDestination(objective: objective, subcategory: subcategory, reportedProblem: reportedProblem)
+                case .observational:
+                    assistDestination(objective: nil, subcategory: nil, reportedProblem: nil)
                 }
-        }
+            }
     }
 
     // MARK: - Etapa 1 — macro-grupo
@@ -181,16 +179,10 @@ struct AssistProblemSelectionView: View {
     private var objectiveStep: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("O que está acontecendo?")
-                        .font(.displayLarge)
-                        .foregroundColor(.brandSurface)
-
-                    Text("Escolha o que mais parece com o que você está vendo — isso ajuda o Assist a olhar para os dados certos.")
-                        .font(.bodyRegular)
-                        .foregroundColor(.textSecondary)
-                }
-                .padding(.top, 24)
+                Text("O que está acontecendo?")
+                    .font(.displayLarge)
+                    .foregroundColor(.brandSurface)
+                    .padding(.top, 24)
 
                 VStack(spacing: 12) {
                     ForEach(AssistProblemObjective.allCases) { objective in

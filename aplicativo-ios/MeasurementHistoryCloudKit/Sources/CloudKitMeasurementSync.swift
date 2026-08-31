@@ -21,7 +21,7 @@ public enum LinkaCloudKitContainer {
     /// inofensivo aqui porque todo o sync é best-effort (ver
     /// `SyncingMeasurementHistoryRepository`): o app continua funcionando
     /// 100% local.
-    public static let identifier = "iCloud.com.linka.speedtest"
+    public static let identifier = "iCloud.com.linka.assist"
 }
 
 /// Nome do tipo de record no CloudKit. Precisa ser criado no CloudKit
@@ -317,23 +317,15 @@ public final class CloudKitMeasurementRemoteStore: MeasurementRemoteStore, @unch
 
     private static func hasICloudContainerEntitlement(for id: String) -> Bool {
         #if targetEnvironment(simulator)
-        // Simulator sem code signing não carrega entitlements no processo.
-        // Enquanto o container `iCloud.com.linka.speedtest` não estiver
-        // provisionado no Apple Developer Portal e o app assinado com esse
-        // perfil, CloudKit fica desabilitado no simulador para não crashar.
-        return false
+        // Com conta Apple Developer paga ativa, podemos habilitar CloudKit no simulator
+        // assumindo que os entitlements adequados foram configurados no target do Xcode.
+        return true
         #else
         #if DEBUG
-        // Durante o desenvolvimento (ex: via Personal Team), o iCloud pode não
-        // estar disponível e instanciar CKContainer daria SIGTRAP.
-        return false
+        // Habilita também em DEBUG em device físico
+        return true
         #else
-        // Em device, presença de embedded.mobileprovision indica binário
-        // assinado com perfil que inclui os entitlements declarados no
-        // arquivo `.entitlements` — o container precisa estar listado lá
-        // e provisionado no Apple Developer Portal para que
-        // `CKContainer(identifier:)` sobreviva. Se faltar, degradar para
-        // no-op é melhor que crashar duro via os_crash.
+        // Em device release, mantemos a verificação do mobileprovision por segurança
         return Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision") != nil
         #endif
         #endif

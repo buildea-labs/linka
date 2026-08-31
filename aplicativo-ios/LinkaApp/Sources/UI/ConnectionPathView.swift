@@ -21,6 +21,10 @@ struct ConnectionPathView: View {
     @Binding var expanded: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var visibleStages: [ConnectionPathStage] {
+        report.stages.map { $0.stage }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Button {
@@ -29,10 +33,10 @@ struct ConnectionPathView: View {
                 }
             } label: {
                 HStack(spacing: 0) {
-                    ForEach(Array(ConnectionPathCopy.orderedStages.enumerated()), id: \.element) { index, stage in
+                    ForEach(Array(visibleStages.enumerated()), id: \.element) { index, stage in
                         if let verdict = report.verdict(for: stage) {
                             stageGlyph(verdict, highlighted: report.highlightedStage == stage)
-                            if index < ConnectionPathCopy.orderedStages.count - 1 {
+                            if index < visibleStages.count - 1 {
                                 Image(systemName: "chevron.right")
                                     .font(.captionSmall)
                                     .foregroundColor(.textSecondary.opacity(0.5))
@@ -50,10 +54,10 @@ struct ConnectionPathView: View {
 
             if expanded {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(ConnectionPathCopy.orderedStages.enumerated()), id: \.element) { index, stage in
+                    ForEach(Array(visibleStages.enumerated()), id: \.element) { index, stage in
                         if let verdict = report.verdict(for: stage) {
                             stageDetailRow(verdict, highlighted: report.highlightedStage == stage)
-                            if index < ConnectionPathCopy.orderedStages.count - 1 {
+                            if index < visibleStages.count - 1 {
                                 Divider()
                             }
                         }
@@ -225,7 +229,8 @@ enum ConnectionPathCopy {
     }
 
     static func accessibilitySummary(for report: ConnectionPathReport) -> String {
-        let stagesText = orderedStages.compactMap { stage -> String? in
+        let visibleStages = report.stages.map { $0.stage }
+        let stagesText = visibleStages.compactMap { stage -> String? in
             guard let verdict = report.verdict(for: stage) else { return nil }
             return "\(title(for: stage)): \(statusAccessibilityLabel(verdict.status))"
         }.joined(separator: ". ")

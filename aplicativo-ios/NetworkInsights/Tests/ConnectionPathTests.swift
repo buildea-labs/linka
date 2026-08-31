@@ -32,9 +32,11 @@ final class ConnectionPathTests: XCTestCase {
 
     // MARK: - Wi-Fi
 
-    func testWiFiIsUnavailableWhenNotOnWiFi() {
+    func testWiFiAndRouterAreAbsentWhenNotOnWiFi() {
         let measurement = NetworkMeasurement(outcome: .complete, downloadMbps: 100, uploadMbps: 20, latencyMs: 15, connectionKind: .cellular)
-        XCTAssertEqual(evaluator.evaluate(measurement).verdict(for: .wifi)?.status, .unavailable)
+        let report = evaluator.evaluate(measurement)
+        XCTAssertNil(report.verdict(for: .wifi))
+        XCTAssertNil(report.verdict(for: .router))
     }
 
     func testWiFiIsUnavailableWithoutAdvancedDiagnostics() {

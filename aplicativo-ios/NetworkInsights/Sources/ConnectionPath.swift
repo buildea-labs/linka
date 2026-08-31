@@ -154,13 +154,17 @@ public struct ConnectionPathEvaluator: ConnectionPathEvaluating {
     }
 
     public func evaluate(_ measurement: NetworkMeasurement) -> ConnectionPathReport {
-        let stages = [
-            evaluateDevice(measurement),
-            evaluateWiFi(measurement),
-            evaluateRouter(measurement),
-            evaluateCarrier(measurement),
-            evaluateInternet(measurement)
-        ]
+        var stages: [ConnectionPathStageVerdict] = []
+        stages.append(evaluateDevice(measurement))
+        
+        if measurement.connectionKind != .cellular {
+            stages.append(evaluateWiFi(measurement))
+            stages.append(evaluateRouter(measurement))
+        }
+        
+        stages.append(evaluateCarrier(measurement))
+        stages.append(evaluateInternet(measurement))
+        
         let (category, highlighted) = Self.deriveCategory(stages)
         return ConnectionPathReport(stages: stages, category: category, highlightedStage: highlighted)
     }

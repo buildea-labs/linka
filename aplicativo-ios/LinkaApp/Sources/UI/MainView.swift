@@ -116,8 +116,56 @@ struct MainView: View {
     /// diferenciar o produto de um speed test comum sem depender de
     /// assinatura. `nil` sem medição concluída.
     private var connectionPathReport: ConnectionPathReport? {
-        guard let currentMeasurement else { return nil }
-        return ConnectionPathEvaluator().evaluate(currentMeasurement)
+        if viewModel.uiPhase == .done, let currentMeasurement {
+            return ConnectionPathEvaluator().evaluate(currentMeasurement)
+        }
+        if let last = viewModel.latestFinishedMeasurement {
+            return ConnectionPathEvaluator().evaluate(last)
+        }
+        return nil
+    }
+
+    private var statusTitle: String {
+        guard let report = connectionPathReport else {
+            return "Pronto para testar"
+        }
+        switch report.category {
+        case .healthy: return "Conexão excelente"
+        case .inconclusive: return "Conexão instável"
+        case .local: return "Aparelho instável"
+        case .wifi: return "Wi-Fi instável"
+        case .carrier: return "Operadora instável"
+        case .external: return "Internet oscilando"
+        }
+    }
+
+
+    private var statusCircleColor: Color {
+        guard let report = connectionPathReport else {
+            return .textSecondary.opacity(0.15)
+        }
+        let statuses = report.stages.map { $0.status }
+        if statuses.contains(.likelyProblem) {
+            return .statusCritical
+        } else if statuses.contains(.attention) {
+            return .statusAttention
+        } else {
+            return .statusGood
+        }
+    }
+
+    private var statusGlyphName: String {
+        guard let report = connectionPathReport else {
+            return "play.fill"
+        }
+        let statuses = report.stages.map { $0.status }
+        if statuses.contains(.likelyProblem) {
+            return "exclamationmark"
+        } else if statuses.contains(.attention) {
+            return "exclamationmark"
+        } else {
+            return "checkmark"
+        }
     }
 
     /// Relatório de adequação por uso, calculado uma única vez e
@@ -210,14 +258,113 @@ struct MainView: View {
                             .frame(minHeight: 44)
                             .accessibilityHint("Mostra os fatos de conexão observados neste aparelho")
                         }
-                    } else if viewModel.uiPhase != .done {
+                    } else if viewModel.uiPhase == .idle {
+                        // New Idle (Início) UI inspired by SignallQ (Apple style, vertical centering)
+                        VStack(spacing: 0) {
+                            // 1. Caminho da Conexão no topo (se houver histórico)
+                            if let connectionPathReport {
+                                ConnectionPathView(report: connectionPathReport, expanded: $connectionPathExpanded)
+                                    .padding(.horizontal, 24)
+                                    .padding(.top, 8)
+                            }
+                            
+                            Spacer()
+                            
+                            // 2. Círculo de Status Central
+                            ZStack {
+                                Circle()
+                                    .stroke(statusCircleColor.opacity(0.12), lineWidth: 8)
+                                    .frame(width: 140, height: 140)
+                                
+                                Circle()
+                                    .fill(statusCircleColor.opacity(0.06))
+                                    .frame(width: 124, height: 124)
+                                
+                                Image(systemName: statusGlyphName)
+                                    .font(.system(size: 40, weight: .bold))
+                                    .foregroundColor(statusCircleColor)
+                            }
+                            .padding(.bottom, 12)
+                            
+                            // 3. Veredito em texto grande
+                            Text(statusTitle)
+                                .font(.heroConclusion)
+                                .foregroundColor(.textPrimary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 24)
+                                .fixedSize(horizontal: false, vertical: true)
+                            
+                            Spacer()
+                            
+                            // 4. Botão de Ação Primário
+                            Button(action: {
+                                withAnimation {
+                                    viewModel.startTest()
+                                }
+                            }) {
+                                Text("Analisar conexão")
+                                    .font(.buttonLabel)
+                                    .foregroundColor(Color.surfacePage)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(Color.textPrimary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, viewModel.hasValidResult ? 0 : 24)
+                            
+                            // 5. Card de Atalho para o Assist (se houver histórico)
+                            if viewModel.hasValidResult {
+                                Button(action: {
+                                    showAssist = true
+                                }) {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "brain.head.profile")
+                                            .font(.system(size: 20, weight: .medium))
+                                            .foregroundColor(.brandAccentWarm)
+                                            .frame(width: 32, height: 32)
+                                            .background(Circle().fill(Color.brandAccentWarm.opacity(0.12)))
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Assistente de Conexão")
+                                                .font(.bodySmallStrong)
+                                                .foregroundColor(.textPrimary)
+                                            Text("Entenda o diagnóstico e veja sugestões de melhoria")
+                                                .font(.captionSmall)
+                                                .foregroundColor(.textSecondary)
+                                        }
+                                        .multilineTextAlignment(.leading)
+                                        
+                                        Spacer(minLength: 0)
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .font(.captionSmall)
+                                            .foregroundColor(.textSecondary.opacity(0.6))
+                                    }
+                                    .padding(.all, 14)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.surfaceCard)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.borderDefault, lineWidth: 0.5)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.horizontal, 24)
+                                .padding(.top, 12)
+                                .padding(.bottom, 24)
+                            }
+                        }
+                    } else if viewModel.uiPhase == .connecting || viewModel.uiPhase == .downloading || viewModel.uiPhase == .uploading {
                         // Measuring UI
                         VStack(spacing: 0) {
                             MetricRing(
-                                connecting: viewModel.uiPhase == .connecting || viewModel.uiPhase == .idle,
+                                connecting: viewModel.uiPhase == .connecting,
                                 progress: viewModel.progress,
                                 value: ringValue,
-                                unit: (viewModel.uiPhase == .connecting || viewModel.uiPhase == .idle) ? nil : "Mbps",
+                                unit: viewModel.uiPhase == .connecting ? nil : "Mbps",
                                 size: 160,
                                 animation: animation,
                                 matchedId: "downloadValue"
@@ -238,47 +385,17 @@ struct MainView: View {
                                 activeKey: activePhaseKey
                             )
 
-                            // Saída única do teste em andamento (issue #47).
-                            // "Pular" (primeira medição automática) e
-                            // "Cancelar" (reteste) são o mesmo botão e a
-                            // mesma chamada técnica — só o texto muda,
-                            // derivado de `hasValidResult`. Secundário de
-                            // propósito: texto pequeno, sem fundo, sem
-                            // competir com o MetricRing.
-                            //
-                            // Quando o teste já foi pulado e uiPhase caiu em
-                            // `.idle` sem snapshot para restaurar, o botão
-                            // vira "Testar" acionando startTest() — dá a saída
-                            // explícita que o R3 tinha tentado resolver com
-                            // auto-restart (que confundia: parecia que Pular
-                            // não fazia nada porque o teste reiniciava sozinho).
-                            if viewModel.uiPhase == .idle && !viewModel.hasValidResult && !viewModel.isTesting {
-                                Button(action: {
-                                    viewModel.startTest()
-                                }) {
-                                    Text("Testar")
-                                        .font(.buttonLabel)
-                                        .foregroundColor(Color.surfacePage)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 16)
-                                        .background(Color.textPrimary)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                }
-                                .padding(.horizontal, 24)
-                                .padding(.top, 20)
-                            } else {
-                                Button(action: {
-                                    viewModel.skipOrCancel()
-                                }) {
-                                    Text(viewModel.hasValidResult ? "Cancelar" : "Pular")
-                                        .font(.bodySmall)
-                                        .foregroundColor(.textSecondary)
-                                        .frame(minWidth: 44, minHeight: 44)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                .padding(.top, 20)
+                            Button(action: {
+                                viewModel.skipOrCancel()
+                            }) {
+                                Text(viewModel.hasValidResult ? "Cancelar" : "Pular")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                                    .frame(minWidth: 44, minHeight: 44)
+                                    .contentShape(Rectangle())
                             }
+                            .buttonStyle(.plain)
+                            .padding(.top, 20)
                         }
                         // removed transition to allow fluid geometry effect
                     } else {
@@ -614,6 +731,16 @@ struct MainView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
+            .navigationDestination(isPresented: $showAssist) {
+                AssistProblemSelectionView(
+                    currentMeasurement: currentMeasurement,
+                    recentMeasurements: viewModel.recentMeasurements,
+                    usageContext: usageContextForAssist,
+                    onRetry: { viewModel.startTest() },
+                    onShowDetails: { detailsOpen = true },
+                    entitlements: entitlements
+                )
+            }
         }
         .onAppear {
             // Início e carga de histórico controlados por SpeedTestViewModel.init()
@@ -653,16 +780,7 @@ struct MainView: View {
             }
             .environmentObject(entitlements)
         }
-        .sheet(isPresented: $showAssist) {
-            AssistProblemSelectionView(
-                currentMeasurement: currentMeasurement,
-                recentMeasurements: viewModel.recentMeasurements,
-                usageContext: usageContextForAssist,
-                onRetry: { viewModel.startTest() },
-                onShowDetails: { detailsOpen = true },
-                entitlements: entitlements
-            )
-        }
+
         .sheet(isPresented: $showConnectivityTriage) {
             NavigationStack {
                 ConnectivityTriageView(onRetry: { viewModel.startTest() })

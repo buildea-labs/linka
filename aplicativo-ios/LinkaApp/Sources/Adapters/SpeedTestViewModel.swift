@@ -135,7 +135,7 @@ public class SpeedTestViewModel: ObservableObject {
     /// e cancelando T2 sem pedido do usuário.
     private var testGeneration: Int = 0
     private var measurementStartedAt: Date?
-    private var latestFinishedMeasurement: NetworkMeasurement?
+    public private(set) var latestFinishedMeasurement: NetworkMeasurement?
 
     /// Snapshot do último resultado `.done` alcançado nesta sessão do view
     /// model (issue #47) — capturado em `startTest()` no instante em que um
@@ -285,7 +285,7 @@ public class SpeedTestViewModel: ObservableObject {
         )
         
         self.progress = 1.0
-        self.uiPhase = .done
+        self.uiPhase = .idle
         self.isTesting = false
     }
 
