@@ -20,6 +20,10 @@ public enum SpeedTestUIPhase {
     case downloading
     case uploading
     case done
+    /// A rota deixou de ser a mesma durante a medição. Não há resultado
+    /// parcial para mostrar ou persistir; o próximo teste depende de um novo
+    /// gesto explícito da pessoa.
+    case connectionChanged
     /// Falha fatal do motor (issue #66) — motor parou e cancelou sozinho.
     /// Copy e ação de "Tentar novamente" vivem só na UI (`MainView`); aqui é
     /// só o estado.
@@ -148,6 +152,9 @@ public class SpeedTestViewModel: ObservableObject {
     /// e cancelando T2 sem pedido do usuário.
     private var testGeneration: Int = 0
     private var measurementStartedAt: Date?
+    /// Snapshot da interface que autorizou o teste atual. O monitor ao vivo é
+    /// a fonte para interromper imediatamente quando esse fato deixa de valer.
+    private var measurementConnectionKind: NetworkConnectionKind?
     @Published public private(set) var latestFinishedMeasurement: NetworkMeasurement?
 
     /// Snapshot do último resultado `.done` alcançado nesta sessão do view
@@ -246,9 +253,6 @@ public class SpeedTestViewModel: ObservableObject {
                 }
             } else {
                 self.recentMeasurements = []
-                if self.uiPhase == .idle {
-                    self.startTest()
-                }
             }
         }
     }
@@ -329,6 +333,7 @@ public class SpeedTestViewModel: ObservableObject {
         wifiContext = nil
         advancedWiFiDiagnostics = nil
         measurementStartedAt = Date()
+        measurementConnectionKind = liveConnectionKind
         uiPhase = .connecting
 
         testTask?.cancel()
@@ -377,6 +382,10 @@ public class SpeedTestViewModel: ObservableObject {
                             let endingKind = await Self.sampleConnectionKind()
                             let startingWiFiContext = await startingWiFiContextTask
                             let endingWiFiContext = await Self.sampleWiFiContext()
+                            guard startingKind == endingKind else {
+                                self.cancelForConnectionChange()
+                                return
+                            }
                             self.processResultState(
                                 state,
                                 startingKind: startingKind,
@@ -499,6 +508,48 @@ public class SpeedTestViewModel: ObservableObject {
         }
     }
 
+    /// Retorna à tela inicial (Home/Idle) a partir do resultado ou de qualquer outro estado.
+    public func resetToIdle() {
+        testTask?.cancel()
+        testTask = nil
+        isTesting = false
+        failureReason = nil
+        progress = 0.0
+        uiPhase = .idle
+    }
+
+    /// O `NWPathMonitor` observou que a rota que iniciou a medição mudou ou
+    /// deixou de estar disponível. Não restaura resultado anterior: este é um
+    /// estado de segurança da jornada, que pede uma nova intenção explícita.
+    func cancelForConnectionChange() {
+        guard isTesting else { return }
+        testGeneration += 1
+        testTask?.cancel()
+        testTask = nil
+        isTesting = false
+        failureReason = nil
+        measurementStartedAt = nil
+        measurementConnectionKind = nil
+        progress = 0
+        downloadSpeed = 0
+        uploadSpeed = 0
+        ping = 0
+        jitter = 0
+        provider = ""
+        networkType = ""
+        testDuration = ""
+        packetLossPercent = nil
+        loadedLatencyMs = nil
+        loadedLatencyUploadMs = nil
+        dnsResolutionMs = nil
+        rawTestDuration = nil
+        connectionKind = nil
+        wifiBandGHz = nil
+        wifiContext = nil
+        advancedWiFiDiagnostics = nil
+        uiPhase = .connectionChanged
+    }
+
     /// Reage à mudança de `ScenePhase` da cena (issue #65) — único ponto de
     /// decisão de ciclo de vida do teste; `MainView` só repassa o valor via
     /// `.onChange(of: scenePhase)`, sem lógica própria aqui.
@@ -560,9 +611,6 @@ public class SpeedTestViewModel: ObservableObject {
 
         case .active:
             refreshLiveNetwork()
-            if uiPhase == .idle {
-                startTest()
-            }
 
         case .inactive:
             break
@@ -845,6 +893,20 @@ public class SpeedTestViewModel: ObservableObject {
             kind = .other
         }
         self.liveConnectionKind = kind
+
+        // A rota é um requisito de validade da medição, não um detalhe de
+        // apresentação. Qualquer troca de interface (inclusive indisponível)
+        // interrompe o stream antes que ele publique ou persista um resultado.
+        if isTesting {
+            if measurementConnectionKind == nil, let kind {
+                // O monitor ainda não havia entregado o primeiro caminho no
+                // instante do toque. Esse primeiro valor estabelece a rota;
+                // os seguintes precisam coincidir.
+                measurementConnectionKind = kind
+            } else if measurementConnectionKind != kind {
+                cancelForConnectionChange()
+            }
+        }
 
         if kind == .wifi {
             let wifiCtx = await Self.sampleWiFiContext()

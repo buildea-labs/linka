@@ -6,6 +6,7 @@ import NetworkInsights
 /// Apresenta a qualidade da rede para cada caso de uso em uma List nativa.
 struct UsageDiagnosticsView: View {
     let measurement: NetworkMeasurement?
+    @Environment(\.dismiss) private var dismiss
 
     private var report: UsageSuitabilityReport? {
         guard let measurement else { return nil }
@@ -28,7 +29,9 @@ struct UsageDiagnosticsView: View {
     }
 
     var body: some View {
-        List {
+        VStack(spacing: 0) {
+            contextualHeader
+            List {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Resumo")
@@ -58,11 +61,22 @@ struct UsageDiagnosticsView: View {
                         .foregroundColor(.textSecondary)
                 }
             }
+            }
         }
-        .navigationTitle("Qualidade de uso")
-        #if canImport(UIKit)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+    }
+
+    private var contextualHeader: some View {
+        HStack {
+            Button("Fechar") { dismiss() }
+                .font(.bodySmallStrong)
+                .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+                .accessibilityLabel("Fechar qualidade de uso")
+            Spacer()
+            Text("Qualidade de uso").font(.headline)
+            Spacer()
+            Color.clear.frame(width: 44, height: 44)
+        }
+        .padding(.horizontal, 20)
     }
 }
 

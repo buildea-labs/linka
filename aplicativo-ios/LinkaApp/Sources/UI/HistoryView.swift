@@ -11,8 +11,31 @@ enum HistoryDisplayMode {
     case map
 }
 
+private enum HistoryFilter: String, CaseIterable {
+    case all = "Todos"
+    case wifi = "Wi-Fi"
+    case mobile = "Móvel"
+}
+
+private enum HistorySort {
+    case recent
+    case fastest
+    case slowest
+
+    var label: String {
+        switch self {
+        case .recent: return "Recentes"
+        case .fastest: return "Mais rápido"
+        case .slowest: return "Mais lento"
+        }
+    }
+}
+
 struct HistoryView: View {
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
+    var onSelectMeasurement: ((NetworkMeasurement) -> Void)? = nil
+
     @State private var measurements: [NetworkMeasurement] = []
     @State private var isLoading = true
     @State private var hasPlus = false
@@ -20,128 +43,86 @@ struct HistoryView: View {
     @State private var showPurchase = false
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .historyInsights
     @State private var insightText: String?
-    @State private var displayMode: HistoryDisplayMode = .list
+    @State private var filter: HistoryFilter = .all
+    @State private var sort: HistorySort = .recent
 
     private var repository: any MeasurementHistoryRepository {
         LinkaMeasurementHistory.makeRepository(entitlements: entitlements)
     }
 
-    @ViewBuilder
     var body: some View {
         ZStack {
+            Color.surfacePage.ignoresSafeArea()
             if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.surfacePage)
             } else {
-                VStack(spacing: 0) {
-                    if displayMode == .list {
-                        List {
-                            // Resumo da semana
-                            Section {
-                                Button(action: {
-                                    let assistDecision = LinkaEntitlementPolicy.decision(
-                                        for: .assist,
-                                        snapshot: entitlements.snapshot,
-                                        at: Date()
-                                    )
-                                    if assistDecision.isGranted {
-                                        showAssist = true
-                                    } else {
-                                        purchaseEntryPoint = .historyInsights
-                                        showPurchase = true
-                                    }
-                                }) {
-                                    HStack(alignment: .top, spacing: 12) {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Resumo da semana")
-                                                .font(.bodyRegularStrong)
-                                                .foregroundColor(.textPrimary)
-
-                                            if !hasPlus {
-                                                Text("Veja tendências e comparações com Linka Plus")
-                                                    .font(.bodySmall)
-                                                    .foregroundColor(.textSecondary)
-                                                    .fixedSize(horizontal: false, vertical: true)
-                                            } else if let insightText {
-                                                Text(insightText)
-                                                    .font(.bodySmall)
-                                                    .foregroundColor(.textSecondary)
-                                                    .fixedSize(horizontal: false, vertical: true)
-                                            } else {
-                                                Text("Ainda não há dados suficientes para um resumo semanal — faça alguns testes ao longo dos dias.")
-                                                    .font(.bodySmall)
-                                                    .foregroundColor(.textSecondary)
-                                                    .fixedSize(horizontal: false, vertical: true)
-                                            }
-                                        }
-                                        Spacer(minLength: 8)
-                                        Image(systemName: "chevron.right")
-                                            .font(.captionStrong)
-                                            .foregroundColor(.textSecondary)
-                                    }
-                                    .contentShape(Rectangle())
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(spacing: 10) {
+                            Picker("Filtro", selection: $filter) {
+                                ForEach(HistoryFilter.allCases, id: \.self) { option in
+                                    Text(option.rawValue).tag(option)
                                 }
-                                .buttonStyle(.plain)
                             }
+                            .pickerStyle(.segmented)
 
-                            // Lista de medições
-                            Section("Histórico de medições") {
-                                if measurements.isEmpty {
-                                    Text("Nenhuma medição encontrada.")
-                                        .font(.bodySmall)
-                                        .foregroundColor(.textSecondary)
-                                        .padding(.vertical, 8)
-                                } else {
-                                    ForEach(measurements, id: \.id) { measurement in
-                                        NavigationLink(destination: HistoricalMeasurementDetailView(measurement: measurement)) {
-                                            HistoryRow(measurement: measurement)
-                                        }
+                            Button { cycleSort() } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "arrow.down.to.line.compact")
+                                    Text(sort.label)
+                                }
+                                .font(.captionSmallStrong)
+                                .foregroundColor(.textPrimary)
+                                .frame(minHeight: 36)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.top, 16)
+                        .padding(.bottom, 16)
+
+                        if filteredMeasurements.isEmpty {
+                            VStack(spacing: 8) {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 36))
+                                    .foregroundColor(.textSecondary.opacity(0.6))
+                                    .padding(.bottom, 4)
+                                Text("Nenhuma medição encontrada")
+                                    .font(.headline)
+                                    .foregroundColor(.textPrimary)
+                                Text("Faça uma medição para vê-la aqui.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.textSecondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 80)
+                        } else {
+                            VStack(spacing: 0) {
+                                ForEach(filteredMeasurements, id: \.id) { measurement in
+                                    Button {
+                                        onSelectMeasurement?(measurement)
+                                    } label: {
+                                        PrototypeHistoryRow(measurement: measurement)
+                                    }
+                                    .buttonStyle(.plain)
+                                    if measurement.id != filteredMeasurements.last?.id {
+                                        Divider().padding(.leading, 16)
                                     }
                                 }
                             }
+                            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 18))
                         }
-                        #if canImport(UIKit)
-                        .listStyle(.insetGrouped)
-                        #else
-                        .listStyle(.automatic)
-                        #endif
-                    } else {
-                        MapHistoryView(measurements: measurements)
                     }
-                }
-            }
-        }
-        .toolbar {
-            if hasPlus {
-                if FeatureFlags.isCoverageMapEnabled {
-                    #if canImport(UIKit)
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Picker("Modo", selection: $displayMode) {
-                            Image(systemName: "list.bullet").tag(HistoryDisplayMode.list)
-                            Image(systemName: "map").tag(HistoryDisplayMode.map)
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        .frame(width: 100)
-                    }
-                    #else
-                    ToolbarItem {
-                        Picker("Modo", selection: $displayMode) {
-                            Image(systemName: "list.bullet").tag(HistoryDisplayMode.list)
-                            Image(systemName: "map").tag(HistoryDisplayMode.map)
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        .frame(width: 100)
-                    }
-                    #endif
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 28)
                 }
             }
         }
         .navigationTitle("Histórico")
-        #if canImport(UIKit)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
-        .navigationDestination(isPresented: $showAssist) {
+        .sheet(isPresented: $showAssist) {
             AssistView(
                 currentMeasurement: measurements.first,
                 recentMeasurements: Array(measurements.dropFirst().prefix(20)),
@@ -156,6 +137,29 @@ struct HistoryView: View {
         }
         .onAppear {
             loadData()
+        }
+    }
+
+    private var filteredMeasurements: [NetworkMeasurement] {
+        let scoped = measurements.filter { measurement in
+            switch filter {
+            case .all: return true
+            case .wifi: return measurement.connectionKind == .wifi
+            case .mobile: return measurement.connectionKind == .cellular
+            }
+        }
+        switch sort {
+        case .recent: return scoped.sorted { $0.measuredAt > $1.measuredAt }
+        case .fastest: return scoped.sorted { ($0.downloadMbps ?? 0) > ($1.downloadMbps ?? 0) }
+        case .slowest: return scoped.sorted { ($0.downloadMbps ?? 0) < ($1.downloadMbps ?? 0) }
+        }
+    }
+
+    private func cycleSort() {
+        switch sort {
+        case .recent: sort = .fastest
+        case .fastest: sort = .slowest
+        case .slowest: sort = .recent
         }
     }
 
@@ -217,6 +221,50 @@ struct HistoryView: View {
         case .stable, .unavailable:
             return nil
         }
+    }
+}
+
+private struct PrototypeHistoryRow: View {
+    let measurement: NetworkMeasurement
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(networkTitle)
+                    .font(.bodyRegularStrong)
+                    .foregroundColor(.textPrimary)
+                Text("\(formattedDate) · \(formattedSpeed(measurement.downloadMbps)) Mbps")
+                    .font(.captionSmall)
+                    .foregroundColor(.textSecondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.captionSmallStrong)
+                .foregroundColor(.textSecondary.opacity(0.65))
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 58)
+        .contentShape(Rectangle())
+    }
+
+    private var networkTitle: String {
+        switch measurement.connectionKind {
+        case .wifi: return measurement.wifiContext?.ssid ?? "Wi-Fi"
+        case .cellular: return measurement.networkIdentifier ?? "Rede móvel"
+        case .ethernet: return "Ethernet"
+        default: return "Medição"
+        }
+    }
+
+    private var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "d MMM, HH:mm"
+        return formatter.string(from: measurement.measuredAt)
+    }
+
+    private func formattedSpeed(_ value: Double?) -> String {
+        String(format: "%.0f", value ?? 0)
     }
 }
 

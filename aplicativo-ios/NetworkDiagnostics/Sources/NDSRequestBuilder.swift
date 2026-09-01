@@ -14,7 +14,7 @@ public struct NDSRequestBuilder: Sendable {
         historical: NDSRequest.Historical? = nil
     ) -> NDSRequest {
         var capabilities: [String] = []
-        if platformHints.wifi != nil, current.connectionKind == .wifi {
+        if (platformHints.wifi != nil || current.advancedWiFiDiagnostics != nil), current.connectionKind == .wifi {
             capabilities.append("wifi")
         }
         if historical != nil {
@@ -35,7 +35,7 @@ public struct NDSRequestBuilder: Sendable {
             requestedOutputs: requestAI ? ["scoring", "ai"] : ["scoring"],
             context: diagnosticContext,
             connection: mapConnection(current.connectionKind, hasInternet: hasInternet),
-            wifi: mapWifi(platformHints.wifi, kind: current.connectionKind, band: bandStr),
+            wifi: mapWifi(platformHints.wifi, advanced: current.advancedWiFiDiagnostics, kind: current.connectionKind, band: bandStr),
             // `speed: {}` (objeto presente, campos vazios) é rejeitado pelo
             // relay do NDS com RELAY_INVALID_REQUEST — confirmado testando
             // o payload real contra o serviço em produção (issue #129).
@@ -69,11 +69,14 @@ public struct NDSRequestBuilder: Sendable {
         return NDSRequest.Connection(type: typeStr, hasInternet: hasInternet)
     }
 
-    private func mapWifi(_ hint: PlatformHints.Wifi?, kind: NetworkConnectionKind?, band: String?) -> NDSRequest.Wifi? {
-        guard kind == .wifi, let hint = hint else { return nil }
+    private func mapWifi(_ hint: PlatformHints.Wifi?, advanced: AdvancedWiFiDiagnostics?, kind: NetworkConnectionKind?, band: String?) -> NDSRequest.Wifi? {
+        guard kind == .wifi else { return nil }
+        guard hint != nil || advanced != nil else { return nil }
+        let rssi = advanced?.rssiDbm ?? hint?.rssiDbm
+        let linkSpeed = advanced?.txRateMbps ?? advanced?.rxRateMbps ?? hint?.linkSpeedMbps
         return NDSRequest.Wifi(
-            rssiDbm: hint.rssiDbm,
-            linkSpeedMbps: hint.linkSpeedMbps,
+            rssiDbm: rssi,
+            linkSpeedMbps: linkSpeed,
             band: band
         )
     }

@@ -249,7 +249,7 @@ public struct NDSRawPayload: Codable, Equatable, Sendable {
 public struct NDSV2Explanation: Codable, Equatable, Sendable {
     public var titulo: String?
     public var descricao: String?
-    public var dados: String?
+    public var dados: [String]?
     public var acaoUsuario: String?
     public var semCausaIdentificada: Bool?
 
@@ -264,7 +264,7 @@ public struct NDSV2Explanation: Codable, Equatable, Sendable {
     public init(
         titulo: String? = nil,
         descricao: String? = nil,
-        dados: String? = nil,
+        dados: [String]? = nil,
         acaoUsuario: String? = nil,
         semCausaIdentificada: Bool? = nil
     ) {
@@ -273,6 +273,22 @@ public struct NDSV2Explanation: Codable, Equatable, Sendable {
         self.dados = dados
         self.acaoUsuario = acaoUsuario
         self.semCausaIdentificada = semCausaIdentificada
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.titulo = try container.decodeIfPresent(String.self, forKey: .titulo)
+        self.descricao = try container.decodeIfPresent(String.self, forKey: .descricao)
+        self.acaoUsuario = try container.decodeIfPresent(String.self, forKey: .acaoUsuario)
+        self.semCausaIdentificada = try container.decodeIfPresent(Bool.self, forKey: .semCausaIdentificada)
+        
+        if let stringArray = try? container.decodeIfPresent([String].self, forKey: .dados) {
+            self.dados = stringArray
+        } else if let singleString = try? container.decodeIfPresent(String.self, forKey: .dados) {
+            self.dados = [singleString]
+        } else {
+            self.dados = nil
+        }
     }
 }
 

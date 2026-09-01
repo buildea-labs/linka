@@ -1,5 +1,72 @@
 import SwiftUI
 import NetworkInsights
+import NetworkCore
+
+/// Contexto factual antes de haver uma medição. Ao contrário de
+/// `ConnectionPathView`, não avalia saúde de roteador, operadora ou internet:
+/// apenas representa a rota que o sistema expõe neste instante.
+struct LiveConnectionPathView: View {
+    let kind: NetworkConnectionKind?
+    let label: String
+
+    private var interfaceIcon: String {
+        switch kind {
+        case .wifi: return "wifi"
+        case .cellular: return "antenna.radiowaves.left.and.right"
+        case .ethernet: return "cable.connector"
+        case .other: return "network"
+        case nil: return "wifi.exclamationmark"
+        }
+    }
+
+    private var interfaceLabel: String {
+        if !label.isEmpty { return label }
+        switch kind {
+        case .wifi: return "Wi-Fi"
+        case .cellular: return "Rede móvel"
+        case .ethernet: return "Ethernet"
+        case .other: return "Conexão de rede"
+        case nil: return "Sem conexão"
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            pathItem(icon: "iphone", label: "Este iPhone")
+            pathArrow
+            pathItem(icon: interfaceIcon, label: interfaceLabel)
+            pathArrow
+            pathItem(icon: "globe", label: "Internet", muted: kind == nil)
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 6)
+        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Caminho da conexão: iPhone, \(interfaceLabel), Internet")
+    }
+
+    private var pathArrow: some View {
+        Image(systemName: "arrow.right")
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(.textSecondary.opacity(0.48))
+            .frame(width: 15)
+    }
+
+    private func pathItem(icon: String, label: String, muted: Bool = false) -> some View {
+        VStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .frame(width: 30, height: 30)
+                .background(Color.surfacePage, in: Circle())
+            Text(label)
+                .font(.captionSmall)
+                .lineLimit(1)
+        }
+        .foregroundColor(muted ? .textSecondary : .textPrimary)
+        .frame(maxWidth: .infinity)
+    }
+}
 
 /// Caminho da Conexão — leitura visual simplificada de "onde provavelmente
 /// está o problema", entre o diagnóstico curto e as ações de navegação.
@@ -9,13 +76,14 @@ import NetworkInsights
 /// Ao tocar, navega diretamente para `ConnectionPathDetailView`.
 struct ConnectionPathView: View {
     let report: ConnectionPathReport
+    var onOpen: (() -> Void)? = nil
 
     private var visibleStages: [ConnectionPathStage] {
         report.stages.map { $0.stage }
     }
 
     var body: some View {
-        NavigationLink(destination: ConnectionPathDetailView(report: report)) {
+        Button(action: { onOpen?() }) {
             HStack(spacing: 0) {
                 ForEach(Array(visibleStages.enumerated()), id: \.element) { index, stage in
                     if let verdict = report.verdict(for: stage) {
@@ -34,6 +102,7 @@ struct ConnectionPathView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(onOpen == nil)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(ConnectionPathCopy.accessibilitySummary(for: report))
         .accessibilityHint("Toque para ver o caminho da conexão em detalhes")

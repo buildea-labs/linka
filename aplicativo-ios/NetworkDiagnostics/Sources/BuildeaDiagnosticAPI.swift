@@ -42,8 +42,6 @@ public struct BuildeaDiagnosticAPI: Sendable {
         encoder.outputFormatting = [.sortedKeys]
         let body = try encoder.encode(payload)
 
-        // O servidor V2 aceita tanto contexto completo quanto a medição pura;
-        // manter uma única rota evita que o app recaia no motor V1.
         let endpoint = configuration.v2RulesEndpoint
 
         let (data, status) = try await httpClient.postJSON(

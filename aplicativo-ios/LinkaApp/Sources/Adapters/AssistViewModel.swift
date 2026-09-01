@@ -22,6 +22,11 @@ final class AssistViewModel: ObservableObject {
 
     @Published private(set) var state: State = .idle
     private let assistProvider: any NetworkAssistProviding
+    private static var analysisCache: [UUID: DiagnosticData] = [:]
+
+    public static func clearCache() {
+        analysisCache.removeAll()
+    }
 
     init(assistProvider: any NetworkAssistProviding) {
         self.assistProvider = assistProvider
@@ -40,6 +45,12 @@ final class AssistViewModel: ObservableObject {
 
         guard let current = currentMeasurement else {
             state = .error("Nenhuma medição encontrada para diagnóstico.")
+            return
+        }
+
+        // Se já foi diagnosticado para esta mesma medição, recupera do cache imediatamente
+        if let cached = Self.analysisCache[current.id] {
+            state = .success(cached)
             return
         }
 
@@ -78,6 +89,7 @@ final class AssistViewModel: ObservableObject {
                         dimensions: response.dimensions ?? [],
                         fallbackText: nil
                     )
+                    Self.analysisCache[current.id] = data
                     state = .success(data)
                 } else {
                     let data = DiagnosticData(
@@ -88,6 +100,7 @@ final class AssistViewModel: ObservableObject {
                         dimensions: response.dimensions ?? [],
                         fallbackText: response.longText
                     )
+                    Self.analysisCache[current.id] = data
                     state = .success(data)
                 }
             } else {
