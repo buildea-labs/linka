@@ -44,7 +44,6 @@ struct MetricRing: View {
                     .foregroundColor(.textPrimary)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
-                    .tracking(-1)
                     
                     if let u = unit {
                         Text(u)

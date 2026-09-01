@@ -14,7 +14,6 @@ struct StatDisplay: View {
                 .font(.monoEyebrow)
                 .foregroundColor(.textSecondary)
                 .textCase(.uppercase)
-                .tracking(1.2)
             
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Group {

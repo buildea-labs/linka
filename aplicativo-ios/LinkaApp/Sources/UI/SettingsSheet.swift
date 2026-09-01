@@ -28,17 +28,17 @@ struct SettingsView: View {
         Form {
             Section("Linka Plus") {
                 Button(action: openSubscription) {
-                    settingsRow(title: "Linka Plus", value: subscriptionStatusText)
+                    settingsRow(title: "Linka Plus", value: subscriptionStatusText, systemImage: "sparkles")
                 }
             }
 
             #if os(iOS)
             Section("Rede e diagnóstico") {
                 Button(action: openNetworkIdentification) {
-                    settingsRow(title: "Identificação da rede Wi-Fi", value: WiFiNetworkPermission.statusText(enabled: networkIdentificationEnabled))
+                    settingsRow(title: "Identificação da rede Wi-Fi", value: WiFiNetworkPermission.statusText(enabled: networkIdentificationEnabled), systemImage: "wifi")
                 }
                 Button(action: openAdvancedWiFi) {
-                    settingsRow(title: "Diagnóstico Wi-Fi avançado", value: advancedWiFiStatusText)
+                    settingsRow(title: "Diagnóstico Wi-Fi avançado", value: advancedWiFiStatusText, systemImage: "waveform.path.ecg")
                 }
             }
             #endif
@@ -111,9 +111,10 @@ struct SettingsView: View {
         }
     }
 
-    private func settingsRow(title: String, value: String) -> some View {
+    private func settingsRow(title: String, value: String, systemImage: String) -> some View {
         HStack {
-            Text(title).foregroundColor(.primary)
+            Label(title, systemImage: systemImage)
+                .foregroundColor(.primary)
             Spacer()
             Text(value).foregroundColor(.secondary)
             Image(systemName: "chevron.right")
@@ -187,9 +188,7 @@ struct SubscriptionManagementSheet: View {
     @State private var isRestoring = false
     @State private var message: String?
     var body: some View {
-        VStack(spacing: 0) {
-            HStack { Button("Fechar") { dismiss() }; Spacer(); Text("Linka Plus").font(.headline); Spacer(); Color.clear.frame(width: 52, height: 1) }
-                .padding(.horizontal, 20).padding(.vertical, 12)
+        NavigationStack {
             List {
                 Section {
                     #if canImport(UIKit)
@@ -204,6 +203,7 @@ struct SubscriptionManagementSheet: View {
                 }
                 if let message { Section { Text(message).foregroundColor(.textSecondary) } }
             }
+            .linkaSheetToolbar(title: "Linka Plus") { dismiss() }
         }
     }
 

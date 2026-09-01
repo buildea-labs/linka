@@ -17,7 +17,7 @@ private enum HistoryFilter: String, CaseIterable {
     case mobile = "Móvel"
 }
 
-private enum HistorySort {
+private enum HistorySort: CaseIterable, Hashable {
     case recent
     case fastest
     case slowest
@@ -57,9 +57,9 @@ struct HistoryView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack(spacing: 10) {
+                List {
+                    Section {
+                        VStack(spacing: 12) {
                             Picker("Filtro", selection: $filter) {
                                 ForEach(HistoryFilter.allCases, id: \.self) { option in
                                     Text(option.rawValue).tag(option)
@@ -67,55 +67,50 @@ struct HistoryView: View {
                             }
                             .pickerStyle(.segmented)
 
-                            Button { cycleSort() } label: {
-                                HStack(spacing: 5) {
-                                    Image(systemName: "arrow.down.to.line.compact")
-                                    Text(sort.label)
-                                }
-                                .font(.captionSmallStrong)
-                                .foregroundColor(.textPrimary)
-                                .frame(minHeight: 36)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        .padding(.top, 16)
-                        .padding(.bottom, 16)
-
-                        if filteredMeasurements.isEmpty {
-                            VStack(spacing: 8) {
-                                Image(systemName: "clock")
-                                    .font(.system(size: 36))
-                                    .foregroundColor(.textSecondary.opacity(0.6))
-                                    .padding(.bottom, 4)
-                                Text("Nenhuma medição encontrada")
-                                    .font(.headline)
-                                    .foregroundColor(.textPrimary)
-                                Text("Faça uma medição para vê-la aqui.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.textSecondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 80)
-                        } else {
-                            VStack(spacing: 0) {
-                                ForEach(filteredMeasurements, id: \.id) { measurement in
+                            Menu {
+                                ForEach(HistorySort.allCases, id: \.self) { option in
                                     Button {
-                                        onSelectMeasurement?(measurement)
+                                        sort = option
                                     } label: {
-                                        PrototypeHistoryRow(measurement: measurement)
-                                    }
-                                    .buttonStyle(.plain)
-                                    if measurement.id != filteredMeasurements.last?.id {
-                                        Divider().padding(.leading, 16)
+                                        HStack {
+                                            Text(option.label)
+                                            if sort == option {
+                                                Image(systemName: "checkmark")
+                                            }
+                                        }
                                     }
                                 }
+                            } label: {
+                                Label(sort.label, systemImage: "arrow.up.arrow.down")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 18))
+                        }
+                        .padding(.vertical, 4)
+                    }
+
+                    if filteredMeasurements.isEmpty {
+                        Section {
+                            LinkaUnavailableState(
+                                title: "Nenhuma medição",
+                                message: "Faça uma medição para vê-la aqui.",
+                                systemImage: "clock"
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                    } else {
+                        Section("Medições") {
+                            ForEach(filteredMeasurements, id: \.id) { measurement in
+                                Button {
+                                    onSelectMeasurement?(measurement)
+                                } label: {
+                                    PrototypeHistoryRow(measurement: measurement)
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 28)
                 }
+                .scrollContentBackground(.hidden)
             }
         }
         .navigationTitle("Histórico")
@@ -152,14 +147,6 @@ struct HistoryView: View {
         case .recent: return scoped.sorted { $0.measuredAt > $1.measuredAt }
         case .fastest: return scoped.sorted { ($0.downloadMbps ?? 0) > ($1.downloadMbps ?? 0) }
         case .slowest: return scoped.sorted { ($0.downloadMbps ?? 0) < ($1.downloadMbps ?? 0) }
-        }
-    }
-
-    private func cycleSort() {
-        switch sort {
-        case .recent: sort = .fastest
-        case .fastest: sort = .slowest
-        case .slowest: sort = .recent
         }
     }
 

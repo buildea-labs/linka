@@ -30,7 +30,6 @@ struct ShareCardView: View {
             Text("LINKA SPEEDTEST")
                 .font(.monoEyebrow)
                 .foregroundColor(.textSecondary)
-                .tracking(1.5)
                 .padding(.top, 40)
 
             MetricRing(
@@ -45,7 +44,6 @@ struct ShareCardView: View {
             Text("DOWNLOAD")
                 .font(.monoEyebrow)
                 .foregroundColor(.textSecondary)
-                .tracking(1.0)
                 .padding(.top, 20)
                 .padding(.bottom, 10)
 

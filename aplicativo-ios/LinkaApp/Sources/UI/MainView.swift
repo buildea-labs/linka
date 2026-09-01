@@ -355,102 +355,109 @@ struct MainView: View {
 
     // 1. Início (Idle)
     private var idleView: some View {
-        VStack(spacing: 0) {
-            LiveConnectionPathView(
-                kind: viewModel.liveConnectionKind,
-                label: viewModel.liveNetworkLabel
-            )
-            .padding(.top, 100)
-            .padding(.horizontal, 24)
+        GeometryReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    LiveConnectionPathView(
+                        kind: viewModel.liveConnectionKind,
+                        label: viewModel.liveNetworkLabel
+                    )
+                    .padding(.top, 100)
+                    .padding(.horizontal, 24)
 
-            Spacer(minLength: 34)
+                    Spacer(minLength: 34)
 
-            VStack(spacing: 10) {
-                Image(systemName: liveConnectionIcon)
-                    .font(.system(size: 34, weight: .medium))
-                    .foregroundColor(.brandSurface)
-                    .frame(width: 82, height: 82)
-                    .background(Color.surfaceCard, in: Circle())
+                    VStack(spacing: 10) {
+                        Image(systemName: liveConnectionIcon)
+                            .font(.system(size: 34, weight: .medium))
+                            .foregroundColor(.brandSurface)
+                            .frame(width: 82, height: 82)
+                            .background(Color.surfaceCard, in: Circle())
 
-                Text(liveConnectionType)
-                    .font(.bodyRegularStrong)
-                    .foregroundColor(.textPrimary)
-
-                Text(liveConnectionName)
-                    .font(.captionSmall)
-                    .foregroundColor(.textSecondary)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 38)
-
-            VStack(spacing: 12) {
-                // Botão Primário Analisar Rede
-                Button(action: {
-                    startSpeedTest()
-                }) {
-                    Text("Analisar rede")
-                        .font(.buttonLabel)
-                        .foregroundColor(.brandOnSurface)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(Color.brandSurface, in: RoundedRectangle(cornerRadius: 14))
-                }
-
-                // Card do Último Teste
-                if let latest = viewModel.latestFinishedMeasurement {
-                    Button {
-                        navPath.append(AppRoute.history)
-                    } label: {
-                        HStack(spacing: 10) {
-                            Text("Último teste")
-                                .font(.bodySmallStrong)
-                                .foregroundColor(.textPrimary)
-                            Spacer()
-                            Text("\(formatted(latest.downloadMbps ?? 0)) Mbps · \(formatRelativeTime(latest.measuredAt))")
-                                .font(.monoCaption)
-                                .foregroundColor(.textSecondary)
-                                .lineLimit(1)
-                            Image(systemName: "chevron.right")
-                                .font(.captionSmall)
-                                .foregroundColor(.textSecondary)
-                        }
-                        .padding(.horizontal, 16)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 14))
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                // Card Assist
-                Button {
-                    if isPlusActive {
-                        showAssist = true
-                    } else {
-                        purchaseEntryPoint = .assist
-                        showPurchase = true
-                    }
-                } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Assist ✦")
-                            .font(.monoCaption)
-                            .textCase(.uppercase)
-                            .foregroundColor(.brandAccentWarm)
-                        Text("Problemas na sua conexão? Entenda o que está acontecendo.")
-                            .font(.captionSmall)
+                        Text(liveConnectionType)
+                            .font(.bodyRegularStrong)
                             .foregroundColor(.textPrimary)
-                            .multilineTextAlignment(.leading)
+
+                        Text(liveConnectionName)
+                            .font(.captionSmall)
+                            .foregroundColor(.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 14))
+
+                    Spacer(minLength: 38)
+
+                    VStack(spacing: 12) {
+                        // Botão Primário Analisar Rede
+                        Button(action: {
+                            startSpeedTest()
+                        }) {
+                            Text("Analisar rede")
+                                .multilineTextAlignment(.center)
+                        }
+                        .buttonStyle(.linkaPrimary)
+
+                        // Card do Último Teste
+                        if let latest = viewModel.latestFinishedMeasurement {
+                            Button {
+                                navPath.append(AppRoute.history)
+                            } label: {
+                                HStack(alignment: .center, spacing: 10) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Último teste")
+                                            .font(.bodySmallStrong)
+                                            .foregroundColor(.textPrimary)
+                                        Text("\(formatted(latest.downloadMbps ?? 0)) Mbps · \(formatRelativeTime(latest.measuredAt))")
+                                            .font(.monoCaption)
+                                            .foregroundColor(.textSecondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.captionSmall)
+                                        .foregroundColor(.textSecondary)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: 52)
+                                .linkaCard()
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        // Card Assist
+                        Button {
+                            if isPlusActive {
+                                showAssist = true
+                            } else {
+                                purchaseEntryPoint = .assist
+                                showPurchase = true
+                            }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Assist ✦")
+                                    .font(.monoCaption)
+                                    .textCase(.uppercase)
+                                    .foregroundColor(.brandAccentWarm)
+                                Text("Problemas na sua conexão? Entenda o que está acontecendo.")
+                                    .font(.captionSmall)
+                                    .foregroundColor(.textPrimary)
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .linkaCard()
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 28)
                 }
-                .buttonStyle(.plain)
+                .frame(minHeight: proxy.size.height)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 28)
         }
     }
 
@@ -509,7 +516,7 @@ struct MainView: View {
             VStack(spacing: 0) {
                 // Título: Velocidade (abaixo dos botões superiores da topbar)
                 Text("Velocidade")
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.largeTitle.weight(.bold))
                     .foregroundColor(.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24)
@@ -518,11 +525,10 @@ struct MainView: View {
                 // 1. Download Hero em número inteiro ocupando toda a largura
                 VStack(spacing: 2) {
                     Text("\(Int(round(viewModel.downloadSpeed)))")
-                        .font(.system(size: 92, weight: .bold, design: .rounded))
+                        .font(.heroValueHuge)
                         .foregroundColor(.textPrimary)
                         .minimumScaleFactor(0.4)
                         .lineLimit(1)
-                        .tracking(-3)
                         .frame(maxWidth: .infinity)
 
                     Text("Mbps download")
@@ -616,13 +622,8 @@ struct MainView: View {
                     startSpeedTest()
                 }) {
                     Text("Testar novamente")
-                        .font(.buttonLabel)
-                        .foregroundColor(Color.surfacePage)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.textPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
+                .buttonStyle(.linkaPrimary)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
             }
@@ -671,22 +672,15 @@ struct MainView: View {
                 startSpeedTest()
             }) {
                 Text("Tentar novamente")
-                    .font(.buttonLabel)
-                    .foregroundColor(Color.surfacePage)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.textPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .buttonStyle(.linkaPrimary)
             .padding(.horizontal, 24)
             .padding(.top, 4)
 
             Button("Verificar conexão") {
                 showConnectivityTriage = true
             }
-            .font(.bodySmallStrong)
-            .foregroundColor(.textPrimary)
-            .frame(minHeight: 44)
+            .buttonStyle(.linkaSecondary)
             .accessibilityHint("Mostra os fatos de conexão observados neste aparelho")
 
             Spacer()
@@ -710,13 +704,8 @@ struct MainView: View {
             .padding(.horizontal, 32)
             Button { startSpeedTest() } label: {
                 Text("Testar conexão")
-                    .font(.buttonLabel)
-                    .foregroundColor(Color.surfacePage)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.textPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .buttonStyle(.linkaPrimary)
             .padding(.horizontal, 24)
             Spacer()
         }
@@ -871,18 +860,6 @@ struct MainView: View {
     }
 }
 
-private struct PlusBadge: View {
-    var body: some View {
-        Text("Plus")
-            .font(.captionSmallStrong)
-            .foregroundColor(.brandAccentWarm)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(Color.brandAccentWarm.opacity(0.12))
-            .clipShape(Capsule())
-    }
-}
-
 private struct ResultUsageCasesView: View {
     let videoCall: (label: String, color: Color)
     let gaming: (label: String, color: Color)
@@ -911,7 +888,7 @@ private struct ResultUsageCasesView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 16)
-        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 18))
+        .linkaCard(cornerRadius: LinkaRadius.lg)
     }
 
     private func usageNode(title: String, icon: String, result: String, color: Color) -> some View {
@@ -930,12 +907,7 @@ private struct ResultUsageCasesView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(minHeight: 28)
 
-            Text(result)
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .foregroundColor(color)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(color.opacity(0.12), in: Capsule())
+            LinkaStatusBadge(result, color: color)
         }
         .frame(maxWidth: .infinity)
     }

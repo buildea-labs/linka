@@ -97,20 +97,14 @@ struct PurchaseSheet: View {
 
                     Button(action: purchase) {
                         if isPurchasing {
-                            ProgressView().tint(Color.surfacePage)
+                            ProgressView().tint(Color.brandOnSurface)
                         } else if let product = entitlements.product {
                             Text("Assinar por \(product.displayPrice)/ano")
-                                .font(.buttonLabel)
                         } else {
                             Text("Carregando preço…")
-                                .font(.buttonLabel)
                         }
                     }
-                    .foregroundColor(Color.surfacePage)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.textPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .buttonStyle(.linkaPrimary)
                     .disabled(isPurchasing || isRestoring || entitlements.product == nil)
                     .padding(.horizontal, 24)
 
@@ -121,8 +115,7 @@ struct PurchaseSheet: View {
                             Text("Restaurar compra")
                         }
                     }
-                    .font(.bodySmallMedium)
-                    .foregroundColor(.textSecondary)
+                    .buttonStyle(.linkaSecondary)
                     .disabled(isPurchasing || isRestoring)
                     .padding(.top, 14)
 
