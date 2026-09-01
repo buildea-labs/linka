@@ -114,7 +114,11 @@ final class AssistViewModel: ObservableObject {
             case NetworkAssistError.notEntitled:
                 errorText = "O Assist faz parte do Linka Plus. Assine para conversar sobre seus testes."
             default:
+                #if DEBUG
+                errorText = "Erro (\(error)): \(error.localizedDescription)"
+                #else
                 errorText = "Não foi possível consultar o Assist agora. Tente novamente em instantes."
+                #endif
             }
             state = .error(errorText)
         }
