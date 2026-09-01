@@ -35,6 +35,13 @@
 	<string>https://linka-assist-relay.buildealabs.workers.dev/v2/assist</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>O Linka usa a localização apenas porque o iPhone exige essa autorização para informar o nome da rede Wi-Fi atual. Sua localização não é salva para identificar a rede.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>O Linka consulta o roteador da rede local para identificar o equipamento e diagnosticar a qualidade da conexão Wi-Fi.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

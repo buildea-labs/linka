@@ -141,6 +141,29 @@ struct MeasurementDetailView: View {
             // SEÇÃO WI-FI
             if let measurement, measurement.connectionKind == .wifi {
                 Section("Wi-Fi") {
+                    if let gatewayIP = measurement.wifiContext?.gatewayIP {
+                        let vendor = measurement.wifiContext?.gatewayVendor ?? "Roteador"
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(vendor)
+                                    .font(.bodyRegular)
+                                    .foregroundColor(.textPrimary)
+                                Text(gatewayIP)
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                            }
+                            Spacer()
+                            if let adminURLString = measurement.wifiContext?.gatewayAdminURL,
+                               let url = URL(string: adminURLString) {
+                                Button("Abrir configurações") {
+                                    openURL(url)
+                                }
+                                .font(.bodySmallStrong)
+                                .foregroundColor(.brandAccentWarm)
+                            }
+                        }
+                    }
+
                     if canUseAdvancedWiFiDiagnostics {
                         if let advanced = measurement.advancedWiFiDiagnostics {
                             if let standard = advanced.wifiStandard {

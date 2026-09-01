@@ -27,6 +27,7 @@ public struct PlatformHints: Equatable, Sendable {
         public var band: String?
         public var linkSpeedMbps: Double?
         public var securityType: WiFiSecurityType?
+        public var gateway: GatewayInfo?
 
         public init(
             ssid: String? = nil,
@@ -34,7 +35,8 @@ public struct PlatformHints: Equatable, Sendable {
             rssiDbm: Double? = nil,
             band: String? = nil,
             linkSpeedMbps: Double? = nil,
-            securityType: WiFiSecurityType? = nil
+            securityType: WiFiSecurityType? = nil,
+            gateway: GatewayInfo? = nil
         ) {
             self.ssid = ssid
             self.bssid = bssid
@@ -42,6 +44,7 @@ public struct PlatformHints: Equatable, Sendable {
             self.band = band
             self.linkSpeedMbps = linkSpeedMbps
             self.securityType = securityType
+            self.gateway = gateway
         }
     }
 

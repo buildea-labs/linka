@@ -93,7 +93,7 @@ final class NDSContractTests: XCTestCase {
 
         XCTAssertEqual(response.explanation?.titulo, "Ping alto identificado")
         XCTAssertEqual(response.explanation?.descricao, "Seu ping está bem acima do esperado para jogos.")
-        XCTAssertEqual(response.explanation?.dados, "Ping médio de 180ms nos últimos testes.")
+        XCTAssertEqual(response.explanation?.dados, ["Ping médio de 180ms nos últimos testes."])
         XCTAssertEqual(response.explanation?.acaoUsuario, "Conecte o console por cabo em vez de Wi-Fi.")
         XCTAssertNil(response.explanation?.semCausaIdentificada)
         XCTAssertEqual(response.effectiveResults?.first?.result?.score, 40)

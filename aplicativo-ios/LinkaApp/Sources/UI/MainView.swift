@@ -164,7 +164,9 @@ struct MainView: View {
                     }
                 }
             }
+            #if os(iOS)
             .navigationBarHidden(true)
+            #endif
             .navigationDestination(for: AppRoute.self) { route in
                 switch route {
                 case .settings:

@@ -7,6 +7,7 @@ import LinkaModules
 
 struct AssistView: View {
     @Environment(\.dismiss) var dismiss
+    @Environment(\.openURL) private var openURL
 
     @StateObject private var viewModel: AssistViewModel
     @StateObject private var stabilityViewModel: NetworkStabilityPatternsViewModel
@@ -237,6 +238,27 @@ struct AssistView: View {
                                                 }
                                             }
                                             .padding(.top, 4)
+                                        }
+
+                                        if let actionURL = rec.actionURL ?? currentMeasurement?.wifiContext?.gatewayAdminURL.flatMap(URL.init),
+                                           (rec.actionLabel != nil || rec.title.lowercased().contains("roteador") || rec.title.lowercased().contains("wi-fi") || rec.title.lowercased().contains("canal")) {
+                                            let label = rec.actionLabel ?? "Abrir configurações do roteador"
+                                            Button(action: {
+                                                openURL(actionURL)
+                                            }) {
+                                                HStack(spacing: 6) {
+                                                    Image(systemName: "slider.horizontal.3")
+                                                        .font(.system(size: 13, weight: .semibold))
+                                                    Text(label)
+                                                        .font(.bodySmallStrong)
+                                                }
+                                                .foregroundColor(.brandAccentWarm)
+                                                .padding(.vertical, 8)
+                                                .padding(.horizontal, 12)
+                                                .background(Color.brandAccentWarm.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                                            }
+                                            .buttonStyle(.plain)
+                                            .padding(.top, 6)
                                         }
                                     }
                                 }

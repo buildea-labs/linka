@@ -31,8 +31,20 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
     }
 
     private func currentWifi() async -> PlatformHints.Wifi? {
+        var gatewayInfo: GatewayInfo? = nil
+        let discovery = LocalGatewayDiscovery()
+        if let iface = discovery.discoverPrimaryInterface(), let gw = iface.gatewayCandidate {
+            let prober = GatewayProber()
+            gatewayInfo = await prober.probe(gatewayIP: gw)
+        }
+
         #if canImport(CoreWLAN) && os(macOS)
-        guard let iface = CWWiFiClient.shared().interface() else { return nil }
+        guard let iface = CWWiFiClient.shared().interface() else {
+            if let gatewayInfo {
+                return PlatformHints.Wifi(gateway: gatewayInfo)
+            }
+            return nil
+        }
         let ssid = iface.ssid()
         let bssid = iface.bssid()
         let rssi: Double? = {
@@ -55,21 +67,30 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
             rssiDbm: rssi,
             band: band,
             linkSpeedMbps: linkSpeed,
-            securityType: nil
+            securityType: nil,
+            gateway: gatewayInfo
         )
         let anySet = wifi.ssid != nil || wifi.bssid != nil || wifi.rssiDbm != nil
-            || wifi.band != nil || wifi.linkSpeedMbps != nil
+            || wifi.band != nil || wifi.linkSpeedMbps != nil || wifi.gateway != nil
         return anySet ? wifi : nil
         #elseif canImport(NetworkExtension) && os(iOS)
-        guard #available(iOS 14.0, *), let network = await NEHotspotNetwork.fetchCurrent() else {
-            return nil
+        if #available(iOS 14.0, *), let network = await NEHotspotNetwork.fetchCurrent() {
+            return PlatformHints.Wifi(
+                ssid: network.ssid.nilIfEmpty,
+                bssid: network.bssid.nilIfEmpty,
+                securityType: Self.mapSecurityType(network.securityType),
+                gateway: gatewayInfo
+            )
+        } else if let gatewayInfo {
+            return PlatformHints.Wifi(
+                gateway: gatewayInfo
+            )
         }
-        return PlatformHints.Wifi(
-            ssid: network.ssid.nilIfEmpty,
-            bssid: network.bssid.nilIfEmpty,
-            securityType: Self.mapSecurityType(network.securityType)
-        )
+        return nil
         #else
+        if let gatewayInfo {
+            return PlatformHints.Wifi(gateway: gatewayInfo)
+        }
         return nil
         #endif
     }

@@ -29,6 +29,9 @@ targets:
         GADApplicationIdentifier: "ca-app-pub-3940256099942544~1458002511"
         NDAssistRelayEndpoint: "https://linka-assist-relay.buildealabs.workers.dev/v2/assist"
         NSLocationWhenInUseUsageDescription: "O Linka usa a localização apenas porque o iPhone exige essa autorização para informar o nome da rede Wi-Fi atual. Sua localização não é salva para identificar a rede."
+        NSLocalNetworkUsageDescription: "O Linka consulta o roteador da rede local para identificar o equipamento e diagnosticar a qualidade da conexão Wi-Fi."
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait

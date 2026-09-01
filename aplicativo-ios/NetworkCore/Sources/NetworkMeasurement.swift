@@ -115,6 +115,9 @@ public struct WiFiNetworkContext: Codable, Equatable, Hashable, Sendable {
     public let bandGHz: Double?
     public let rssiDbm: Double?
     public let linkSpeedMbps: Double?
+    public let gatewayIP: String?
+    public let gatewayVendor: String?
+    public let gatewayAdminURL: String?
 
     public init(
         ssid: String? = nil,
@@ -122,7 +125,10 @@ public struct WiFiNetworkContext: Codable, Equatable, Hashable, Sendable {
         securityType: WiFiSecurityType? = nil,
         bandGHz: Double? = nil,
         rssiDbm: Double? = nil,
-        linkSpeedMbps: Double? = nil
+        linkSpeedMbps: Double? = nil,
+        gatewayIP: String? = nil,
+        gatewayVendor: String? = nil,
+        gatewayAdminURL: String? = nil
     ) {
         self.ssid = ssid
         self.accessPointIdentifier = accessPointIdentifier
@@ -130,6 +136,9 @@ public struct WiFiNetworkContext: Codable, Equatable, Hashable, Sendable {
         self.bandGHz = bandGHz
         self.rssiDbm = rssiDbm
         self.linkSpeedMbps = linkSpeedMbps
+        self.gatewayIP = gatewayIP
+        self.gatewayVendor = gatewayVendor
+        self.gatewayAdminURL = gatewayAdminURL
     }
 
     /// Só associa uma identidade quando o teste começou e terminou no mesmo
@@ -157,7 +166,10 @@ public struct WiFiNetworkContext: Codable, Equatable, Hashable, Sendable {
             securityType: start.securityType == end.securityType ? start.securityType : nil,
             bandGHz: start.bandGHz == end.bandGHz ? start.bandGHz : nil,
             rssiDbm: end.rssiDbm,
-            linkSpeedMbps: end.linkSpeedMbps
+            linkSpeedMbps: end.linkSpeedMbps,
+            gatewayIP: end.gatewayIP ?? start.gatewayIP,
+            gatewayVendor: end.gatewayVendor ?? start.gatewayVendor,
+            gatewayAdminURL: end.gatewayAdminURL ?? start.gatewayAdminURL
         )
     }
 }
