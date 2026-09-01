@@ -36,7 +36,7 @@ struct MainView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @AppStorage("linka.advanced-wifi.configured.v1") private var advancedWiFiConfigured = false
+    @AppStorage(LinkaWiFiPreferences.advancedConfiguredKey) private var advancedWiFiConfigured = false
     @AppStorage(LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) private var advancedWiFiEnabled = true
 
     private var currentMeasurement: NetworkMeasurement? {
@@ -851,10 +851,9 @@ struct MainView: View {
     }
 
     private func triggerWiFiAdvancedShortcut() {
-        guard let shortcutURL = URL(string: "shortcuts://run-shortcut?name=Linka%20Wi-Fi%20Advanced") else { return }
         #if canImport(UIKit)
-        if UIApplication.shared.canOpenURL(shortcutURL) {
-            UIApplication.shared.open(shortcutURL, options: [:], completionHandler: nil)
+        if UIApplication.shared.canOpenURL(LinkaAdvancedWiFiIntegration.runShortcutURL) {
+            UIApplication.shared.open(LinkaAdvancedWiFiIntegration.runShortcutURL, options: [:], completionHandler: nil)
         }
         #endif
     }

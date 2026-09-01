@@ -193,7 +193,7 @@ struct MeasurementDetailView: View {
                                 Spacer()
                                 #if os(iOS)
                                 Button("Obter detalhes") {
-                                    if let url = URL(string: "shortcuts://run-shortcut?name=Linka%20Wi-Fi%20Advanced") { openURL(url) }
+                                    openURL(LinkaAdvancedWiFiIntegration.runShortcutURL)
                                 }
                                 .font(.bodySmallStrong)
                                 .foregroundColor(.brandAccentWarm)

@@ -172,7 +172,7 @@ enum AdvancedWiFiDiagnosticsInbox {
             throw ImportError.invalidPayload
         }
         defaults.set(encoded, forKey: pendingKey)
-        defaults.set(true, forKey: "linka.advanced-wifi.configured.v1")
+        defaults.set(true, forKey: LinkaWiFiPreferences.advancedConfiguredKey)
         handled.insert(identifier)
         defaults.set(Array(handled.suffix(32)), forKey: handledIdentifiersKey)
         return diagnostics

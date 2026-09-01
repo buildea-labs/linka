@@ -21,7 +21,7 @@ struct SettingsView: View {
     @State private var showAdvancedActions = false
     @AppStorage("appAppearance") private var appAppearance = "system"
     @AppStorage(LinkaWiFiPreferences.identificationEnabledKey) private var networkIdentificationEnabled = true
-    @AppStorage("linka.advanced-wifi.configured.v1") private var advancedWiFiConfigured = false
+    @AppStorage(LinkaWiFiPreferences.advancedConfiguredKey) private var advancedWiFiConfigured = false
     @AppStorage(LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) private var advancedWiFiEnabled = true
 
     var body: some View {
@@ -52,7 +52,7 @@ struct SettingsView: View {
             }
 
             Section("Sobre o Linka") {
-                Link(destination: LinkaExternalLinks.website) {
+                Link(destination: LinkaExternalLinks.about) {
                     Label("Sobre o Linka", systemImage: "info.circle")
                 }
                 Link(destination: LinkaExternalLinks.howWeMeasure) {
@@ -64,10 +64,8 @@ struct SettingsView: View {
                 Link(destination: LinkaExternalLinks.terms) {
                     Label("Termos de Uso", systemImage: "doc.text")
                 }
-                if let support = LinkaExternalLinks.support {
-                    Link(destination: support) {
-                        Label("Suporte", systemImage: "questionmark.circle")
-                    }
+                Link(destination: LinkaExternalLinks.support) {
+                    Label("Suporte", systemImage: "questionmark.circle")
                 }
             }
 
@@ -92,22 +90,53 @@ struct SettingsView: View {
         #endif
         .sheet(isPresented: $showPurchase) { PurchaseSheet(entryPoint: purchaseEntryPoint) }
         .sheet(isPresented: $showSubscriptionManagement) { SubscriptionManagementSheet() }
+        .task {
+            await entitlements.refreshSnapshot()
+            await entitlements.loadProduct()
+        }
         .confirmationDialog("Identificação da rede Wi-Fi", isPresented: $showWiFiExplanation, titleVisibility: .visible) {
-            Button("Ativar identificação") {
-                networkIdentificationEnabled = true
-                WiFiNetworkPermission.requestIdentification()
+            switch WiFiNetworkPermission.state(enabled: networkIdentificationEnabled) {
+            case .permissionDenied:
+                Button("Abrir Ajustes do iPhone") {
+                    networkIdentificationEnabled = true
+                    WiFiNetworkPermission.openSystemSettings()
+                }
+            case .active:
+                Button("Desativar identificação", role: .destructive) {
+                    networkIdentificationEnabled = false
+                }
+            case .disabledByUser, .permissionRequired:
+                Button("Ativar identificação") {
+                    networkIdentificationEnabled = true
+                    WiFiNetworkPermission.requestIdentification()
+                }
+            case .unavailable:
+                EmptyView()
             }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text("Mostra o nome da rede usada nas medições e ajuda a identificar padrões no histórico.")
+            Text(networkIdentificationMessage)
         }
         .confirmationDialog("Diagnóstico Wi-Fi avançado", isPresented: $showAdvancedActions, titleVisibility: .visible) {
-            Button("Executar diagnóstico Wi-Fi") { openShortcuts() }
-            Button("Atualizar atalho") { openShortcuts() }
-            Button("Desativar integração", role: .destructive) { advancedWiFiEnabled = false }
+            switch advancedWiFiState {
+            case .requiresPlus:
+                Button("Conhecer Linka Plus") {
+                    purchaseEntryPoint = .advancedWiFi
+                    showPurchase = true
+                }
+            case .needsConfiguration:
+                Button("Configurar no Atalhos") { openShortcuts() }
+            case .active:
+                Button("Executar diagnóstico Wi-Fi") { runAdvancedWiFiShortcut() }
+                Button("Atualizar atalho") { openShortcuts() }
+                Button("Desativar integração", role: .destructive) { advancedWiFiEnabled = false }
+            case .disabled:
+                Button("Ativar integração") { advancedWiFiEnabled = true }
+                Button("Atualizar atalho") { openShortcuts() }
+            }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text("O Atalhos fornece dados extras quando você executa a integração.")
+            Text(advancedWiFiMessage)
         }
     }
 
@@ -116,7 +145,10 @@ struct SettingsView: View {
             Label(title, systemImage: systemImage)
                 .foregroundColor(.primary)
             Spacer()
-            Text(value).foregroundColor(.secondary)
+            Text(value)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.trailing)
+                .lineLimit(2)
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
                 .foregroundColor(.textSecondary.opacity(0.6))
@@ -124,22 +156,56 @@ struct SettingsView: View {
     }
 
     private var appVersion: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        return "\(version) (build \(build))"
+        LinkaAppVersion.displayString()
     }
 
     private var subscriptionStatusText: String {
+        if entitlements.isRefreshingSnapshot { return "Verificando" }
         switch entitlements.snapshot.plan {
-        case .free: "Conhecer o Linka Plus"
-        case .plus: entitlements.snapshot.status == .active ? "Ativo" : "Assinatura inativa"
+        case .free:
+            return "Conhecer o Linka Plus"
+        case .plus:
+            return entitlements.snapshot.status == .active ? "Ativo" : "Assinatura inativa"
         }
     }
 
-    private var advancedWiFiStatusText: String {
+    private var advancedWiFiState: LinkaAdvancedWiFiSettingsState {
         let decision = LinkaEntitlementPolicy.decision(for: .advancedWiFiDiagnostics, snapshot: entitlements.snapshot)
-        guard decision.isGranted else { return "Linka Plus" }
-        return advancedWiFiConfigured && advancedWiFiEnabled ? "Ativo" : "Configurar"
+        return .state(
+            hasEntitlement: decision.isGranted,
+            configured: advancedWiFiConfigured,
+            enabled: advancedWiFiEnabled
+        )
+    }
+
+    private var advancedWiFiStatusText: String {
+        advancedWiFiState.statusText
+    }
+
+    private var networkIdentificationMessage: String {
+        switch WiFiNetworkPermission.state(enabled: networkIdentificationEnabled) {
+        case .active:
+            return "O Linka pode mostrar o nome da rede usada nas medições. Você pode desativar isso aqui."
+        case .disabledByUser, .permissionRequired:
+            return "O Linka usa essa permissão apenas para mostrar o nome da rede Wi-Fi nas medições e no histórico."
+        case .permissionDenied:
+            return "A permissão foi negada no iPhone. Para identificar a rede, abra Ajustes e permita localização para o Linka."
+        case .unavailable:
+            return "A identificação da rede Wi-Fi não está disponível nesta plataforma."
+        }
+    }
+
+    private var advancedWiFiMessage: String {
+        switch advancedWiFiState {
+        case .requiresPlus:
+            return "O diagnóstico Wi-Fi avançado faz parte do Linka Plus."
+        case .needsConfiguration:
+            return "Configure o atalho oficial para importar dados extras quando você executar uma medição."
+        case .active:
+            return "O Atalhos fornece dados extras quando você executa a integração."
+        case .disabled:
+            return "A integração está configurada, mas não roda antes das medições."
+        }
     }
 
     private func openSubscription() {
@@ -150,14 +216,11 @@ struct SettingsView: View {
     }
 
     private func openNetworkIdentification() {
-        if !networkIdentificationEnabled {
+        switch WiFiNetworkPermission.state(enabled: networkIdentificationEnabled) {
+        case .active, .disabledByUser, .permissionRequired, .permissionDenied:
             showWiFiExplanation = true
-        } else if WiFiNetworkPermission.canOpenSystemSettings {
-            WiFiNetworkPermission.openSystemSettings()
-        } else if WiFiNetworkPermission.isAuthorized {
-            networkIdentificationEnabled = false
-        } else {
-            WiFiNetworkPermission.requestIdentification()
+        case .unavailable:
+            break
         }
     }
 
@@ -168,6 +231,8 @@ struct SettingsView: View {
         }
         if advancedWiFiConfigured && advancedWiFiEnabled {
             showAdvancedActions = true
+        } else if advancedWiFiConfigured {
+            showAdvancedActions = true
         } else {
             advancedWiFiEnabled = true
             openShortcuts()
@@ -175,8 +240,11 @@ struct SettingsView: View {
     }
 
     private func openShortcuts() {
-        guard let url = URL(string: "shortcuts://") else { return }
-        openURL(url)
+        openURL(LinkaAdvancedWiFiIntegration.shortcutsAppURL)
+    }
+
+    private func runAdvancedWiFiShortcut() {
+        openURL(LinkaAdvancedWiFiIntegration.runShortcutURL)
     }
 }
 

@@ -1,8 +1,5 @@
 import SwiftUI
 import AppIntents
-#if canImport(UIKit)
-import GoogleMobileAds
-#endif
 import LinkaEntitlements
 import LinkaEngine
 import MeasurementHistory
@@ -61,17 +58,11 @@ struct LinkaApp: App {
             }
             .task {
                 await entitlements.refreshSnapshot()
-                #if DEBUG
-                #endif
             }
         }
     }
 
     private var preferredColorScheme: ColorScheme? {
-        switch appAppearance {
-        case "light": .light
-        case "dark": .dark
-        default: nil
-        }
+        LinkaAppearancePreference(rawValue: appAppearance)?.colorScheme
     }
 }
