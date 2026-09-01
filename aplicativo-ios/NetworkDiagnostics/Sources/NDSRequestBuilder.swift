@@ -29,31 +29,51 @@ public struct NDSRequestBuilder: Sendable {
             request_id: UUID().uuidString,
             sessionId: current.id.uuidString,
             platform: platformIdentifier,
-            locale: Locale.current.language.languageCode?.identifier ?? "en",
-            app: NDSRequest.AppInfo(id: "linka", version: appVersion),
+            locale: Locale.current.language.languageCode?.identifier ?? "pt",
+            app: NDSRequest.AppInfo(id: "linka", version: appVersion ?? "1.0.0"),
             capabilities: capabilities,
             requestedOutputs: requestAI ? ["scoring", "ai"] : ["scoring"],
             context: diagnosticContext,
             connection: mapConnection(current.connectionKind, hasInternet: hasInternet),
             wifi: mapWifi(platformHints.wifi, advanced: current.advancedWiFiDiagnostics, kind: current.connectionKind, band: bandStr),
-            // `speed: {}` (objeto presente, campos vazios) é rejeitado pelo
-            // relay do NDS com RELAY_INVALID_REQUEST — confirmado testando
-            // o payload real contra o serviço em produção (issue #129).
-            // Um teste que aborta antes do download/upload (outcome
-            // .partial) chega aqui com as duas velocidades nil; omitir a
-            // chave inteira (em vez de mandar o objeto vazio) é o mesmo
-            // "dado ausente permanece ausente" já aplicado a `wifi` e
-            // `connection` acima, e é o único formato que o relay aceita.
-            speed: (current.downloadMbps != nil || current.uploadMbps != nil)
-                ? NDSRequest.Speed(downloadMbps: current.downloadMbps, uploadMbps: current.uploadMbps)
-                : nil,
-            quality: NDSRequest.Quality(
+            speed: mapSpeed(downloadMbps: current.downloadMbps, uploadMbps: current.uploadMbps),
+            quality: mapQuality(
                 latencyMs: current.latencyMs,
                 loadedLatencyMs: current.loadedLatencyMs,
                 jitterMs: current.jitterMs,
                 packetLossPercent: current.packetLossPercent
             ),
             historical: historical
+        )
+    }
+
+    private func mapSpeed(downloadMbps: Double?, uploadMbps: Double?) -> NDSRequest.Speed? {
+        let validDownload = downloadMbps.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+        let validUpload = uploadMbps.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+
+        guard validDownload != nil || validUpload != nil else { return nil }
+        return NDSRequest.Speed(downloadMbps: validDownload, uploadMbps: validUpload)
+    }
+
+    private func mapQuality(
+        latencyMs: Double?,
+        loadedLatencyMs: Double?,
+        jitterMs: Double?,
+        packetLossPercent: Double?
+    ) -> NDSRequest.Quality? {
+        let validLatency = latencyMs.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+        let validLoaded = loadedLatencyMs.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+        let validJitter = jitterMs.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+        let validLoss = packetLossPercent.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+
+        guard validLatency != nil || validLoaded != nil || validJitter != nil || validLoss != nil else {
+            return nil
+        }
+        return NDSRequest.Quality(
+            latencyMs: validLatency,
+            loadedLatencyMs: validLoaded,
+            jitterMs: validJitter,
+            packetLossPercent: validLoss
         )
     }
 
@@ -71,9 +91,9 @@ public struct NDSRequestBuilder: Sendable {
 
     private func mapWifi(_ hint: PlatformHints.Wifi?, advanced: AdvancedWiFiDiagnostics?, kind: NetworkConnectionKind?, band: String?) -> NDSRequest.Wifi? {
         guard kind == .wifi else { return nil }
-        guard hint != nil || advanced != nil else { return nil }
         let rssi = advanced?.rssiDbm ?? hint?.rssiDbm
         let linkSpeed = advanced?.txRateMbps ?? advanced?.rxRateMbps ?? hint?.linkSpeedMbps
+        guard rssi != nil || linkSpeed != nil || band != nil else { return nil }
         return NDSRequest.Wifi(
             rssiDbm: rssi,
             linkSpeedMbps: linkSpeed,
