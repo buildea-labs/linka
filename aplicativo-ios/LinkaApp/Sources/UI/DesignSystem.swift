@@ -141,3 +141,178 @@ public struct LinkaMotion {
     public static let fade = Animation.timingCurve(0.4, 0, 0.2, 1, duration: 0.25)
     public static let pulse = Animation.spring(response: 0.3, dampingFraction: 0.5)
 }
+
+public enum LinkaSpacing {
+    public static let xs: CGFloat = 8
+    public static let sm: CGFloat = 12
+    public static let md: CGFloat = 20
+    public static let lg: CGFloat = 24
+    public static let xl: CGFloat = 32
+}
+
+public enum LinkaRadius {
+    public static let sm: CGFloat = 10
+    public static let md: CGFloat = 14
+    public static let lg: CGFloat = 18
+}
+
+public struct LinkaPrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.buttonLabel)
+            .foregroundColor(.brandOnSurface)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 52)
+            .padding(.vertical, LinkaSpacing.sm)
+            .padding(.horizontal, LinkaSpacing.md)
+            .background(Color.brandSurface.opacity(isEnabled ? 1 : 0.42), in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
+            .opacity(configuration.isPressed ? 0.82 : 1)
+    }
+}
+
+public struct LinkaSecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.bodySmallStrong)
+            .foregroundColor(.textPrimary.opacity(isEnabled ? 1 : 0.45))
+            .frame(minHeight: 44)
+            .opacity(configuration.isPressed ? 0.65 : 1)
+    }
+}
+
+public extension ButtonStyle where Self == LinkaPrimaryButtonStyle {
+    static var linkaPrimary: LinkaPrimaryButtonStyle { LinkaPrimaryButtonStyle() }
+}
+
+public extension ButtonStyle where Self == LinkaSecondaryButtonStyle {
+    static var linkaSecondary: LinkaSecondaryButtonStyle { LinkaSecondaryButtonStyle() }
+}
+
+public struct LinkaPlusBadge: View {
+    public init() {}
+
+    public var body: some View {
+        Text("Plus")
+            .font(.captionSmallStrong)
+            .foregroundColor(.brandAccentWarm)
+            .padding(.horizontal, LinkaSpacing.xs)
+            .padding(.vertical, 3)
+            .background(Color.brandAccentWarm.opacity(0.12), in: Capsule())
+    }
+}
+
+public struct LinkaStatusBadge: View {
+    let label: String
+    let color: Color
+
+    public init(_ label: String, color: Color) {
+        self.label = label
+        self.color = color
+    }
+
+    public var body: some View {
+        Text(label)
+            .font(.captionSmallStrong)
+            .foregroundColor(color)
+            .padding(.horizontal, LinkaSpacing.xs)
+            .padding(.vertical, 3)
+            .background(color.opacity(0.12), in: Capsule())
+    }
+}
+
+public struct LinkaUnavailableState: View {
+    let title: String
+    let message: String
+    let systemImage: String
+    let actionTitle: String?
+    let action: (() -> Void)?
+
+    public init(
+        title: String,
+        message: String,
+        systemImage: String,
+        actionTitle: String? = nil,
+        action: (() -> Void)? = nil
+    ) {
+        self.title = title
+        self.message = message
+        self.systemImage = systemImage
+        self.actionTitle = actionTitle
+        self.action = action
+    }
+
+    public var body: some View {
+        if #available(iOS 17.0, macOS 14.0, *) {
+            ContentUnavailableView {
+                Label(title, systemImage: systemImage)
+            } description: {
+                Text(message)
+            } actions: {
+                if let actionTitle, let action {
+                    Button(actionTitle, action: action)
+                        .buttonStyle(.borderedProminent)
+                }
+            }
+        } else {
+            VStack(spacing: LinkaSpacing.sm) {
+                Image(systemName: systemImage)
+                    .font(.largeTitle)
+                    .foregroundColor(.textSecondary)
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.textPrimary)
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundColor(.textSecondary)
+                    .multilineTextAlignment(.center)
+                if let actionTitle, let action {
+                    Button(actionTitle, action: action)
+                        .buttonStyle(.borderedProminent)
+                        .padding(.top, LinkaSpacing.xs)
+                }
+            }
+            .padding(LinkaSpacing.lg)
+        }
+    }
+}
+
+private struct LinkaSheetToolbarModifier: ViewModifier {
+    let title: String
+    let dismissTitle: String
+    let onDismiss: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .navigationTitle(title)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(dismissTitle, action: onDismiss)
+                }
+            }
+    }
+}
+
+public extension View {
+    func linkaSheetToolbar(
+        title: String,
+        dismissTitle: String = "Fechar",
+        onDismiss: @escaping () -> Void
+    ) -> some View {
+        modifier(LinkaSheetToolbarModifier(title: title, dismissTitle: dismissTitle, onDismiss: onDismiss))
+    }
+
+    func linkaCard(cornerRadius: CGFloat = LinkaRadius.md) -> some View {
+        background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    }
+}

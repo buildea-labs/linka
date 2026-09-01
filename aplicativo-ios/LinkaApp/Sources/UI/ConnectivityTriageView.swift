@@ -19,81 +19,67 @@ struct ConnectivityTriageView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            contextualHeader
+        NavigationStack {
             Group {
-            if isLoading {
-                ProgressView("Verificando conexão…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityLabel("Verificando a conexão deste aparelho")
-            } else if let report {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text(eyebrow(for: report))
-                        .font(.monoEyebrow)
-                        .foregroundColor(.textSecondary)
-                    Text(title(for: report))
-                        .font(.displayMedium)
-                        .foregroundColor(.textPrimary)
-                    Text(message(for: report))
-                        .font(.bodyRegular)
-                        .foregroundColor(.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                if isLoading {
+                    ProgressView("Verificando conexão…")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .accessibilityLabel("Verificando a conexão deste aparelho")
+                } else if let report {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text(eyebrow(for: report))
+                            .font(.monoEyebrow)
+                            .foregroundColor(.textSecondary)
+                        Text(title(for: report))
+                            .font(.title3.weight(.bold))
+                            .foregroundColor(.textPrimary)
+                        Text(message(for: report))
+                            .font(.body)
+                            .foregroundColor(.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                    Button {
-                        dismiss()
-                        onRetry()
-                    } label: {
-                        Text("Testar novamente")
-                            .font(.buttonLabel)
-                            .foregroundColor(Color.surfacePage)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.textPrimary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        Button {
+                            dismiss()
+                            onRetry()
+                        } label: {
+                            Text("Testar novamente")
+                        }
+                        .buttonStyle(.linkaPrimary)
+                        .accessibilityHint("Inicia uma nova medição")
+
                     }
-                    .accessibilityHint("Inicia uma nova medição")
-
+                    .padding(24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .accessibilityElement(children: .contain)
+                } else {
+                    LinkaUnavailableState(
+                        title: "Verificação indisponível",
+                        message: "Não foi possível verificar a conexão agora.",
+                        systemImage: "wifi.exclamationmark"
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .padding(24)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .accessibilityElement(children: .contain)
-            } else {
-                EmptyView()
             }
-            }
-        }
-        .background(Color.surfacePage.ignoresSafeArea())
-        .task {
-            do {
-                let result = try await service.run()
-                guard !Task.isCancelled else { return }
-                report = result
-                isLoading = false
-            } catch is CancellationError {
-                return
-            } catch {
-                guard !Task.isCancelled else { return }
-                report = ConnectivityTriageReport(
-                    outcome: .inconclusive,
-                    path: ConnectivityPathSnapshot(status: .requiresConnection)
-                )
-                isLoading = false
+            .background(Color.surfacePage.ignoresSafeArea())
+            .linkaSheetToolbar(title: "Verificar conexão") { dismiss() }
+            .task {
+                do {
+                    let result = try await service.run()
+                    guard !Task.isCancelled else { return }
+                    report = result
+                    isLoading = false
+                } catch is CancellationError {
+                    return
+                } catch {
+                    guard !Task.isCancelled else { return }
+                    report = ConnectivityTriageReport(
+                        outcome: .inconclusive,
+                        path: ConnectivityPathSnapshot(status: .requiresConnection)
+                    )
+                    isLoading = false
+                }
             }
         }
-    }
-
-    private var contextualHeader: some View {
-        HStack {
-            Button("Fechar") { dismiss() }
-                .font(.bodySmallStrong)
-                .frame(minWidth: 44, minHeight: 44, alignment: .leading)
-                .accessibilityLabel("Fechar verificação de conexão")
-            Spacer()
-            Text("Verificar conexão").font(.headline)
-            Spacer()
-            Color.clear.frame(width: 44, height: 44)
-        }
-        .padding(.horizontal, 20)
     }
 
     private func eyebrow(for report: ConnectivityTriageReport) -> String {

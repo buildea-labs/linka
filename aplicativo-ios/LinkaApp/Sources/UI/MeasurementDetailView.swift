@@ -128,7 +128,7 @@ struct MeasurementDetailView: View {
                                 Text("Qualidade avançada")
                                     .foregroundColor(.textPrimary)
                                 Spacer()
-                                PlusBadge()
+                                LinkaPlusBadge()
                                 Image(systemName: "chevron.right")
                                     .font(.captionSmall)
                                     .foregroundColor(.textSecondary)
@@ -209,7 +209,7 @@ struct MeasurementDetailView: View {
                                 Text("Wi-Fi avançado")
                                     .foregroundColor(.textPrimary)
                                 Spacer()
-                                PlusBadge()
+                                LinkaPlusBadge()
                                 Image(systemName: "chevron.right")
                                     .font(.captionSmall)
                                     .foregroundColor(.textSecondary)
@@ -280,17 +280,5 @@ struct MeasurementDetailView: View {
             base += " · \(bandStr) GHz"
         }
         return base
-    }
-}
-
-private struct PlusBadge: View {
-    var body: some View {
-        Text("Plus")
-            .font(.captionSmallStrong)
-            .foregroundColor(.brandAccentWarm)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(Color.brandAccentWarm.opacity(0.12))
-            .clipShape(Capsule())
     }
 }

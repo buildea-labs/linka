@@ -29,54 +29,44 @@ struct UsageDiagnosticsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            contextualHeader
+        NavigationStack {
             List {
-            Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Resumo")
-                        .font(.captionSmallStrong)
-                        .foregroundColor(.textSecondary)
-                        .textCase(.uppercase)
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Resumo")
+                            .font(.captionSmallStrong)
+                            .foregroundColor(.textSecondary)
+                            .textCase(.uppercase)
 
-                    Text(summarySubtitle)
-                        .font(.bodyRegularStrong)
-                        .foregroundColor(.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        Text(summarySubtitle)
+                            .font(.bodyRegularStrong)
+                            .foregroundColor(.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.vertical, 4)
                 }
-                .padding(.vertical, 4)
-            }
 
-            if let report {
-                Section("Casos de uso") {
-                    ForEach(UsageCase.allCases, id: \.self) { usageCase in
-                        if let verdict = report.verdict(for: usageCase) {
-                            UsageVerdictRow(usageCase: usageCase, verdict: verdict)
+                if let report {
+                    Section("Casos de uso") {
+                        ForEach(UsageCase.allCases, id: \.self) { usageCase in
+                            if let verdict = report.verdict(for: usageCase) {
+                                UsageVerdictRow(usageCase: usageCase, verdict: verdict)
+                            }
                         }
                     }
-                }
-            } else {
-                Section {
-                    Text("Nenhuma medição disponível.")
-                        .foregroundColor(.textSecondary)
+                } else {
+                    Section {
+                        LinkaUnavailableState(
+                            title: "Nenhuma medição",
+                            message: "Faça uma medição para avaliar os casos de uso.",
+                            systemImage: "speedometer"
+                        )
+                        .frame(maxWidth: .infinity)
+                    }
                 }
             }
-            }
+            .linkaSheetToolbar(title: "Qualidade de uso") { dismiss() }
         }
-    }
-
-    private var contextualHeader: some View {
-        HStack {
-            Button("Fechar") { dismiss() }
-                .font(.bodySmallStrong)
-                .frame(minWidth: 44, minHeight: 44, alignment: .leading)
-                .accessibilityLabel("Fechar qualidade de uso")
-            Spacer()
-            Text("Qualidade de uso").font(.headline)
-            Spacer()
-            Color.clear.frame(width: 44, height: 44)
-        }
-        .padding(.horizontal, 20)
     }
 }
 

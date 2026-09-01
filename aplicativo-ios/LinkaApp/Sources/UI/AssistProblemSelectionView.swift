@@ -131,24 +131,30 @@ struct AssistProblemSelectionView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button(selectedObjective == nil && !showingReportedProblem ? "Fechar" : "Voltar") {
-                    if selectedObjective != nil { selectedObjective = nil }
-                    else if showingReportedProblem { showingReportedProblem = false }
-                    else { dismissSheet() }
-                }.font(.bodySmallStrong)
-                Spacer()
-                Text("Assist").font(.headline)
-                Spacer()
-                Color.clear.frame(width: 52, height: 1)
-            }.padding(.horizontal, 20).padding(.vertical, 12)
-            if let objective = selectedObjective { subcategoryStep(for: objective) }
-            else if showingReportedProblem { reportedProblemStep }
-            else { objectiveStep }
+        NavigationStack {
+            Group {
+                if let objective = selectedObjective { subcategoryStep(for: objective) }
+                else if showingReportedProblem { reportedProblemStep }
+                else { objectiveStep }
+            }
+            .linkaSheetToolbar(title: "Assist", dismissTitle: navigationActionTitle, onDismiss: handleNavigationAction)
         }
         .sheet(isPresented: $showAssist) {
             assistDestination(objective: assistObjective, subcategory: assistSubcategory, reportedProblem: assistReportedProblem)
+        }
+    }
+
+    private var navigationActionTitle: String {
+        selectedObjective == nil && !showingReportedProblem ? "Fechar" : "Voltar"
+    }
+
+    private func handleNavigationAction() {
+        if selectedObjective != nil {
+            selectedObjective = nil
+        } else if showingReportedProblem {
+            showingReportedProblem = false
+        } else {
+            dismissSheet()
         }
     }
 

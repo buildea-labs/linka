@@ -109,33 +109,31 @@ struct AssistView: View {
     }
 
     var body: some View {
-        ZStack {
-            Color.surfacePage
-                .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                HStack { Button("Fechar", action: closeSheet).font(.bodySmallStrong); Spacer(); Text("Assist").font(.headline); Spacer(); Color.clear.frame(width: 52, height: 1) }
-                    .padding(.horizontal, 20).padding(.vertical, 12)
+        NavigationStack {
+            ZStack {
+                Color.surfacePage
+                    .ignoresSafeArea()
                 contentView
             }
-        }
-        .task {
-            if let current = currentMeasurement {
-                await loadAssist(with: current)
-            } else {
-                await viewModel.load(
-                    currentMeasurement: nil,
-                    recentMeasurements: recentMeasurements,
-                    usageContext: usageContext,
-                    failureSignal: failureSignal,
-                    objective: objective,
-                    subcategory: subcategory,
-                    reportedProblem: reportedProblem
-                )
+            .linkaSheetToolbar(title: "Assist", onDismiss: closeSheet)
+            .task {
+                if let current = currentMeasurement {
+                    await loadAssist(with: current)
+                } else {
+                    await viewModel.load(
+                        currentMeasurement: nil,
+                        recentMeasurements: recentMeasurements,
+                        usageContext: usageContext,
+                        failureSignal: failureSignal,
+                        objective: objective,
+                        subcategory: subcategory,
+                        reportedProblem: reportedProblem
+                    )
+                }
             }
-        }
-        .task {
-            await stabilityViewModel.load()
+            .task {
+                await stabilityViewModel.load()
+            }
         }
     }
 
@@ -250,7 +248,6 @@ struct AssistView: View {
                                                     Image(systemName: "slider.horizontal.3")
                                                         .font(.system(size: 13, weight: .semibold))
                                                     Text(label)
-                                                        .font(.bodySmallStrong)
                                                 }
                                                 .foregroundColor(.brandAccentWarm)
                                                 .padding(.vertical, 8)
@@ -335,13 +332,8 @@ struct AssistView: View {
                                 retry()
                             }) {
                                 Text("Testar novamente")
-                                    .font(.buttonLabel)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 16)
-                                    .background(Color.brandSurface)
-                                    .foregroundColor(.brandOnSurface)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
+                            .buttonStyle(.linkaPrimary)
                         }
 
                         if let onShowDetails {

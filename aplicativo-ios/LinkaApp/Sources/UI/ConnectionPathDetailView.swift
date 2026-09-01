@@ -12,33 +12,32 @@ struct ConnectionPathDetailView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack { Button("Fechar") { dismiss() }.font(.bodySmallStrong); Spacer(); Text("Caminho da conexão").font(.headline); Spacer(); Color.clear.frame(width: 52, height: 1) }
-                .padding(.horizontal, 20).padding(.vertical, 12)
+        NavigationStack {
             List {
-            Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Diagnóstico da rota")
-                        .font(.captionSmallStrong)
-                        .foregroundColor(.textSecondary)
-                        .textCase(.uppercase)
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Diagnóstico da rota")
+                            .font(.captionSmallStrong)
+                            .foregroundColor(.textSecondary)
+                            .textCase(.uppercase)
 
-                    Text(ConnectionPathCopy.conclusion(for: report))
-                        .font(.bodyRegularStrong)
-                        .foregroundColor(.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        Text(ConnectionPathCopy.conclusion(for: report))
+                            .font(.bodyRegularStrong)
+                            .foregroundColor(.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.vertical, 4)
                 }
-                .padding(.vertical, 4)
-            }
 
-            Section("Etapas da conexão") {
-                ForEach(visibleStages, id: \.self) { stage in
-                    if let verdict = report.verdict(for: stage) {
-                        stageRow(verdict: verdict, isHighlighted: report.highlightedStage == stage)
+                Section("Etapas da conexão") {
+                    ForEach(visibleStages, id: \.self) { stage in
+                        if let verdict = report.verdict(for: stage) {
+                            stageRow(verdict: verdict, isHighlighted: report.highlightedStage == stage)
+                        }
                     }
                 }
             }
-            }
+            .linkaSheetToolbar(title: "Caminho da conexão") { dismiss() }
         }
     }
 

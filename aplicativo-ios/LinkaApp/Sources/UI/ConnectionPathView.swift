@@ -8,6 +8,7 @@ import NetworkCore
 struct LiveConnectionPathView: View {
     let kind: NetworkConnectionKind?
     let label: String
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var interfaceIcon: String {
         switch kind {
@@ -31,15 +32,25 @@ struct LiveConnectionPathView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            pathItem(icon: "iphone", label: "Este iPhone")
-            pathArrow
-            pathItem(icon: interfaceIcon, label: interfaceLabel)
-            pathArrow
-            pathItem(icon: "globe", label: "Internet", muted: kind == nil)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 12) {
+                    pathRow(icon: "iphone", label: "Este iPhone")
+                    pathRow(icon: interfaceIcon, label: interfaceLabel)
+                    pathRow(icon: "globe", label: "Internet", muted: kind == nil)
+                }
+            } else {
+                HStack(spacing: 0) {
+                    pathItem(icon: "iphone", label: "Este iPhone")
+                    pathArrow
+                    pathItem(icon: interfaceIcon, label: interfaceLabel)
+                    pathArrow
+                    pathItem(icon: "globe", label: "Internet", muted: kind == nil)
+                }
+            }
         }
         .padding(.vertical, 14)
-        .padding(.horizontal, 6)
+        .padding(.horizontal, dynamicTypeSize.isAccessibilitySize ? 16 : 6)
         .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
@@ -61,10 +72,25 @@ struct LiveConnectionPathView: View {
                 .background(Color.surfacePage, in: Circle())
             Text(label)
                 .font(.captionSmall)
-                .lineLimit(1)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .foregroundColor(muted ? .textSecondary : .textPrimary)
         .frame(maxWidth: .infinity)
+    }
+
+    private func pathRow(icon: String, label: String, muted: Bool = false) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 22, weight: .medium))
+                .frame(width: 32)
+
+            Text(label)
+                .font(.body)
+                .lineLimit(nil)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .foregroundColor(muted ? .textSecondary : .textPrimary)
     }
 }
 
