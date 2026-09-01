@@ -107,6 +107,12 @@ struct AssistProblemSelectionView: View {
     let entitlements: StoreKitEntitlementProvider?
 
     @State private var reportedProblemText: String = ""
+    @State private var selectedObjective: AssistProblemObjective?
+    @State private var showingReportedProblem = false
+    @State private var showAssist = false
+    @State private var assistObjective: String?
+    @State private var assistSubcategory: String?
+    @State private var assistReportedProblem: String?
 
     init(
         currentMeasurement: NetworkMeasurement?,
@@ -125,7 +131,25 @@ struct AssistProblemSelectionView: View {
     }
 
     var body: some View {
-        objectiveStep
+        VStack(spacing: 0) {
+            HStack {
+                Button(selectedObjective == nil && !showingReportedProblem ? "Fechar" : "Voltar") {
+                    if selectedObjective != nil { selectedObjective = nil }
+                    else if showingReportedProblem { showingReportedProblem = false }
+                    else { dismissSheet() }
+                }.font(.bodySmallStrong)
+                Spacer()
+                Text("Assist").font(.headline)
+                Spacer()
+                Color.clear.frame(width: 52, height: 1)
+            }.padding(.horizontal, 20).padding(.vertical, 12)
+            if let objective = selectedObjective { subcategoryStep(for: objective) }
+            else if showingReportedProblem { reportedProblemStep }
+            else { objectiveStep }
+        }
+        .sheet(isPresented: $showAssist) {
+            assistDestination(objective: assistObjective, subcategory: assistSubcategory, reportedProblem: assistReportedProblem)
+        }
     }
 
     // MARK: - Etapa 1 — macro-grupo
@@ -133,14 +157,14 @@ struct AssistProblemSelectionView: View {
         List {
             Section("O que está acontecendo?") {
                 ForEach(AssistProblemObjective.allCases) { objective in
-                    NavigationLink(destination: subcategoryStep(for: objective)) {
+                    Button { selectedObjective = objective } label: {
                         Label(objective.label, systemImage: objective.systemImage)
                             .font(.bodyRegular)
                             .foregroundColor(.textPrimary)
                     }
                 }
 
-                NavigationLink(destination: reportedProblemStep) {
+                Button { showingReportedProblem = true } label: {
                     Label("Outro problema", systemImage: "ellipsis.bubble")
                         .font(.bodyRegular)
                         .foregroundColor(.textPrimary)
@@ -148,17 +172,13 @@ struct AssistProblemSelectionView: View {
             }
 
             Section {
-                NavigationLink(destination: assistDestination(objective: nil, subcategory: nil, reportedProblem: nil)) {
+                Button { presentAssist(objective: nil, subcategory: nil, reportedProblem: nil) } label: {
                     Text("Pular e ver o diagnóstico geral")
                         .font(.bodySmallMedium)
                         .foregroundColor(.brandAccentWarm)
                 }
             }
         }
-        .navigationTitle("Assist")
-        #if canImport(UIKit)
-        .navigationBarTitleDisplayMode(.large)
-        #endif
     }
 
     // MARK: - Etapa 2 — subcategoria
@@ -166,9 +186,7 @@ struct AssistProblemSelectionView: View {
         List {
             Section(header: Text(objective.label), footer: Text("Selecione a opção que melhor descreve o que você percebeu.")) {
                 ForEach(objective.subcategories) { subcategory in
-                    NavigationLink(
-                        destination: assistDestination(objective: objective.rawValue, subcategory: subcategory.key, reportedProblem: nil)
-                    ) {
+                    Button { presentAssist(objective: objective.rawValue, subcategory: subcategory.key, reportedProblem: nil) } label: {
                         Text(subcategory.label)
                             .font(.bodyRegular)
                             .foregroundColor(.textPrimary)
@@ -177,19 +195,13 @@ struct AssistProblemSelectionView: View {
             }
 
             Section {
-                NavigationLink(
-                    destination: assistDestination(objective: objective.rawValue, subcategory: nil, reportedProblem: nil)
-                ) {
+                Button { presentAssist(objective: objective.rawValue, subcategory: nil, reportedProblem: nil) } label: {
                     Text("Pular esta pergunta")
                         .font(.bodySmallMedium)
                         .foregroundColor(.brandAccentWarm)
                 }
             }
         }
-        .navigationTitle("Assist")
-        #if canImport(UIKit)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
     }
 
     // MARK: - Etapa alternativa — "Outro problema"
@@ -213,17 +225,7 @@ struct AssistProblemSelectionView: View {
             }
 
             Section {
-                NavigationLink(
-                    destination: assistDestination(
-                        objective: nil,
-                        subcategory: nil,
-                        reportedProblem: String(
-                            reportedProblemText
-                                .trimmingCharacters(in: .whitespacesAndNewlines)
-                                .prefix(Self.reportedProblemMaxLength)
-                        )
-                    )
-                ) {
+                Button { presentAssist(objective: nil, subcategory: nil, reportedProblem: String(reportedProblemText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.reportedProblemMaxLength))) } label: {
                     Text("Continuar")
                         .font(.bodyRegularStrong)
                         .foregroundColor(.brandAccentWarm)
@@ -231,10 +233,6 @@ struct AssistProblemSelectionView: View {
                 .disabled(reportedProblemText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .navigationTitle("Assist")
-        #if canImport(UIKit)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
         .onAppear { reportedProblemText = "" }
     }
 
@@ -252,5 +250,12 @@ struct AssistProblemSelectionView: View {
             entitlements: entitlements,
             onCloseSheet: { dismissSheet() }
         )
+    }
+
+    private func presentAssist(objective: String?, subcategory: String?, reportedProblem: String?) {
+        assistObjective = objective
+        assistSubcategory = subcategory
+        assistReportedProblem = reportedProblem
+        showAssist = true
     }
 }

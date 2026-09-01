@@ -11,7 +11,7 @@ import UIKit
 import AppKit
 #endif
 
-struct SettingsSheet: View {
+struct SettingsView: View {
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @Environment(\.openURL) private var openURL
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
@@ -87,7 +87,7 @@ struct SettingsSheet: View {
             }
         }
         .navigationTitle("Ajustes")
-        #if canImport(UIKit)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
         .sheet(isPresented: $showPurchase) { PurchaseSheet(entryPoint: purchaseEntryPoint) }
@@ -179,14 +179,17 @@ struct SettingsSheet: View {
     }
 }
 
+typealias SettingsSheet = SettingsView
+
 struct SubscriptionManagementSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @State private var isRestoring = false
     @State private var message: String?
-
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack { Button("Fechar") { dismiss() }; Spacer(); Text("Linka Plus").font(.headline); Spacer(); Color.clear.frame(width: 52, height: 1) }
+                .padding(.horizontal, 20).padding(.vertical, 12)
             List {
                 Section {
                     #if canImport(UIKit)
@@ -201,8 +204,6 @@ struct SubscriptionManagementSheet: View {
                 }
                 if let message { Section { Text(message).foregroundColor(.textSecondary) } }
             }
-            .navigationTitle("Linka Plus")
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fechar") { dismiss() } } }
         }
     }
 

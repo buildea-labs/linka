@@ -176,9 +176,9 @@ final class SpeedTestViewModelScenePhaseTests: XCTestCase {
         XCTAssertTrue(viewModel.isTesting)
     }
 
-    // MARK: - Retorno a .active depois de um background sem snapshot reinicia
+    // MARK: - Retorno a .active nunca inicia uma medição sozinho
 
-    func test_active_afterIdleFromBackground_restartsTest() {
+    func test_active_afterIdleFromBackground_staysReadyForExplicitTest() {
         let viewModel = SpeedTestViewModel()
         viewModel.uiPhase = .downloading
         viewModel.isTesting = true
@@ -188,11 +188,8 @@ final class SpeedTestViewModelScenePhaseTests: XCTestCase {
 
         viewModel.handleScenePhaseChange(.active)
 
-        // `startTest()` seta isso de forma síncrona antes de qualquer
-        // trabalho assíncrono/rede começar — não depende de uma medição
-        // real terminar para ser observável neste teste.
-        XCTAssertEqual(viewModel.uiPhase, .connecting)
-        XCTAssertTrue(viewModel.isTesting)
+        XCTAssertEqual(viewModel.uiPhase, .idle)
+        XCTAssertFalse(viewModel.isTesting)
     }
 
     /// Retorno a `.active` quando o resultado já foi restaurado (`.done`)
@@ -212,5 +209,23 @@ final class SpeedTestViewModelScenePhaseTests: XCTestCase {
 
         XCTAssertEqual(viewModel.uiPhase, .done)
         XCTAssertFalse(viewModel.isTesting)
+    }
+
+    func test_connectionChange_discardsPartialMeasurementAndRequiresExplicitNewTest() {
+        let viewModel = SpeedTestViewModel()
+        viewModel.uiPhase = .downloading
+        viewModel.isTesting = true
+        viewModel.downloadSpeed = 87.3
+        viewModel.uploadSpeed = 21.4
+        viewModel.progress = 0.6
+
+        viewModel.cancelForConnectionChange()
+
+        XCTAssertEqual(viewModel.uiPhase, .connectionChanged)
+        XCTAssertFalse(viewModel.isTesting)
+        XCTAssertEqual(viewModel.progress, 0)
+        XCTAssertEqual(viewModel.downloadSpeed, 0)
+        XCTAssertEqual(viewModel.uploadSpeed, 0)
+        XCTAssertNil(viewModel.latestFinishedMeasurement)
     }
 }

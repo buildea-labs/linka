@@ -7,14 +7,26 @@ import LinkaEntitlements
 import LinkaModules
 import NetworkConnectivityTriage
 
+enum AppRoute: Hashable {
+    case settings
+    case history
+    case measurementDetail(NetworkMeasurement)
+}
+
 struct MainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @ObservedObject private var intentCoordinator = AppIntentCoordinator.shared
 
+    @State private var navPath = NavigationPath()
+    @State private var showMoreMetrics: Bool = false
     @State private var showPurchase: Bool = false
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
     @State private var showAssist: Bool = false
+    @State private var showShareSheet: Bool = false
+    @State private var showDetails: Bool = false
+    @State private var showUsage: Bool = false
+    @State private var showConnectionPath: Bool = false
     @State private var showConnectivityTriage: Bool = false
     @State private var showExpertModeMigrationBanner: Bool = false
     @State private var ringScale: CGFloat = 1.0
@@ -42,6 +54,13 @@ struct MainView: View {
             advancedWiFiDiagnostics: viewModel.advancedWiFiDiagnostics,
             networkIdentifier: viewModel.provider.isEmpty ? nil : viewModel.provider
         )
+    }
+
+    private var measurementForAssist: NetworkMeasurement? {
+        if viewModel.uiPhase == .done {
+            return currentMeasurement
+        }
+        return viewModel.latestFinishedMeasurement ?? viewModel.recentMeasurements.first
     }
 
     private var isPlusActive: Bool {
@@ -81,14 +100,58 @@ struct MainView: View {
         return UsageSuitabilityCopy.qualityLevel(for: usageSuitabilityReport)
     }
 
+    private var videoCallVerdict: (label: String, color: Color) {
+        let dl = viewModel.downloadSpeed
+        let ul = viewModel.uploadSpeed
+        let ping = Double(viewModel.ping)
+        let loss = viewModel.packetLossPercent ?? 0
+
+        if dl >= 15 && ul >= 5 && ping <= 60 && loss < 2 {
+            return ("Bom", .statusGood)
+        } else if dl >= 5 && ul >= 1.5 && ping <= 120 && loss < 5 {
+            return ("Regular", .statusAttention)
+        } else {
+            return ("Ruim", .statusCritical)
+        }
+    }
+
+    private var gamingVerdict: (label: String, color: Color) {
+        let ping = Double(viewModel.ping)
+        let jitter = viewModel.jitter
+        let loss = viewModel.packetLossPercent ?? 0
+
+        if ping <= 40 && jitter <= 20 && loss < 1 {
+            return ("Bom", .statusGood)
+        } else if ping <= 90 && loss < 3 {
+            return ("Regular", .statusAttention)
+        } else {
+            return ("Ruim", .statusCritical)
+        }
+    }
+
+    private var streamingVerdict: (label: String, color: Color) {
+        let dl = viewModel.downloadSpeed
+        let loss = viewModel.packetLossPercent ?? 0
+
+        if dl >= 25 && loss < 2 {
+            return ("4K", .statusGood)
+        } else if dl >= 10 {
+            return ("HD", .statusGood)
+        } else {
+            return ("SD", .statusAttention)
+        }
+    }
+
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navPath) {
             ZStack {
                 Color.surfacePage.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     if viewModel.uiPhase == .error {
                         errorView
+                    } else if viewModel.uiPhase == .connectionChanged {
+                        connectionChangedView
                     } else if viewModel.uiPhase == .idle {
                         idleView
                     } else if viewModel.uiPhase == .connecting || viewModel.uiPhase == .downloading || viewModel.uiPhase == .uploading {
@@ -98,38 +161,84 @@ struct MainView: View {
                     }
                 }
             }
-            .navigationTitle("Linka")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error {
-                        NavigationLink(destination: HistoryView()) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 16, weight: .medium))
-                                .accessibilityLabel("Histórico")
+            .navigationBarHidden(true)
+            .navigationDestination(for: AppRoute.self) { route in
+                switch route {
+                case .settings:
+                    SettingsView()
+                        .environmentObject(entitlements)
+                case .history:
+                    HistoryView(onSelectMeasurement: { measurement in
+                        navPath.append(AppRoute.measurementDetail(measurement))
+                    })
+                    .environmentObject(entitlements)
+                case .measurementDetail(let measurement):
+                    HistoricalMeasurementDetailView(measurement: measurement)
+                        .environmentObject(entitlements)
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                if viewModel.uiPhase == .done {
+                    Button {
+                        withAnimation {
+                            viewModel.resetToIdle()
                         }
-
-                        NavigationLink(destination: SettingsSheet()) {
+                    } label: {
+                        Image(systemName: "house")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.textPrimary)
+                            .frame(width: 40, height: 40)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                    .accessibilityLabel("Voltar para o início")
+                    .padding(.leading, 16)
+                    .padding(.top, 12)
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
+                    HStack(spacing: 14) {
+                        if viewModel.uiPhase == .done {
+                            Button {
+                                showShareSheet = true
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                                    .accessibilityLabel("Compartilhar resultado")
+                            }
+                        } else {
+                            Button { navPath.append(AppRoute.history) } label: {
+                                Image(systemName: "clock")
+                                    .accessibilityLabel("Histórico")
+                            }
+                        }
+                        Button { navPath.append(AppRoute.settings) } label: {
                             Image(systemName: "slider.horizontal.3")
-                                .font(.system(size: 16, weight: .medium))
                                 .accessibilityLabel("Ajustes")
                         }
                     }
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textPrimary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .padding(.trailing, 16)
+                    .padding(.top, 12)
                 }
             }
-            .navigationDestination(isPresented: $showAssist) {
-                AssistProblemSelectionView(
-                    currentMeasurement: currentMeasurement,
+            .sheet(isPresented: $showAssist) {
+                AssistView(
+                    currentMeasurement: measurementForAssist,
                     recentMeasurements: viewModel.recentMeasurements,
                     usageContext: usageContextForAssist,
-                    onRetry: { viewModel.startTest() },
-                    onShowDetails: nil,
-                    entitlements: entitlements
+                    onRetry: {
+                        showAssist = false
+                        viewModel.startTest()
+                    },
+                    onShowDetails: { showDetails = true },
+                    entitlements: entitlements,
+                    onCloseSheet: { showAssist = false }
                 )
             }
-        }
         .onChange(of: intentCoordinator.pendingStartSpeedTest) { pending in
             guard pending else { return }
             viewModel.startTest()
@@ -153,9 +262,27 @@ struct MainView: View {
             .environmentObject(entitlements)
         }
         .sheet(isPresented: $showConnectivityTriage) {
+            ConnectivityTriageView(onRetry: { viewModel.startTest() })
+        }
+        .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
+        .sheet(isPresented: $showDetails) {
             NavigationStack {
-                ConnectivityTriageView(onRetry: { viewModel.startTest() })
+                MeasurementDetailView(measurement: currentMeasurement, duration: viewModel.testDuration)
+                    .environmentObject(entitlements)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Voltar") {
+                                showDetails = false
+                            }
+                        }
+                    }
             }
+        }
+        .sheet(isPresented: $showUsage) {
+            UsageDiagnosticsView(measurement: currentMeasurement)
+        }
+        .sheet(isPresented: $showConnectionPath) {
+            if let connectionPathReport { ConnectionPathDetailView(report: connectionPathReport) }
         }
         .sheet(isPresented: $showExpertModeMigrationBanner, onDismiss: {
             ExpertModeMigrationBannerState.markSeen()
@@ -216,6 +343,7 @@ struct MainView: View {
                 #endif
             }
         }
+        }
     }
 
     // MARK: - Subviews
@@ -223,79 +351,110 @@ struct MainView: View {
     // 1. Início (Idle)
     private var idleView: some View {
         VStack(spacing: 0) {
-            Spacer()
+            LiveConnectionPathView(
+                kind: viewModel.liveConnectionKind,
+                label: viewModel.liveNetworkLabel
+            )
+            .padding(.top, 100)
+            .padding(.horizontal, 24)
 
-            VStack(spacing: 8) {
-                Text("Pronto para analisar")
-                    .font(.title2.weight(.bold))
+            Spacer(minLength: 34)
+
+            VStack(spacing: 10) {
+                Image(systemName: liveConnectionIcon)
+                    .font(.system(size: 34, weight: .medium))
+                    .foregroundColor(.brandSurface)
+                    .frame(width: 82, height: 82)
+                    .background(Color.surfaceCard, in: Circle())
+
+                Text(liveConnectionType)
+                    .font(.bodyRegularStrong)
                     .foregroundColor(.textPrimary)
-                    .multilineTextAlignment(.center)
 
-                let networkText = !viewModel.liveNetworkLabel.isEmpty ? viewModel.liveNetworkLabel : (simpleNetworkContext ?? "Conexão de rede")
-                Text(networkText)
-                    .font(.bodyRegular)
+                Text(liveConnectionName)
+                    .font(.captionSmall)
                     .foregroundColor(.textSecondary)
+                    .lineLimit(1)
             }
-            .padding(.horizontal, 24)
 
-            Spacer()
+            Spacer(minLength: 38)
 
-            // Botão Principal Analisar
-            Button(action: {
-                withAnimation {
-                    viewModel.startTest()
+            VStack(spacing: 12) {
+                // Botão Primário Analisar Rede
+                Button(action: {
+                    startSpeedTest()
+                }) {
+                    Text("Analisar rede")
+                        .font(.buttonLabel)
+                        .foregroundColor(.brandOnSurface)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(Color.brandSurface, in: RoundedRectangle(cornerRadius: 14))
                 }
-            }) {
-                Text("Analisar conexão")
-                    .font(.buttonLabel)
-                    .foregroundColor(Color.surfacePage)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.textPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .padding(.horizontal, 24)
 
-            // Resumo do último teste se houver
-            if let latest = viewModel.latestFinishedMeasurement {
-                NavigationLink(destination: HistoricalMeasurementDetailView(measurement: latest)) {
-                    HStack(spacing: 8) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Última análise")
-                                .font(.captionSmall)
-                                .foregroundColor(.textSecondary)
-
-                            let shortDiag = ConnectionPathCopy.shortConclusion(for: ConnectionPathEvaluator().evaluate(latest))
-                            Text("\(shortDiag) • \(formatRelativeTime(latest.measuredAt))")
+                // Card do Último Teste
+                if let latest = viewModel.latestFinishedMeasurement {
+                    Button {
+                        navPath.append(AppRoute.history)
+                    } label: {
+                        HStack(spacing: 10) {
+                            Text("Último teste")
                                 .font(.bodySmallStrong)
                                 .foregroundColor(.textPrimary)
+                            Spacer()
+                            Text("\(formatted(latest.downloadMbps ?? 0)) Mbps · \(formatRelativeTime(latest.measuredAt))")
+                                .font(.monoCaption)
+                                .foregroundColor(.textSecondary)
                                 .lineLimit(1)
+                            Image(systemName: "chevron.right")
+                                .font(.captionSmall)
+                                .foregroundColor(.textSecondary)
                         }
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(.plain)
+                }
 
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
+                // Card Assist
+                Button {
+                    if isPlusActive {
+                        showAssist = true
+                    } else {
+                        purchaseEntryPoint = .assist
+                        showPurchase = true
+                    }
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Assist ✦")
+                            .font(.monoCaption)
+                            .textCase(.uppercase)
+                            .foregroundColor(.brandAccentWarm)
+                        Text("Problemas na sua conexão? Entenda o que está acontecendo.")
                             .font(.captionSmall)
-                            .foregroundColor(.textSecondary)
+                            .foregroundColor(.textPrimary)
+                            .multilineTextAlignment(.leading)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.surfaceCard)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 14))
                 }
                 .buttonStyle(.plain)
-                .padding(.horizontal, 24)
-                .padding(.top, 14)
-                .padding(.bottom, 24)
-            } else {
-                Spacer().frame(height: 28)
             }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 28)
         }
     }
 
     // 2. Medindo (Connecting / Downloading / Uploading)
     private var measuringView: some View {
         VStack(spacing: 0) {
+            LiveConnectionPathView(kind: viewModel.liveConnectionKind, label: viewModel.liveNetworkLabel)
+                .padding(.horizontal, 24)
+                .padding(.top, 28)
             Spacer()
 
             MetricRing(
@@ -343,140 +502,113 @@ struct MainView: View {
     private var resultView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                // 1. Resultado Principal (Download único como protagonista)
-                VStack(spacing: 2) {
-                    Group {
-                        if !reduceMotion {
-                            Text(String(format: "%.1f", viewModel.downloadSpeed).replacingOccurrences(of: ".", with: ","))
-                                .matchedGeometryEffect(id: "downloadValue", in: animation)
-                        } else {
-                            Text(String(format: "%.1f", viewModel.downloadSpeed).replacingOccurrences(of: ".", with: ","))
-                        }
-                    }
-                    .font(.heroValueHuge)
+                // Título: Velocidade (abaixo dos botões superiores da topbar)
+                Text("Velocidade")
+                    .font(.system(size: 34, weight: .bold))
                     .foregroundColor(.textPrimary)
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-                    .tracking(-1)
-                    .accessibilityLabel("\(formatted(viewModel.downloadSpeed)) megabits por segundo")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 64)
 
-                    Text("Mbps")
-                        .font(.heroText17)
-                        .foregroundColor(.textSecondary)
-
-                    if let netContext = simpleNetworkContext {
-                        Text(netContext)
-                            .font(.bodySmall)
-                            .foregroundColor(.textSecondary)
-                            .padding(.top, 6)
-                    }
-                }
-                .padding(.top, 32)
-                .padding(.bottom, 28)
-
-                // 2. Diagnóstico Curto
-                if let connectionPathReport {
-                    Text(ConnectionPathCopy.shortConclusion(for: connectionPathReport))
-                        .font(.headline)
+                // 1. Download Hero em número inteiro ocupando toda a largura
+                VStack(spacing: 2) {
+                    Text("\(Int(round(viewModel.downloadSpeed)))")
+                        .font(.system(size: 92, weight: .bold, design: .rounded))
                         .foregroundColor(.textPrimary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 16)
+                        .minimumScaleFactor(0.4)
+                        .lineLimit(1)
+                        .tracking(-3)
+                        .frame(maxWidth: .infinity)
+
+                    Text("Mbps download")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.textSecondary)
+                }
+                .padding(.top, 16)
+                .padding(.bottom, 16)
+
+                // 2. Botão "Mais" com seta para baixo
+                Button {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        showMoreMetrics.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Text("Mais")
+                            .font(.bodySmallStrong)
+                        Image(systemName: showMoreMetrics ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundColor(.textSecondary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .padding(.bottom, showMoreMetrics ? 14 : 22)
+
+                // Demais métricas reveladas: Upload, Ping e Perdas lado a lado
+                if showMoreMetrics {
+                    HStack(spacing: 0) {
+                        metricColumn(title: "Upload", value: "\(Int(round(viewModel.uploadSpeed)))", unit: "Mbps")
+                        Divider().frame(height: 32)
+                        metricColumn(title: "Ping", value: "\(viewModel.ping)", unit: "ms")
+                        Divider().frame(height: 32)
+                        metricColumn(title: "Perdas", value: "\(Int(round(viewModel.packetLossPercent ?? 0)))", unit: "%")
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 22)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
-                // 3. Caminho da Conexão Discreto
-                if let connectionPathReport {
-                    ConnectionPathView(report: connectionPathReport)
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 28)
-                }
-
-                // 4. Ações de Navegação Limpas
-                VStack(spacing: 0) {
-                    Divider()
-
-                    // Entender o resultado
-                    Button {
-                        if isPlusActive {
-                            showAssist = true
-                        } else {
-                            purchaseEntryPoint = .assist
-                            showPurchase = true
-                        }
-                    } label: {
-                        HStack {
-                            Text("Entender o resultado")
-                                .font(.bodyRegular)
-                                .foregroundColor(.textPrimary)
-                            Spacer()
-                            if !isPlusActive {
-                                PlusBadge()
-                            }
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.textSecondary.opacity(0.6))
-                        }
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
-                    Divider()
-
-                    // Qualidade de uso
-                    NavigationLink(destination: UsageDiagnosticsView(measurement: currentMeasurement)) {
-                        HStack {
-                            Text("Qualidade de uso")
-                                .font(.bodyRegular)
-                                .foregroundColor(.textPrimary)
-                            Spacer()
-                            if let usageQualityLevel {
-                                Text(usageQualityLevel.label)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundColor(usageQualityLevel.color)
-                            } else if !canUseUsageDiagnostics {
-                                PlusBadge()
-                            }
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.textSecondary.opacity(0.6))
-                        }
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
-                    Divider()
-
-                    // Detalhes
-                    NavigationLink(destination: MeasurementDetailView(measurement: currentMeasurement, duration: viewModel.testDuration)) {
-                        HStack {
-                            Text("Detalhes")
-                                .font(.bodyRegular)
-                                .foregroundColor(.textPrimary)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.textSecondary.opacity(0.6))
-                        }
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
-                    Divider()
-                }
+                // 3. Casos de Uso (Vídeo, Jogos, Streaming) estilo caminho de rede
+                ResultUsageCasesView(
+                    videoCall: videoCallVerdict,
+                    gaming: gamingVerdict,
+                    streaming: streamingVerdict
+                )
                 .padding(.horizontal, 24)
-                .padding(.bottom, 28)
+                .padding(.bottom, 18)
 
-                if !isPlusActive && FeatureFlags.isAdsEnabled {
-                    BannerView()
-                        .padding(.bottom, 20)
+                // 4. CTA para o Assist: "Problemas com sua conexão?"
+                Button {
+                    if isPlusActive {
+                        showAssist = true
+                    } else {
+                        purchaseEntryPoint = .assist
+                        showPurchase = true
+                    }
+                } label: {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Problemas com sua conexão?")
+                                .font(.bodyRegularStrong)
+                                .foregroundColor(.textPrimary)
+                            Text("Consulte o Assist para um diagnóstico detalhado.")
+                                .font(.captionSmall)
+                                .foregroundColor(.textSecondary)
+                        }
+                        Spacer()
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.brandAccentWarm)
+                            .frame(width: 36, height: 36)
+                            .background(Color.brandAccentWarm.opacity(0.12), in: Circle())
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
                 }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
 
-                // Botão Primário Testar Novamente
+                // 5. Botão Testar Novamente
                 Button(action: {
-                    viewModel.startTest()
+                    startSpeedTest()
                 }) {
                     Text("Testar novamente")
                         .font(.buttonLabel)
@@ -484,12 +616,29 @@ struct MainView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(Color.textPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 28)
+                .padding(.bottom, 32)
             }
         }
+    }
+
+    private func metricColumn(title: String, value: String, unit: String) -> some View {
+        VStack(spacing: 2) {
+            Text(title)
+                .font(.captionSmall)
+                .foregroundColor(.textSecondary)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.headline.weight(.bold))
+                    .foregroundColor(.textPrimary)
+                Text(unit)
+                    .font(.caption2.weight(.medium))
+                    .foregroundColor(.textSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // 4. Erro (Error)
@@ -514,7 +663,7 @@ struct MainView: View {
             .padding(.horizontal, 32)
 
             Button(action: {
-                viewModel.startTest()
+                startSpeedTest()
             }) {
                 Text("Tentar novamente")
                     .font(.buttonLabel)
@@ -535,6 +684,35 @@ struct MainView: View {
             .frame(minHeight: 44)
             .accessibilityHint("Mostra os fatos de conexão observados neste aparelho")
 
+            Spacer()
+        }
+    }
+
+    private var connectionChangedView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            LiveConnectionPathView(kind: viewModel.liveConnectionKind, label: viewModel.liveNetworkLabel)
+                .padding(.horizontal, 24)
+            VStack(spacing: 8) {
+                Text("Conexão alterada")
+                    .font(.displayMedium)
+                    .foregroundColor(.textPrimary)
+                Text("A rede mudou durante a medição. Conecte-se à rede desejada e inicie um novo teste.")
+                    .font(.bodyRegular)
+                    .foregroundColor(.textSecondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 32)
+            Button { startSpeedTest() } label: {
+                Text("Testar conexão")
+                    .font(.buttonLabel)
+                    .foregroundColor(Color.surfacePage)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.textPrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.horizontal, 24)
             Spacer()
         }
     }
@@ -561,6 +739,30 @@ struct MainView: View {
         return nil
     }
 
+    private var liveConnectionType: String {
+        switch viewModel.liveConnectionKind {
+        case .wifi: return "Wi-Fi"
+        case .cellular: return "Rede móvel"
+        case .ethernet: return "Ethernet"
+        case .other: return "Conexão de rede"
+        case nil: return "Sem conexão"
+        }
+    }
+
+    private var liveConnectionName: String {
+        viewModel.liveNetworkLabel.isEmpty ? "Conexão atual" : viewModel.liveNetworkLabel
+    }
+
+    private var liveConnectionIcon: String {
+        switch viewModel.liveConnectionKind {
+        case .wifi: return "wifi"
+        case .cellular: return "antenna.radiowaves.left.and.right"
+        case .ethernet: return "cable.connector"
+        case .other: return "network"
+        case nil: return "wifi.exclamationmark"
+        }
+    }
+
     private var ringValue: String {
         switch viewModel.uiPhase {
         case .idle, .connecting:
@@ -569,7 +771,7 @@ struct MainView: View {
             return String(format: "%.1f", viewModel.downloadSpeed).replacingOccurrences(of: ".", with: ",")
         case .uploading, .done:
             return String(format: "%.1f", viewModel.uploadSpeed).replacingOccurrences(of: ".", with: ",")
-        case .error:
+        case .error, .connectionChanged:
             return ""
         }
     }
@@ -586,7 +788,7 @@ struct MainView: View {
             return "Medindo velocidade de download…"
         case .uploading, .done:
             return "Medindo velocidade de upload…"
-        case .error:
+        case .error, .connectionChanged:
             return ""
         }
     }
@@ -599,7 +801,7 @@ struct MainView: View {
             return "downloading"
         case .uploading, .done:
             return "uploading"
-        case .error:
+        case .error, .connectionChanged:
             return ""
         }
     }
@@ -641,6 +843,24 @@ struct MainView: View {
             return formatter.string(from: date)
         }
     }
+
+    private func startSpeedTest() {
+        if viewModel.liveConnectionKind == .wifi {
+            triggerWiFiAdvancedShortcut()
+        }
+        withAnimation {
+            viewModel.startTest()
+        }
+    }
+
+    private func triggerWiFiAdvancedShortcut() {
+        guard let shortcutURL = URL(string: "shortcuts://run-shortcut?name=Linka%20Wi-Fi%20Advanced") else { return }
+        #if canImport(UIKit)
+        if UIApplication.shared.canOpenURL(shortcutURL) {
+            UIApplication.shared.open(shortcutURL, options: [:], completionHandler: nil)
+        }
+        #endif
+    }
 }
 
 private struct PlusBadge: View {
@@ -652,5 +872,63 @@ private struct PlusBadge: View {
             .padding(.vertical, 3)
             .background(Color.brandAccentWarm.opacity(0.12))
             .clipShape(Capsule())
+    }
+}
+
+private struct ResultUsageCasesView: View {
+    let videoCall: (label: String, color: Color)
+    let gaming: (label: String, color: Color)
+    let streaming: (label: String, color: Color)
+
+    var body: some View {
+        HStack(spacing: 12) {
+            usageNode(
+                title: "Chamadas de vídeo",
+                icon: "video",
+                result: videoCall.label,
+                color: videoCall.color
+            )
+            usageNode(
+                title: "Jogo online",
+                icon: "gamecontroller",
+                result: gaming.label,
+                color: gaming.color
+            )
+            usageNode(
+                title: "Streaming",
+                icon: "play.tv",
+                result: streaming.label,
+                color: streaming.color
+            )
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 16)
+        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func usageNode(title: String, icon: String, result: String, color: Color) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(.textPrimary)
+                .frame(width: 44, height: 44)
+                .background(Color.surfacePage, in: Circle())
+
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.textSecondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: 28)
+
+            Text(result)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundColor(color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(color.opacity(0.12), in: Capsule())
+        }
+        .frame(maxWidth: .infinity)
     }
 }

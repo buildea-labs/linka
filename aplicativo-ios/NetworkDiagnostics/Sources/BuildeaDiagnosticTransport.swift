@@ -100,8 +100,9 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         // resumo — a tela contradizia a si mesma. Mesmo critério do
         // fallback determinístico (`isHealthyScore && !hasProblemCards`).
         let hasProblemCards = findings.contains { $0.status == "attention" || $0.status == "critical" }
-        let isHealthyVerdict = veredicto == "bom" || veredicto == "excelente"
-        let headerStatus = (isHealthyVerdict && !hasProblemCards) ? "✓ TUDO CERTO" : "⚠ PRECISA DE ATENÇÃO"
+        let isHealthyVerdict = veredicto == "bom" || veredicto == "excelente" || (veredicto == nil && !hasProblemCards)
+        let isSemCausa = ndsResponse.explanation?.semCausaIdentificada == true
+        let headerStatus = (!hasProblemCards && (isHealthyVerdict || isSemCausa)) ? "✓ TUDO CERTO" : "⚠ PRECISA DE ATENÇÃO"
         
         var parsedRecommendation: NetworkAssistRecommendation? = nil
         if let v2Explanation = ndsResponse.explanation {
@@ -111,9 +112,14 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
             // uma recomendação v1. `sem_causa_identificada == true` não
             // tem ação a recomendar: nenhuma regra disparou.
             if v2Explanation.semCausaIdentificada != true, let acao = v2Explanation.acaoUsuario {
+                let evidenceCards = findings.filter { card in v2Explanation.dados?.contains(card.id) == true }
+                let evidenceDesc = evidenceCards.isEmpty
+                    ? (v2Explanation.dados?.joined(separator: ", ") ?? "")
+                    : evidenceCards.map { $0.mensagemUsuario.isEmpty ? $0.titulo : $0.mensagemUsuario }.joined(separator: " • ")
+
                 parsedRecommendation = NetworkAssistRecommendation(
                     title: acao,
-                    description: v2Explanation.dados ?? "",
+                    description: evidenceDesc,
                     steps: []
                 )
             }

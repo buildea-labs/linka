@@ -5,13 +5,17 @@ import NetworkInsights
 /// Apresenta o diagnóstico de cada uma das 5 etapas da rede em formato de lista nativa.
 struct ConnectionPathDetailView: View {
     let report: ConnectionPathReport
+    @Environment(\.dismiss) private var dismiss
 
     private var visibleStages: [ConnectionPathStage] {
         report.stages.map { $0.stage }
     }
 
     var body: some View {
-        List {
+        VStack(spacing: 0) {
+            HStack { Button("Fechar") { dismiss() }.font(.bodySmallStrong); Spacer(); Text("Caminho da conexão").font(.headline); Spacer(); Color.clear.frame(width: 52, height: 1) }
+                .padding(.horizontal, 20).padding(.vertical, 12)
+            List {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Diagnóstico da rota")
@@ -34,11 +38,8 @@ struct ConnectionPathDetailView: View {
                     }
                 }
             }
+            }
         }
-        .navigationTitle("Caminho da conexão")
-        #if canImport(UIKit)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
     }
 
     @ViewBuilder
@@ -86,4 +87,3 @@ struct ConnectionPathDetailView: View {
         }
     }
 }
-

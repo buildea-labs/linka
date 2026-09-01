@@ -321,9 +321,12 @@ public final class CloudKitMeasurementRemoteStore: MeasurementRemoteStore, @unch
         }
         
         #if targetEnvironment(simulator)
-        // Com conta Apple Developer paga ativa, habilitamos CloudKit no simulator.
-        // Se houver crash (SIGTRAP) no CKContainer localmente, é sinal de que o Xcode
-        // gerou o build sem assinar (codeSigningTeamID vazio) — limpe o Derived Data.
+        // No simulador sem assinatura de entitlements CloudKit (build de CLI/dev sem provisioning profile),
+        // CKContainer(identifier:) crasha com SIGTRAP. Degradamos com segurança para evitar crash em tempo de execução.
+        guard Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision") != nil ||
+              Bundle.main.url(forResource: "archived-expanded-entitlements", withExtension: "xcent") != nil else {
+            return false
+        }
         return true
         #else
         #if DEBUG

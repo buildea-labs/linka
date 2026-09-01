@@ -10,8 +10,6 @@ struct AssistView: View {
 
     @StateObject private var viewModel: AssistViewModel
     @StateObject private var stabilityViewModel: NetworkStabilityPatternsViewModel
-    @StateObject private var inlineTestViewModel = SpeedTestViewModel()
-    @State private var isRunningInlineTest = false
     @State private var showRecommendationDetails = false
 
     /// Fecha o sheet inteiro: usa `onCloseSheet` (fluxo guiado via
@@ -115,48 +113,24 @@ struct AssistView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
+                HStack { Button("Fechar", action: closeSheet).font(.bodySmallStrong); Spacer(); Text("Assist").font(.headline); Spacer(); Color.clear.frame(width: 52, height: 1) }
+                    .padding(.horizontal, 20).padding(.vertical, 12)
                 contentView
             }
         }
-        .navigationTitle("Assist")
-        #if canImport(UIKit)
-        .navigationBarTitleDisplayMode(.large)
-        #endif
-        .navigationBarBackButtonHidden(false)
         .task {
             if let current = currentMeasurement {
                 await loadAssist(with: current)
             } else {
-                isRunningInlineTest = true
-                inlineTestViewModel.startTest()
-            }
-        }
-        .onChange(of: inlineTestViewModel.uiPhase) { newPhase in
-            if newPhase == .error {
-                isRunningInlineTest = false
-                // Simula o erro nativo do AssistViewModel ao injetar nil
-                Task {
-                    await viewModel.load(
-                        currentMeasurement: nil,
-                        recentMeasurements: recentMeasurements,
-                        usageContext: usageContext,
-                        failureSignal: failureSignal,
-                        objective: objective,
-                        subcategory: subcategory,
-                        reportedProblem: reportedProblem
-                    )
-                }
-            }
-        }
-        // latestFinishedMeasurement é setado de forma assíncrona DEPOIS que
-        // uiPhase = .done é publicado (após o loop do motor terminar). Observar
-        // esse campo diretamente evita a corrida onde uiPhase dispara onChange
-        // antes da medição estar disponível.
-        .onChange(of: inlineTestViewModel.latestFinishedMeasurement) { measurement in
-            guard isRunningInlineTest, let measurement else { return }
-            Task {
-                await loadAssist(with: measurement)
-                isRunningInlineTest = false
+                await viewModel.load(
+                    currentMeasurement: nil,
+                    recentMeasurements: recentMeasurements,
+                    usageContext: usageContext,
+                    failureSignal: failureSignal,
+                    objective: objective,
+                    subcategory: subcategory,
+                    reportedProblem: reportedProblem
+                )
             }
         }
         .task {
@@ -178,14 +152,13 @@ struct AssistView: View {
     
     @ViewBuilder
     private var contentView: some View {
-        if isRunningInlineTest {
-            inlineTestWidget
-        } else {
-            switch viewModel.state {
+        switch viewModel.state {
         case .idle, .loading:
-            ProgressView("Analisando conexão...")
-                .foregroundColor(.textSecondary)
-                .frame(maxHeight: .infinity)
+            if let currentMeasurement {
+                AssistWaitingAnalysisView(measurement: currentMeasurement)
+            } else {
+                unavailableMeasurementView
+            }
         case .error(let message):
             VStack(spacing: 16) {
                 Image(systemName: "exclamationmark.triangle")
@@ -201,173 +174,163 @@ struct AssistView: View {
             }
             .frame(maxHeight: .infinity)
         case .success(let data):
-            ScrollView {
-                VStack(alignment: .leading, spacing: 32) {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
 
-                    // Status e Conclusão — indicador discreto em vez de um
-                    // rótulo em caixa alta (issue UI Polish v2): a Hero
-                    // (data.title) já conta a história, o indicador só marca
-                    // o estado sem repetir ou contradizer o título.
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 6) {
+                    // ─── 1. PROBLEMA IDENTIFICADO / ESTADO DA CONEXÃO ───
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(spacing: 8) {
                             Circle()
-                                .fill(data.headerStatus.contains("TUDO CERTO") ? Color.statusGood : Color.statusAttention)
-                                .frame(width: 8, height: 8)
-                            Text(data.headerStatus.contains("TUDO CERTO") ? "Diagnóstico concluído" : "Precisa de atenção")
+                                .fill(isGoodStatus(data.headerStatus) ? Color.statusGood : Color.statusAttention)
+                                .frame(width: 9, height: 9)
+                            Text(isGoodStatus(data.headerStatus) ? "Conexão Saudável" : "Problema Identificado")
                                 .font(.captionStrong)
                                 .foregroundColor(.textSecondary)
+                                .textCase(.uppercase)
                         }
 
                         Text(data.title)
-                            .font(.displayLarge)
-                            .foregroundColor(.brandSurface)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(.top, 24)
-
-                    // O que encontramos — checklist compacto, sem círculo
-                    // decorativo por métrica (issue UI Polish v2).
-                    if !data.dimensions.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("O que encontramos")
-                                .font(.bodyRegularStrong)
-                                .foregroundColor(.textPrimary)
-
-                            VStack(spacing: 10) {
-                                ForEach(data.dimensions, id: \.name) { dim in
-                                    dimensionRow(dim)
-                                }
-                            }
-                        }
-                    }
-
-                    // O que isso significa
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("O que isso significa")
-                            .font(.bodyRegularStrong)
+                            .font(.displayMedium)
                             .foregroundColor(.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
 
                         Text(data.summary)
                             .font(.bodyRegular)
                             .foregroundColor(.textSecondary)
                             .lineSpacing(4)
                     }
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 18))
 
-                    // Próximo passo
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Próximo passo")
+                    // ─── 2. O QUE FAZER PARA RESOLVER OU MELHORAR ───
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("O que fazer para resolver ou melhorar")
                             .font(.bodyRegularStrong)
                             .foregroundColor(.textPrimary)
 
                         if let rec = data.recommendation {
-                            // Uma única recomendação, sem repetir o mesmo
-                            // conteúdo em título + descrição + passos
-                            // (issue UI Polish v2). Descrição e passos ficam
-                            // atrás de "Por que recomendamos isso?".
-                            HStack(alignment: .top, spacing: 12) {
-                                Image(systemName: "exclamationmark.circle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.statusAttention)
-
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(rec.title)
-                                        .font(.bodyRegularStrong)
-                                        .foregroundColor(.textPrimary)
-
-                                    let detailLines = recommendationDetailLines(rec, summary: data.summary)
-                                    if !detailLines.isEmpty {
-                                        Button(action: { showRecommendationDetails.toggle() }) {
-                                            HStack(spacing: 4) {
-                                                Text("Por que recomendamos isso?")
-                                                Image(systemName: showRecommendationDetails ? "chevron.up" : "chevron.right")
-                                                    .font(.caption2)
-                                            }
-                                            .font(.bodySmallMedium)
-                                            .foregroundColor(.actionPrimary)
-                                        }
-
-                                        if showRecommendationDetails {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(alignment: .top, spacing: 10) {
+                                    Image(systemName: "lightbulb.fill")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(.brandAccentWarm)
+                                    
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(rec.title)
+                                            .font(.bodyRegularStrong)
+                                            .foregroundColor(.textPrimary)
+                                        
+                                        let detailLines = recommendationDetailLines(rec, summary: data.summary)
+                                        if !detailLines.isEmpty {
                                             VStack(alignment: .leading, spacing: 6) {
                                                 ForEach(Array(detailLines.enumerated()), id: \.offset) { index, line in
-                                                    Text(detailLines.count > 1 ? "\(index + 1). \(line)" : line)
-                                                        .font(.bodySmall)
-                                                        .foregroundColor(.textSecondary)
+                                                    HStack(alignment: .top, spacing: 6) {
+                                                        Text(detailLines.count > 1 ? "\(index + 1)." : "•")
+                                                            .font(.bodySmallStrong)
+                                                            .foregroundColor(.brandAccentWarm)
+                                                        Text(line)
+                                                            .font(.bodySmall)
+                                                            .foregroundColor(.textSecondary)
+                                                    }
                                                 }
                                             }
-                                            .padding(.top, 2)
+                                            .padding(.top, 4)
                                         }
                                     }
                                 }
                             }
-
+                            .padding(18)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
                         } else {
                             HStack(alignment: .center, spacing: 12) {
-                                Image(systemName: "checkmark.circle.fill")
+                                Image(systemName: "checkmark.seal.fill")
                                     .font(.title2)
                                     .foregroundColor(.statusGood)
 
-                                Text("Nenhuma ação necessária.")
+                                Text("Nenhuma ação necessária. Sua conexão está operando nos parâmetros ideais para qualquer uso.")
                                     .font(.bodyRegular)
-                                .foregroundColor(.textSecondary)
+                                    .foregroundColor(.textSecondary)
+                            }
+                            .padding(18)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
+                        }
+                    }
+
+                    // ─── 3. COMO CHEGOU À CONCLUSÃO ───
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Como chegou à conclusão")
+                            .font(.bodyRegularStrong)
+                            .foregroundColor(.textPrimary)
+
+                        VStack(spacing: 10) {
+                            if !data.dimensions.isEmpty {
+                                ForEach(data.dimensions, id: \.name) { dim in
+                                    dimensionRow(dim)
+                                    if dim.name != data.dimensions.last?.name {
+                                        Divider()
+                                    }
+                                }
+                            } else if let measurement = currentMeasurement {
+                                measurementEvidenceRow(title: "Download", value: measurement.downloadMbps.map { String(format: "%.1f Mbps", $0) } ?? "--")
+                                Divider()
+                                measurementEvidenceRow(title: "Upload", value: measurement.uploadMbps.map { String(format: "%.1f Mbps", $0) } ?? "--")
+                                Divider()
+                                measurementEvidenceRow(title: "Latência (Ping)", value: measurement.latencyMs.map { "\(Int($0.rounded())) ms" } ?? "--")
+                                Divider()
+                                measurementEvidenceRow(title: "Rede", value: measurement.connectionKind.map { connectionLabel($0) } ?? "--")
                             }
                         }
+                        .padding(18)
+                        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
+                    }
 
-                        // Reteste é uma ação do usuário, não uma consequência
-                        // opcional da recomendação do NDS. Ele permanece
-                        // disponível mesmo quando o NDS devolve uma resposta
-                        // sem recommendation.
+                    // Padrões no seu histórico (quando aplicável)
+                    stabilityPatternsSection
+
+                    // Ações de Rodapé
+                    VStack(spacing: 12) {
                         if let retry = onRetry {
                             Button(action: {
-                                retry()
                                 closeSheet()
+                                retry()
                             }) {
                                 Text("Testar novamente")
                                     .font(.buttonLabel)
                                     .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.actionPrimary)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(12)
+                                    .padding(.vertical, 16)
+                                    .background(Color.brandSurface)
+                                    .foregroundColor(.brandOnSurface)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
-                            .padding(.top, 8)
                         }
-                    }
 
-                    // Padrões no seu histórico (issue #125) — cálculo local
-                    // sobre o histórico do usuário, independente da resposta
-                    // remota do NDS acima. Título e estado próprios para não
-                    // parecer parte da mesma conclusão do Assist remoto.
-                    stabilityPatternsSection
-
-                    // Botão Detalhes da Medição — issue UI Polish v2: quando
-                    // há um destino real de detalhes (`onShowDetails`),
-                    // navega de verdade em vez de só fechar o sheet; quando
-                    // não há (ex.: aberto a partir do Histórico), o botão é
-                    // honesto sobre o que faz.
-                    Button(action: {
                         if let onShowDetails {
-                            onShowDetails()
-                        }
-                        closeSheet()
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: onShowDetails != nil ? "chart.xyaxis.line" : "chevron.left")
-                            Text(onShowDetails != nil ? "Ver detalhes da medição" : "Voltar")
-                            if onShowDetails != nil {
-                                Image(systemName: "chevron.right")
+                            Button(action: {
+                                closeSheet()
+                                onShowDetails()
+                            }) {
+                                HStack(spacing: 6) {
+                                    Text("Ver detalhes técnicos")
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .semibold))
+                                }
+                                .font(.bodySmallStrong)
+                                .foregroundColor(.brandAccentWarm)
+                                .padding(.vertical, 8)
                             }
+                            .buttonStyle(.plain)
                         }
-                        .font(.bodySmallMedium)
-                        .foregroundColor(.actionPrimary)
-                        .frame(maxWidth: .infinity, alignment: .center)
                     }
                     .padding(.top, 8)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 32)
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
             }
         }
-    }
     }
 
     @ViewBuilder
@@ -501,6 +464,30 @@ struct AssistView: View {
         return [rec.description]
     }
 
+    private func isGoodStatus(_ status: String) -> Bool {
+        let s = status.uppercased()
+        return s.contains("TUDO CERTO") || s.contains("BOM") || s.contains("EXCELENTE") || s.contains("SAUDÁVEL") || s.contains("CONCLUÍDO")
+    }
+
+    private func measurementEvidenceRow(title: String, value: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.bodyRegular)
+                .foregroundColor(.statusGood)
+                .frame(width: 20)
+
+            Text(title)
+                .font(.bodyRegular)
+                .foregroundColor(.textPrimary)
+
+            Spacer()
+
+            Text(value)
+                .font(.bodyRegularStrong)
+                .foregroundColor(.textSecondary)
+        }
+    }
+
     private func colorForStatus(_ status: String) -> Color {
         switch status.lowercased() {
         case "excellent", "good": return .statusGood
@@ -510,67 +497,164 @@ struct AssistView: View {
         }
     }
     
-    // MARK: - Inline Test Widget
-    
-    private var inlineTestWidget: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Coletando informações da rede")
-                    .font(.displayLarge)
-                    .foregroundColor(.brandSurface)
-                
-                Text("O Assist precisa de um diagnóstico atualizado para responder sua pergunta.")
+    private var unavailableMeasurementView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .font(.system(size: 40))
+                .foregroundColor(.textSecondary)
+            Text("Faça uma medição primeiro")
+                .font(.displayTitle)
+            Text("O Assist interpreta uma medição concluída. Volte, teste sua conexão e tente novamente.")
+                .font(.bodyRegular)
+                .foregroundColor(.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            Button("Voltar", action: closeSheet)
+                .font(.bodySmallStrong)
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    private func connectionLabel(_ kind: NetworkConnectionKind) -> String {
+        switch kind {
+        case .wifi: return "Wi-Fi"
+        case .cellular: return "Rede móvel"
+        case .ethernet: return "Ethernet"
+        case .other: return "Outra rede"
+        }
+    }
+}
+
+private struct AssistWaitingAnalysisView: View {
+    let measurement: NetworkMeasurement
+    @State private var checkedCount: Int = 0
+
+    private struct FactItem: Identifiable {
+        let id: String
+        let title: String
+        let value: String
+    }
+
+    private var facts: [FactItem] {
+        var list: [FactItem] = []
+        if let dl = measurement.downloadMbps {
+            list.append(FactItem(id: "dl", title: "Download medido", value: String(format: "%.1f Mbps", dl).replacingOccurrences(of: ".", with: ",")))
+        }
+        if let ul = measurement.uploadMbps {
+            list.append(FactItem(id: "ul", title: "Upload medido", value: String(format: "%.1f Mbps", ul).replacingOccurrences(of: ".", with: ",")))
+        }
+        if let ping = measurement.latencyMs {
+            list.append(FactItem(id: "ping", title: "Latência (Ping)", value: "\(Int(ping.rounded())) ms"))
+        }
+        if let kind = measurement.connectionKind {
+            list.append(FactItem(id: "kind", title: "Tipo de rede", value: connectionLabel(kind)))
+        }
+        if let adv = measurement.advancedWiFiDiagnostics {
+            if let band = adv.bandGHz {
+                list.append(FactItem(id: "band", title: "Frequência Wi-Fi", value: "\(band) GHz"))
+            } else if let channel = adv.channelNumber {
+                list.append(FactItem(id: "chan", title: "Canal Wi-Fi", value: "Canal \(channel)"))
+            }
+        } else if let band = measurement.wifiBandGHz {
+            let bandStr = band.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", band) : String(format: "%.1f", band)
+            list.append(FactItem(id: "band", title: "Frequência Wi-Fi", value: "\(bandStr) GHz"))
+        } else if let jitter = measurement.jitterMs {
+            list.append(FactItem(id: "jitter", title: "Estabilidade (Jitter)", value: String(format: "%.0f ms", jitter)))
+        }
+        return list
+    }
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            // Assist Wordmark
+            Image("AssistWordmark")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 44)
+                .padding(.horizontal, 40)
+
+            VStack(spacing: 8) {
+                Text("Analisando sua conexão...")
+                    .font(.displayMedium)
+                    .foregroundColor(.textPrimary)
+                Text("A inteligência artificial está examinando os dados medidos e a rota de rede.")
                     .font(.bodyRegular)
                     .foregroundColor(.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
             }
-            .padding(.top, 24)
-            
-            VStack(spacing: 16) {
-                stepRow(
-                    title: "Iniciando diagnóstico e latência", 
-                    isActive: inlineTestViewModel.uiPhase == .connecting,
-                    isDone: [.downloading, .uploading, .done].contains(inlineTestViewModel.uiPhase)
-                )
-                stepRow(
-                    title: "Testando velocidade de download", 
-                    isActive: inlineTestViewModel.uiPhase == .downloading,
-                    isDone: [.uploading, .done].contains(inlineTestViewModel.uiPhase)
-                )
-                stepRow(
-                    title: "Testando velocidade de upload", 
-                    isActive: inlineTestViewModel.uiPhase == .uploading,
-                    isDone: inlineTestViewModel.uiPhase == .done
-                )
+
+            // Fatos preenchidos aos poucos com intervalos aleatórios
+            VStack(spacing: 12) {
+                ForEach(Array(facts.enumerated()), id: \.element.id) { index, fact in
+                    HStack {
+                        Text(fact.title)
+                            .font(.bodyRegular)
+                            .foregroundColor(index <= checkedCount ? .textPrimary : .textSecondary.opacity(0.45))
+
+                        Spacer()
+
+                        if index < checkedCount {
+                            Text(fact.value)
+                                .font(.bodyRegularStrong)
+                                .foregroundColor(.textSecondary)
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.statusGood)
+                                .transition(.scale.combined(with: .opacity))
+                        } else if index == checkedCount {
+                            ProgressView()
+                                .controlSize(.small)
+                                .transition(.opacity)
+                        } else {
+                            Image(systemName: "circle")
+                                .font(.system(size: 14))
+                                .foregroundColor(.textSecondary.opacity(0.25))
+                        }
+                    }
+                    if index < facts.count - 1 {
+                        Divider()
+                    }
+                }
             }
-            .padding(20)
-            .background(Color.surfaceCard)
-            .cornerRadius(16)
-            
-            Spacer()
-        }
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-    
-    private func stepRow(title: String, isActive: Bool, isDone: Bool) -> some View {
-        HStack(spacing: 12) {
-            if isDone {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.bodyRegularStrong)
-                    .foregroundColor(.statusGood)
-            } else if isActive {
-                ProgressView()
-                    .scaleEffect(0.8)
-                    .frame(width: 20, height: 20)
-            } else {
-                Image(systemName: "circle")
-                    .font(.bodyRegularStrong)
+            .padding(18)
+            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 18))
+            .padding(.horizontal, 24)
+
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("Sintetizando diagnóstico...")
+                    .font(.bodySmall)
                     .foregroundColor(.textSecondary)
             }
-            Text(title)
-                .font(.bodyRegular)
-                .foregroundColor(isActive || isDone ? .textPrimary : .textSecondary)
+
             Spacer()
+        }
+        .padding(.vertical, 20)
+        .task {
+            await animateFactsProgress()
+        }
+    }
+
+    private func animateFactsProgress() async {
+        checkedCount = 0
+        for i in 1...facts.count {
+            let randomDelay = Double.random(in: 0.35...0.7)
+            try? await Task.sleep(nanoseconds: UInt64(randomDelay * 1_000_000_000))
+            if Task.isCancelled { break }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                checkedCount = i
+            }
+        }
+    }
+
+    private func connectionLabel(_ kind: NetworkConnectionKind) -> String {
+        switch kind {
+        case .wifi: return "Wi-Fi"
+        case .cellular: return "Rede móvel"
+        case .ethernet: return "Ethernet"
+        case .other: return "Outra rede"
         }
     }
 }

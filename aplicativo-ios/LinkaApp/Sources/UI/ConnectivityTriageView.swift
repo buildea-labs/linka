@@ -19,7 +19,9 @@ struct ConnectivityTriageView: View {
     }
 
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            contextualHeader
+            Group {
             if isLoading {
                 ProgressView("Verificando conexão…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -51,10 +53,6 @@ struct ConnectivityTriageView: View {
                     }
                     .accessibilityHint("Inicia uma nova medição")
 
-                    Button("Fechar", action: { dismiss() })
-                        .font(.bodySmallStrong)
-                        .foregroundColor(.textPrimary)
-                        .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .padding(24)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -62,9 +60,9 @@ struct ConnectivityTriageView: View {
             } else {
                 EmptyView()
             }
+            }
         }
         .background(Color.surfacePage.ignoresSafeArea())
-        .navigationTitle("Verificar conexão")
         .task {
             do {
                 let result = try await service.run()
@@ -82,6 +80,20 @@ struct ConnectivityTriageView: View {
                 isLoading = false
             }
         }
+    }
+
+    private var contextualHeader: some View {
+        HStack {
+            Button("Fechar") { dismiss() }
+                .font(.bodySmallStrong)
+                .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+                .accessibilityLabel("Fechar verificação de conexão")
+            Spacer()
+            Text("Verificar conexão").font(.headline)
+            Spacer()
+            Color.clear.frame(width: 44, height: 44)
+        }
+        .padding(.horizontal, 20)
     }
 
     private func eyebrow(for report: ConnectivityTriageReport) -> String {

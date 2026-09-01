@@ -11,8 +11,10 @@ struct MeasurementDetailView: View {
     let duration: String?
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @Environment(\.openURL) private var openURL
+    @Environment(\.dismiss) private var dismiss
 
     @State private var showPurchase = false
+    @State private var showShareSheet = false
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
 
     private var canUseExpertMode: Bool {
@@ -85,6 +87,8 @@ struct MeasurementDetailView: View {
                         }
                     }
 
+                    LabeledContent("Data e hora", value: formattedDateTime(measurement.measuredAt))
+
                     LabeledContent("Tipo de rede", value: networkKindLabel(measurement))
 
                     if let provider = measurement.networkIdentifier, !provider.isEmpty {
@@ -137,39 +141,41 @@ struct MeasurementDetailView: View {
             // SEÇÃO WI-FI
             if let measurement, measurement.connectionKind == .wifi {
                 Section("Wi-Fi") {
-                    if let advanced = measurement.advancedWiFiDiagnostics {
-                        if let standard = advanced.wifiStandard {
-                            LabeledContent("Padrão", value: standard)
-                        }
-                        if let rssi = advanced.rssiDbm {
-                            LabeledContent("Sinal", value: String(format: "%.0f dBm", rssi))
-                        }
-                        if let noise = advanced.noiseDbm {
-                            LabeledContent("Ruído", value: String(format: "%.0f dBm", noise))
-                        }
-                        if let snr = advanced.snrDb {
-                            LabeledContent("SNR", value: String(format: "%.0f dB", snr))
-                        }
-                        if let channel = advanced.channelNumber {
-                            LabeledContent("Canal", value: "\(channel)")
-                        }
-                        if advanced.txRateMbps != nil || advanced.rxRateMbps != nil {
-                            let tx = advanced.txRateMbps.map { String(format: "TX %.0f Mbps", $0) }
-                            let rx = advanced.rxRateMbps.map { String(format: "RX %.0f Mbps", $0) }
-                            LabeledContent("Taxa Wi-Fi", value: [tx, rx].compactMap { $0 }.joined(separator: " · "))
-                        }
-                    } else if canUseAdvancedWiFiDiagnostics {
-                        HStack {
-                            Text("Diagnóstico Wi-Fi detalhado")
-                                .foregroundColor(.textPrimary)
-                            Spacer()
-                            #if os(iOS)
-                            Button("Obter detalhes") {
-                                if let url = URL(string: "shortcuts://") { openURL(url) }
+                    if canUseAdvancedWiFiDiagnostics {
+                        if let advanced = measurement.advancedWiFiDiagnostics {
+                            if let standard = advanced.wifiStandard {
+                                LabeledContent("Padrão", value: standard)
                             }
-                            .font(.bodySmallStrong)
-                            .foregroundColor(.brandAccentWarm)
-                            #endif
+                            if let rssi = advanced.rssiDbm {
+                                LabeledContent("Sinal", value: String(format: "%.0f dBm", rssi))
+                            }
+                            if let noise = advanced.noiseDbm {
+                                LabeledContent("Ruído", value: String(format: "%.0f dBm", noise))
+                            }
+                            if let snr = advanced.snrDb {
+                                LabeledContent("SNR", value: String(format: "%.0f dB", snr))
+                            }
+                            if let channel = advanced.channelNumber {
+                                LabeledContent("Canal", value: "\(channel)")
+                            }
+                            if advanced.txRateMbps != nil || advanced.rxRateMbps != nil {
+                                let tx = advanced.txRateMbps.map { String(format: "TX %.0f Mbps", $0) }
+                                let rx = advanced.rxRateMbps.map { String(format: "RX %.0f Mbps", $0) }
+                                LabeledContent("Taxa Wi-Fi", value: [tx, rx].compactMap { $0 }.joined(separator: " · "))
+                            }
+                        } else {
+                            HStack {
+                                Text("Diagnóstico Wi-Fi detalhado")
+                                    .foregroundColor(.textPrimary)
+                                Spacer()
+                                #if os(iOS)
+                                Button("Obter detalhes") {
+                                    if let url = URL(string: "shortcuts://run-shortcut?name=Linka%20Wi-Fi%20Advanced") { openURL(url) }
+                                }
+                                .font(.bodySmallStrong)
+                                .foregroundColor(.brandAccentWarm)
+                                #endif
+                            }
                         }
                     } else {
                         Button {
@@ -191,28 +197,48 @@ struct MeasurementDetailView: View {
             }
 
             // SEÇÃO DESEMPENHO SOB CARGA
-            if let measurement, (measurement.loadedLatencyMs != nil || measurement.loadedLatencyUploadMs != nil || responsiveness != nil) {
+            if let measurement, measurement.loadedLatencyMs != nil || measurement.loadedLatencyUploadMs != nil || responsiveness != nil {
                 Section("Desempenho sob carga") {
+                    if let responsiveness {
+                        LabeledContent("Responsividade", value: LoadResponsivenessCopy.label(for: responsiveness))
+                    }
                     if let loadedDl = measurement.loadedLatencyMs {
-                        LabeledContent("Latência sob carga (download)", value: String(format: "%.0f ms", loadedDl))
+                        LabeledContent("Latência em download", value: String(format: "%.0f ms", loadedDl))
                     }
                     if let loadedUl = measurement.loadedLatencyUploadMs {
-                        LabeledContent("Latência sob carga (upload)", value: String(format: "%.0f ms", loadedUl))
-                    }
-                    if let responsiveness {
-                        LabeledContent("Responsividade sob carga", value: LoadResponsivenessCopy.label(for: responsiveness))
+                        LabeledContent("Latência em upload", value: String(format: "%.0f ms", loadedUl))
                     }
                 }
             }
         }
         .navigationTitle("Detalhes da medição")
-        #if canImport(UIKit)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .toolbar {
+            if let measurement {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showShareSheet = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                }
+            }
+        }
+        .shareMeasurementSheet(isPresented: $showShareSheet, measurement: measurement)
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet(entryPoint: purchaseEntryPoint)
                 .environmentObject(entitlements)
         }
+    }
+
+    private func formattedDateTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        formatter.locale = Locale(identifier: "pt_BR")
+        return formatter.string(from: date)
     }
 
     private func networkKindLabel(_ m: NetworkMeasurement) -> String {
