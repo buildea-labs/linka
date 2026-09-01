@@ -43,9 +43,9 @@ struct MainView: View {
         guard viewModel.uiPhase == .done else { return nil }
         return NetworkMeasurement(
             outcome: .complete,
-            downloadMbps: viewModel.downloadSpeed,
-            uploadMbps: viewModel.uploadSpeed,
-            latencyMs: Double(viewModel.ping),
+            downloadMbps: viewModel.downloadSpeed > 0 ? viewModel.downloadSpeed : nil,
+            uploadMbps: viewModel.uploadSpeed > 0 ? viewModel.uploadSpeed : nil,
+            latencyMs: viewModel.ping > 0 ? Double(viewModel.ping) : nil,
             jitterMs: viewModel.jitter,
             packetLossPercent: viewModel.packetLossPercent,
             loadedLatencyMs: viewModel.loadedLatencyMs,

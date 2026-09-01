@@ -102,7 +102,7 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         let hasProblemCards = findings.contains { $0.status == "attention" || $0.status == "critical" }
         let isHealthyVerdict = veredicto == "bom" || veredicto == "excelente" || (veredicto == nil && !hasProblemCards)
         let isSemCausa = ndsResponse.explanation?.semCausaIdentificada == true
-        let headerStatus = (!hasProblemCards && (isHealthyVerdict || isSemCausa)) ? "✓ TUDO CERTO" : "⚠ PRECISA DE ATENÇÃO"
+        let headerStatus = (isSemCausa || (!hasProblemCards && isHealthyVerdict)) ? "✓ TUDO CERTO" : "⚠ PRECISA DE ATENÇÃO"
         
         var parsedRecommendation: NetworkAssistRecommendation? = nil
         if let v2Explanation = ndsResponse.explanation {

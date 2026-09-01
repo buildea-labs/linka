@@ -178,12 +178,13 @@ struct AssistView: View {
                 VStack(alignment: .leading, spacing: 20) {
 
                     // ─── 1. PROBLEMA IDENTIFICADO / ESTADO DA CONEXÃO ───
+                    let isHealthy = isHealthyAnalysis(headerStatus: data.headerStatus, title: data.title, recommendation: data.recommendation)
                     VStack(alignment: .leading, spacing: 10) {
                         HStack(spacing: 8) {
                             Circle()
-                                .fill(isGoodStatus(data.headerStatus) ? Color.statusGood : Color.statusAttention)
+                                .fill(isHealthy ? Color.statusGood : Color.statusAttention)
                                 .frame(width: 9, height: 9)
-                            Text(isGoodStatus(data.headerStatus) ? "Conexão Saudável" : "Problema Identificado")
+                            Text(isHealthy ? "Conexão Saudável" : "Problema Identificado")
                                 .font(.captionStrong)
                                 .foregroundColor(.textSecondary)
                                 .textCase(.uppercase)
@@ -274,13 +275,27 @@ struct AssistView: View {
                                     }
                                 }
                             } else if let measurement = currentMeasurement {
-                                measurementEvidenceRow(title: "Download", value: measurement.downloadMbps.map { String(format: "%.1f Mbps", $0) } ?? "--")
+                                measurementEvidenceRow(
+                                    title: "Download",
+                                    value: measurement.downloadMbps.map { String(format: "%.1f Mbps", $0) } ?? "--"
+                                )
+                                if let upload = measurement.uploadMbps, upload > 0 {
+                                    Divider()
+                                    measurementEvidenceRow(
+                                        title: "Upload",
+                                        value: String(format: "%.1f Mbps", upload)
+                                    )
+                                }
                                 Divider()
-                                measurementEvidenceRow(title: "Upload", value: measurement.uploadMbps.map { String(format: "%.1f Mbps", $0) } ?? "--")
+                                measurementEvidenceRow(
+                                    title: "Latência (Ping)",
+                                    value: measurement.latencyMs.map { "\(Int($0.rounded())) ms" } ?? "--"
+                                )
                                 Divider()
-                                measurementEvidenceRow(title: "Latência (Ping)", value: measurement.latencyMs.map { "\(Int($0.rounded())) ms" } ?? "--")
-                                Divider()
-                                measurementEvidenceRow(title: "Rede", value: measurement.connectionKind.map { connectionLabel($0) } ?? "--")
+                                measurementEvidenceRow(
+                                    title: "Rede",
+                                    value: measurement.connectionKind.map { connectionLabel($0) } ?? "--"
+                                )
                             }
                         }
                         .padding(18)
@@ -464,16 +479,26 @@ struct AssistView: View {
         return [rec.description]
     }
 
+    private func isHealthyAnalysis(headerStatus: String, title: String, recommendation: NetworkAssistRecommendation?) -> Bool {
+        if isGoodStatus(headerStatus) { return true }
+        if recommendation == nil { return true }
+        let t = title.lowercased()
+        if t.contains("sem causa") || t.contains("saudável") || t.contains("tudo certo") || t.contains("normal") {
+            return true
+        }
+        return false
+    }
+
     private func isGoodStatus(_ status: String) -> Bool {
         let s = status.uppercased()
         return s.contains("TUDO CERTO") || s.contains("BOM") || s.contains("EXCELENTE") || s.contains("SAUDÁVEL") || s.contains("CONCLUÍDO")
     }
 
-    private func measurementEvidenceRow(title: String, value: String) -> some View {
+    private func measurementEvidenceRow(title: String, value: String, isWarning: Bool = false) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
+            Image(systemName: isWarning ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
                 .font(.bodyRegular)
-                .foregroundColor(.statusGood)
+                .foregroundColor(isWarning ? .statusAttention : .statusGood)
                 .frame(width: 20)
 
             Text(title)
@@ -484,7 +509,7 @@ struct AssistView: View {
 
             Text(value)
                 .font(.bodyRegularStrong)
-                .foregroundColor(.textSecondary)
+                .foregroundColor(isWarning ? .statusAttention : .textSecondary)
         }
     }
 
