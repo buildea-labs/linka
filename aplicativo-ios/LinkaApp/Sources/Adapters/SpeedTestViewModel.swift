@@ -927,7 +927,14 @@ public class SpeedTestViewModel: ObservableObject {
         } else if kind == .cellular {
             self.liveWiFiContext = nil
             let hints = await ApplePlatformSignalProvider().currentHints()
-            if let tech = hints.mobile?.technology {
+            let op = hints.mobile?.operatorName?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let tech = hints.mobile?.technology?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if let op, !op.isEmpty, let tech, !tech.isEmpty {
+                self.liveNetworkLabel = "\(op) · \(tech)"
+            } else if let op, !op.isEmpty {
+                self.liveNetworkLabel = op
+            } else if let tech, !tech.isEmpty {
                 self.liveNetworkLabel = tech
             } else {
                 self.liveNetworkLabel = "Rede móvel"

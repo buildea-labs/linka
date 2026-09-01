@@ -479,6 +479,10 @@
 						DevelopmentTeam = 2Z4T8228GR;
 						ProvisioningStyle = Automatic;
 					};
+					184D119CB06D3356F99CEDFE = {
+						DevelopmentTeam = 2Z4T8228GR;
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = C2CE0C2BCF81362355C11576 /* Build configuration list for PBXProject "LinkaApp" */;

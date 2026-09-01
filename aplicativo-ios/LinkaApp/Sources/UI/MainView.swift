@@ -735,6 +735,9 @@ struct MainView: View {
             }
             return "Wi-Fi"
         } else if viewModel.connectionKind == .cellular {
+            if !viewModel.liveNetworkLabel.isEmpty && viewModel.liveNetworkLabel != "Rede móvel" {
+                return viewModel.liveNetworkLabel
+            }
             return "Rede móvel"
         } else if viewModel.connectionKind == .ethernet {
             return "Ethernet"

@@ -93,8 +93,24 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
         let carriers = info.serviceSubscriberCellularProviders ?? [:]
         let technologies = info.serviceCurrentRadioAccessTechnology ?? [:]
 
-        let operatorName = carriers.values.compactMap { $0.carrierName }.first
-        let technology = technologies.values.first.flatMap(mapTechnology(_:))
+        var operatorName: String? = nil
+        if let dataID = info.dataServiceIdentifier,
+           let name = carriers[dataID]?.carrierName?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !name.isEmpty {
+            operatorName = name
+        } else {
+            operatorName = carriers.values
+                .compactMap { $0.carrierName?.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .first { !$0.isEmpty }
+        }
+
+        var technology: String? = nil
+        if let dataID = info.dataServiceIdentifier,
+           let tech = technologies[dataID] {
+            technology = mapTechnology(tech)
+        } else {
+            technology = technologies.values.first.flatMap(mapTechnology(_:))
+        }
 
         guard operatorName != nil || technology != nil else { return nil }
         return PlatformHints.Mobile(technology: technology, operatorName: operatorName)
