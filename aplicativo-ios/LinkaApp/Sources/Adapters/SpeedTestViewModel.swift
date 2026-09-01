@@ -828,15 +828,21 @@ public class SpeedTestViewModel: ObservableObject {
     private static func sampleWiFiContext() async -> WiFiNetworkContext? {
         guard LinkaWiFiPreferences.isIdentificationEnabled else { return nil }
         let hints = await ApplePlatformSignalProvider().currentHints()
-        guard let wifi = hints.wifi, let ssid = wifi.ssid else { return nil }
+        guard let wifi = hints.wifi else { return nil }
+        guard wifi.ssid != nil || wifi.gateway != nil else { return nil }
+
+        let vendorStr = wifi.gateway?.displayName
 
         return WiFiNetworkContext(
-            ssid: ssid,
+            ssid: wifi.ssid,
             accessPointIdentifier: localAccessPointIdentifier(for: wifi.bssid),
             securityType: wifi.securityType,
             bandGHz: wifi.band.flatMap(Double.init),
             rssiDbm: wifi.rssiDbm,
-            linkSpeedMbps: wifi.linkSpeedMbps
+            linkSpeedMbps: wifi.linkSpeedMbps,
+            gatewayIP: wifi.gateway?.ip,
+            gatewayVendor: vendorStr,
+            gatewayAdminURL: wifi.gateway?.adminURL?.absoluteString
         )
     }
 

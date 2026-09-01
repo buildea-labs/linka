@@ -183,10 +183,21 @@ public struct NetworkAssistRecommendation: Codable, Equatable, Sendable {
     public let title: String
     public let description: String
     public let steps: [String]
-    public init(title: String, description: String, steps: [String] = []) {
+    public let actionURL: URL?
+    public let actionLabel: String?
+
+    public init(
+        title: String,
+        description: String,
+        steps: [String] = [],
+        actionURL: URL? = nil,
+        actionLabel: String? = nil
+    ) {
         self.title = title
         self.description = description
         self.steps = steps
+        self.actionURL = actionURL
+        self.actionLabel = actionLabel
     }
 }
 
