@@ -41,10 +41,19 @@ final class NetworkStabilityPatternsViewModel: ObservableObject {
         self.historyLookbackDays = historyLookbackDays
     }
 
-    func load() async {
+    func load(currentMeasurement: NetworkMeasurement?) async {
         guard case .loading = state else { return }
 
         guard let entitlements else {
+            state = .unavailable
+            return
+        }
+        
+        // Identidade da rede: a análise deve comparar apenas medições da mesma rede.
+        guard let current = currentMeasurement,
+              let connectionKind = current.connectionKind,
+              let networkIdentifier = current.networkIdentifier else {
+            // Ausência de informação nunca deve virar identidade presumida.
             state = .unavailable
             return
         }
@@ -65,15 +74,21 @@ final class NetworkStabilityPatternsViewModel: ObservableObject {
         )
 
         guard let reports = try? analyzer.analyze(measurements) else {
-            // `notEntitled` (Free) ou medição inválida — a `AssistView` já é
-            // uma superfície Plus-only, então isso só aconteceria por uma
-            // inconsistência de estado; tratar como "sem seção" é honesto e
-            // não bloqueia o resto do Assist.
+            // `notEntitled` (Free) ou medição inválida
             state = .unavailable
             return
         }
+        
+        // Filtra apenas o relatório correspondente à rede da medição atual
+        guard let currentNetworkReport = reports.first(where: {
+            $0.connectionKind == connectionKind && $0.networkIdentifier == networkIdentifier
+        }) else {
+            // Se não encontrou o grupo nos elegíveis, é porque não há histórico suficiente.
+            state = .insufficientHistory
+            return
+        }
 
-        let narratives = reports.flatMap { $0.metricNarratives.map(\.narrative) }
+        let narratives = currentNetworkReport.metricNarratives.map(\.narrative)
 
         let sentences = narratives.compactMap { narrative -> String? in
             if case .factual(let text) = narrative { return text }
@@ -85,9 +100,7 @@ final class NetworkStabilityPatternsViewModel: ObservableObject {
             return
         }
 
-        // Nenhuma frase: decide entre "sem padrão" (já avaliamos, está
-        // estável) e "dado insuficiente" (ainda não dá para avaliar) olhando
-        // se ao menos uma métrica de algum grupo já foi de fato avaliada.
+        // Nenhuma frase: decide entre "sem padrão" e "dado insuficiente"
         let hasAnyEvaluatedMetric = narratives.contains {
             if case .noPatternDetected = $0 { return true }
             return false
