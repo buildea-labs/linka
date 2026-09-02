@@ -12,6 +12,7 @@ import MeasurementHistory
 import NetworkCore
 import LinkaEntitlements
 import LinkaModules
+import LinkaWidgetShared
 
 
 public enum SpeedTestUIPhase {
@@ -456,6 +457,15 @@ public class SpeedTestViewModel: ObservableObject {
                         // Falha ao salvar no histórico não derruba o fluxo de medição.
                     }
                     self.loadLastTest()
+                    
+                    let summary = LinkaWidgetShared.LatestMeasurementSummary(
+                        downloadMbps: self.downloadSpeed,
+                        uploadMbps: self.uploadSpeed > 0 ? self.uploadSpeed : nil,
+                        latencyMs: self.ping > 0 ? Double(self.ping) : nil,
+                        measuredAt: m.measuredAt
+                    )
+                    LinkaWidgetShared.writeLatestSummary(summary)
+                    WidgetCenter.shared.reloadTimelines(ofKind: LinkaWidgetShared.widgetKind)
                 }
                 
                 self.isTesting = false
