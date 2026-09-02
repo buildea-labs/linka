@@ -1,6 +1,7 @@
 import Foundation
 import NetworkAssist
 import NetworkCore
+import NetworkInsights
 
 @MainActor
 final class AssistViewModel: ObservableObject {
@@ -154,11 +155,48 @@ final class AssistViewModel: ObservableObject {
             )
         }
 
+        var allEvidence = [currentEvidence] + recentEvidence
+        
+        let responsivenessResult = LoadResponsivenessEvaluator.evaluate(
+            idleLatencyMs: currentMeasurement.latencyMs,
+            loadedDownloadLatencyMs: currentMeasurement.loadedLatencyMs,
+            loadedUploadLatencyMs: currentMeasurement.loadedLatencyUploadMs
+        )
+        if responsivenessResult.category != .notAssessed {
+            allEvidence.append(NetworkAssistEvidence(
+                id: "responsiveness:\(currentMeasurement.id.uuidString.lowercased())",
+                kind: .statistic,
+                metricKey: "loadResponsivenessCategory",
+                direction: responsivenessResult.category.rawValue,
+                sourceMeasurementIDs: [currentMeasurement.id]
+            ))
+            if let downloadDelta = responsivenessResult.downloadComparison.absoluteDelta {
+                allEvidence.append(NetworkAssistEvidence(
+                    id: "responsiveness-dl-delta:\(currentMeasurement.id.uuidString.lowercased())",
+                    kind: .comparison,
+                    metricKey: "loadedLatencyMsDelta",
+                    value: downloadDelta,
+                    unit: "ms",
+                    sourceMeasurementIDs: [currentMeasurement.id]
+                ))
+            }
+            if let uploadDelta = responsivenessResult.uploadComparison.absoluteDelta {
+                allEvidence.append(NetworkAssistEvidence(
+                    id: "responsiveness-ul-delta:\(currentMeasurement.id.uuidString.lowercased())",
+                    kind: .comparison,
+                    metricKey: "loadedLatencyUploadMsDelta",
+                    value: uploadDelta,
+                    unit: "ms",
+                    sourceMeasurementIDs: [currentMeasurement.id]
+                ))
+            }
+        }
+
         return NetworkAssistContext(
             question: "Interprete esta medição com os dados disponíveis.",
             currentMeasurement: currentMeasurement,
             recentMeasurements: Array(recent),
-            evidence: [currentEvidence] + recentEvidence,
+            evidence: allEvidence,
             usageContext: usageContext?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
             objective: objective,
             subcategory: subcategory,

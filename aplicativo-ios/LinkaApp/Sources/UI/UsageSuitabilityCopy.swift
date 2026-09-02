@@ -32,7 +32,16 @@ enum LoadResponsivenessCopy {
         }
     }
 
-    static let explanation = "Quanto o tempo de resposta piora quando a conexão está ocupada baixando ou enviando dados — sinal de fila cheia no roteador, mesmo com a velocidade medida normal."
+    static func explanation(for category: LoadResponsivenessCategory) -> String {
+        switch category {
+        case .high:
+            return "A conexão continua respondendo bem mesmo durante uso intenso."
+        case .medium, .low:
+            return "A conexão demora mais para responder quando está ocupada."
+        case .notAssessed:
+            return "Não foi possível avaliar a responsividade nesta medição."
+        }
+    }
 }
 
 /// Traduz o veredito puro de `UsageSuitabilityReport` (NetworkInsights) numa

@@ -31,14 +31,14 @@ struct MeasurementDetailView: View {
         ).isGranted
     }
 
-    private var responsiveness: LoadResponsivenessCategory? {
+    private var responsivenessResult: LoadResponsivenessResult? {
         guard let measurement else { return nil }
         let result = LoadResponsivenessEvaluator.evaluate(
             idleLatencyMs: measurement.latencyMs,
             loadedDownloadLatencyMs: measurement.loadedLatencyMs,
             loadedUploadLatencyMs: measurement.loadedLatencyUploadMs
         )
-        return result.category == .notAssessed ? nil : result.category
+        return result.category == .notAssessed ? nil : result
     }
 
     var body: some View {
@@ -220,16 +220,49 @@ struct MeasurementDetailView: View {
             }
 
             // SEÇÃO DESEMPENHO SOB CARGA
-            if let measurement, measurement.loadedLatencyMs != nil || measurement.loadedLatencyUploadMs != nil || responsiveness != nil {
+            if let measurement, measurement.loadedLatencyMs != nil || measurement.loadedLatencyUploadMs != nil || responsivenessResult != nil {
                 Section("Desempenho sob carga") {
-                    if let responsiveness {
-                        LabeledContent("Responsividade", value: LoadResponsivenessCopy.label(for: responsiveness))
+                    if let result = responsivenessResult {
+                        LabeledContent("Responsividade", value: LoadResponsivenessCopy.label(for: result.category))
+                        
+                        Text(LoadResponsivenessCopy.explanation(for: result.category))
+                            .font(.bodySmall)
+                            .foregroundColor(.textSecondary)
+                            .padding(.bottom, 8)
                     }
+                    
+                    if let ping = measurement.latencyMs {
+                        LabeledContent("Em repouso", value: String(format: "%.0f ms", ping))
+                    } else {
+                        LabeledContent("Em repouso", value: "Não avaliada")
+                    }
+
                     if let loadedDl = measurement.loadedLatencyMs {
-                        LabeledContent("Latência em download", value: String(format: "%.0f ms", loadedDl))
+                        VStack(alignment: .leading, spacing: 2) {
+                            LabeledContent("Durante download", value: String(format: "%.0f ms", loadedDl))
+                            if let delta = responsivenessResult?.downloadComparison.absoluteDelta, delta > 0 {
+                                Text(String(format: "+%.0f ms", delta))
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                            }
+                        }
+                    } else {
+                        LabeledContent("Durante download", value: "Não avaliada")
                     }
+                    
                     if let loadedUl = measurement.loadedLatencyUploadMs {
-                        LabeledContent("Latência em upload", value: String(format: "%.0f ms", loadedUl))
+                        VStack(alignment: .leading, spacing: 2) {
+                            LabeledContent("Durante upload", value: String(format: "%.0f ms", loadedUl))
+                            if let delta = responsivenessResult?.uploadComparison.absoluteDelta, delta > 0 {
+                                Text(String(format: "+%.0f ms", delta))
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                            }
+                        }
+                    } else {
+                        LabeledContent("Durante upload", value: "Não avaliada")
                     }
                 }
             }
