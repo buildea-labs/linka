@@ -35,9 +35,7 @@ struct ExpertModeMigrationBanner: View {
                 .foregroundColor(.textSecondary)
 
             Button(action: onOpenPurchase) {
-                Text("Ver Linka Plus")
-                    .font(.bodySmallStrong)
-                    .foregroundColor(.textPrimary)
+                LinkaPlusWordmarkView(height: 18)
                     .frame(minHeight: 44)
             }
             .buttonStyle(.plain)
