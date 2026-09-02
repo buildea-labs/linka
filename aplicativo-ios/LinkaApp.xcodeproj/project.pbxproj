@@ -82,6 +82,7 @@
 		AB6FC29CEC4D5920EB901F01 /* LinkaWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6052814E829E396518A3EB18 /* LinkaWidgetBundle.swift */; };
 		B49CE021825E80DC95B954AA /* AssistContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD4A980DC574793818E97A1 /* AssistContainer.swift */; };
 		BB664E873410EAC7F101D24B /* ApplePlatformSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */; };
+		BBCD26A5CB7293C88A0A8577 /* LinkaPlusWordmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D579EFF3B620AD5DF92A3A87 /* LinkaPlusWordmarkView.swift */; };
 		C52F715538667A43E3CCA1CA /* NetworkConnectivityTriage in Frameworks */ = {isa = PBXBuildFile; productRef = CAACD50C2B8842A2FFB7FDB9 /* NetworkConnectivityTriage */; };
 		C60712F038F34BAF07AEDEC6 /* MeasurementDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8549C59760252CA889B5156 /* MeasurementDetailView.swift */; };
 		C795EB7B3D3C235CC07EB505 /* AssistViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78285EB65890B076CF8D41D4 /* AssistViewModelTests.swift */; };
@@ -98,6 +99,7 @@
 		E1CC58942197732477D20D52 /* SpeedTestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E816515881C246C6E28B0653 /* SpeedTestViewModel.swift */; };
 		E8738446F6E9EC9EAF2DFDE5 /* ApplePlatformSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */; };
 		EB421BFDB3D4D610383923F1 /* ApplePlatformSignalProviderCWChannelBandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */; };
+		EB7A405CD698C36FF965DEFC /* LinkaPlusWordmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D579EFF3B620AD5DF92A3A87 /* LinkaPlusWordmarkView.swift */; };
 		EDB56794300BC7672DA8F80B /* LinkaWidgetShared in Frameworks */ = {isa = PBXBuildFile; productRef = A80A78B4DB132E6B27081B7D /* LinkaWidgetShared */; };
 		EDEF20B20E5B665AE314BE04 /* LinkaExternalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8AF9B7DA6D4CDD2574E7338 /* LinkaExternalLinks.swift */; };
 		EF62A8D76558A6AE56DB658A /* LinkaWidgetShared in Frameworks */ = {isa = PBXBuildFile; productRef = FA1CE84A7C31AEF2F4A97972 /* LinkaWidgetShared */; };
@@ -185,6 +187,7 @@
 		CA202D7A1FB600A3F43CD0ED /* AssistProblemSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistProblemSelectionView.swift; sourceTree = "<group>"; };
 		D0E2413E81B1C0AF7D31BBC0 /* AssistFailureSignalMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistFailureSignalMapping.swift; sourceTree = "<group>"; };
 		D1FD5CA0E57F84DC90BE11A5 /* HistoricalMeasurementDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoricalMeasurementDetailView.swift; sourceTree = "<group>"; };
+		D579EFF3B620AD5DF92A3A87 /* LinkaPlusWordmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaPlusWordmarkView.swift; sourceTree = "<group>"; };
 		DA0EFE129DED2C73A20E81CA /* AssistViewCloseSheetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistViewCloseSheetTests.swift; sourceTree = "<group>"; };
 		DD77BB89224BDA9466A65983 /* AssistViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistViewModel.swift; sourceTree = "<group>"; };
 		DE74213A4D06EC1A6FF5E698 /* LinkaWidgetShared */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaWidgetShared; path = LinkaWidgetShared; sourceTree = SOURCE_ROOT; };
@@ -268,6 +271,7 @@
 				A41173010B41EF48DE2606B1 /* ExpertModeMigrationBanner.swift */,
 				D1FD5CA0E57F84DC90BE11A5 /* HistoricalMeasurementDetailView.swift */,
 				E86E6389194D1938B09BEE51 /* HistoryView.swift */,
+				D579EFF3B620AD5DF92A3A87 /* LinkaPlusWordmarkView.swift */,
 				C60A040FE4E49231CD858102 /* MainView.swift */,
 				F8549C59760252CA889B5156 /* MeasurementDetailView.swift */,
 				179DA64F9C7059B7A140B92E /* MetricRing.swift */,
@@ -573,6 +577,7 @@
 				CF3CD7092B1A2A05068FD02F /* LinkaApp.swift in Sources */,
 				2C291F8573C9E0671BC7752F /* LinkaAppShortcuts.swift in Sources */,
 				488426897164BFA011DA2076 /* LinkaExternalLinks.swift in Sources */,
+				EB7A405CD698C36FF965DEFC /* LinkaPlusWordmarkView.swift in Sources */,
 				2AD6E6F6C8A5849D189EFFD5 /* MainView.swift in Sources */,
 				603A8E30B36D42DEA88139DD /* MeasurementDetailView.swift in Sources */,
 				99DC47095EFAC9A6C617FE64 /* MetricRing.swift in Sources */,
@@ -631,6 +636,7 @@
 				D023E595162ADE7D1452F5EC /* LinkaApp.swift in Sources */,
 				12E02BB6A2E493EAC2C1D151 /* LinkaAppShortcuts.swift in Sources */,
 				EDEF20B20E5B665AE314BE04 /* LinkaExternalLinks.swift in Sources */,
+				BBCD26A5CB7293C88A0A8577 /* LinkaPlusWordmarkView.swift in Sources */,
 				9D9CAA41523C5B4063A18FF2 /* MainView.swift in Sources */,
 				C60712F038F34BAF07AEDEC6 /* MeasurementDetailView.swift in Sources */,
 				22ACBF6A87B265E99D871533 /* MetricRing.swift in Sources */,
