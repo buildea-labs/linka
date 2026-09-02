@@ -31,14 +31,26 @@ final class LinkaWidgetSharedTests: XCTestCase {
         XCTAssertEqual(read, summary)
     }
 
+    func testAbsentDataIsNotZeroed() {
+        let summary = LinkaWidgetShared.LatestMeasurementSummary(
+            downloadMbps: 123.4,
+            uploadMbps: nil,
+            latencyMs: nil,
+            measuredAt: Date(timeIntervalSince1970: 1_700_000_000)
+        )
+
+        LinkaWidgetShared.writeLatestSummary(summary, userDefaults: testDefaults)
+        let read = LinkaWidgetShared.readLatestSummary(userDefaults: testDefaults)
+
+        XCTAssertEqual(read?.downloadMbps, 123.4)
+        XCTAssertNil(read?.uploadMbps)
+        XCTAssertNil(read?.latencyMs)
+    }
+
     func testReadWithoutPriorWriteReturnsNil() {
         XCTAssertNil(LinkaWidgetShared.readLatestSummary(userDefaults: testDefaults))
     }
 
-    /// Simula o App Group ainda não provisionado no Apple Developer Portal
-    /// (mesma pendência de conta documentada em
-    /// `LinkaWidgetShared.appGroupIdentifier`) — leitura deve virar `nil`,
-    /// nunca crash.
     func testReadWithUnavailableAppGroupReturnsNilInsteadOfCrashing() {
         XCTAssertNil(LinkaWidgetShared.readLatestSummary(userDefaults: nil))
     }
@@ -53,14 +65,8 @@ final class LinkaWidgetSharedTests: XCTestCase {
             ),
             userDefaults: nil
         )
-        // Nada para asserir além de não travar — `nil` não tem onde
-        // escrever por definição.
     }
 
-    /// `widgetKind` precisa bater exatamente com o `kind:` de
-    /// `StaticConfiguration` em `LinkaSpeedTestWidget` (target `LinkaWidget`,
-    /// fora do alcance de `swift test` deste pacote) — travado aqui como
-    /// contrato explícito para não divergir silenciosamente.
     func testWidgetKindIsStableForReloadTimelines() {
         XCTAssertEqual(LinkaWidgetShared.widgetKind, "LinkaSpeedTestWidget")
     }
