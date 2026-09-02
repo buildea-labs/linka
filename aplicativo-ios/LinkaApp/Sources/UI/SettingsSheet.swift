@@ -88,7 +88,15 @@ struct SettingsView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
-        .sheet(isPresented: $showPurchase) { PurchaseSheet(entryPoint: purchaseEntryPoint) }
+        .sheet(isPresented: $showPurchase) { 
+            PurchaseSheet(entryPoint: purchaseEntryPoint) {
+                if purchaseEntryPoint == .advancedWiFi {
+                    openAdvancedWiFi()
+                } else if purchaseEntryPoint == .settings {
+                    showSubscriptionManagement = true
+                }
+            }
+        }
         .sheet(isPresented: $showSubscriptionManagement) { SubscriptionManagementSheet() }
         .task {
             await entitlements.refreshSnapshot()

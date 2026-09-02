@@ -16,13 +16,31 @@ struct PurchaseSheet: View {
         self.onPurchaseCompleted = onPurchaseCompleted
     }
 
-    private let plusBenefits = [
-        "Assist explica o resultado",
-        "Identifica problemas recorrentes",
-        "Compara seu histórico",
-        "Diagnóstico avançado de Wi-Fi",
-        "Sem anúncios"
-    ]
+    private var plusBenefits: [String] {
+        var benefits = [
+            "Assist explica o resultado",
+            "Identifica problemas recorrentes",
+            "Compara seu histórico",
+            "Diagnóstico avançado de Wi-Fi"
+        ]
+
+        switch entryPoint {
+        case .assist:
+            benefits.removeAll { $0 == "Assist explica o resultado" }
+            benefits.insert("Assist explica o resultado", at: 0)
+        case .historyInsights:
+            benefits.removeAll { $0 == "Compara seu histórico" || $0 == "Identifica problemas recorrentes" }
+            benefits.insert("Identifica problemas recorrentes", at: 0)
+            benefits.insert("Compara seu histórico", at: 1)
+        case .advancedWiFi:
+            benefits.removeAll { $0 == "Diagnóstico avançado de Wi-Fi" }
+            benefits.insert("Diagnóstico avançado de Wi-Fi", at: 0)
+        case .settings:
+            break
+        }
+        
+        return benefits
+    }
 
     var body: some View {
         ZStack {
@@ -49,12 +67,12 @@ struct PurchaseSheet: View {
                             .foregroundColor(.textPrimary)
                             .padding(.top, 16)
 
-                        Text("Linka Plus")
+                        Text(entryPoint.title)
                             .font(.displayTitle)
                             .foregroundColor(.textPrimary)
                             .padding(.top, 16)
 
-                        Text("Entenda sua conexão, não apenas a velocidade.")
+                        Text(entryPoint.subtitle)
                             .font(.bodyRegular)
                             .foregroundColor(.textSecondary)
                             .multilineTextAlignment(.center)
