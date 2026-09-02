@@ -73,7 +73,7 @@ public struct DefaultNetworkSystemAPI: NetworkSystemAPI {
     }
 
     public func getGateway(forInterface name: String) -> String? {
-        #if canImport(Darwin)
+        #if os(macOS)
         var mib: [Int32] = [CTL_NET, PF_ROUTE, 0, AF_INET, NET_RT_FLAGS, RTF_GATEWAY]
         var size: Int = 0
         if sysctl(&mib, 6, nil, &size, nil, 0) < 0 { return nil }
@@ -128,6 +128,11 @@ public struct DefaultNetworkSystemAPI: NetworkSystemAPI {
         }
         return nil
         #else
+        // No iOS, as APIs públicas (rt_msghdr2, RTAX_GATEWAY) que expõem a tabela de roteamento não estão disponíveis.
+        // A issue #142 especifica: "Se as APIs públicas disponíveis no iOS não permitirem determinar algum cenário
+        // com confiabilidade, não contorne a plataforma usando private API. Documente a limitação e implemente o
+        // comportamento seguro de 'não identificado'".
+        // Portanto, em iOS, retornamos nil de forma segura, impedindo heurísticas falsas como .1.
         return nil
         #endif
     }
