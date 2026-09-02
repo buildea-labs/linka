@@ -18,26 +18,61 @@ struct LinkaApp: App {
 
         let executor = LinkaAppIntentExecutor { action in
             let snapshot = await MainActor.run { entitlementProvider.snapshot }
-            let decision = LinkaEntitlementPolicy.decision(
-                for: .appleIntegrations,
-                snapshot: snapshot
-            )
-
-            guard decision.isGranted else {
+            
+            switch action {
+            case .startSpeedTest:
                 await MainActor.run {
-                    AppIntentCoordinator.shared.requestPurchasePrompt()
+                    AppIntentCoordinator.shared.requestStartSpeedTest()
                 }
-                return LinkaSystemActionResponse(action: action)
+                return LinkaSystemActionResponse(action: .startSpeedTest)
+                
+            case .getLatestResult:
+                let repository = LinkaMeasurementHistory.makeRepository(entitlements: entitlementProvider)
+                let query = MeasurementQuery(limit: 1, sortOrder: .newestFirst)
+                if let latest = try? await repository.measurements(matching: query).first {
+                    var parts: [String] = []
+                    if let down = latest.downloadMbps {
+                        parts.append("\(Int(round(down))) Mbps de download")
+                    }
+                    if let up = latest.uploadMbps {
+                        parts.append("\(Int(round(up))) Mbps de upload")
+                    }
+                    if let ping = latest.latencyMs {
+                        parts.append("ping \(Int(round(ping))) ms")
+                    }
+                    
+                    let resultString = parts.joined(separator: ", ")
+                    return LinkaSystemActionResponse(action: .getLatestResult, value: resultString)
+                }
+                return LinkaSystemActionResponse(action: .getLatestResult, value: "Você ainda não tem uma medição no Linka.")
+                
+            default:
+                let decision = LinkaEntitlementPolicy.decision(
+                    for: .appleIntegrations,
+                    snapshot: snapshot
+                )
+                
+                guard decision.isGranted else {
+                    await MainActor.run {
+                        AppIntentCoordinator.shared.requestPurchasePrompt()
+                    }
+                    return LinkaSystemActionResponse(action: action)
+                }
+                
+                if action == .openHistory {
+                    await MainActor.run {
+                        AppIntentCoordinator.shared.requestOpenHistory()
+                    }
+                    return LinkaSystemActionResponse(action: .openHistory)
+                } else if action == .openLatestMeasurement {
+                    await MainActor.run {
+                        AppIntentCoordinator.shared.requestOpenLatestMeasurement()
+                    }
+                    return LinkaSystemActionResponse(action: .openLatestMeasurement)
+                } else {
+                    throw LinkaAppIntentExecutionError.notConfigured
+                }
             }
-
-            guard action == .startSpeedTest else {
-                throw LinkaAppIntentExecutionError.notConfigured
-            }
-
-            await MainActor.run {
-                AppIntentCoordinator.shared.requestStartSpeedTest()
-            }
-            return LinkaSystemActionResponse(action: .startSpeedTest)
         }
         AppDependencyManager.shared.add(dependency: executor)
     }
