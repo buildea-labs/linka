@@ -50,11 +50,11 @@ final class SettingsProductionStateTests: XCTestCase {
                     "CFBundleVersion": "57"
                 ]
             ),
-            "2.3.4 (build 57)"
+            "2.3.4 (57)"
         )
         XCTAssertEqual(
             LinkaAppVersion.displayString(infoDictionary: [:]),
-            "1.0 (build 1)"
+            "1.0.0 (1)"
         )
     }
 

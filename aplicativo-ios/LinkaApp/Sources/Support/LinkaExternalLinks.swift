@@ -78,7 +78,7 @@ enum LinkaAppVersion {
     static func displayString(infoDictionary: [String: Any] = Bundle.main.infoDictionary ?? [:]) -> String {
         let version = infoDictionary["CFBundleShortVersionString"] as? String
         let build = infoDictionary["CFBundleVersion"] as? String
-        return "\(clean(version, fallback: "1.0")) (build \(clean(build, fallback: "1")))"
+        return "\(clean(version, fallback: "1.0.0")) (\(clean(build, fallback: "1")))"
     }
 
     private static func clean(_ value: String?, fallback: String) -> String {
