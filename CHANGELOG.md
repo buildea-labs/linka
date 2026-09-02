@@ -1,11 +1,16 @@
-# Release Notes — Linka SpeedTest
+# CHANGELOG - Linka
 
-Este documento é atualizado automaticamente ao fim de cada ciclo pela inteligência do Antigravity (Giam). As notas aqui são redigidas em tom comercial e focadas no valor entregue ao usuário final.
+Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
+
+## [v1.1.0] - 2026-09-01
+### Melhorias
+- Padronização do processo de release e versionamento (Issue #150).
+- Unificação da versão na tela de Ajustes para o formato "1.1.0 (42)".
+- CI evoluído para validar consistência de versão e build number, e testes em Release.
 
 ---
 
-## Versão 1.0.0-beta (Build 2)
-**Data de Lançamento:** Agosto 2026
+## [v1.0.0-beta] - Agosto 2026
 
 ### O Início do Fim da Fricção
 O Linka nasce hoje como a ferramenta de medição mais limpa e focada do ecossistema Apple. Deixamos as interfaces poluídas, os gráficos complexos e as obrigatoriedades de login para trás. Construímos um utilitário nativo que respeita o seu tempo e o design do seu iPhone.
