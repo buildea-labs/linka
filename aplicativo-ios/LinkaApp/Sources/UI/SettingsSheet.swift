@@ -26,9 +26,19 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Linka Plus") {
+            Section {
                 Button(action: openSubscription) {
-                    settingsRow(title: "Linka Plus", value: subscriptionStatusText, systemImage: "sparkles")
+                    HStack {
+                        LinkaPlusWordmarkView(height: 20)
+                        Spacer()
+                        Text(subscriptionStatusText)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.trailing)
+                            .lineLimit(2)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(.textSecondary.opacity(0.6))
+                    }
                 }
             }
 
