@@ -21,7 +21,7 @@ final class NetworkStabilityPatternsViewModelTests: XCTestCase {
     }
 }
 
-class MockEntitlements: StoreKitEntitlementProvider {
+class MockEntitlements: LinkaEntitlementProviding {
     var snapshot: LinkaEntitlementSnapshot
     
     init(snapshot: LinkaEntitlementSnapshot) {
@@ -29,4 +29,8 @@ class MockEntitlements: StoreKitEntitlementProvider {
     }
     
     func refresh() async {}
+    
+    func hasAccess(to capability: LinkaCapability) async -> Bool {
+        return LinkaEntitlementPolicy.decision(for: capability, snapshot: snapshot).isGranted
+    }
 }

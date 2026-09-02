@@ -30,11 +30,11 @@ final class NetworkStabilityPatternsViewModel: ObservableObject {
 
     @Published private(set) var state: State = .loading
 
-    private let entitlements: StoreKitEntitlementProvider?
+    private let entitlements: (any LinkaEntitlementProviding)?
     private let historyLookbackDays: Int
 
     init(
-        entitlements: StoreKitEntitlementProvider?,
+        entitlements: (any LinkaEntitlementProviding)?,
         historyLookbackDays: Int = 90
     ) {
         self.entitlements = entitlements
@@ -49,10 +49,22 @@ final class NetworkStabilityPatternsViewModel: ObservableObject {
             return
         }
         
-        // Identidade da rede: a análise deve comparar apenas medições da mesma rede.
+        // Identidade canônica da rede
         guard let current = currentMeasurement,
-              let connectionKind = current.connectionKind,
-              let networkIdentifier = current.networkIdentifier else {
+              let connectionKind = current.connectionKind else {
+            state = .unavailable
+            return
+        }
+        
+        let canonicalIdentifier: String?
+        if connectionKind == .wifi {
+            canonicalIdentifier = current.wifiContext?.ssid ?? current.networkIdentifier
+        } else {
+            canonicalIdentifier = current.networkIdentifier
+        }
+        
+        guard let networkIdentifier = canonicalIdentifier,
+              !networkIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             // Ausência de informação nunca deve virar identidade presumida.
             state = .unavailable
             return
