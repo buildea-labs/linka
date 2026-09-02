@@ -1,106 +1,140 @@
 import XCTest
 @testable import NetworkDiagnostics
 
+// Mocks para simular retornos de sysctl/getifaddrs
+struct MockNetworkSystemAPI: NetworkSystemAPI {
+    var interfaces: [(name: String, flags: Int32, isLoopback: Bool, ipv4: String, netmask: String)] = []
+    var gateways: [String: String] = [:] // interface -> gateway IP
+    
+    func getInterfaces() -> [(name: String, flags: Int32, isLoopback: Bool, ipv4: String, netmask: String)] {
+        return interfaces
+    }
+    
+    func getGateway(forInterface name: String) -> String? {
+        return gateways[name]
+    }
+}
+
 final class GatewayDiscoveryTests: XCTestCase {
 
-    func testResolveDefaultGatewayCalculatesCorrectIP() {
-        // Subrede clássica /24 (192.168.1.0/24)
-        let gw1 = LocalGatewayDiscovery.resolveDefaultGateway(forIP: "192.168.1.145", netmask: "255.255.255.0")
-        XCTAssertEqual(gw1, "192.168.1.1")
+    let upAndRunningFlags: Int32 = 0x1 | 0x40 // Simulate IFF_UP | IFF_RUNNING
 
-        // Subrede /24 com base zero (192.168.0.0/24)
-        let gw2 = LocalGatewayDiscovery.resolveDefaultGateway(forIP: "192.168.0.22", netmask: "255.255.255.0")
-        XCTAssertEqual(gw2, "192.168.0.1")
-
-        // Subrede 10.0.0.0/24
-        let gw3 = LocalGatewayDiscovery.resolveDefaultGateway(forIP: "10.0.0.77", netmask: "255.255.255.0")
-        XCTAssertEqual(gw3, "10.0.0.1")
-
-        // IP inválido
-        let gwInvalid = LocalGatewayDiscovery.resolveDefaultGateway(forIP: "invalido", netmask: "255.255.255.0")
-        XCTAssertNil(gwInvalid)
-    }
-
-    func testGatewayVendorFingerprinterMatchesTPLink() {
-        let match1 = GatewayVendorFingerprinter.match(
-            serverHeader: "RomPager/4.51",
-            authHeader: "Basic realm=\"TP-Link Wireless Router Archer C6\"",
-            htmlTitle: "Archer C6",
-            bodySnippet: nil
-        )
-        XCTAssertEqual(match1?.vendor, "TP-Link")
-        XCTAssertEqual(match1?.model, "Archer C6")
-
-        let match2 = GatewayVendorFingerprinter.match(
-            serverHeader: nil,
-            authHeader: nil,
-            htmlTitle: "Deco M4 Login",
-            bodySnippet: "Bem-vindo ao TP-Link Deco M4"
-        )
-        XCTAssertEqual(match2?.vendor, "TP-Link")
-        XCTAssertEqual(match2?.model, "Deco M4")
-    }
-
-    func testGatewayVendorFingerprinterMatchesHuawei() {
-        let match = GatewayVendorFingerprinter.match(
-            serverHeader: "HuaweiHomeGateway",
-            authHeader: nil,
-            htmlTitle: "EchoLife HG8245W5",
-            bodySnippet: nil
-        )
-        XCTAssertEqual(match?.vendor, "Huawei")
-        XCTAssertEqual(match?.model, "HG8245W5")
-    }
-
-    func testGatewayVendorFingerprinterMatchesIntelbras() {
-        let match = GatewayVendorFingerprinter.match(
-            serverHeader: "micro_httpd",
-            authHeader: "Basic realm=\"Intelbras Twibi Giga\"",
-            htmlTitle: "Intelbras Twibi",
-            bodySnippet: nil
-        )
-        XCTAssertEqual(match?.vendor, "Intelbras")
-        XCTAssertEqual(match?.model, "Twibi Giga")
-    }
-
-    func testGatewayVendorFingerprinterMatchesZTEAndMikroTik() {
-        let matchZTE = GatewayVendorFingerprinter.match(
-            serverHeader: "ZTE Web Server",
-            authHeader: nil,
-            htmlTitle: "ZXHN F670L",
-            bodySnippet: nil
-        )
-        XCTAssertEqual(matchZTE?.vendor, "ZTE")
-        XCTAssertEqual(matchZTE?.model, "ZXHN F670L")
-
-        let matchMikroTik = GatewayVendorFingerprinter.match(
-            serverHeader: "RouterOS v7.12",
-            authHeader: nil,
-            htmlTitle: "MikroTik RouterOS",
-            bodySnippet: nil
-        )
-        XCTAssertEqual(matchMikroTik?.vendor, "MikroTik")
-        XCTAssertEqual(matchMikroTik?.model, "RouterOS")
-    }
-
-    func testGatewayVendorFingerprinterReturnsNilForUnknown() {
-        let match = GatewayVendorFingerprinter.match(
-            serverHeader: "nginx",
-            authHeader: nil,
-            htmlTitle: "Welcome",
-            bodySnippet: "Hello World"
-        )
-        XCTAssertNil(match)
+    func testIsPrivateIPv4() {
+        XCTAssertTrue(LocalGatewayDiscovery.isPrivateIPv4("192.168.1.1"), "Deve aceitar IP 192.168.x.x")
+        XCTAssertTrue(LocalGatewayDiscovery.isPrivateIPv4("10.0.0.1"), "Deve aceitar IP 10.x.x.x")
+        XCTAssertTrue(LocalGatewayDiscovery.isPrivateIPv4("172.16.0.1"), "Deve aceitar IP 172.16.x.x")
+        XCTAssertTrue(LocalGatewayDiscovery.isPrivateIPv4("172.31.255.254"), "Deve aceitar IP 172.31.x.x")
+        XCTAssertTrue(LocalGatewayDiscovery.isPrivateIPv4("169.254.0.1"), "Deve aceitar Link-local")
+        
+        XCTAssertFalse(LocalGatewayDiscovery.isPrivateIPv4("8.8.8.8"), "Não deve aceitar IP público")
+        XCTAssertFalse(LocalGatewayDiscovery.isPrivateIPv4("1.1.1.1"), "Não deve aceitar IP público")
+        XCTAssertFalse(LocalGatewayDiscovery.isPrivateIPv4("127.0.0.1"), "Loopback não deve ser aceito como roteador")
+        XCTAssertFalse(LocalGatewayDiscovery.isPrivateIPv4("invalido"), "Deve rejeitar IP inválido")
     }
 
     func testGatewayInfoDisplayName() {
-        let info1 = GatewayInfo(ip: "192.168.1.1", isAccessible: true, vendorHint: "TP-Link", modelHint: "Archer C6")
-        XCTAssertEqual(info1.displayName, "TP-Link Archer C6")
+        let info = GatewayInfo(ip: "192.168.1.1", isAccessible: false)
+        XCTAssertEqual(info.displayName, "Roteador")
+    }
 
-        let info2 = GatewayInfo(ip: "192.168.1.1", isAccessible: true, vendorHint: "Huawei")
-        XCTAssertEqual(info2.displayName, "Huawei")
+    func testDiscoveryWithValidWifiAndGateway() {
+        var mockAPI = MockNetworkSystemAPI()
+        mockAPI.interfaces = [
+            (name: "en0", flags: upAndRunningFlags, isLoopback: false, ipv4: "192.168.1.100", netmask: "255.255.255.0")
+        ]
+        mockAPI.gateways = ["en0": "192.168.1.1"]
+        
+        let discovery = LocalGatewayDiscovery(systemAPI: mockAPI)
+        let info = discovery.discoverPrimaryInterface()
+        
+        XCTAssertNotNil(info)
+        XCTAssertEqual(info?.name, "en0")
+        XCTAssertEqual(info?.gatewayCandidate, "192.168.1.1")
+    }
 
-        let info3 = GatewayInfo(ip: "192.168.1.1", isAccessible: false)
-        XCTAssertEqual(info3.displayName, "Roteador")
+    func testDiscoveryWithPublicGatewayIsRejected() {
+        var mockAPI = MockNetworkSystemAPI()
+        mockAPI.interfaces = [
+            (name: "en0", flags: upAndRunningFlags, isLoopback: false, ipv4: "192.168.1.100", netmask: "255.255.255.0")
+        ]
+        // Gateway público, deve ser rejeitado por segurança
+        mockAPI.gateways = ["en0": "8.8.8.8"]
+        
+        let discovery = LocalGatewayDiscovery(systemAPI: mockAPI)
+        let info = discovery.discoverPrimaryInterface()
+        
+        XCTAssertNotNil(info)
+        XCTAssertNil(info?.gatewayCandidate, "O gateway público não deve ser atribuído")
+    }
+
+    func testDiscoveryWithVPNIsIgnored() {
+        var mockAPI = MockNetworkSystemAPI()
+        mockAPI.interfaces = [
+            // Interface VPN (utun)
+            (name: "utun0", flags: upAndRunningFlags, isLoopback: false, ipv4: "10.1.1.2", netmask: "255.255.255.255")
+        ]
+        mockAPI.gateways = ["utun0": "10.1.1.1"]
+        
+        let discovery = LocalGatewayDiscovery(systemAPI: mockAPI)
+        let info = discovery.discoverPrimaryInterface()
+        
+        XCTAssertNil(info, "A interface VPN utun deve ser completamente ignorada")
+    }
+
+    func testDiscoveryWithCellularIsIgnored() {
+        var mockAPI = MockNetworkSystemAPI()
+        mockAPI.interfaces = [
+            // Interface celular (pdp_ip)
+            (name: "pdp_ip0", flags: upAndRunningFlags, isLoopback: false, ipv4: "100.64.1.2", netmask: "255.255.255.255")
+        ]
+        mockAPI.gateways = ["pdp_ip0": "100.64.1.1"]
+        
+        let discovery = LocalGatewayDiscovery(systemAPI: mockAPI)
+        let info = discovery.discoverPrimaryInterface()
+        
+        XCTAssertNil(info, "A rede móvel deve ser completamente ignorada")
+    }
+
+    func testDiscoveryWithLoopbackIsIgnored() {
+        var mockAPI = MockNetworkSystemAPI()
+        mockAPI.interfaces = [
+            (name: "lo0", flags: upAndRunningFlags, isLoopback: true, ipv4: "127.0.0.1", netmask: "255.0.0.0")
+        ]
+        mockAPI.gateways = ["lo0": "127.0.0.1"]
+        
+        let discovery = LocalGatewayDiscovery(systemAPI: mockAPI)
+        let info = discovery.discoverPrimaryInterface()
+        
+        XCTAssertNil(info, "Interface de loopback deve ser ignorada")
+    }
+    
+    func testDiscoveryWhenGatewayIsMissing() {
+        var mockAPI = MockNetworkSystemAPI()
+        mockAPI.interfaces = [
+            (name: "en0", flags: upAndRunningFlags, isLoopback: false, ipv4: "192.168.1.100", netmask: "255.255.255.0")
+        ]
+        // Sem gateway configurado
+        mockAPI.gateways = [:]
+        
+        let discovery = LocalGatewayDiscovery(systemAPI: mockAPI)
+        let info = discovery.discoverPrimaryInterface()
+        
+        XCTAssertNotNil(info)
+        XCTAssertNil(info?.gatewayCandidate, "Gateway deve ser nulo se não houver rota padrão")
+    }
+
+    func testDiscoveryWithDifferentPrivateNetwork() {
+        var mockAPI = MockNetworkSystemAPI()
+        // Gateway não terminado em .1
+        mockAPI.interfaces = [
+            (name: "en0", flags: upAndRunningFlags, isLoopback: false, ipv4: "10.0.0.100", netmask: "255.255.255.0")
+        ]
+        mockAPI.gateways = ["en0": "10.0.0.254"]
+        
+        let discovery = LocalGatewayDiscovery(systemAPI: mockAPI)
+        let info = discovery.discoverPrimaryInterface()
+        
+        XCTAssertNotNil(info)
+        XCTAssertEqual(info?.gatewayCandidate, "10.0.0.254", "Deve detectar o gateway real independentemente do final ser .1")
     }
 }

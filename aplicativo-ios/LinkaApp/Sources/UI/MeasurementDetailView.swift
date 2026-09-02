@@ -155,7 +155,7 @@ struct MeasurementDetailView: View {
                             Spacer()
                             if let adminURLString = measurement.wifiContext?.gatewayAdminURL,
                                let url = URL(string: adminURLString) {
-                                Button("Abrir configurações") {
+                                Button("Abrir painel do roteador") {
                                     openURL(url)
                                 }
                                 .font(.bodySmallStrong)
