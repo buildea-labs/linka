@@ -37,9 +37,11 @@ public struct WiFiBandRecommendation: Equatable, Sendable {
 
 public struct WiFiBandRecommendationEvaluator {
     public let minimumGoodSignalDbm: Double
+    public let minimumSamplesRequired: Int
 
-    public init(minimumGoodSignalDbm: Double = -70) {
+    public init(minimumGoodSignalDbm: Double = -70, minimumSamplesRequired: Int = 2) {
         self.minimumGoodSignalDbm = minimumGoodSignalDbm
+        self.minimumSamplesRequired = minimumSamplesRequired
     }
 
     public func evaluate(
@@ -70,13 +72,13 @@ public struct WiFiBandRecommendationEvaluator {
         func medianDownload(for band: Double) -> Double? {
             let values = sameNetworkHistory.compactMap { hist -> Double? in
                 let histBand = hist.wifiBandGHz ?? hist.advancedWiFiDiagnostics?.bandGHz ?? hist.wifiContext?.bandGHz
-                if histBand == band, let speed = hist.downloadMbps {
+                if histBand == band, let speed = hist.downloadMbps, speed > 0 {
                     return speed
                 }
                 return nil
             }.sorted()
             
-            guard !values.isEmpty else { return nil }
+            guard values.count >= minimumSamplesRequired else { return nil }
             let count = values.count
             if count % 2 == 0 {
                 return (values[count/2 - 1] + values[count/2]) / 2.0
