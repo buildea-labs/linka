@@ -117,4 +117,122 @@ final class WiFiBandRecommendationTests: XCTestCase {
         
         XCTAssertNil(result.action)
     }
+
+    // MARK: - Issue 158 tests
+    
+    func test2_4GHz_to_6GHz_Directly() {
+        let evaluator = WiFiBandRecommendationEvaluator()
+        let current = createMeasurement(band: 2.4, rssi: -60, download: 50)
+        let hist1 = createMeasurement(band: 6.0, rssi: -60, download: 200)
+        let hist2 = createMeasurement(band: 6.0, rssi: -60, download: 220)
+        
+        let result = evaluator.evaluate(measurement: current, historicalMeasurements: [hist1, hist2])
+        
+        XCTAssertEqual(result.action, .switchBand(target: .band6GHz))
+        XCTAssertEqual(result.reason, .historicallyBetterOn6GHz)
+    }
+    
+    func test2_4GHz_6GHzInsufficientEvidence() {
+        let evaluator = WiFiBandRecommendationEvaluator()
+        let current = createMeasurement(band: 2.4, rssi: -60, download: 50)
+        let hist1 = createMeasurement(band: 6.0, rssi: -60, download: 200)
+        
+        let result = evaluator.evaluate(measurement: current, historicalMeasurements: [hist1])
+        
+        XCTAssertNil(result.action)
+    }
+    
+    func test2_4GHz_5GHzEligible_6GHzNoEvidence() {
+        let evaluator = WiFiBandRecommendationEvaluator()
+        let current = createMeasurement(band: 2.4, rssi: -60, download: 50)
+        let hist1 = createMeasurement(band: 5.0, rssi: -60, download: 200)
+        let hist2 = createMeasurement(band: 5.0, rssi: -60, download: 220)
+        
+        let result = evaluator.evaluate(measurement: current, historicalMeasurements: [hist1, hist2])
+        
+        XCTAssertEqual(result.action, .switchBand(target: .band5GHz))
+    }
+    
+    func test2_4GHz_BothEligible_Deterministic_5GHzWins() {
+        let evaluator = WiFiBandRecommendationEvaluator()
+        let current = createMeasurement(band: 2.4, rssi: -60, download: 50)
+        let hist5_1 = createMeasurement(band: 5.0, rssi: -60, download: 200)
+        let hist5_2 = createMeasurement(band: 5.0, rssi: -60, download: 200)
+        let hist6_1 = createMeasurement(band: 6.0, rssi: -60, download: 220)
+        let hist6_2 = createMeasurement(band: 6.0, rssi: -60, download: 220)
+        
+        let result = evaluator.evaluate(measurement: current, historicalMeasurements: [hist5_1, hist5_2, hist6_1, hist6_2])
+        
+        XCTAssertEqual(result.action, .switchBand(target: .band5GHz))
+    }
+    
+    func test2_4GHz_BothEligible_Deterministic_6GHzWins() {
+        let evaluator = WiFiBandRecommendationEvaluator()
+        let current = createMeasurement(band: 2.4, rssi: -60, download: 50)
+        let hist5_1 = createMeasurement(band: 5.0, rssi: -60, download: 100)
+        let hist5_2 = createMeasurement(band: 5.0, rssi: -60, download: 100)
+        let hist6_1 = createMeasurement(band: 6.0, rssi: -60, download: 200)
+        let hist6_2 = createMeasurement(band: 6.0, rssi: -60, download: 200)
+        
+        let result = evaluator.evaluate(measurement: current, historicalMeasurements: [hist5_1, hist5_2, hist6_1, hist6_2])
+        
+        XCTAssertEqual(result.action, .switchBand(target: .band6GHz))
+    }
+    
+    func test2_4GHz_5GHzInsufficient_6GHzSufficient() {
+        let evaluator = WiFiBandRecommendationEvaluator()
+        let current = createMeasurement(band: 2.4, rssi: -60, download: 50)
+        let hist5_1 = createMeasurement(band: 5.0, rssi: -60, download: 200)
+        let hist6_1 = createMeasurement(band: 6.0, rssi: -60, download: 200)
+        let hist6_2 = createMeasurement(band: 6.0, rssi: -60, download: 200)
+        
+        let result = evaluator.evaluate(measurement: current, historicalMeasurements: [hist5_1, hist6_1, hist6_2])
+        
+        XCTAssertEqual(result.action, .switchBand(target: .band6GHz))
+    }
+    
+    func test2_4GHz_5GHzSufficient_6GHzInsufficient() {
+        let evaluator = WiFiBandRecommendationEvaluator()
+        let current = createMeasurement(band: 2.4, rssi: -60, download: 50)
+        let hist5_1 = createMeasurement(band: 5.0, rssi: -60, download: 200)
+        let hist5_2 = createMeasurement(band: 5.0, rssi: -60, download: 200)
+        let hist6_1 = createMeasurement(band: 6.0, rssi: -60, download: 300)
+        
+        let result = evaluator.evaluate(measurement: current, historicalMeasurements: [hist5_1, hist5_2, hist6_1])
+        
+        XCTAssertEqual(result.action, .switchBand(target: .band5GHz))
+    }
+    
+    func test2_4GHz_BothInsufficient() {
+        let evaluator = WiFiBandRecommendationEvaluator()
+        let current = createMeasurement(band: 2.4, rssi: -60, download: 50)
+        let hist5_1 = createMeasurement(band: 5.0, rssi: -60, download: 200)
+        let hist6_1 = createMeasurement(band: 6.0, rssi: -60, download: 300)
+        
+        let result = evaluator.evaluate(measurement: current, historicalMeasurements: [hist5_1, hist6_1])
+        
+        XCTAssertNil(result.action)
+    }
+    
+    func test2_4GHz_WeakSignal_6GHzExcellent() {
+        let evaluator = WiFiBandRecommendationEvaluator()
+        let current = createMeasurement(band: 2.4, rssi: -85, download: 10)
+        let hist6_1 = createMeasurement(band: 6.0, rssi: -60, download: 300)
+        let hist6_2 = createMeasurement(band: 6.0, rssi: -60, download: 300)
+        
+        let result = evaluator.evaluate(measurement: current, historicalMeasurements: [hist6_1, hist6_2])
+        
+        XCTAssertNil(result.action)
+    }
+    
+    func test2_4GHz_6GHzDifferentNetwork() {
+        let evaluator = WiFiBandRecommendationEvaluator()
+        let current = createMeasurement(band: 2.4, rssi: -60, download: 50, ssid: "MyWiFi")
+        let hist6_1 = createMeasurement(band: 6.0, rssi: -60, download: 300, ssid: "OtherWiFi")
+        let hist6_2 = createMeasurement(band: 6.0, rssi: -60, download: 300, ssid: "OtherWiFi")
+        
+        let result = evaluator.evaluate(measurement: current, historicalMeasurements: [hist6_1, hist6_2])
+        
+        XCTAssertNil(result.action)
+    }
 }

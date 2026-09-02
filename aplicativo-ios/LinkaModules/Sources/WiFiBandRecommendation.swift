@@ -93,7 +93,35 @@ public struct WiFiBandRecommendationEvaluator {
         switch currentBand {
         case 2.4:
             if rssi > minimumGoodSignalDbm {
-                if let m5 = median5GHz, m5 > download * 1.2 { // At least 20% better historically
+                let m5IsBetter = median5GHz.map { $0 > download * 1.2 } ?? false
+                let m6IsBetter = median6GHz.map { $0 > download * 1.2 } ?? false
+                
+                if m5IsBetter && m6IsBetter {
+                    let m5 = median5GHz!
+                    let m6 = median6GHz!
+                    if m6 > m5 * 1.2 {
+                        return WiFiBandRecommendation(
+                            currentBand: currentBand,
+                            action: .switchBand(target: .band6GHz),
+                            reason: .historicallyBetterOn6GHz,
+                            isEvidenceSufficient: true
+                        )
+                    } else {
+                        return WiFiBandRecommendation(
+                            currentBand: currentBand,
+                            action: .switchBand(target: .band5GHz),
+                            reason: .historicallyBetterOn5GHz,
+                            isEvidenceSufficient: true
+                        )
+                    }
+                } else if m6IsBetter {
+                    return WiFiBandRecommendation(
+                        currentBand: currentBand,
+                        action: .switchBand(target: .band6GHz),
+                        reason: .historicallyBetterOn6GHz,
+                        isEvidenceSufficient: true
+                    )
+                } else if m5IsBetter {
                     return WiFiBandRecommendation(
                         currentBand: currentBand,
                         action: .switchBand(target: .band5GHz),
