@@ -27,7 +27,7 @@ public struct GatewayProber: GatewayProbing {
     public func probe(gatewayIP: String) async -> GatewayInfo {
         let httpURL = "http://\(gatewayIP)"
         let httpsURL = "https://\(gatewayIP)"
-        
+
         // Verifica ambos concorrentemente
         return await withTaskGroup(of: (String, Bool).self) { group in
             group.addTask {
@@ -36,18 +36,18 @@ public struct GatewayProber: GatewayProbing {
             group.addTask {
                 return (httpsURL, await probeURL(urlString: httpsURL))
             }
-            
+
             var httpWorks = false
             var httpsWorks = false
-            
+
             for await (urlStr, works) in group {
                 if urlStr == httpURL { httpWorks = works }
                 if urlStr == httpsURL { httpsWorks = works }
             }
-            
+
             let isAccessible = httpWorks || httpsWorks
             let finalURLStr = httpsWorks ? httpsURL : httpURL // Prefere HTTPS se ambos responderem, senão HTTP
-            
+
             return GatewayInfo(
                 ip: gatewayIP,
                 isAccessible: isAccessible,
