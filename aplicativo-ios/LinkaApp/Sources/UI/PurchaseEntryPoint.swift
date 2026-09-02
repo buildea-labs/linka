@@ -18,13 +18,13 @@ enum PurchaseEntryPoint: Equatable {
     var subtitle: String {
         switch self {
         case .settings:
-            "Entenda suas medições e acompanhe o que muda."
+            "Entenda sua conexão, não apenas a velocidade."
         case .assist:
-            "O Linka mostra o que merece atenção com base no que foi medido."
+            "O Linka Plus interpreta o resultado e mostra o que merece atenção."
         case .historyInsights:
-            "Compare suas medições e encontre padrões por rede e horário."
+            "Compare suas medições e descubra padrões por rede e horário."
         case .advancedWiFi:
-            "Use sinal, canal e taxa Wi-Fi para dar contexto à análise."
+            "Use informações extras do Wi-Fi para entender melhor a conexão."
         }
     }
 }

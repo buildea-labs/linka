@@ -3,11 +3,8 @@ import StoreKit
 
 /// Identificadores de produto do Linka Plus na App Store Connect.
 ///
-/// PENDÊNCIA (issue #60): estes IDs são placeholders. Luiz precisa:
-/// 1. Criar o produto correspondente em App Store Connect como uma
-///    **Auto-Renewable Subscription** com preço anual.
-/// 2. Configurar um StoreKit Configuration file local (`.storekit`) e
-///    associá-lo ao scheme de teste antes de qualquer TestFlight.
+/// A validacao de existencia/preco acontece no StoreKit: se o produto nao
+/// existir ou nao estiver disponivel, a UI falha fechada e nao libera Plus.
 public enum LinkaStoreProductID {
     /// Produto ativo hoje na `PurchaseSheet`: "R$ 19,90/ano".
     public static let plusAnnual = "com.linka.plus.annual"
@@ -41,6 +38,7 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
 
     @Published public private(set) var product: Product?
     @Published public private(set) var isLoadingProduct = false
+    @Published public private(set) var isRefreshingSnapshot = false
 
     private let productID: String
     private var updatesTask: Task<Void, Never>?
@@ -114,6 +112,9 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
     /// do StoreKit 2 é a fonte da verdade sobre se o usuário tem a assinatura
     /// ativa, já lidando com revogações, renovações e carências.
     public func refreshSnapshot() async {
+        isRefreshingSnapshot = true
+        defer { isRefreshingSnapshot = false }
+
         var activeTransaction: Transaction?
 
         for await result in Transaction.currentEntitlements {

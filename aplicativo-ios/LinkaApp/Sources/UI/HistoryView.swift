@@ -88,6 +88,48 @@ struct HistoryView: View {
                         .padding(.vertical, 4)
                     }
 
+                    if hasPlus {
+                        if let insightText = insightText {
+                            Section("Insights") {
+                                HStack(alignment: .top, spacing: 12) {
+                                    Image(systemName: "sparkles")
+                                        .foregroundColor(.brandAccentWarm)
+                                        .font(.bodyRegularStrong)
+                                    Text(insightText)
+                                        .font(.bodyRegular)
+                                        .foregroundColor(.textPrimary)
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    } else if !filteredMeasurements.isEmpty {
+                        Section("Insights") {
+                            Button {
+                                purchaseEntryPoint = .historyInsights
+                                showPurchase = true
+                            } label: {
+                                HStack(alignment: .top, spacing: 12) {
+                                    Image(systemName: "lock.fill")
+                                        .foregroundColor(.textSecondary)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Descubra padrões por rede e horário")
+                                            .font(.bodyRegular)
+                                            .foregroundColor(.textPrimary)
+                                        Text("Exclusivo Linka Plus")
+                                            .font(.captionMedium)
+                                            .foregroundColor(.brandAccentWarm)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.captionSmallStrong)
+                                        .foregroundColor(.textSecondary.opacity(0.65))
+                                }
+                                .padding(.vertical, 4)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
                     if filteredMeasurements.isEmpty {
                         Section {
                             LinkaUnavailableState(
@@ -126,7 +168,7 @@ struct HistoryView: View {
         }
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet(entryPoint: purchaseEntryPoint) {
-                showAssist = true
+                loadData()
             }
             .environmentObject(entitlements)
         }
