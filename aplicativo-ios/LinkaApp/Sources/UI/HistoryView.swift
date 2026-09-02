@@ -115,9 +115,7 @@ struct HistoryView: View {
                                         Text("Descubra padrões por rede e horário")
                                             .font(.bodyRegular)
                                             .foregroundColor(.textPrimary)
-                                        Text("Exclusivo Linka Plus")
-                                            .font(.captionMedium)
-                                            .foregroundColor(.brandAccentWarm)
+                                        LinkaPlusWordmarkView(height: 14)
                                     }
                                     Spacer()
                                     Image(systemName: "chevron.right")
