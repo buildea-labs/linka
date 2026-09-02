@@ -59,18 +59,15 @@ struct PurchaseSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .center, spacing: 0) {
-                        Image("wordmark")
-                            .resizable()
-                            .renderingMode(.template)
-                            .scaledToFit()
-                            .frame(height: 28)
-                            .foregroundColor(.textPrimary)
+                        LinkaPlusWordmarkView(height: 28)
                             .padding(.top, 16)
 
-                        Text(entryPoint.title)
-                            .font(.displayTitle)
-                            .foregroundColor(.textPrimary)
-                            .padding(.top, 16)
+                        if entryPoint != .settings {
+                            Text(entryPoint.title)
+                                .font(.displayTitle)
+                                .foregroundColor(.textPrimary)
+                                .padding(.top, 16)
+                        }
 
                         Text(entryPoint.subtitle)
                             .font(.bodyRegular)
