@@ -30,11 +30,11 @@ final class NetworkStabilityPatternsViewModel: ObservableObject {
 
     @Published private(set) var state: State = .loading
 
-    private let entitlements: (any LinkaEntitlementProviding)?
+    private let entitlements: StoreKitEntitlementProvider?
     private let historyLookbackDays: Int
 
     init(
-        entitlements: (any LinkaEntitlementProviding)?,
+        entitlements: StoreKitEntitlementProvider?,
         historyLookbackDays: Int = 90
     ) {
         self.entitlements = entitlements

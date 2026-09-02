@@ -8,7 +8,7 @@ import LinkaModules
 final class NetworkStabilityPatternsViewModelTests: XCTestCase {
     
     func testLoadWithNoNetworkIdentity() async {
-        let viewModel = NetworkStabilityPatternsViewModel(entitlements: MockEntitlements(snapshot: .plus(status: .active, source: .subscription)))
+        let viewModel = NetworkStabilityPatternsViewModel(entitlements: StoreKitEntitlementProvider())
         
         let measurement = NetworkMeasurement(
             connectionKind: nil,
@@ -18,19 +18,5 @@ final class NetworkStabilityPatternsViewModelTests: XCTestCase {
         await viewModel.load(currentMeasurement: measurement)
         
         XCTAssertEqual(viewModel.state, .unavailable)
-    }
-}
-
-class MockEntitlements: LinkaEntitlementProviding {
-    var snapshot: LinkaEntitlementSnapshot
-    
-    init(snapshot: LinkaEntitlementSnapshot) {
-        self.snapshot = snapshot
-    }
-    
-    func refresh() async {}
-    
-    func hasAccess(to capability: LinkaCapability) async -> Bool {
-        return LinkaEntitlementPolicy.decision(for: capability, snapshot: snapshot).isGranted
     }
 }
