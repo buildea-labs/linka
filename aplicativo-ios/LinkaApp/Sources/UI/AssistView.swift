@@ -132,7 +132,7 @@ struct AssistView: View {
                 }
             }
             .task {
-                await stabilityViewModel.load()
+                await stabilityViewModel.load(currentMeasurement: currentMeasurement)
             }
         }
     }
