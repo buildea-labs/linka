@@ -15,6 +15,7 @@ enum AppRoute: Hashable {
 
 struct MainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
+    @StateObject private var healthCheck = LinkaHealthCheck()
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @ObservedObject private var intentCoordinator = AppIntentCoordinator.shared
 
@@ -335,10 +336,19 @@ struct MainView: View {
         }
         .onAppear {
             viewModel.refreshLiveNetwork()
+            healthCheck.start()
+        }
+        .onDisappear {
+            healthCheck.stop()
         }
         .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: scenePhase) { newPhase in
             viewModel.handleScenePhaseChange(newPhase)
+            if newPhase == .active {
+                healthCheck.start()
+            } else if newPhase == .background {
+                healthCheck.stop()
+            }
         }
         .onChange(of: viewModel.uiPhase) { newPhase in
             if newPhase != .error {
@@ -389,10 +399,16 @@ struct MainView: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    LiveConnectionPathView(
-                        kind: viewModel.liveConnectionKind,
-                        label: viewModel.liveNetworkLabel
-                    )
+                    VStack(spacing: 8) {
+                        LiveConnectionPathView(
+                            kind: viewModel.liveConnectionKind,
+                            label: viewModel.liveNetworkLabel
+                        )
+                        
+                        Text(healthCheck.statusText)
+                            .font(.captionSmall)
+                            .foregroundColor(.textSecondary)
+                    }
                     .padding(.top, 100)
                     .padding(.horizontal, 24)
 

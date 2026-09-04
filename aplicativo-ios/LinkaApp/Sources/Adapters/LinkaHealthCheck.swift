@@ -10,7 +10,6 @@ public final class LinkaHealthCheck: ObservableObject {
     @Published public private(set) var dnsMs: Double?
     @Published public private(set) var pingMs: Double?
     @Published public private(set) var jitterMs: Double?
-    @Published public private(set) var httpMs: Double?
 
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "com.linka.healthcheck")
@@ -53,7 +52,6 @@ public final class LinkaHealthCheck: ObservableObject {
         dnsMs = nil
         pingMs = nil
         jitterMs = nil
-        httpMs = nil
     }
 
     private func runMetrics() {
@@ -62,18 +60,14 @@ public final class LinkaHealthCheck: ObservableObject {
             // DNS
             let dns = await SpeedTestCore.resolveDNS()
             
-            // Ping and Jitter (via performPingTest exposing PingOutcome)
+            // Ping and Jitter via idle ping probe
             let pingOutcome = await SpeedTestCore.performPingTest()
-            
-            // HTTP / TLS / TCP (via performLoadedLatencyProbe)
-            let httpLatency = await SpeedTestCore.performLoadedLatencyProbe()
             
             guard !Task.isCancelled else { return }
             
             self.dnsMs = dns
-            self.httpMs = httpLatency
             
-            if case .measured(let latency, let jitter, let loss) = pingOutcome {
+            if case .measured(let latency, let jitter, _) = pingOutcome {
                 self.pingMs = latency
                 self.jitterMs = jitter
                 
