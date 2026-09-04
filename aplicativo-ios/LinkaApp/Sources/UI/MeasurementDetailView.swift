@@ -192,8 +192,12 @@ struct MeasurementDetailView: View {
                                     .foregroundColor(.textPrimary)
                                 Spacer()
                                 #if os(iOS)
-                                Button("Obter detalhes") {
-                                    openURL(LinkaAdvancedWiFiIntegration.runShortcutURL)
+                                Button(UserDefaults.standard.bool(forKey: LinkaWiFiPreferences.advancedConfiguredKey) ? "Obter detalhes" : "Configurar") {
+                                    if UserDefaults.standard.bool(forKey: LinkaWiFiPreferences.advancedConfiguredKey) {
+                                        openURL(LinkaAdvancedWiFiIntegration.runShortcutURL)
+                                    } else {
+                                        openURL(LinkaAdvancedWiFiIntegration.shortcutsAppURL)
+                                    }
                                 }
                                 .font(.bodySmallStrong)
                                 .foregroundColor(.brandAccentWarm)

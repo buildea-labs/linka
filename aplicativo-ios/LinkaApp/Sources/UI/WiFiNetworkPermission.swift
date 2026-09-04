@@ -65,8 +65,18 @@ enum WiFiNetworkPermission {
         manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways
     }
     @MainActor static func requestIdentification() {
-        if manager.authorizationStatus == .notDetermined { manager.requestWhenInUseAuthorization() }
-        else { openSystemSettings() }
+        switch manager.authorizationStatus {
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization()
+        case .authorizedWhenInUse, .authorizedAlways:
+            if manager.accuracyAuthorization != .fullAccuracy {
+                manager.requestTemporaryFullAccuracyAuthorization(withPurposeKey: "WiFiIdentification")
+            }
+        case .denied, .restricted:
+            openSystemSettings()
+        @unknown default:
+            break
+        }
     }
     @MainActor static func openSystemSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
