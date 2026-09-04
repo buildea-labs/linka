@@ -35,11 +35,13 @@ public struct NDSRequestBuilder: Sendable {
             requestedOutputs: requestAI ? ["scoring", "ai"] : ["scoring"],
             context: diagnosticContext,
             connection: mapConnection(current.connectionKind, hasInternet: hasInternet),
-            wifi: mapWifi(platformHints.wifi, advanced: current.advancedWiFiDiagnostics, kind: current.connectionKind, band: bandStr),
+            wifi: mapWifi(platformHints.wifi, context: current.wifiContext, advanced: current.advancedWiFiDiagnostics, kind: current.connectionKind, band: bandStr),
             speed: mapSpeed(downloadMbps: current.downloadMbps, uploadMbps: current.uploadMbps),
             quality: mapQuality(
                 latencyMs: current.latencyMs,
                 loadedLatencyMs: current.loadedLatencyMs,
+                loadedLatencyUploadMs: current.loadedLatencyUploadMs,
+                dnsResolutionMs: current.dnsResolutionMs,
                 jitterMs: current.jitterMs,
                 packetLossPercent: current.packetLossPercent
             ),
@@ -58,20 +60,26 @@ public struct NDSRequestBuilder: Sendable {
     private func mapQuality(
         latencyMs: Double?,
         loadedLatencyMs: Double?,
+        loadedLatencyUploadMs: Double?,
+        dnsResolutionMs: Double?,
         jitterMs: Double?,
         packetLossPercent: Double?
     ) -> NDSRequest.Quality? {
         let validLatency = latencyMs.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
         let validLoaded = loadedLatencyMs.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+        let validLoadedUpload = loadedLatencyUploadMs.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
+        let validDns = dnsResolutionMs.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
         let validJitter = jitterMs.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
         let validLoss = packetLossPercent.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
 
-        guard validLatency != nil || validLoaded != nil || validJitter != nil || validLoss != nil else {
+        guard validLatency != nil || validLoaded != nil || validLoadedUpload != nil || validDns != nil || validJitter != nil || validLoss != nil else {
             return nil
         }
         return NDSRequest.Quality(
             latencyMs: validLatency,
             loadedLatencyMs: validLoaded,
+            loadedLatencyUploadMs: validLoadedUpload,
+            dnsResolutionMs: validDns,
             jitterMs: validJitter,
             packetLossPercent: validLoss
         )
@@ -89,15 +97,28 @@ public struct NDSRequestBuilder: Sendable {
         return NDSRequest.Connection(type: typeStr, hasInternet: hasInternet)
     }
 
-    private func mapWifi(_ hint: PlatformHints.Wifi?, advanced: AdvancedWiFiDiagnostics?, kind: NetworkConnectionKind?, band: String?) -> NDSRequest.Wifi? {
+    private func mapWifi(_ hint: PlatformHints.Wifi?, context: WiFiNetworkContext?, advanced: AdvancedWiFiDiagnostics?, kind: NetworkConnectionKind?, band: String?) -> NDSRequest.Wifi? {
         guard kind == .wifi else { return nil }
-        let rssi = advanced?.rssiDbm ?? hint?.rssiDbm
-        let linkSpeed = advanced?.txRateMbps ?? advanced?.rxRateMbps ?? hint?.linkSpeedMbps
-        guard rssi != nil || linkSpeed != nil || band != nil else { return nil }
+        let rssi = advanced?.rssiDbm ?? context?.rssiDbm ?? hint?.rssiDbm
+        let linkSpeed = advanced?.txRateMbps ?? advanced?.rxRateMbps ?? context?.linkSpeedMbps ?? hint?.linkSpeedMbps
+        
+        let validBand = band ?? context?.bandGHz.map { String($0) } ?? advanced?.bandGHz.map { String($0) }
+        
+        guard rssi != nil || linkSpeed != nil || validBand != nil || context != nil || advanced != nil else { return nil }
+        
         return NDSRequest.Wifi(
             rssiDbm: rssi,
             linkSpeedMbps: linkSpeed,
-            band: band
+            band: validBand,
+            securityType: context?.securityType?.rawValue,
+            rxRateMbps: advanced?.rxRateMbps,
+            txRateMbps: advanced?.txRateMbps,
+            noiseDbm: advanced?.noiseDbm,
+            snrDb: advanced?.snrDb,
+            channelNumber: advanced?.channelNumber,
+            gatewayIP: context?.gatewayIP,
+            gatewayVendor: context?.gatewayVendor,
+            gatewayAdminURL: context?.gatewayAdminURL
         )
     }
 }
