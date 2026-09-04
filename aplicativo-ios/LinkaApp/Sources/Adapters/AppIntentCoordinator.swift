@@ -42,6 +42,8 @@ public final class AppIntentCoordinator: ObservableObject {
     /// por essas superfícies.
     @Published public private(set) var pendingPurchasePrompt: Bool = false
     @Published public private(set) var pendingAdvancedWiFiDiagnosticsImport: Bool = false
+    @Published public private(set) var pendingOpenHistory: Bool = false
+    @Published public private(set) var pendingOpenLatestMeasurement: Bool = false
 
     private init() {}
 
@@ -67,6 +69,22 @@ public final class AppIntentCoordinator: ObservableObject {
 
     public func consumeAdvancedWiFiDiagnosticsImport() {
         pendingAdvancedWiFiDiagnosticsImport = false
+    }
+
+    public func requestOpenHistory() {
+        pendingOpenHistory = true
+    }
+
+    public func consumeOpenHistory() {
+        pendingOpenHistory = false
+    }
+
+    public func requestOpenLatestMeasurement() {
+        pendingOpenLatestMeasurement = true
+    }
+
+    public func consumeOpenLatestMeasurement() {
+        pendingOpenLatestMeasurement = false
     }
 }
 

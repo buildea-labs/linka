@@ -269,6 +269,28 @@ struct MainView: View {
             showPurchase = true
             intentCoordinator.consumePurchasePrompt()
         }
+        .onChange(of: intentCoordinator.pendingOpenHistory) { pending in
+            guard pending else { return }
+            if isPlusActive {
+                navPath.append(AppRoute.history)
+            } else {
+                purchaseEntryPoint = .settings
+                showPurchase = true
+            }
+            intentCoordinator.consumeOpenHistory()
+        }
+        .onChange(of: intentCoordinator.pendingOpenLatestMeasurement) { pending in
+            guard pending else { return }
+            if isPlusActive {
+                if let latest = viewModel.latestFinishedMeasurement ?? viewModel.recentMeasurements.first {
+                    navPath.append(AppRoute.measurementDetail(latest))
+                }
+            } else {
+                purchaseEntryPoint = .settings
+                showPurchase = true
+            }
+            intentCoordinator.consumeOpenLatestMeasurement()
+        }
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet(entryPoint: purchaseEntryPoint) {
                 if purchaseEntryPoint == .assist { showAssist = true }

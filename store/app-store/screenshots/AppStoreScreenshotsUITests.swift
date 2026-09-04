@@ -39,7 +39,7 @@ class AppStoreScreenshotsUITests: XCTestCase {
         
         // 3. Assist
         // Tenta abrir o Assist a partir da tela de resultado ou da Home
-        let assistBtn = app.buttons["Assist"]
+        let assistBtn = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Assist'")).firstMatch
         if assistBtn.exists {
             assistBtn.tap()
             sleep(2)

@@ -98,6 +98,7 @@ final class LinkaAppIntentsTests: XCTestCase {
         XCTAssertTrue(OpenLatestMeasurementIntent.openAppWhenRun)
         XCTAssertTrue(OpenHistoryIntent.openAppWhenRun)
         XCTAssertFalse(GetLatestResultIntent.openAppWhenRun)
+        XCTAssertFalse(MeasureNetworkSilentlyIntent.openAppWhenRun)
     }
 
     // MARK: - entitlementGated
