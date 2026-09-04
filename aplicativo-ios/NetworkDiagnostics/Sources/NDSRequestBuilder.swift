@@ -13,16 +13,42 @@ public struct NDSRequestBuilder: Sendable {
         diagnosticContext: NDSRequest.DiagnosticContext? = nil,
         historical: NDSRequest.Historical? = nil
     ) -> NDSRequest {
+        let hasInternet: Bool? = (current.latencyMs != nil || current.downloadMbps != nil) ? true : nil
+        let bandStr: String? = current.wifiBandGHz.map { String($0) }
+        let connection = mapConnection(current.connectionKind, hasInternet: hasInternet)
+        let wifi = mapWifi(
+            platformHints.wifi,
+            context: current.wifiContext,
+            advanced: current.advancedWiFiDiagnostics,
+            kind: current.connectionKind,
+            band: bandStr
+        )
+        let speed = mapSpeed(downloadMbps: current.downloadMbps, uploadMbps: current.uploadMbps)
+        let quality = mapQuality(
+            latencyMs: current.latencyMs,
+            loadedLatencyMs: current.loadedLatencyMs,
+            loadedLatencyUploadMs: current.loadedLatencyUploadMs,
+            dnsResolutionMs: current.dnsResolutionMs,
+            jitterMs: current.jitterMs,
+            packetLossPercent: current.packetLossPercent
+        )
+
         var capabilities: [String] = []
-        if (platformHints.wifi != nil || current.advancedWiFiDiagnostics != nil), current.connectionKind == .wifi {
+        if connection != nil {
+            capabilities.append("connection")
+        }
+        if wifi != nil {
             capabilities.append("wifi")
+        }
+        if speed != nil {
+            capabilities.append("speed")
+        }
+        if quality != nil {
+            capabilities.append("quality")
         }
         if historical != nil {
             capabilities.append("historical")
         }
-
-        let hasInternet: Bool? = (current.latencyMs != nil || current.downloadMbps != nil) ? true : nil
-        let bandStr: String? = current.wifiBandGHz.map { String($0) }
 
         return NDSRequest(
             schemaVersion: "1.0",
@@ -34,17 +60,10 @@ public struct NDSRequestBuilder: Sendable {
             capabilities: capabilities,
             requestedOutputs: requestAI ? ["scoring", "ai"] : ["scoring"],
             context: diagnosticContext,
-            connection: mapConnection(current.connectionKind, hasInternet: hasInternet),
-            wifi: mapWifi(platformHints.wifi, context: current.wifiContext, advanced: current.advancedWiFiDiagnostics, kind: current.connectionKind, band: bandStr),
-            speed: mapSpeed(downloadMbps: current.downloadMbps, uploadMbps: current.uploadMbps),
-            quality: mapQuality(
-                latencyMs: current.latencyMs,
-                loadedLatencyMs: current.loadedLatencyMs,
-                loadedLatencyUploadMs: current.loadedLatencyUploadMs,
-                dnsResolutionMs: current.dnsResolutionMs,
-                jitterMs: current.jitterMs,
-                packetLossPercent: current.packetLossPercent
-            ),
+            connection: connection,
+            wifi: wifi,
+            speed: speed,
+            quality: quality,
             historical: historical
         )
     }
@@ -103,22 +122,31 @@ public struct NDSRequestBuilder: Sendable {
         let linkSpeed = advanced?.txRateMbps ?? advanced?.rxRateMbps ?? context?.linkSpeedMbps ?? hint?.linkSpeedMbps
         
         let validBand = band ?? context?.bandGHz.map { String($0) } ?? advanced?.bandGHz.map { String($0) }
+        let securityType = context?.securityType?.rawValue
+        let rxRate = advanced?.rxRateMbps
+        let txRate = advanced?.txRateMbps
+        let noise = advanced?.noiseDbm
+        let snr = advanced?.snrDb
+        let channel = advanced?.channelNumber
+        let gwIP = context?.gatewayIP
+        let gwVendor = context?.gatewayVendor
+        let gwAdminURL = context?.gatewayAdminURL
         
-        guard rssi != nil || linkSpeed != nil || validBand != nil || context != nil || advanced != nil else { return nil }
+        guard rssi != nil || linkSpeed != nil || validBand != nil || securityType != nil || rxRate != nil || txRate != nil || noise != nil || snr != nil || channel != nil || gwIP != nil || gwVendor != nil || gwAdminURL != nil else { return nil }
         
         return NDSRequest.Wifi(
             rssiDbm: rssi,
             linkSpeedMbps: linkSpeed,
             band: validBand,
-            securityType: context?.securityType?.rawValue,
-            rxRateMbps: advanced?.rxRateMbps,
-            txRateMbps: advanced?.txRateMbps,
-            noiseDbm: advanced?.noiseDbm,
-            snrDb: advanced?.snrDb,
-            channelNumber: advanced?.channelNumber,
-            gatewayIP: context?.gatewayIP,
-            gatewayVendor: context?.gatewayVendor,
-            gatewayAdminURL: context?.gatewayAdminURL
+            securityType: securityType,
+            rxRateMbps: rxRate,
+            txRateMbps: txRate,
+            noiseDbm: noise,
+            snrDb: snr,
+            channelNumber: channel,
+            gatewayIP: gwIP,
+            gatewayVendor: gwVendor,
+            gatewayAdminURL: gwAdminURL
         )
     }
 }
