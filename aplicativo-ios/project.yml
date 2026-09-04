@@ -54,6 +54,18 @@ targets:
         embed: true
         codeSign: true
         platforms: [iOS]
+  LinkaAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    deploymentTarget: 16.0
+    dependencies:
+      - target: LinkaApp_iOS
+    sources:
+      - path: ../store/app-store/screenshots
+
   LinkaAppTests:
     type: bundle.unit-test
     platform: iOS
@@ -106,3 +118,4 @@ packages:
     path: MeasurementHistoryCloudKit
   LinkaWidgetShared:
     path: LinkaWidgetShared
+
