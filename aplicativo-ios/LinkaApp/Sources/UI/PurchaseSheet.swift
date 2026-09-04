@@ -113,14 +113,19 @@ struct PurchaseSheet: View {
                     Button(action: purchase) {
                         if isPurchasing {
                             ProgressView().tint(Color.brandOnSurface)
-                        } else if let product = entitlements.product {
-                            Text("Assinar por \(product.displayPrice)/ano")
                         } else {
-                            Text("Carregando preço…")
+                            switch entitlements.productState {
+                            case .loaded(let product):
+                                Text("Assinar por \(product.displayPrice)/ano")
+                            case .loading:
+                                Text("Carregando preço…")
+                            case .unavailable, .error:
+                                Text("Assinar")
+                            }
                         }
                     }
                     .buttonStyle(.linkaPrimary)
-                    .disabled(isPurchasing || isRestoring || entitlements.product == nil)
+                    .disabled(isPurchasing || isRestoring || !isProductLoaded)
                     .padding(.horizontal, 24)
 
                     Button(action: restore) {
@@ -157,19 +162,34 @@ struct PurchaseSheet: View {
 
     @ViewBuilder private var priceState: some View {
         VStack(spacing: 4) {
-            if let product = entitlements.product {
+            switch entitlements.productState {
+            case .loaded(let product):
                 Text(product.displayPrice)
                     .font(.displayLarge)
                     .foregroundColor(.textPrimary)
                 Text("Cobrado anualmente · Cancele quando quiser")
                     .font(.captionMedium)
                     .foregroundColor(.textSecondary)
-            } else if entitlements.isLoadingProduct {
+            case .loading:
                 ProgressView().padding(.vertical, 6)
-            } else {
+            case .unavailable:
+                Text("Plano não disponível no momento")
+                    .font(.bodySmallMedium)
+                    .foregroundColor(.textSecondary)
+                Button("Tentar novamente") {
+                    Task { await entitlements.loadProduct() }
+                }
+                .font(.bodySmallStrong)
+                .foregroundColor(.textPrimary)
+            case .error(let message):
                 Text("Não foi possível carregar o preço agora")
                     .font(.bodySmallMedium)
                     .foregroundColor(.textSecondary)
+                #if DEBUG
+                Text(message)
+                    .font(.captionSmall)
+                    .foregroundColor(.statusAttention)
+                #endif
                 Button("Tentar novamente") {
                     Task { await entitlements.loadProduct() }
                 }
@@ -181,8 +201,13 @@ struct PurchaseSheet: View {
         .frame(maxWidth: .infinity)
     }
 
+    private var isProductLoaded: Bool {
+        if case .loaded = entitlements.productState { return true }
+        return false
+    }
+
     private var disclaimerText: String {
-        if let product = entitlements.product {
+        if case .loaded(let product) = entitlements.productState {
             return "Valor de \(product.displayPrice)/ano com renovação automática pela Apple."
         }
         return "Assinatura anual com renovação automática pela Apple."

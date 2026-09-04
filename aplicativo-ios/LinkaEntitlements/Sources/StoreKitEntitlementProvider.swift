@@ -36,8 +36,24 @@ public enum LinkaStoreError: Error, Equatable, Sendable {
 public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitlementProviding, @unchecked Sendable {
     @Published public private(set) var snapshot: LinkaEntitlementSnapshot = .free
 
-    @Published public private(set) var product: Product?
-    @Published public private(set) var isLoadingProduct = false
+    public enum ProductLoadState: Equatable, Sendable {
+        case loading
+        case loaded(Product)
+        case unavailable
+        case error(String)
+        
+        // Custom Equatable for Product (compares ids since Product itself doesn't conform to Equatable directly in earlier iOS, though it might. We'll implement == just in case or just compare ids)
+        public static func == (lhs: ProductLoadState, rhs: ProductLoadState) -> Bool {
+            switch (lhs, rhs) {
+            case (.loading, .loading), (.unavailable, .unavailable): return true
+            case let (.loaded(l), .loaded(r)): return l.id == r.id
+            case let (.error(l), .error(r)): return l == r
+            default: return false
+            }
+        }
+    }
+
+    @Published public private(set) var productState: ProductLoadState = .loading
     @Published public private(set) var isRefreshingSnapshot = false
 
     private let productID: String
@@ -87,14 +103,17 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
     }
 
     public func loadProduct() async {
-        isLoadingProduct = true
-        defer { isLoadingProduct = false }
+        productState = .loading
 
         do {
             let products = try await Product.products(for: [productID])
-            product = products.first
+            if let firstProduct = products.first {
+                productState = .loaded(firstProduct)
+            } else {
+                productState = .unavailable
+            }
         } catch {
-            product = nil
+            productState = .error(error.localizedDescription)
         }
     }
 
