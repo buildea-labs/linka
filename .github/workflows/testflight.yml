@@ -49,7 +49,6 @@ jobs:
         with:
           ruby-version: "3.3"
           bundler-cache: true   # instala gems do Gemfile automaticamente
-          working-directory: ios  # ajuste se o Gemfile estiver em sub-pasta
 
       # ── 4. Executar lane beta via Fastlane ────────────────────────────────
       - name: Run Fastlane beta lane
