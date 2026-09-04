@@ -149,7 +149,7 @@ struct MainView: View {
     var body: some View {
         NavigationStack(path: $navPath) {
             ZStack {
-                Color.surfacePage.ignoresSafeArea()
+                Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     if viewModel.uiPhase == .error {
@@ -166,9 +166,6 @@ struct MainView: View {
                 }
             }
             .navigationTitle("Início")
-            #if os(iOS)
-            .navigationBarHidden(true)
-            #endif
             .navigationDestination(for: AppRoute.self) { route in
                 switch route {
                 case .settings:
@@ -184,60 +181,48 @@ struct MainView: View {
                         .environmentObject(entitlements)
                 }
             }
-            .overlay(alignment: .topLeading) {
-                if viewModel.uiPhase == .done {
-                    Button {
-                        withAnimation {
-                            viewModel.resetToIdle()
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if viewModel.uiPhase == .done {
+                        Button {
+                            withAnimation {
+                                viewModel.resetToIdle()
+                            }
+                        } label: {
+                            Image(systemName: "house")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.textPrimary)
                         }
-                    } label: {
-                        Image(systemName: "house")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.textPrimary)
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial, in: Circle())
+                        .accessibilityLabel("Voltar para o início")
                     }
-                    .accessibilityLabel("Voltar para o início")
-                    .padding(.leading, 16)
-                    .padding(.top, 12)
                 }
-            }
-            .overlay(alignment: .topTrailing) {
-                if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
-                    HStack(spacing: 12) {
-                        if viewModel.uiPhase == .idle || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
-                            Button { navPath.append(AppRoute.history) } label: {
-                                Image(systemName: "clock")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.textPrimary)
-                                    .frame(width: 40, height: 40)
-                                    .background(.ultraThinMaterial, in: Circle())
-                            }
-                            .accessibilityLabel("Histórico")
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    if viewModel.uiPhase == .idle || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
+                        Button { navPath.append(AppRoute.history) } label: {
+                            Image(systemName: "clock")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.textPrimary)
                         }
-                        if viewModel.uiPhase == .done {
-                            Button {
-                                showShareSheet = true
-                            } label: {
-                                Image(systemName: "square.and.arrow.up")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.textPrimary)
-                                    .frame(width: 40, height: 40)
-                                    .background(.ultraThinMaterial, in: Circle())
-                            }
-                            .accessibilityLabel("Compartilhar resultado")
+                        .accessibilityLabel("Histórico")
+                    }
+                    if viewModel.uiPhase == .done {
+                        Button {
+                            showShareSheet = true
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.textPrimary)
                         }
+                        .accessibilityLabel("Compartilhar resultado")
+                    }
+                    if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
                         Button { navPath.append(AppRoute.settings) } label: {
                             Image(systemName: "slider.horizontal.3")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.textPrimary)
-                                .frame(width: 40, height: 40)
-                                .background(.ultraThinMaterial, in: Circle())
                         }
                         .accessibilityLabel("Ajustes")
                     }
-                    .padding(.trailing, 16)
-                    .padding(.top, 12)
                 }
             }
             .sheet(isPresented: $showAssist) {
@@ -399,16 +384,7 @@ struct MainView: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    // Título da tela (nav bar está oculta)
-                    HStack {
-                        Text("Início")
-                            .font(.displayMedium)
-                            .foregroundColor(.textPrimary)
-                        Spacer()
-                    }
-                    .padding(.top, 68)
-                    .padding(.horizontal, 24)
-
+                    // Título será fornecido via navigationTitle no NavigationStack
                     VStack(spacing: 8) {
                         LiveConnectionPathView(
                             kind: viewModel.liveConnectionKind,
