@@ -14,6 +14,16 @@ enum AppRoute: Hashable {
 }
 
 struct MainView: View {
+    private var mainTitle: String {
+        switch viewModel.uiPhase {
+        case .idle, .connectionChanged, .error:
+            return "Início"
+        case .connecting, .downloading, .uploading:
+            return "Testando..."
+        case .done:
+            return "Velocidade"
+        }
+    }
     @StateObject private var viewModel = SpeedTestViewModel()
     @StateObject private var healthCheck = LinkaHealthCheck()
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
@@ -165,7 +175,7 @@ struct MainView: View {
                     }
                 }
             }
-            .navigationTitle("Início")
+            .navigationTitle(mainTitle)
             .navigationDestination(for: AppRoute.self) { route in
                 switch route {
                 case .settings:
@@ -538,13 +548,7 @@ struct MainView: View {
     private var resultView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                // Título: Velocidade (abaixo dos botões superiores da topbar)
-                Text("Velocidade")
-                    .font(.largeTitle.weight(.bold))
-                    .foregroundColor(.textPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 64)
+                
 
                 // 1. Download Hero em número inteiro ocupando toda a largura
                 VStack(spacing: 2) {
