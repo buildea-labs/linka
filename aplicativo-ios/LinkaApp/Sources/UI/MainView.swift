@@ -198,34 +198,43 @@ struct MainView: View {
                     .accessibilityLabel("Voltar para o início")
                     .padding(.leading, 16)
                     .padding(.top, 12)
+                } else if viewModel.uiPhase == .idle || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
+                    Button { navPath.append(AppRoute.history) } label: {
+                        Image(systemName: "clock")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.textPrimary)
+                            .frame(width: 40, height: 40)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                    .accessibilityLabel("Histórico")
+                    .padding(.leading, 16)
+                    .padding(.top, 12)
                 }
             }
             .overlay(alignment: .topTrailing) {
                 if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
-                    HStack(spacing: 14) {
+                    HStack(spacing: 12) {
                         if viewModel.uiPhase == .done {
                             Button {
                                 showShareSheet = true
                             } label: {
                                 Image(systemName: "square.and.arrow.up")
-                                    .accessibilityLabel("Compartilhar resultado")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.textPrimary)
+                                    .frame(width: 40, height: 40)
+                                    .background(.ultraThinMaterial, in: Circle())
                             }
-                        } else {
-                            Button { navPath.append(AppRoute.history) } label: {
-                                Image(systemName: "clock")
-                                    .accessibilityLabel("Histórico")
-                            }
+                            .accessibilityLabel("Compartilhar resultado")
                         }
                         Button { navPath.append(AppRoute.settings) } label: {
                             Image(systemName: "slider.horizontal.3")
-                                .accessibilityLabel("Ajustes")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.textPrimary)
+                                .frame(width: 40, height: 40)
+                                .background(.ultraThinMaterial, in: Circle())
                         }
+                        .accessibilityLabel("Ajustes")
                     }
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial, in: Capsule())
                     .padding(.trailing, 16)
                     .padding(.top, 12)
                 }
@@ -367,23 +376,21 @@ struct MainView: View {
 
                     Spacer(minLength: 34)
 
-                    VStack(spacing: 10) {
-                        Image(systemName: liveConnectionIcon)
-                            .font(.system(size: 34, weight: .medium))
-                            .foregroundColor(.brandSurface)
-                            .frame(width: 82, height: 82)
-                            .background(Color.surfaceCard, in: Circle())
-
-                        Text(liveConnectionType)
-                            .font(.bodyRegularStrong)
+                    VStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.statusGood)
+                        
+                        Text(heroStateTitle)
+                            .font(.displayMedium)
                             .foregroundColor(.textPrimary)
-
-                        Text(liveConnectionName)
-                            .font(.captionSmall)
+                        
+                        Text(heroStateSubtitle)
+                            .font(.bodyRegular)
                             .foregroundColor(.textSecondary)
                             .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
+                    .padding(.horizontal, 24)
 
                     Spacer(minLength: 38)
 
@@ -440,7 +447,7 @@ struct MainView: View {
                                     .font(.monoCaption)
                                     .textCase(.uppercase)
                                     .foregroundColor(.brandAccentWarm)
-                                Text("Problemas na sua conexão? Entenda o que está acontecendo.")
+                                Text(usageContextForAssist ?? "Problemas na sua conexão? Entenda o que está acontecendo.")
                                     .font(.captionSmall)
                                     .foregroundColor(.textPrimary)
                                     .multilineTextAlignment(.leading)
@@ -712,6 +719,20 @@ struct MainView: View {
     }
 
     // MARK: - Helpers
+
+    private var heroStateTitle: String {
+        if viewModel.liveConnectionKind == nil {
+            return "Sem conexão"
+        }
+        return "Tudo parece normal"
+    }
+
+    private var heroStateSubtitle: String {
+        if viewModel.liveConnectionKind == nil {
+            return "Conecte-se a uma rede para analisar"
+        }
+        return "Nenhum problema detectado"
+    }
 
     private var simpleNetworkContext: String? {
         if viewModel.connectionKind == .wifi {
