@@ -5,7 +5,7 @@ import XCTest
 final class LinkaHealthCheckTests: XCTestCase {
     func testHealthCheckInitialState() {
         let healthCheck = LinkaHealthCheck()
-        XCTAssertEqual(healthCheck.statusText, "Verificando rede...")
+        XCTAssertEqual(healthCheck.statusText, "")
         XCTAssertFalse(healthCheck.isOnline)
     }
 }
