@@ -85,14 +85,19 @@ struct SettingsView: View {
                 }
             }
 
-            #if DEBUG
             Section {
-                Button("Simular Linka Free (DEBUG)") { entitlements.debugResetToFree() }
-                Button("Simular Linka Plus (DEBUG)") { entitlements.debugForcePlus() }
+                Toggle(isOn: Binding(
+                    get: { UserDefaults.standard.bool(forKey: StoreKitEntitlementProvider.forcePlusKey) },
+                    set: { entitlements.setForcePlus($0) }
+                )) {
+                    Label("Linka Plus (teste interno)", systemImage: "flask")
+                }
+                .tint(.brandAccentWarm)
             } header: {
-                Text("Debug interno").foregroundColor(.brandAccentWarm)
+                Text("Ferramentas de teste").foregroundColor(.brandAccentWarm)
+            } footer: {
+                Text("Ativa o Linka Plus sem compra. Use apenas para validar funcionalidades em desenvolvimento.")
             }
-            #endif
 
             Section {
                 Text("Versão \(appVersion)")
