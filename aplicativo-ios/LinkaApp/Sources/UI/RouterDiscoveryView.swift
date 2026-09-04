@@ -1,6 +1,7 @@
 import SwiftUI
 import WebKit
 
+#if os(iOS)
 struct WebView: UIViewRepresentable {
     let url: URL
     
@@ -100,3 +101,4 @@ struct RouterDiscoveryView: View {
         }
     }
 }
+#endif
