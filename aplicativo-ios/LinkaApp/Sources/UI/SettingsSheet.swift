@@ -51,6 +51,12 @@ struct SettingsView: View {
                     settingsRow(title: "Diagnóstico Wi-Fi avançado", value: advancedWiFiStatusText, systemImage: "waveform.path.ecg")
                 }
             }
+
+            Section("Ferramentas") {
+                NavigationLink(destination: RouterDiscoveryView()) {
+                    Label("Acesso ao Roteador", systemImage: "router")
+                }
+            }
             #endif
 
             Section("Preferências") {
