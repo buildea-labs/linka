@@ -12,9 +12,12 @@
 		074A78EB05FB73EAA13BFF42 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86E6389194D1938B09BEE51 /* HistoryView.swift */; };
 		07FA5BACD537ACDC5E210496 /* SettingsProductionStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46F4505095861E3713A028A2 /* SettingsProductionStateTests.swift */; };
 		080B674A908A6C5DA086E6FB /* StatDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240C677AB8218C3DE05600FB /* StatDisplay.swift */; };
+		0C8ECCB89B1CEA92EEA79277 /* 02-resultado.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C18C21A5058B411187DFB0D /* 02-resultado.png */; };
 		0F37916D5092D2B27FFB484D /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7798E2D1800A4FF1C0E30E /* ShareCardView.swift */; };
+		114F6A67C7CE3B670CF6AD50 /* 06-historico.png in Resources */ = {isa = PBXBuildFile; fileRef = F959B2CBD5E8F278F7B85F54 /* 06-historico.png */; };
 		12E02BB6A2E493EAC2C1D151 /* LinkaAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8ADAB36D0CC32BA436AFE3 /* LinkaAppShortcuts.swift */; };
 		150054BB7218EF39FF3A2EF5 /* MeasurementHistoryCloudKit in Frameworks */ = {isa = PBXBuildFile; productRef = B36D3C433D496B8EFF185FF3 /* MeasurementHistoryCloudKit */; };
+		17844AA3F865EC3C43DAD6AA /* 01-home.png in Resources */ = {isa = PBXBuildFile; fileRef = CD0E9FA3F3C9159A1B51BA82 /* 01-home.png */; };
 		17E73DA323A120A6FECBD6A1 /* BannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6C710FA9D415DDBB3316F9 /* BannerView.swift */; };
 		1B7CBE63AC92F88240765348 /* LinkaWidgetTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40C2EB9152AB6535BCF1740 /* LinkaWidgetTimelineProvider.swift */; };
 		1CF90733709BEB4D8C2F28D4 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D72124FDD0CB4E07F4E7B5 /* ShareSheet.swift */; };
@@ -23,6 +26,7 @@
 		236F004AEFDE4C625B0DC471 /* ConnectionPathDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4781F293BF600F767AD519F6 /* ConnectionPathDetailView.swift */; };
 		2503053FE2E1CF272C40AABA /* HistoricalMeasurementDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD5CA0E57F84DC90BE11A5 /* HistoricalMeasurementDetailView.swift */; };
 		251732D2D655E2FC6E8896B6 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A27A3A416A9EAF5A075A2C /* FeatureFlags.swift */; };
+		29947FA757E77F75A68839DE /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png in Resources */ = {isa = PBXBuildFile; fileRef = 57683E1EF231CFAB7DA64C37 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png */; };
 		2AD6E6F6C8A5849D189EFFD5 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60A040FE4E49231CD858102 /* MainView.swift */; };
 		2C291F8573C9E0671BC7752F /* LinkaAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8ADAB36D0CC32BA436AFE3 /* LinkaAppShortcuts.swift */; };
 		2D978D5BAD95A0E29AE7AE85 /* LinkaModules in Frameworks */ = {isa = PBXBuildFile; productRef = 2A1ED27B4CE61C438B43B40C /* LinkaModules */; };
@@ -41,6 +45,8 @@
 		460A04738C58DD0F7081552C /* LinkaEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 32F32DAB5F80BE2584F3A3DB /* LinkaEngine */; };
 		474E1128931717978D424844 /* LinkaAppIntents in Frameworks */ = {isa = PBXBuildFile; productRef = 4EC464D2A27C018FC431B081 /* LinkaAppIntents */; };
 		488426897164BFA011DA2076 /* LinkaExternalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8AF9B7DA6D4CDD2574E7338 /* LinkaExternalLinks.swift */; };
+		4DB6D1F24A36048C31C7F8AE /* AppStoreScreenshotsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6935758C28176CC335C491C7 /* AppStoreScreenshotsUITests.swift */; };
+		4FBFA4B00E64FC22616B4DFF /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = CF33003E49F44DE9A2057329 /* README.md */; };
 		50C85316B3E53EB821D140B2 /* PhaseDots.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */; };
 		58AAEC10AB55272DF16453E3 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3234D1B179CE201E17961385 /* SplashView.swift */; };
 		5B0458DD58805571D30AC3EC /* SpeedTestViewModelResultTimingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB32ED976CC4BE668BB83D5C /* SpeedTestViewModelResultTimingTests.swift */; };
@@ -50,9 +56,12 @@
 		5DA4E299822FB8F13A83E605 /* LinkaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 328D0AC42D7699A0B421F1F3 /* LinkaWidgetExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		603A8E30B36D42DEA88139DD /* MeasurementDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8549C59760252CA889B5156 /* MeasurementDetailView.swift */; };
 		67BE8FBADEF49CAE69360033 /* AssistProblemSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA202D7A1FB600A3F43CD0ED /* AssistProblemSelectionView.swift */; };
+		6E728101447F1EA3746A18FE /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.47.png in Resources */ = {isa = PBXBuildFile; fileRef = 7694CFAF5507ABCAB530D345 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.47.png */; };
 		6F17598AD7C151721E54AB92 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */; };
 		704E919D0F63C3C6A5971FF6 /* LinkaSpeedTestWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66CBF1A76A2700A86FB6D257 /* LinkaSpeedTestWidget.swift */; };
 		77AA437F88B4E181F75F6B6E /* AssistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 407C59990EED2DC1040BF42E /* AssistView.swift */; };
+		796DD515901A1A63513D17B1 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.51.png in Resources */ = {isa = PBXBuildFile; fileRef = 5B98EA5D29714616A7E9B981 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.51.png */; };
+		7CF7BA9E1214806740848A59 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.40.png in Resources */ = {isa = PBXBuildFile; fileRef = 9B78B9DAB08F95A0C65F5E3F /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.40.png */; };
 		7D2E75A9C2B6677164470767 /* ExpertModeMigrationBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41173010B41EF48DE2606B1 /* ExpertModeMigrationBanner.swift */; };
 		7D5ACB59AE3B1D2BE7DAE683 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */; };
 		7E4521DEE028B6E2786623C9 /* AssistContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD4A980DC574793818E97A1 /* AssistContainer.swift */; };
@@ -61,6 +70,7 @@
 		847E859C6B4B4BC90D19D8BE /* LinkaEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 86760C16968147ADE1D36961 /* LinkaEngine */; };
 		882B1F2E429EE217B08C34B6 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3234D1B179CE201E17961385 /* SplashView.swift */; };
 		89C7B34BC422904F866171F8 /* UsageDiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6971747152D0754E5176E4 /* UsageDiagnosticsView.swift */; };
+		8A6275A34C1E4ABEC097590D /* 02-resultado.png in Resources */ = {isa = PBXBuildFile; fileRef = 4A3935B041B5930F03590DCB /* 02-resultado.png */; };
 		8A98ED69419E179DC57A582C /* AssistFailureSignalMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E2413E81B1C0AF7D31BBC0 /* AssistFailureSignalMapping.swift */; };
 		8EDC61449DB6F193BE332F11 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */; };
 		8F43FE7424FB03B9F36897E9 /* StatDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240C677AB8218C3DE05600FB /* StatDisplay.swift */; };
@@ -73,6 +83,7 @@
 		99DC47095EFAC9A6C617FE64 /* MetricRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179DA64F9C7059B7A140B92E /* MetricRing.swift */; };
 		9D9CAA41523C5B4063A18FF2 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60A040FE4E49231CD858102 /* MainView.swift */; };
 		9FFFA7A4330D0D605C30667E /* AssistFailureSignalMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E2413E81B1C0AF7D31BBC0 /* AssistFailureSignalMapping.swift */; };
+		A11D357CC4C079407819131E /* 03-contexto.png in Resources */ = {isa = PBXBuildFile; fileRef = 0D1B97BED85D92A6875D8B5A /* 03-contexto.png */; };
 		A1448C6403A7DFB5C5B2FE7F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8041784263895147F69C02D2 /* Assets.xcassets */; };
 		A475A78FD53F375ED48B3017 /* LinkaAppIntents in Frameworks */ = {isa = PBXBuildFile; productRef = AF94459C34286AD1C350EB80 /* LinkaAppIntents */; };
 		A4D9495502DC4C4CEF2BEF0F /* AppIntentCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7921F180B5C7EC49B0B1D48 /* AppIntentCoordinator.swift */; };
@@ -96,24 +107,35 @@
 		D3535A4ADB8FFC83D989D434 /* ConnectionPathView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF377B5E1688176727142AF /* ConnectionPathView.swift */; };
 		DDDA516AB439EF732458C5F6 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */; };
 		DE3BA840BD598DC6C7F69BA9 /* ConnectivityTriageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE87CDDD63F493ADD2C14B84 /* ConnectivityTriageView.swift */; };
+		DFBAB09BCD289AF1EDDDECD0 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.31.png in Resources */ = {isa = PBXBuildFile; fileRef = 3FC86B98A2A57170994EBE68 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.31.png */; };
 		E1CC58942197732477D20D52 /* SpeedTestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E816515881C246C6E28B0653 /* SpeedTestViewModel.swift */; };
 		E8738446F6E9EC9EAF2DFDE5 /* ApplePlatformSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */; };
 		EB421BFDB3D4D610383923F1 /* ApplePlatformSignalProviderCWChannelBandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */; };
 		EB7A405CD698C36FF965DEFC /* LinkaPlusWordmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D579EFF3B620AD5DF92A3A87 /* LinkaPlusWordmarkView.swift */; };
+		EBB07AE0AC66329D52CC1475 /* 01-entenda-sua-conexao.png in Resources */ = {isa = PBXBuildFile; fileRef = DD4013816C833AF6D4EBCB3A /* 01-entenda-sua-conexao.png */; };
 		EDB56794300BC7672DA8F80B /* LinkaWidgetShared in Frameworks */ = {isa = PBXBuildFile; productRef = A80A78B4DB132E6B27081B7D /* LinkaWidgetShared */; };
 		EDEF20B20E5B665AE314BE04 /* LinkaExternalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8AF9B7DA6D4CDD2574E7338 /* LinkaExternalLinks.swift */; };
 		EF62A8D76558A6AE56DB658A /* LinkaWidgetShared in Frameworks */ = {isa = PBXBuildFile; productRef = FA1CE84A7C31AEF2F4A97972 /* LinkaWidgetShared */; };
 		EFE90B32EE9F3C3441921A5D /* LinkaModules in Frameworks */ = {isa = PBXBuildFile; productRef = F9AA1524670AA76CD25C8EE7 /* LinkaModules */; };
+		F4045A0A948894F658AD747A /* 05-assist2.png in Resources */ = {isa = PBXBuildFile; fileRef = 08911C8048C417731D63941B /* 05-assist2.png */; };
 		F492A685388DF380C07F0B86 /* AssistViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD77BB89224BDA9466A65983 /* AssistViewModel.swift */; };
 		F563C68AAD0FF6D4B4B4E33E /* WiFiNetworkPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55521AF45A9C7EF8F0709A96 /* WiFiNetworkPermission.swift */; };
 		F77CBC3EB2009824FB9840BB /* UsageSuitabilityCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8279085EE690722DC2381 /* UsageSuitabilityCopy.swift */; };
+		F815AC931A0B322F582169DA /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.55.png in Resources */ = {isa = PBXBuildFile; fileRef = 3736630FD62CBE88D8011A68 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.55.png */; };
+		F845AE6E141A8BCBA2AD0272 /* 04-assist1.png in Resources */ = {isa = PBXBuildFile; fileRef = 6A875C6193D28AF210E71F16 /* 04-assist1.png */; };
 		FB04D476B3C59CD38514B55C /* NetworkStabilityPatternsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641020ADE92F07BF8F597BD6 /* NetworkStabilityPatternsViewModel.swift */; };
 		FB2E235653F8530D066FD804 /* WiFiNetworkPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55521AF45A9C7EF8F0709A96 /* WiFiNetworkPermission.swift */; };
 		FD6BAD30F4F388AEBF0AAB9F /* PurchaseEntryPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44FD51918BF9314D06858F94 /* PurchaseEntryPoint.swift */; };
-		BE0DC4629963485FBF38BAFE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8041784263895147F69C02D2 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		291FBAEC93F016DFAE3D8174 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = ED928F4DB6D51F4BE84E816D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 675DFA678F2EAE7C57E6EC9C;
+			remoteInfo = LinkaApp_iOS;
+		};
 		9FB5A836CC980BEE4039A376 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = ED928F4DB6D51F4BE84E816D /* Project object */;
@@ -145,7 +167,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		08911C8048C417731D63941B /* 05-assist2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "05-assist2.png"; sourceTree = "<group>"; };
 		0BF377B5E1688176727142AF /* ConnectionPathView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionPathView.swift; sourceTree = "<group>"; };
+		0D1B97BED85D92A6875D8B5A /* 03-contexto.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "03-contexto.png"; sourceTree = "<group>"; };
 		1056216026BABB240C8AC371 /* PurchaseSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseSheet.swift; sourceTree = "<group>"; };
 		17341010AD6A54D297DD1469 /* MeasurementHistoryCloudKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MeasurementHistoryCloudKit; path = MeasurementHistoryCloudKit; sourceTree = SOURCE_ROOT; };
 		179DA64F9C7059B7A140B92E /* MetricRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricRing.swift; sourceTree = "<group>"; };
@@ -154,30 +178,41 @@
 		2C8ADAB36D0CC32BA436AFE3 /* LinkaAppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaAppShortcuts.swift; sourceTree = "<group>"; };
 		3234D1B179CE201E17961385 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		328D0AC42D7699A0B421F1F3 /* LinkaWidgetExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = LinkaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		3736630FD62CBE88D8011A68 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.55.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.55.png"; sourceTree = "<group>"; };
+		3BE450192B7DC663DC0F0F91 /* LinkaAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LinkaAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3FC86B98A2A57170994EBE68 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.31.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.31.png"; sourceTree = "<group>"; };
 		407C59990EED2DC1040BF42E /* AssistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistView.swift; sourceTree = "<group>"; };
 		43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		44FD51918BF9314D06858F94 /* PurchaseEntryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseEntryPoint.swift; sourceTree = "<group>"; };
 		46F4505095861E3713A028A2 /* SettingsProductionStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsProductionStateTests.swift; sourceTree = "<group>"; };
 		4781F293BF600F767AD519F6 /* ConnectionPathDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionPathDetailView.swift; sourceTree = "<group>"; };
 		4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePlatformSignalProviderCWChannelBandTests.swift; sourceTree = "<group>"; };
+		4A3935B041B5930F03590DCB /* 02-resultado.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "02-resultado.png"; sourceTree = "<group>"; };
 		4AA2E4A391D36FDA86E36727 /* LinkaEngine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaEngine; path = LinkaEngine; sourceTree = SOURCE_ROOT; };
+		4C18C21A5058B411187DFB0D /* 02-resultado.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "02-resultado.png"; sourceTree = "<group>"; };
 		4D0615340FFF59EAAF050BE2 /* LinkaModules */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaModules; path = LinkaModules; sourceTree = SOURCE_ROOT; };
 		4F6C710FA9D415DDBB3316F9 /* BannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerView.swift; sourceTree = "<group>"; };
 		5306A9B9735CAA5118F099E0 /* LinkaAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LinkaAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		55521AF45A9C7EF8F0709A96 /* WiFiNetworkPermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiNetworkPermission.swift; sourceTree = "<group>"; };
+		57683E1EF231CFAB7DA64C37 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png"; sourceTree = "<group>"; };
 		5A6971747152D0754E5176E4 /* UsageDiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageDiagnosticsView.swift; sourceTree = "<group>"; };
+		5B98EA5D29714616A7E9B981 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.51.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.51.png"; sourceTree = "<group>"; };
 		5D7798E2D1800A4FF1C0E30E /* ShareCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardView.swift; sourceTree = "<group>"; };
 		5E03F3D02E4F5A54E54C94A7 /* NetworkStabilityPatternsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkStabilityPatternsViewModelTests.swift; sourceTree = "<group>"; };
 		6052814E829E396518A3EB18 /* LinkaWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaWidgetBundle.swift; sourceTree = "<group>"; };
 		641020ADE92F07BF8F597BD6 /* NetworkStabilityPatternsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkStabilityPatternsViewModel.swift; sourceTree = "<group>"; };
 		647AB617F0B68B7D63BE2191 /* AssistTeaserCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistTeaserCard.swift; sourceTree = "<group>"; };
 		66CBF1A76A2700A86FB6D257 /* LinkaSpeedTestWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaSpeedTestWidget.swift; sourceTree = "<group>"; };
+		6935758C28176CC335C491C7 /* AppStoreScreenshotsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotsUITests.swift; sourceTree = "<group>"; };
+		6A875C6193D28AF210E71F16 /* 04-assist1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "04-assist1.png"; sourceTree = "<group>"; };
 		6F3C93A80DDDCD9D80E5235B /* LinkaApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LinkaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		72C35725E79C96780D745AB7 /* LinkaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaApp.swift; sourceTree = "<group>"; };
 		736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
+		7694CFAF5507ABCAB530D345 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.47.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.47.png"; sourceTree = "<group>"; };
 		78285EB65890B076CF8D41D4 /* AssistViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistViewModelTests.swift; sourceTree = "<group>"; };
 		8041784263895147F69C02D2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8DD4A980DC574793818E97A1 /* AssistContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistContainer.swift; sourceTree = "<group>"; };
+		9B78B9DAB08F95A0C65F5E3F /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.40.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.40.png"; sourceTree = "<group>"; };
 		A41173010B41EF48DE2606B1 /* ExpertModeMigrationBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpertModeMigrationBanner.swift; sourceTree = "<group>"; };
 		A8AF9B7DA6D4CDD2574E7338 /* LinkaExternalLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaExternalLinks.swift; sourceTree = "<group>"; };
 		A955FDE679C032C5443EEF5D /* SpeedTestViewModelScenePhaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestViewModelScenePhaseTests.swift; sourceTree = "<group>"; };
@@ -186,10 +221,13 @@
 		C4F8279085EE690722DC2381 /* UsageSuitabilityCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSuitabilityCopy.swift; sourceTree = "<group>"; };
 		C60A040FE4E49231CD858102 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		CA202D7A1FB600A3F43CD0ED /* AssistProblemSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistProblemSelectionView.swift; sourceTree = "<group>"; };
+		CD0E9FA3F3C9159A1B51BA82 /* 01-home.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "01-home.png"; sourceTree = "<group>"; };
+		CF33003E49F44DE9A2057329 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		D0E2413E81B1C0AF7D31BBC0 /* AssistFailureSignalMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistFailureSignalMapping.swift; sourceTree = "<group>"; };
 		D1FD5CA0E57F84DC90BE11A5 /* HistoricalMeasurementDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoricalMeasurementDetailView.swift; sourceTree = "<group>"; };
 		D579EFF3B620AD5DF92A3A87 /* LinkaPlusWordmarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaPlusWordmarkView.swift; sourceTree = "<group>"; };
 		DA0EFE129DED2C73A20E81CA /* AssistViewCloseSheetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistViewCloseSheetTests.swift; sourceTree = "<group>"; };
+		DD4013816C833AF6D4EBCB3A /* 01-entenda-sua-conexao.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "01-entenda-sua-conexao.png"; sourceTree = "<group>"; };
 		DD77BB89224BDA9466A65983 /* AssistViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistViewModel.swift; sourceTree = "<group>"; };
 		DE74213A4D06EC1A6FF5E698 /* LinkaWidgetShared */ = {isa = PBXFileReference; lastKnownFileType = folder; name = LinkaWidgetShared; path = LinkaWidgetShared; sourceTree = SOURCE_ROOT; };
 		DE87CDDD63F493ADD2C14B84 /* ConnectivityTriageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectivityTriageView.swift; sourceTree = "<group>"; };
@@ -202,6 +240,7 @@
 		F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePlatformSignalProvider.swift; sourceTree = "<group>"; };
 		F6D72124FDD0CB4E07F4E7B5 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		F8549C59760252CA889B5156 /* MeasurementDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementDetailView.swift; sourceTree = "<group>"; };
+		F959B2CBD5E8F278F7B85F54 /* 06-historico.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "06-historico.png"; sourceTree = "<group>"; };
 		FB32ED976CC4BE668BB83D5C /* SpeedTestViewModelResultTimingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestViewModelResultTimingTests.swift; sourceTree = "<group>"; };
 		FC264CF05674D25561146FCA /* NetworkConnectivityTriage */ = {isa = PBXFileReference; lastKnownFileType = folder; name = NetworkConnectivityTriage; path = NetworkConnectivityTriage; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
@@ -319,11 +358,28 @@
 			isa = PBXGroup;
 			children = (
 				74BE8B9347AA0733AE0FE973 /* Packages */,
+				F31F3C6B2C604A0870147A34 /* screenshots */,
 				01EAA90362DC22B525DC5FAD /* Sources */,
 				A6B765D5F58E9472B6A80425 /* Sources */,
 				24BB651090AE1FE408377D7B /* Tests */,
 				89593D469806B613A3DDE80D /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		531A63B2A42656FC5BEEF6EB /* fontes */ = {
+			isa = PBXGroup;
+			children = (
+				9DB9D2C7E6270D4D7D169F24 /* iphone */,
+			);
+			path = fontes;
+			sourceTree = "<group>";
+		};
+		58A6EA84C6C569658B3A966F /* final */ = {
+			isa = PBXGroup;
+			children = (
+				D3AD365A22FEFCD78811BF0E /* pt-BR */,
+			);
+			path = final;
 			sourceTree = "<group>";
 		};
 		74BE8B9347AA0733AE0FE973 /* Packages */ = {
@@ -345,9 +401,29 @@
 				6F3C93A80DDDCD9D80E5235B /* LinkaApp.app */,
 				E3B3AA7959A5149C12DAD039 /* LinkaApp.app */,
 				5306A9B9735CAA5118F099E0 /* LinkaAppTests.xctest */,
+				3BE450192B7DC663DC0F0F91 /* LinkaAppUITests.xctest */,
 				328D0AC42D7699A0B421F1F3 /* LinkaWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		9DB9D2C7E6270D4D7D169F24 /* iphone */ = {
+			isa = PBXGroup;
+			children = (
+				CD0E9FA3F3C9159A1B51BA82 /* 01-home.png */,
+				4C18C21A5058B411187DFB0D /* 02-resultado.png */,
+				0D1B97BED85D92A6875D8B5A /* 03-contexto.png */,
+				6A875C6193D28AF210E71F16 /* 04-assist1.png */,
+				08911C8048C417731D63941B /* 05-assist2.png */,
+				F959B2CBD5E8F278F7B85F54 /* 06-historico.png */,
+				9B78B9DAB08F95A0C65F5E3F /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.40.png */,
+				7694CFAF5507ABCAB530D345 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.47.png */,
+				57683E1EF231CFAB7DA64C37 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png */,
+				3FC86B98A2A57170994EBE68 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.31.png */,
+				5B98EA5D29714616A7E9B981 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.51.png */,
+				3736630FD62CBE88D8011A68 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.55.png */,
+			);
+			path = iphone;
 			sourceTree = "<group>";
 		};
 		A6B765D5F58E9472B6A80425 /* Sources */ = {
@@ -359,6 +435,35 @@
 			);
 			name = Sources;
 			path = LinkaWidget/Sources;
+			sourceTree = "<group>";
+		};
+		CDB36FCFF3548D5A2EB9FF12 /* iphone */ = {
+			isa = PBXGroup;
+			children = (
+				DD4013816C833AF6D4EBCB3A /* 01-entenda-sua-conexao.png */,
+				4A3935B041B5930F03590DCB /* 02-resultado.png */,
+			);
+			path = iphone;
+			sourceTree = "<group>";
+		};
+		D3AD365A22FEFCD78811BF0E /* pt-BR */ = {
+			isa = PBXGroup;
+			children = (
+				CDB36FCFF3548D5A2EB9FF12 /* iphone */,
+			);
+			path = "pt-BR";
+			sourceTree = "<group>";
+		};
+		F31F3C6B2C604A0870147A34 /* screenshots */ = {
+			isa = PBXGroup;
+			children = (
+				6935758C28176CC335C491C7 /* AppStoreScreenshotsUITests.swift */,
+				CF33003E49F44DE9A2057329 /* README.md */,
+				58A6EA84C6C569658B3A966F /* final */,
+				531A63B2A42656FC5BEEF6EB /* fontes */,
+			);
+			name = screenshots;
+			path = "../store/app-store/screenshots";
 			sourceTree = "<group>";
 		};
 		FE806FE8DD746C3F89D8F698 /* Adapters */ = {
@@ -386,7 +491,6 @@
 			buildPhases = (
 				02BE901BA8C2478A1FE52955 /* Sources */,
 				C393F58815966F848DDF3AB9 /* Frameworks */,
-				A94E36277ADA4384984A142B /* Resources */,
 			);
 			buildRules = (
 			);
@@ -400,6 +504,25 @@
 			productName = LinkaWidgetExtension;
 			productReference = 328D0AC42D7699A0B421F1F3 /* LinkaWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		3F2ED16AA6022DBB7650DAC5 /* LinkaAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 13449E091B50C6942BF6F931 /* Build configuration list for PBXNativeTarget "LinkaAppUITests" */;
+			buildPhases = (
+				47FA07186FAD066A9E2C6008 /* Sources */,
+				7FBD9BF2C98CF9CE1F4F1D78 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3B4473C79C0D5EA9D957A7AF /* PBXTargetDependency */,
+			);
+			name = LinkaAppUITests;
+			packageProductDependencies = (
+			);
+			productName = LinkaAppUITests;
+			productReference = 3BE450192B7DC663DC0F0F91 /* LinkaAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 		57D0A290943F86C259A182B6 /* LinkaAppTests */ = {
 			isa = PBXNativeTarget;
@@ -484,6 +607,9 @@
 						DevelopmentTeam = 2Z4T8228GR;
 						ProvisioningStyle = Automatic;
 					};
+					3F2ED16AA6022DBB7650DAC5 = {
+						TestTargetID = 675DFA678F2EAE7C57E6EC9C;
+					};
 					675DFA678F2EAE7C57E6EC9C = {
 						DevelopmentTeam = 2Z4T8228GR;
 						ProvisioningStyle = Automatic;
@@ -518,6 +644,7 @@
 			targets = (
 				675DFA678F2EAE7C57E6EC9C /* LinkaApp_iOS */,
 				86DF27BAA01897B036E86CFB /* LinkaApp_macOS */,
+				3F2ED16AA6022DBB7650DAC5 /* LinkaAppUITests */,
 				57D0A290943F86C259A182B6 /* LinkaAppTests */,
 				184D119CB06D3356F99CEDFE /* LinkaWidgetExtension */,
 			);
@@ -533,19 +660,33 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7FBD9BF2C98CF9CE1F4F1D78 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EBB07AE0AC66329D52CC1475 /* 01-entenda-sua-conexao.png in Resources */,
+				17844AA3F865EC3C43DAD6AA /* 01-home.png in Resources */,
+				0C8ECCB89B1CEA92EEA79277 /* 02-resultado.png in Resources */,
+				8A6275A34C1E4ABEC097590D /* 02-resultado.png in Resources */,
+				A11D357CC4C079407819131E /* 03-contexto.png in Resources */,
+				F845AE6E141A8BCBA2AD0272 /* 04-assist1.png in Resources */,
+				F4045A0A948894F658AD747A /* 05-assist2.png in Resources */,
+				114F6A67C7CE3B670CF6AD50 /* 06-historico.png in Resources */,
+				4FBFA4B00E64FC22616B4DFF /* README.md in Resources */,
+				7CF7BA9E1214806740848A59 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.40.png in Resources */,
+				6E728101447F1EA3746A18FE /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.47.png in Resources */,
+				29947FA757E77F75A68839DE /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png in Resources */,
+				DFBAB09BCD289AF1EDDDECD0 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.31.png in Resources */,
+				796DD515901A1A63513D17B1 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.51.png in Resources */,
+				F815AC931A0B322F582169DA /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.55.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F4A4216FD0E26C59E74E02ED /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				A1448C6403A7DFB5C5B2FE7F /* Assets.xcassets in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A94E36277ADA4384984A142B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BE0DC4629963485FBF38BAFE /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -604,6 +745,14 @@
 				3120B8DF78687FB4ED24E811 /* UsageDiagnosticsView.swift in Sources */,
 				91D04741029D32B37366E216 /* UsageSuitabilityCopy.swift in Sources */,
 				F563C68AAD0FF6D4B4B4E33E /* WiFiNetworkPermission.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		47FA07186FAD066A9E2C6008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4DB6D1F24A36048C31C7F8AE /* AppStoreScreenshotsUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -674,6 +823,11 @@
 			target = 675DFA678F2EAE7C57E6EC9C /* LinkaApp_iOS */;
 			targetProxy = 9FB5A836CC980BEE4039A376 /* PBXContainerItemProxy */;
 		};
+		3B4473C79C0D5EA9D957A7AF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 675DFA678F2EAE7C57E6EC9C /* LinkaApp_iOS */;
+			targetProxy = 291FBAEC93F016DFAE3D8174 /* PBXContainerItemProxy */;
+		};
 		A7580D9090416BABE41D575F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 184D119CB06D3356F99CEDFE /* LinkaWidgetExtension */;
@@ -737,7 +891,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 42;
+				CURRENT_PROJECT_VERSION = 43;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -755,7 +909,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -785,6 +939,42 @@
 				PRODUCT_NAME = LinkaApp;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6B4B7B444424746AB2041523 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.linka.LinkaAppUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = LinkaApp_iOS;
+			};
+			name = Debug;
+		};
+		6CF1CF7E95E06FBF3012C906 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.linka.LinkaAppUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = LinkaApp_iOS;
 			};
 			name = Release;
 		};
@@ -822,7 +1012,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 42;
+				CURRENT_PROJECT_VERSION = 43;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -834,7 +1024,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -987,6 +1177,15 @@
 			buildConfigurations = (
 				31DB955F732815CF75FD024A /* Debug */,
 				9FABB7CD3629CDA0B5875E0C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		13449E091B50C6942BF6F931 /* Build configuration list for PBXNativeTarget "LinkaAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6B4B7B444424746AB2041523 /* Debug */,
+				6CF1CF7E95E06FBF3012C906 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
