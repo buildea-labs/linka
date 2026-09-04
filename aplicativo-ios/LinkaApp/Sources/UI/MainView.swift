@@ -164,6 +164,7 @@ struct MainView: View {
                     }
                 }
             }
+            .navigationTitle("Início")
             #if os(iOS)
             .navigationBarHidden(true)
             #endif
@@ -470,9 +471,6 @@ struct MainView: View {
     // 2. Medindo (Connecting / Downloading / Uploading)
     private var measuringView: some View {
         VStack(spacing: 0) {
-            LiveConnectionPathView(kind: viewModel.liveConnectionKind, label: viewModel.liveNetworkLabel)
-                .padding(.horizontal, 24)
-                .padding(.top, 28)
             Spacer()
 
             MetricRing(
