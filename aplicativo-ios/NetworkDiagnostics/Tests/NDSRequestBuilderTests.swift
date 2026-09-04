@@ -28,8 +28,30 @@ final class NDSRequestBuilderTests: XCTestCase {
 
         let encoded = try JSONEncoder().encode(request)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertEqual(json["session_id"] as? String, measurement.id.uuidString)
+        XCTAssertNil(json["sessionId"])
         XCTAssertEqual(json["requested_outputs"] as? [String], ["scoring", "ai"])
         XCTAssertNil(json["context"])
+
+        let connectionJSON = try XCTUnwrap(json["connection"] as? [String: Any])
+        XCTAssertEqual(connectionJSON["has_internet"] as? Bool, true)
+        XCTAssertNil(connectionJSON["hasInternet"])
+
+        let wifiJSON = try XCTUnwrap(json["wifi"] as? [String: Any])
+        XCTAssertEqual(wifiJSON["rssi_dbm"] as? Double, -50)
+        XCTAssertEqual(wifiJSON["link_speed_mbps"] as? Double, 866)
+        XCTAssertNil(wifiJSON["rssiDbm"])
+        XCTAssertNil(wifiJSON["linkSpeedMbps"])
+
+        let speedJSON = try XCTUnwrap(json["speed"] as? [String: Any])
+        XCTAssertEqual(speedJSON["download_mbps"] as? Double, 100)
+        XCTAssertEqual(speedJSON["upload_mbps"] as? Double, 50)
+        XCTAssertNil(speedJSON["downloadMbps"])
+        XCTAssertNil(speedJSON["uploadMbps"])
+
+        let qualityJSON = try XCTUnwrap(json["quality"] as? [String: Any])
+        XCTAssertEqual(qualityJSON["latency_ms"] as? Double, 20)
+        XCTAssertNil(qualityJSON["latencyMs"])
     }
 
     func testBuildRequest_forwardsOnlyProvidedDiagnosticContext() throws {
@@ -168,6 +190,16 @@ final class NDSRequestBuilderTests: XCTestCase {
 
         XCTAssertEqual(request.capabilities, ["historical"])
         XCTAssertEqual(request.historical, historical)
+
+        let encoded = try JSONEncoder().encode(request)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        let historicalJSON = try XCTUnwrap(json["historical"] as? [String: Any])
+        XCTAssertEqual(historicalJSON["avg_download_30d"] as? Double, 200)
+        XCTAssertEqual(historicalJSON["avg_download_7d"] as? Double, 150)
+        XCTAssertEqual(historicalJSON["tests_30d"] as? Int, 8)
+        XCTAssertEqual(historicalJSON["tests_7d"] as? Int, 3)
+        XCTAssertNil(historicalJSON["avgDownload30d"])
+        XCTAssertNil(historicalJSON["tests30d"])
     }
 
     /// Issue #129: `speed: {}` (objeto presente, campos vazios) é rejeitado

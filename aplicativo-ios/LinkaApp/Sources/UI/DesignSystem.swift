@@ -58,8 +58,8 @@ public extension Color {
     // análise de UI Polish v2). A identidade Linka permanece só em
     // brandSurface/brandOnSurface/brandAccentWarm/borderStrong.
     #if canImport(UIKit)
-    static let surfacePage = Color(UIColor.systemBackground)
-    static let surfaceCard = Color(UIColor.secondarySystemBackground)
+    static let surfacePage = Color(UIColor.systemGroupedBackground)
+    static let surfaceCard = Color(UIColor.secondarySystemGroupedBackground)
     static let textPrimary = Color(UIColor.label)
     static let textSecondary = Color(UIColor.secondaryLabel)
     static let borderDefault = Color(UIColor.separator)

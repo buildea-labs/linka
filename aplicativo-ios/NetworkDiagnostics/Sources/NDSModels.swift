@@ -20,7 +20,7 @@ public struct NDSRequest: Codable, Equatable, Sendable {
     public enum CodingKeys: String, CodingKey {
         case schemaVersion = "schema_version"
         case request_id
-        case sessionId
+        case sessionId = "session_id"
         case platform
         case locale
         case profile
@@ -115,6 +115,11 @@ public struct NDSRequest: Codable, Equatable, Sendable {
     public struct Connection: Codable, Equatable, Sendable {
         public var type: String?
         public var hasInternet: Bool?
+        public enum CodingKeys: String, CodingKey {
+            case type
+            case hasInternet = "has_internet"
+        }
+
         public init(type: String? = nil, hasInternet: Bool? = nil) {
             self.type = type
             self.hasInternet = hasInternet
@@ -134,6 +139,21 @@ public struct NDSRequest: Codable, Equatable, Sendable {
         public var gatewayIP: String?
         public var gatewayVendor: String?
         public var gatewayAdminURL: String?
+
+        public enum CodingKeys: String, CodingKey {
+            case rssiDbm = "rssi_dbm"
+            case linkSpeedMbps = "link_speed_mbps"
+            case band
+            case securityType = "security_type"
+            case rxRateMbps = "rx_rate_mbps"
+            case txRateMbps = "tx_rate_mbps"
+            case noiseDbm = "noise_dbm"
+            case snrDb = "snr_db"
+            case channelNumber = "channel_number"
+            case gatewayIP = "gateway_ip"
+            case gatewayVendor = "gateway_vendor"
+            case gatewayAdminURL = "gateway_admin_url"
+        }
 
         public init(
             rssiDbm: Double? = nil,
@@ -167,6 +187,11 @@ public struct NDSRequest: Codable, Equatable, Sendable {
     public struct Speed: Codable, Equatable, Sendable {
         public var downloadMbps: Double?
         public var uploadMbps: Double?
+        public enum CodingKeys: String, CodingKey {
+            case downloadMbps = "download_mbps"
+            case uploadMbps = "upload_mbps"
+        }
+
         public init(downloadMbps: Double? = nil, uploadMbps: Double? = nil) {
             self.downloadMbps = downloadMbps
             self.uploadMbps = uploadMbps
@@ -180,6 +205,15 @@ public struct NDSRequest: Codable, Equatable, Sendable {
         public var dnsResolutionMs: Double?
         public var jitterMs: Double?
         public var packetLossPercent: Double?
+        public enum CodingKeys: String, CodingKey {
+            case latencyMs = "latency_ms"
+            case loadedLatencyMs = "loaded_latency_ms"
+            case loadedLatencyUploadMs = "loaded_latency_upload_ms"
+            case dnsResolutionMs = "dns_resolution_ms"
+            case jitterMs = "jitter_ms"
+            case packetLossPercent = "packet_loss_percent"
+        }
+
         public init(
             latencyMs: Double? = nil,
             loadedLatencyMs: Double? = nil,
@@ -206,6 +240,17 @@ public struct NDSRequest: Codable, Equatable, Sendable {
         public var avgPing7d: Double?
         public var tests30d: Int?
         public var tests7d: Int?
+
+        public enum CodingKeys: String, CodingKey {
+            case avgDownload30d = "avg_download_30d"
+            case avgDownload7d = "avg_download_7d"
+            case avgUpload30d = "avg_upload_30d"
+            case avgUpload7d = "avg_upload_7d"
+            case avgPing30d = "avg_ping_30d"
+            case avgPing7d = "avg_ping_7d"
+            case tests30d = "tests_30d"
+            case tests7d = "tests_7d"
+        }
 
         public init(
             avgDownload30d: Double? = nil,

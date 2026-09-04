@@ -60,11 +60,26 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
     private var updatesTask: Task<Void, Never>?
     private var productTask: Task<Void, Never>?
 
+    /// Chave UserDefaults para forçar Linka Plus sem compra.
+    /// Útil para testes internos em qualquer build (debug, release, TestFlight).
+    /// Para ativar: UserDefaults.standard.set(true, forKey: "linkaForcePlus")
+    /// Para desativar: UserDefaults.standard.removeObject(forKey: "linkaForcePlus")
+    public static let forcePlusKey = "linkaForcePlus"
+
+    private var isForcePlusEnabled: Bool {
+        UserDefaults.standard.bool(forKey: Self.forcePlusKey)
+    }
+
     public init(
         productID: String = LinkaStoreProductID.plusAnnual
     ) {
         self.productID = productID
-        
+
+        // Override de Plus para testes internos — não depende de StoreKit
+        if UserDefaults.standard.bool(forKey: Self.forcePlusKey) {
+            snapshot = .plus(status: .active, source: .promotion)
+        }
+
         let localProductID = productID
         updatesTask = Task { [weak self] in
             for await update in Transaction.updates {
@@ -143,6 +158,8 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
     /// do StoreKit 2 é a fonte da verdade sobre se o usuário tem a assinatura
     /// ativa, já lidando com revogações, renovações e carências.
     public func refreshSnapshot() async {
+        // Se o override de Plus está ativo, não sobrescreve com o resultado do StoreKit
+        guard !isForcePlusEnabled else { return }
         isRefreshingSnapshot = true
         defer { isRefreshingSnapshot = false }
 
@@ -203,13 +220,26 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
         snapshot.plan == .plus && snapshot.status == .active
     }
 
-    #if DEBUG
-    public func debugForcePlus() {
-        snapshot = .plus(status: .active, source: .promotion)
+    // MARK: - Override de Plus para testes internos
+
+    /// Ativa ou desativa o Linka Plus forçado via UserDefaults.
+    /// Funciona em qualquer build (debug, release, TestFlight).
+    ///
+    /// Para ativar sem código:
+    ///   Launch argument no Xcode: `-linkaForcePlus 1`
+    ///   Ou via LLDB: `e UserDefaults.standard.set(true, forKey: "linkaForcePlus")`
+    public func setForcePlus(_ enabled: Bool) {
+        if enabled {
+            UserDefaults.standard.set(true, forKey: Self.forcePlusKey)
+            snapshot = .plus(status: .active, source: .promotion)
+        } else {
+            UserDefaults.standard.removeObject(forKey: Self.forcePlusKey)
+            Task { await refreshSnapshot() }
+        }
     }
 
-    public func debugResetToFree() {
-        snapshot = .free
-    }
+    #if DEBUG
+    public func debugForcePlus() { setForcePlus(true) }
+    public func debugResetToFree() { setForcePlus(false) }
     #endif
 }

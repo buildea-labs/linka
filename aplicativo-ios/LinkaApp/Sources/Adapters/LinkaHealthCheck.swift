@@ -5,7 +5,7 @@ import LinkaEngine
 
 @MainActor
 public final class LinkaHealthCheck: ObservableObject {
-    @Published public private(set) var statusText: String = "Verificando rede..."
+    @Published public private(set) var statusText: String = ""
     @Published public private(set) var isOnline: Bool = false
     @Published public private(set) var dnsMs: Double?
     @Published public private(set) var pingMs: Double?
@@ -27,7 +27,7 @@ public final class LinkaHealthCheck: ObservableObject {
                 let online = path.status == .satisfied
                 self.isOnline = online
                 if online {
-                    self.statusText = "Conectado. Analisando..."
+                    self.statusText = ""
                     self.runMetrics()
                 } else if path.status == .requiresConnection {
                     self.statusText = "Requer conexão"
@@ -59,31 +59,20 @@ public final class LinkaHealthCheck: ObservableObject {
         healthTask = Task {
             // DNS
             let dns = await SpeedTestCore.resolveDNS()
-            
+
             // Ping and Jitter via idle ping probe
             let pingOutcome = await SpeedTestCore.performPingTest()
-            
+
             guard !Task.isCancelled else { return }
-            
+
             self.dnsMs = dns
-            
+
             if case .measured(let latency, let jitter, _) = pingOutcome {
                 self.pingMs = latency
                 self.jitterMs = jitter
-                
-                var details = [String]()
-                if let p = self.pingMs, p > 0 { details.append("Ping: \(Int(p))ms") }
-                if let j = self.jitterMs, j > 0 { details.append("Jitter: \(Int(j))ms") }
-                if let d = self.dnsMs { details.append("DNS: \(Int(d))ms") }
-                
-                if details.isEmpty {
-                    self.statusText = "Conectado"
-                } else {
-                    self.statusText = details.joined(separator: " • ")
-                }
-            } else {
-                self.statusText = "Conectado"
             }
+
+            self.statusText = "Conectado"
         }
     }
 }
