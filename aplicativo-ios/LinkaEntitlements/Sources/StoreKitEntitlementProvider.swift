@@ -65,8 +65,14 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
     ) {
         self.productID = productID
         
+        let localProductID = productID
         updatesTask = Task { [weak self] in
-            await self?.observeTransactionUpdates()
+            for await update in Transaction.updates {
+                guard let transaction = try? Self.checkVerified(update),
+                      transaction.productID == localProductID else { continue }
+                await transaction.finish()
+                await self?.refreshSnapshot()
+            }
         }
 
         productTask = Task { [weak self] in
@@ -93,12 +99,18 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
 
     @discardableResult
     public func purchase() async throws -> LinkaPurchaseOutcome {
-        let products = try await Product.products(for: [productID])
-        guard let product = products.first else {
-            throw LinkaStoreError.productNotFound(productID)
+        let productToPurchase: Product
+        if case .loaded(let p) = productState {
+            productToPurchase = p
+        } else {
+            let products = try await Product.products(for: [productID])
+            guard let p = products.first else {
+                throw LinkaStoreError.productNotFound(productID)
+            }
+            productToPurchase = p
         }
 
-        let result = try await product.purchase()
+        let result = try await productToPurchase.purchase()
         return try await handle(result)
     }
 
@@ -176,14 +188,7 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
         }
     }
 
-    private func observeTransactionUpdates() async {
-        for await update in Transaction.updates {
-            guard let transaction = try? Self.checkVerified(update),
-                  transaction.productID == productID else { continue }
-            await transaction.finish()
-            await refreshSnapshot()
-        }
-    }
+
 
     private static func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
         switch result {
