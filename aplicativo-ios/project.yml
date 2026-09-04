@@ -8,10 +8,9 @@ settings:
 targets:
   LinkaApp:
     type: application
-    platform: [iOS, macOS]
+    platform: iOS
     deploymentTarget:
       iOS: 16.0
-      macOS: 13.0
     settings:
       base:
         GENERATE_INFOPLIST_FILE: NO
@@ -62,7 +61,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     deploymentTarget: 16.0
     dependencies:
-      - target: LinkaApp_iOS
+      - target: LinkaApp
     sources:
       - path: ../store/app-store/screenshots
 
@@ -77,7 +76,7 @@ targets:
     sources:
       - path: LinkaApp/Tests
     dependencies:
-      - target: LinkaApp_iOS
+      - target: LinkaApp
   LinkaWidgetExtension:
     type: app-extension
     platform: iOS

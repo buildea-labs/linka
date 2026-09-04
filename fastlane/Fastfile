@@ -32,7 +32,7 @@ platform :ios do
     # 3. Build e Archive (IPA para App Store)
     gym(
       project:          "aplicativo-ios/LinkaApp.xcodeproj",
-      scheme:           "LinkaApp_iOS",
+      scheme:           "LinkaApp",
       configuration:    "Release",
       export_method:    "app-store",
       clean:            true,
@@ -58,7 +58,7 @@ platform :ios do
     # 6. Git tag da versão e push
     version = get_version_number(
       xcodeproj: "aplicativo-ios/LinkaApp.xcodeproj",
-      target:    "LinkaApp_iOS"
+      target:    "LinkaApp"
     )
     add_git_tag(tag: "v#{version}")
     push_git_tags
