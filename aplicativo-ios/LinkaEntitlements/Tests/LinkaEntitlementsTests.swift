@@ -198,7 +198,7 @@ final class StoreKitEntitlementProviderTests: XCTestCase {
 
     func testProductStartsNilBeforeAnyLoadResolves() {
         let provider = StoreKitEntitlementProvider()
-        XCTAssertNil(provider.product)
+        XCTAssertEqual(provider.productState, .loading)
     }
 
     func testLoadProductWithAnUnknownIDResolvesToNilProductAndStopsLoading() async {
@@ -209,8 +209,7 @@ final class StoreKitEntitlementProviderTests: XCTestCase {
 
         await provider.loadProduct()
 
-        XCTAssertNil(provider.product)
-        XCTAssertFalse(provider.isLoadingProduct)
+        XCTAssertEqual(provider.productState, .unavailable)
     }
 
     func testHandleUserCancelledKeepsFreeSnapshotAndReportsCancellation() async throws {
