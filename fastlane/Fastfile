@@ -1,0 +1,66 @@
+# Fastfile – Linka iOS
+# Pipeline de deploy automático para TestFlight
+#
+# Secrets necessários (GitHub → Settings → Secrets and variables → Actions):
+#   ASC_KEY_ID      → ID da chave da App Store Connect API (ex: XXXXXXXXXX)
+#   ASC_ISSUER_ID   → Issuer ID da App Store Connect API (UUID)
+#   ASC_KEY_CONTENT → Conteúdo do arquivo .p8 codificado em Base64
+#                     Gere com: base64 -i AuthKey_XXXXXXXXXX.p8 | tr -d '\n'
+#   APPLE_TEAM_ID   → ID do time Apple Developer (ex: 2Z4T8228GR)
+
+default_platform(:ios)
+
+platform :ios do
+  # ------------------------------------------------------------------
+  # Lane: beta
+  # Faz build, archive e upload para TestFlight
+  # ------------------------------------------------------------------
+  desc "Build e upload para TestFlight via App Store Connect API"
+  lane :beta do
+    # 1. Autenticação na App Store Connect via API Key
+    api_key = app_store_connect_api_key(
+      key_id:        ENV["ASC_KEY_ID"],
+      issuer_id:     ENV["ASC_ISSUER_ID"],
+      key_content:   ENV["ASC_KEY_CONTENT"],  # conteúdo .p8 em Base64
+      is_key_content_base64: true,
+      in_house: false
+    )
+
+    # 2. Gerar projeto Xcode com XcodeGen
+    sh("xcodegen generate --spec ../aplicativo-ios/project.yml --project ../aplicativo-ios")
+
+    # 3. Build e Archive (IPA para App Store)
+    gym(
+      project:          "aplicativo-ios/LinkaApp.xcodeproj",
+      scheme:           "LinkaApp_iOS",
+      configuration:    "Release",
+      export_method:    "app-store",
+      clean:            true,
+      output_directory: "build",
+      output_name:      "LinkaApp.ipa"
+    )
+
+    # 4. Ler release notes se o arquivo existir
+    changelog = File.exist?("../RELEASE_NOTES.md") \
+                  ? File.read("../RELEASE_NOTES.md") \
+                  : "Nova versão disponível no TestFlight."
+
+    # 5. Upload para TestFlight
+    pilot(
+      api_key:                         api_key,
+      ipa:                             "build/LinkaApp.ipa",
+      changelog:                       changelog,
+      distribute_external:             false,
+      notify_external_testers:         false,
+      skip_waiting_for_build_processing: true
+    )
+
+    # 6. Git tag da versão e push
+    version = get_version_number(
+      xcodeproj: "aplicativo-ios/LinkaApp.xcodeproj",
+      target:    "LinkaApp_iOS"
+    )
+    add_git_tag(tag: "v#{version}")
+    push_git_tags
+  end
+end

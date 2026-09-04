@@ -1,0 +1,61 @@
+# =============================================================================
+# Deploy to TestFlight
+# =============================================================================
+# Executa automaticamente ao fazer push em branches release/**
+# ou manualmente via workflow_dispatch.
+#
+# SECRETS NECESSÁRIOS (GitHub → Settings → Secrets and variables → Actions):
+# ─────────────────────────────────────────────────────────────────────────────
+#  ASC_KEY_ID      → ID da chave da App Store Connect API
+#                    (ex: XXXXXXXXXX — visível na página da chave no ASC)
+#
+#  ASC_ISSUER_ID   → Issuer ID da App Store Connect API
+#                    (UUID visível em Users and Access → Integrations → Keys)
+#
+#  ASC_KEY_CONTENT → Conteúdo do arquivo .p8 codificado em Base64
+#                    Gere localmente:
+#                      base64 -i AuthKey_XXXXXXXXXX.p8 | tr -d '\n'
+#                    Cole o resultado como valor do secret.
+#
+#  APPLE_TEAM_ID   → ID do time no Apple Developer Program
+#                    (ex: 2Z4T8228GR — visível em developer.apple.com/account)
+# =============================================================================
+
+name: Deploy to TestFlight
+
+on:
+  push:
+    branches:
+      - "release/**"
+  workflow_dispatch:
+
+jobs:
+  testflight:
+    name: Build & Upload to TestFlight
+    runs-on: macos-latest
+
+    steps:
+      # ── 1. Checkout do código ──────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Instalar XcodeGen ───────────────────────────────────────────────
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # ── 3. Configurar Ruby + Bundler ───────────────────────────────────────
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true   # instala gems do Gemfile automaticamente
+          working-directory: ios  # ajuste se o Gemfile estiver em sub-pasta
+
+      # ── 4. Executar lane beta via Fastlane ────────────────────────────────
+      - name: Run Fastlane beta lane
+        run: bundle exec fastlane beta
+        env:
+          ASC_KEY_ID:     ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID:  ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+          APPLE_TEAM_ID:  ${{ secrets.APPLE_TEAM_ID }}
