@@ -125,10 +125,42 @@ public struct NDSRequest: Codable, Equatable, Sendable {
         public var rssiDbm: Double?
         public var linkSpeedMbps: Double?
         public var band: String?
-        public init(rssiDbm: Double? = nil, linkSpeedMbps: Double? = nil, band: String? = nil) {
+        public var securityType: String?
+        public var rxRateMbps: Double?
+        public var txRateMbps: Double?
+        public var noiseDbm: Double?
+        public var snrDb: Double?
+        public var channelNumber: Int?
+        public var gatewayIP: String?
+        public var gatewayVendor: String?
+        public var gatewayAdminURL: String?
+
+        public init(
+            rssiDbm: Double? = nil,
+            linkSpeedMbps: Double? = nil,
+            band: String? = nil,
+            securityType: String? = nil,
+            rxRateMbps: Double? = nil,
+            txRateMbps: Double? = nil,
+            noiseDbm: Double? = nil,
+            snrDb: Double? = nil,
+            channelNumber: Int? = nil,
+            gatewayIP: String? = nil,
+            gatewayVendor: String? = nil,
+            gatewayAdminURL: String? = nil
+        ) {
             self.rssiDbm = rssiDbm
             self.linkSpeedMbps = linkSpeedMbps
             self.band = band
+            self.securityType = securityType
+            self.rxRateMbps = rxRateMbps
+            self.txRateMbps = txRateMbps
+            self.noiseDbm = noiseDbm
+            self.snrDb = snrDb
+            self.channelNumber = channelNumber
+            self.gatewayIP = gatewayIP
+            self.gatewayVendor = gatewayVendor
+            self.gatewayAdminURL = gatewayAdminURL
         }
     }
 
@@ -144,11 +176,22 @@ public struct NDSRequest: Codable, Equatable, Sendable {
     public struct Quality: Codable, Equatable, Sendable {
         public var latencyMs: Double?
         public var loadedLatencyMs: Double?
+        public var loadedLatencyUploadMs: Double?
+        public var dnsResolutionMs: Double?
         public var jitterMs: Double?
         public var packetLossPercent: Double?
-        public init(latencyMs: Double? = nil, loadedLatencyMs: Double? = nil, jitterMs: Double? = nil, packetLossPercent: Double? = nil) {
+        public init(
+            latencyMs: Double? = nil,
+            loadedLatencyMs: Double? = nil,
+            loadedLatencyUploadMs: Double? = nil,
+            dnsResolutionMs: Double? = nil,
+            jitterMs: Double? = nil,
+            packetLossPercent: Double? = nil
+        ) {
             self.latencyMs = latencyMs
             self.loadedLatencyMs = loadedLatencyMs
+            self.loadedLatencyUploadMs = loadedLatencyUploadMs
+            self.dnsResolutionMs = dnsResolutionMs
             self.jitterMs = jitterMs
             self.packetLossPercent = packetLossPercent
         }
