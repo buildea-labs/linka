@@ -198,22 +198,21 @@ struct MainView: View {
                     .accessibilityLabel("Voltar para o início")
                     .padding(.leading, 16)
                     .padding(.top, 12)
-                } else if viewModel.uiPhase == .idle || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
-                    Button { navPath.append(AppRoute.history) } label: {
-                        Image(systemName: "clock")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.textPrimary)
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .accessibilityLabel("Histórico")
-                    .padding(.leading, 16)
-                    .padding(.top, 12)
                 }
             }
             .overlay(alignment: .topTrailing) {
                 if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
                     HStack(spacing: 12) {
+                        if viewModel.uiPhase == .idle || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
+                            Button { navPath.append(AppRoute.history) } label: {
+                                Image(systemName: "clock")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.textPrimary)
+                                    .frame(width: 40, height: 40)
+                                    .background(.ultraThinMaterial, in: Circle())
+                            }
+                            .accessibilityLabel("Histórico")
+                        }
                         if viewModel.uiPhase == .done {
                             Button {
                                 showShareSheet = true
