@@ -229,7 +229,7 @@ public actor SpeedTestCore {
                     }
 
                     // Measure Ping and Packet Loss
-                    let pingOutcome = await performPingTest()
+                    let pingOutcome = await SpeedTestCore.performPingTest()
 
                     // `performPingTest()` roda até 10 sondagens sequenciais
                     // sem checar cancelamento internamente — sem este ponto
@@ -384,7 +384,7 @@ public actor SpeedTestCore {
     /// Resultado da fase de ping (issue #85) — mesmo espírito de
     /// `PhaseOutcome`, mas carregando os três valores que `performPingTest`
     /// produz (latência, jitter, perda de pacote) em vez de uma vazão única.
-    private enum PingOutcome {
+    public enum PingOutcome {
         case measured(latency: Double, jitter: Double, packetLossPercent: Double)
         case fatalFailure(EngineFailureReason)
     }
@@ -877,7 +877,7 @@ public actor SpeedTestCore {
         return data
     }
 
-    private func performPingTest() async -> PingOutcome {
+    public static func performPingTest() async -> PingOutcome {
         var latencies: [Double] = []
         var failures = 0
         var consecutiveFatalErrors = 0
@@ -963,7 +963,7 @@ public actor SpeedTestCore {
     /// Retorna `nil` em falha ou timeout — nunca `0` (ausência não é zero,
     /// AGENTS.md §8/§9). Falha aqui não aborta o teste inteiro: é chamado
     /// em paralelo ao ping, fora do caminho crítico de `performPingTest`.
-    nonisolated static func resolveDNS(
+    nonisolated public static func resolveDNS(
         host: String = "speed.cloudflare.com",
         timeoutMs: Double = 2000
     ) async -> Double? {

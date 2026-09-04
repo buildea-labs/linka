@@ -13,6 +13,7 @@
 		07FA5BACD537ACDC5E210496 /* SettingsProductionStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46F4505095861E3713A028A2 /* SettingsProductionStateTests.swift */; };
 		080B674A908A6C5DA086E6FB /* StatDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 240C677AB8218C3DE05600FB /* StatDisplay.swift */; };
 		0C8ECCB89B1CEA92EEA79277 /* 02-resultado.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C18C21A5058B411187DFB0D /* 02-resultado.png */; };
+		0EFC4146B3851935B5B6830E /* LinkaHealthCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A448E4B038B0099A9F43E4 /* LinkaHealthCheck.swift */; };
 		0F37916D5092D2B27FFB484D /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7798E2D1800A4FF1C0E30E /* ShareCardView.swift */; };
 		114F6A67C7CE3B670CF6AD50 /* 06-historico.png in Resources */ = {isa = PBXBuildFile; fileRef = F959B2CBD5E8F278F7B85F54 /* 06-historico.png */; };
 		12E02BB6A2E493EAC2C1D151 /* LinkaAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8ADAB36D0CC32BA436AFE3 /* LinkaAppShortcuts.swift */; };
@@ -24,6 +25,7 @@
 		1F40D1C6737FB0E30B0EB7EE /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86E6389194D1938B09BEE51 /* HistoryView.swift */; };
 		22ACBF6A87B265E99D871533 /* MetricRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179DA64F9C7059B7A140B92E /* MetricRing.swift */; };
 		236F004AEFDE4C625B0DC471 /* ConnectionPathDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4781F293BF600F767AD519F6 /* ConnectionPathDetailView.swift */; };
+		24D5445693EFC7A49B65A32A /* LinkaHealthCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3384AC2B411804CD498D876 /* LinkaHealthCheck.swift */; };
 		2503053FE2E1CF272C40AABA /* HistoricalMeasurementDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FD5CA0E57F84DC90BE11A5 /* HistoricalMeasurementDetailView.swift */; };
 		251732D2D655E2FC6E8896B6 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A27A3A416A9EAF5A075A2C /* FeatureFlags.swift */; };
 		29947FA757E77F75A68839DE /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png in Resources */ = {isa = PBXBuildFile; fileRef = 57683E1EF231CFAB7DA64C37 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png */; };
@@ -79,6 +81,7 @@
 		917E9E7322E9130BA3223569 /* NetworkStabilityPatternsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641020ADE92F07BF8F597BD6 /* NetworkStabilityPatternsViewModel.swift */; };
 		91D04741029D32B37366E216 /* UsageSuitabilityCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F8279085EE690722DC2381 /* UsageSuitabilityCopy.swift */; };
 		92BDECB59E8455FF2995F4BF /* LinkaWidgetShared in Frameworks */ = {isa = PBXBuildFile; productRef = 6C16385D59C93FAD8555D2E3 /* LinkaWidgetShared */; };
+		98C540F99A016B81DAD15C60 /* LinkaHealthCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A9D4D7C89F04134D07DD7E2 /* LinkaHealthCheckTests.swift */; };
 		997D49DAE6F9C3EAE6820CFD /* ExpertModeMigrationBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41173010B41EF48DE2606B1 /* ExpertModeMigrationBanner.swift */; };
 		99DC47095EFAC9A6C617FE64 /* MetricRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 179DA64F9C7059B7A140B92E /* MetricRing.swift */; };
 		9D9CAA41523C5B4063A18FF2 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60A040FE4E49231CD858102 /* MainView.swift */; };
@@ -167,6 +170,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		05A448E4B038B0099A9F43E4 /* LinkaHealthCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LinkaHealthCheck.swift; path = "LinkaApp/Sources/Adapters/LinkaHealthCheck.swift"; sourceTree = SOURCE_ROOT; };
 		08911C8048C417731D63941B /* 05-assist2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "05-assist2.png"; sourceTree = "<group>"; };
 		0BF377B5E1688176727142AF /* ConnectionPathView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionPathView.swift; sourceTree = "<group>"; };
 		0D1B97BED85D92A6875D8B5A /* 03-contexto.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "03-contexto.png"; sourceTree = "<group>"; };
@@ -205,6 +209,7 @@
 		66CBF1A76A2700A86FB6D257 /* LinkaSpeedTestWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaSpeedTestWidget.swift; sourceTree = "<group>"; };
 		6935758C28176CC335C491C7 /* AppStoreScreenshotsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotsUITests.swift; sourceTree = "<group>"; };
 		6A875C6193D28AF210E71F16 /* 04-assist1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "04-assist1.png"; sourceTree = "<group>"; };
+		6A9D4D7C89F04134D07DD7E2 /* LinkaHealthCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LinkaHealthCheckTests.swift; path = "LinkaApp/Tests/LinkaHealthCheckTests.swift"; sourceTree = SOURCE_ROOT; };
 		6F3C93A80DDDCD9D80E5235B /* LinkaApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LinkaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		72C35725E79C96780D745AB7 /* LinkaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaApp.swift; sourceTree = "<group>"; };
 		736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
@@ -218,6 +223,7 @@
 		A955FDE679C032C5443EEF5D /* SpeedTestViewModelScenePhaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestViewModelScenePhaseTests.swift; sourceTree = "<group>"; };
 		B7921F180B5C7EC49B0B1D48 /* AppIntentCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntentCoordinator.swift; sourceTree = "<group>"; };
 		B8A27A3A416A9EAF5A075A2C /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
+		C3384AC2B411804CD498D876 /* LinkaHealthCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LinkaHealthCheck.swift; path = "LinkaApp/Sources/Adapters/LinkaHealthCheck.swift"; sourceTree = SOURCE_ROOT; };
 		C4F8279085EE690722DC2381 /* UsageSuitabilityCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSuitabilityCopy.swift; sourceTree = "<group>"; };
 		C60A040FE4E49231CD858102 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		CA202D7A1FB600A3F43CD0ED /* AssistProblemSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistProblemSelectionView.swift; sourceTree = "<group>"; };
@@ -363,6 +369,9 @@
 				A6B765D5F58E9472B6A80425 /* Sources */,
 				24BB651090AE1FE408377D7B /* Tests */,
 				89593D469806B613A3DDE80D /* Products */,
+				C3384AC2B411804CD498D876 /* LinkaHealthCheck.swift */,
+				05A448E4B038B0099A9F43E4 /* LinkaHealthCheck.swift */,
+				6A9D4D7C89F04134D07DD7E2 /* LinkaHealthCheckTests.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -620,7 +629,7 @@
 					};
 				};
 			};
-			buildConfigurationList = C2CE0C2BCF81362355C11576 /* Build configuration list for PBXProject "LinkaApp" */;
+			buildConfigurationList = C2CE0C2BCF81362355C11576 /* Build configuration list for PBXProject "LinkaApp_iOS" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -745,6 +754,7 @@
 				3120B8DF78687FB4ED24E811 /* UsageDiagnosticsView.swift in Sources */,
 				91D04741029D32B37366E216 /* UsageSuitabilityCopy.swift in Sources */,
 				F563C68AAD0FF6D4B4B4E33E /* WiFiNetworkPermission.swift in Sources */,
+				24D5445693EFC7A49B65A32A /* LinkaHealthCheck.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -768,6 +778,7 @@
 				5B0458DD58805571D30AC3EC /* SpeedTestViewModelResultTimingTests.swift in Sources */,
 				3780733E2BDF1FB538D9CC35 /* SpeedTestViewModelScenePhaseTests.swift in Sources */,
 				01291A72D1AE05FDD8B56EAD /* UsageSuitabilityCopyQualityLevelTests.swift in Sources */,
+				98C540F99A016B81DAD15C60 /* LinkaHealthCheckTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -812,6 +823,7 @@
 				89C7B34BC422904F866171F8 /* UsageDiagnosticsView.swift in Sources */,
 				F77CBC3EB2009824FB9840BB /* UsageSuitabilityCopy.swift in Sources */,
 				FB2E235653F8530D066FD804 /* WiFiNetworkPermission.swift in Sources */,
+				0EFC4146B3851935B5B6830E /* LinkaHealthCheck.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1199,7 +1211,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		C2CE0C2BCF81362355C11576 /* Build configuration list for PBXProject "LinkaApp" */ = {
+		C2CE0C2BCF81362355C11576 /* Build configuration list for PBXProject "LinkaApp_iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				62C2407D057C908386165BF0 /* Debug */,
