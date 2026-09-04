@@ -399,30 +399,36 @@ struct MainView: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
+                    // Título da tela (nav bar está oculta)
+                    HStack {
+                        Text("Início")
+                            .font(.displayMedium)
+                            .foregroundColor(.textPrimary)
+                        Spacer()
+                    }
+                    .padding(.top, 68)
+                    .padding(.horizontal, 24)
+
                     VStack(spacing: 8) {
                         LiveConnectionPathView(
                             kind: viewModel.liveConnectionKind,
                             label: viewModel.liveNetworkLabel
                         )
-                        
-                        Text(healthCheck.statusText)
-                            .font(.captionSmall)
-                            .foregroundColor(.textSecondary)
                     }
-                    .padding(.top, 100)
+                    .padding(.top, 24)
                     .padding(.horizontal, 24)
 
                     Spacer(minLength: 34)
 
                     VStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
+                        Image(systemName: heroStateIcon)
                             .font(.system(size: 40))
-                            .foregroundColor(.statusGood)
-                        
+                            .foregroundColor(heroStateIconColor)
+
                         Text(heroStateTitle)
                             .font(.displayMedium)
                             .foregroundColor(.textPrimary)
-                        
+
                         Text(heroStateSubtitle)
                             .font(.bodyRegular)
                             .foregroundColor(.textSecondary)
@@ -753,21 +759,92 @@ struct MainView: View {
         }
     }
 
-    // MARK: - Helpers
+    // MARK: - Idle hero state
+
+    /// Qualidade da conexão em repouso baseada no ping medido pelo HealthCheck
+    private enum IdleConnectionQuality {
+        case unknown       // sem dados ainda
+        case offline       // sem internet
+        case good          // ping <= 80ms
+        case fair          // ping 81–200ms
+        case poor          // ping > 200ms
+    }
+
+    private var idleConnectionQuality: IdleConnectionQuality {
+        guard viewModel.liveConnectionKind != nil else { return .offline }
+        guard healthCheck.isOnline else { return .offline }
+        guard let ping = healthCheck.pingMs else { return .unknown }
+        if ping <= 80 { return .good }
+        if ping <= 200 { return .fair }
+        return .poor
+    }
+
+    private var heroStateIcon: String {
+        switch idleConnectionQuality {
+        case .unknown:  return "checkmark.circle.fill"
+        case .offline:  return "wifi.exclamationmark"
+        case .good:     return "checkmark.circle.fill"
+        case .fair:     return "exclamationmark.circle.fill"
+        case .poor:     return "exclamationmark.triangle.fill"
+        }
+    }
+
+    private var heroStateIconColor: Color {
+        switch idleConnectionQuality {
+        case .unknown:  return .statusGood
+        case .offline:  return .statusCritical
+        case .good:     return .statusGood
+        case .fair:     return .statusAttention
+        case .poor:     return .statusCritical
+        }
+    }
 
     private var heroStateTitle: String {
-        if viewModel.liveConnectionKind == nil {
-            return "Sem conexão"
+        switch idleConnectionQuality {
+        case .unknown:  return viewModel.liveConnectionKind == nil ? "Sem conexão" : "Verificando..."
+        case .offline:  return "Sem conexão"
+        case .good:     return "Tudo parece normal"
+        case .fair:     return "Atenção na conexão"
+        case .poor:     return "Conexão instável"
         }
-        return "Tudo parece normal"
     }
 
     private var heroStateSubtitle: String {
-        if viewModel.liveConnectionKind == nil {
-            return "Conecte-se a uma rede para analisar"
+        switch idleConnectionQuality {
+        case .unknown:  return viewModel.liveConnectionKind == nil
+            ? "Conecte-se a uma rede para analisar"
+            : "Medindo qualidade da conexão..."
+        case .offline:  return "Conecte-se a uma rede para analisar"
+        case .good:     return "Nenhum problema detectado"
+        case .fair:     return "Latência um pouco elevada"
+        case .poor:     return "Latência muito alta detectada"
         }
-        return "Nenhum problema detectado"
     }
+
+    /// Frase natural com os dados reais do HealthCheck, exibida abaixo do subtítulo
+    private var heroStateDetail: String? {
+        guard healthCheck.isOnline, healthCheck.pingMs != nil else { return nil }
+
+        var parts: [String] = []
+
+        if let ping = healthCheck.pingMs, ping > 0 {
+            parts.append("Ping de \(Int(ping)) ms")
+        }
+        if let jitter = healthCheck.jitterMs, jitter > 0 {
+            parts.append("variação de \(Int(jitter)) ms")
+        }
+        if let dns = healthCheck.dnsMs, dns > 0 {
+            parts.append("DNS em \(Int(dns)) ms")
+        }
+
+        guard !parts.isEmpty else { return nil }
+
+        // Monta frase natural
+        var sentence = parts.joined(separator: ", ")
+        sentence = sentence.prefix(1).uppercased() + sentence.dropFirst()
+        return sentence + "."
+    }
+
 
     private var simpleNetworkContext: String? {
         if viewModel.connectionKind == .wifi {
