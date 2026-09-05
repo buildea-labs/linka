@@ -19,5 +19,17 @@ struct LinkaAppShortcuts: AppShortcutsProvider {
             shortTitle: "Testar internet",
             systemImageName: "gauge.with.dots.needle.50percent"
         )
+
+        #if os(iOS)
+        AppShortcut(
+            intent: RegisterAdvancedWiFiDiagnosticsIntent(),
+            phrases: [
+                "Registrar diagnóstico Wi-Fi com \(.applicationName)",
+                "Importar dados Wi-Fi no \(.applicationName)"
+            ],
+            shortTitle: "Wi-Fi avançado",
+            systemImageName: "wifi"
+        )
+        #endif
     }
 }

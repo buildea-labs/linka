@@ -46,6 +46,44 @@ final class SpeedTestViewModelResultTimingTests: XCTestCase {
         XCTAssertFalse(json.localizedCaseInsensitiveContains("11:22:33:44:55:66"))
     }
 
+    func test_advancedWiFiInboxImportsTypedShortcutFields() throws {
+        let suite = "linka-issue-134-typed-\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suite) else { return XCTFail("suite de teste indisponível") }
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let captureIdentifier = UUID()
+
+        let diagnostics = try AdvancedWiFiDiagnosticsInbox.importFields(
+            entitlement: .plus(status: .active, source: .promotion),
+            defaults: defaults,
+            captureIdentifier: captureIdentifier,
+            ssid: "Casa",
+            bssid: "AA:BB:CC:DD:EE:FF",
+            wifiStandard: "Wi-Fi 6",
+            rxRateMbps: 720,
+            txRateMbps: 866,
+            rssiDbm: -54,
+            noiseDbm: -92,
+            channelNumber: 44
+        )
+
+        XCTAssertEqual(diagnostics.captureIdentifier, captureIdentifier)
+        XCTAssertEqual(diagnostics.ssid, "Casa")
+        XCTAssertEqual(diagnostics.wifiStandard, "Wi-Fi 6")
+        XCTAssertEqual(diagnostics.rxRateMbps, 720)
+        XCTAssertEqual(diagnostics.txRateMbps, 866)
+        XCTAssertEqual(diagnostics.rssiDbm, -54)
+        XCTAssertEqual(diagnostics.noiseDbm, -92)
+        XCTAssertEqual(diagnostics.channelNumber, 44)
+        XCTAssertEqual(diagnostics.bandGHz, 5)
+        XCTAssertEqual(diagnostics.snrDb, 38)
+        XCTAssertNotNil(diagnostics.accessPointIdentifier)
+        XCTAssertTrue(defaults.bool(forKey: LinkaWiFiPreferences.advancedConfiguredKey))
+
+        let stored = try XCTUnwrap(defaults.data(forKey: "linka.advanced-wifi.pending.v1"))
+        let json = String(decoding: stored, as: UTF8.self)
+        XCTAssertFalse(json.localizedCaseInsensitiveContains("AA:BB:CC:DD:EE:FF"))
+    }
+
     func test_advancedWiFiInboxRejectsFreeExpiredAndDuplicatePayload() throws {
         let suite = "linka-issue-134-\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: suite) else { return XCTFail("suite de teste indisponível") }

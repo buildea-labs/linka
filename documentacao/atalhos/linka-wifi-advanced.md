@@ -12,11 +12,16 @@ silenciosa.
 1. Crie um atalho chamado **Linka Wi-Fi Advanced**.
 2. Adicione **Obter detalhes da rede** e peça, quando disponíveis: Nome da
    rede, BSSID, Padrão Wi-Fi, Taxa RX, Taxa TX, RSSI, Ruído e Número do canal.
-3. Crie um dicionário com os nomes abaixo. Use data ISO-8601 em `capturedAt`
-   e um UUID novo em `captureIdentifier`.
-4. Converta o dicionário em JSON.
-5. Adicione a ação Linka **Importar diagnóstico Wi-Fi** e passe o JSON em
-   *Payload de diagnóstico*.
+3. Adicione a ação Linka **Registrar diagnóstico Wi-Fi avançado**.
+4. Encaixe cada saída de **Obter detalhes da rede** no parâmetro equivalente
+   da ação do Linka.
+
+## Caminho legado por JSON
+
+A ação Linka **Importar diagnóstico Wi-Fi** continua aceita para depuração e
+compatibilidade. Nesse caminho, crie um dicionário com os nomes abaixo, use
+data ISO-8601 em `capturedAt`, um UUID novo em `captureIdentifier`, converta o
+dicionário em JSON e passe o texto em *Payload de diagnóstico*.
 
 ```json
 {

@@ -35,6 +35,8 @@ struct PurchaseSheet: View {
         case .advancedWiFi:
             benefits.removeAll { $0 == "Diagnóstico avançado de Wi-Fi" }
             benefits.insert("Diagnóstico avançado de Wi-Fi", at: 0)
+        case .shortcut, .appIntent:
+            benefits.insert("Automação com Siri e Atalhos", at: 0)
         case .settings:
             break
         }

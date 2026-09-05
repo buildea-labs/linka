@@ -196,6 +196,64 @@ enum AdvancedWiFiDiagnosticsInbox {
         return diagnostics
     }
 
+    static func importFields(
+        entitlement: LinkaEntitlementSnapshot,
+        now: Date = Date(),
+        defaults: UserDefaults = .standard,
+        captureIdentifier: UUID = UUID(),
+        ssid: String? = nil,
+        bssid: String? = nil,
+        wifiStandard: String? = nil,
+        rxRateMbps: Double? = nil,
+        txRateMbps: Double? = nil,
+        rssiDbm: Double? = nil,
+        noiseDbm: Double? = nil,
+        channelNumber: Int? = nil
+    ) throws -> AdvancedWiFiDiagnostics {
+        guard defaults.object(forKey: LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) == nil ||
+                defaults.bool(forKey: LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) else {
+            throw ImportError.integrationDisabled
+        }
+        guard LinkaEntitlementPolicy.decision(
+            for: .advancedWiFiDiagnostics,
+            snapshot: entitlement,
+            at: now
+        ).isGranted else {
+            throw ImportError.notEntitled
+        }
+
+        var handled = Set(defaults.stringArray(forKey: handledIdentifiersKey) ?? [])
+        let identifier = captureIdentifier.uuidString
+        guard !handled.contains(identifier) else { throw ImportError.duplicate }
+
+        let validChannel = positive(channelNumber)
+        let diagnostics = AdvancedWiFiDiagnostics(
+            schemaVersion: AdvancedWiFiDiagnostics.currentSchemaVersion,
+            shortcutVersion: AdvancedWiFiDiagnostics.currentShortcutVersion,
+            captureIdentifier: captureIdentifier,
+            capturedAt: now,
+            ssid: normalized(ssid, maximumLength: 64),
+            accessPointIdentifier: localAccessPointIdentifier(for: bssid, defaults: defaults),
+            wifiStandard: normalized(wifiStandard, maximumLength: 32),
+            rxRateMbps: nonNegativeFinite(rxRateMbps),
+            txRateMbps: nonNegativeFinite(txRateMbps),
+            rssiDbm: finite(rssiDbm),
+            noiseDbm: finite(noiseDbm),
+            channelNumber: validChannel,
+            bandGHz: AdvancedWiFiDiagnostics.bandGHz(forChannel: validChannel),
+            snrDb: AdvancedWiFiDiagnostics.snrDb(rssiDbm: finite(rssiDbm), noiseDbm: finite(noiseDbm))
+        )
+
+        guard let encoded = try? JSONEncoder().encode(diagnostics) else {
+            throw ImportError.invalidPayload
+        }
+        defaults.set(encoded, forKey: pendingKey)
+        defaults.set(true, forKey: LinkaWiFiPreferences.advancedConfiguredKey)
+        handled.insert(identifier)
+        defaults.set(Array(handled.suffix(32)), forKey: handledIdentifiersKey)
+        return diagnostics
+    }
+
     static func takePending(now: Date = Date(), defaults: UserDefaults = .standard) -> AdvancedWiFiDiagnostics? {
         defer { defaults.removeObject(forKey: pendingKey) }
         guard let data = defaults.data(forKey: pendingKey),
@@ -278,6 +336,90 @@ struct ImportWiFiDiagnosticsIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         let snapshot = await currentSnapshot()
         _ = try AdvancedWiFiDiagnosticsInbox.importPayload(payloadJSON, entitlement: snapshot)
+        await MainActor.run {
+            AppIntentCoordinator.shared.requestAdvancedWiFiDiagnosticsImport()
+        }
+        return .result()
+    }
+
+    private func currentSnapshot() async -> LinkaEntitlementSnapshot {
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result,
+                  LinkaStoreProductID.all.contains(transaction.productID) else { continue }
+            return .plus(status: .active, source: .subscription, validUntil: transaction.expirationDate)
+        }
+        return .free
+    }
+}
+
+struct RegisterAdvancedWiFiDiagnosticsIntent: AppIntent {
+    static var title: LocalizedStringResource { "Registrar diagnóstico Wi-Fi avançado" }
+    static let description = IntentDescription("Recebe dados Wi-Fi do Atalhos e prepara o Linka para associá-los à próxima medição.")
+    static var openAppWhenRun: Bool { true }
+
+    @Parameter(title: "Nome da rede")
+    var ssid: String?
+
+    @Parameter(title: "BSSID")
+    var bssid: String?
+
+    @Parameter(title: "Padrão Wi-Fi")
+    var wifiStandard: String?
+
+    @Parameter(title: "Taxa RX")
+    var rxRateMbps: Double?
+
+    @Parameter(title: "Taxa TX")
+    var txRateMbps: Double?
+
+    @Parameter(title: "RSSI")
+    var rssiDbm: Double?
+
+    @Parameter(title: "Ruído")
+    var noiseDbm: Double?
+
+    @Parameter(title: "Canal")
+    var channelNumber: Int?
+
+    init() {}
+
+    init(
+        ssid: String? = nil,
+        bssid: String? = nil,
+        wifiStandard: String? = nil,
+        rxRateMbps: Double? = nil,
+        txRateMbps: Double? = nil,
+        rssiDbm: Double? = nil,
+        noiseDbm: Double? = nil,
+        channelNumber: Int? = nil
+    ) {
+        self.ssid = ssid
+        self.bssid = bssid
+        self.wifiStandard = wifiStandard
+        self.rxRateMbps = rxRateMbps
+        self.txRateMbps = txRateMbps
+        self.rssiDbm = rssiDbm
+        self.noiseDbm = noiseDbm
+        self.channelNumber = channelNumber
+    }
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Registrar diagnóstico Wi-Fi avançado")
+    }
+
+    func perform() async throws -> some IntentResult {
+        let snapshot = await currentSnapshot()
+        _ = try AdvancedWiFiDiagnosticsInbox.importFields(
+            entitlement: snapshot,
+            ssid: ssid,
+            bssid: bssid,
+            wifiStandard: wifiStandard,
+            rxRateMbps: rxRateMbps,
+            txRateMbps: txRateMbps,
+            rssiDbm: rssiDbm,
+            noiseDbm: noiseDbm,
+            channelNumber: channelNumber
+        )
         await MainActor.run {
             AppIntentCoordinator.shared.requestAdvancedWiFiDiagnosticsImport()
         }
