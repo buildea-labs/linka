@@ -137,6 +137,7 @@ struct LinkaSpeedTestWidgetView: View {
         Button(intent: StartSpeedTestIntent()) {
             Text(label)
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundColor(.brandOnSurface)
                 .frame(maxWidth: compact ? nil : .infinity)
                 .padding(.horizontal, compact ? 16 : 0)
         }

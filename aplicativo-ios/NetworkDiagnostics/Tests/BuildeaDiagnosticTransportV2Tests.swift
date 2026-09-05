@@ -107,9 +107,10 @@ final class BuildeaDiagnosticTransportV2Tests: XCTestCase {
         let request = try makeRequest(objective: "JOGOS_COM_LAG", subcategory: "PING_ALTO")
         let response = try await transport.answer(request)
 
+        XCTAssertEqual(response.title, "Tudo funcionando normalmente")
         XCTAssertEqual(
             response.summary,
-            "Não encontramos uma causa específica — os dados da sua conexão parecem normais."
+            "Não há problemas identificados na sua conexão. Tudo parece normal."
         )
         XCTAssertNil(response.recommendation)
     }

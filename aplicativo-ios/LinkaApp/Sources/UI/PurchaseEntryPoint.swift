@@ -5,6 +5,8 @@ enum PurchaseEntryPoint: Equatable {
     case assist
     case historyInsights
     case advancedWiFi
+    case shortcut
+    case appIntent
 
     var title: String {
         switch self {
@@ -12,6 +14,7 @@ enum PurchaseEntryPoint: Equatable {
         case .assist: "Entenda esta medição"
         case .historyInsights: "Veja o que se repete"
         case .advancedWiFi: "Veja além da velocidade"
+        case .shortcut, .appIntent: "Automação e Atalhos"
         }
     }
 
@@ -25,6 +28,8 @@ enum PurchaseEntryPoint: Equatable {
             "Compare suas medições e descubra padrões por rede e horário."
         case .advancedWiFi:
             "Use informações extras do Wi-Fi para entender melhor a conexão."
+        case .shortcut, .appIntent:
+            "Automatize testes e acompanhe resultados usando a Siri e os Atalhos."
         }
     }
 }

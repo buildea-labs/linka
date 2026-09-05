@@ -150,23 +150,33 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         )
     }
 
-    /// Mensagem transparente (issue v2/objective+subcategory) para
-    /// `explanation.sem_causa_identificada == true`: nenhuma regra do NDS
-    /// disparou para esta medição+subcategoria. Mesmo tom direto e sem
-    /// jargão do resto da `AssistView` ("Tudo certo com a conexão",
-    /// "Diagnóstico inconclusivo") — nunca inventa uma causa que os dados
-    /// não sustentam (AGENTS.md §9).
-    static let semCausaIdentificadaSummary = "Não encontramos uma causa específica — os dados da sua conexão parecem normais."
+    /// `explanation.sem_causa_identificada == true` quer dizer que nenhuma
+    /// regra de problema do NDS disparou para esta medição+subcategoria —
+    /// o mesmo caso em que `headerStatus` já mostra "✓ TUDO CERTO" (ver
+    /// `answer(_:)` acima). O resumo precisa soar como o resultado positivo
+    /// que ele é, não como um diagnóstico inconclusivo: ainda assim nunca
+    /// inventa uma causa que os dados não sustentam (AGENTS.md §9), só
+    /// afirma a ausência de problema, que é exatamente o que os dados
+    /// mostram.
+    static let semCausaIdentificadaSummary = "Não há problemas identificados na sua conexão. Tudo parece normal."
+
+    /// Fallback para quando o NDS retorna `explanation` sem
+    /// `sem_causa_identificada` mas também sem `titulo`/`descricao` (rollout
+    /// parcial do contrato v2). Diferente do caso acima, aqui não há
+    /// garantia de que a conexão está saudável — só que o servidor não
+    /// mandou texto pronto — então mantém o tom transparente de
+    /// indisponibilidade em vez do texto positivo.
+    static let missingExplanationSummary = "Não encontramos uma causa específica — os dados da sua conexão parecem normais."
 
     /// Constrói o `DiagnosticCopy` a partir do bloco `explanation` do
     /// contrato v2. `titulo`/`descricao` podem faltar mesmo sem
     /// `sem_causa_identificada` (o NDS ainda está em implementação em
-    /// paralelo) — nesse caso caímos no mesmo texto transparente em vez de
+    /// paralelo) — nesse caso caímos no texto de fallback em vez de
     /// apresentar título/resumo vazios.
     static func copy(fromV2Explanation explanation: NDSV2Explanation) -> DiagnosticCopy {
         if explanation.semCausaIdentificada == true {
             return DiagnosticCopy(
-                title: "Sem causa específica identificada",
+                title: "Tudo funcionando normalmente",
                 summary: semCausaIdentificadaSummary,
                 source: .deterministic
             )
@@ -174,7 +184,7 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         guard let titulo = explanation.titulo, let descricao = explanation.descricao else {
             return DiagnosticCopy(
                 title: "Sem causa específica identificada",
-                summary: semCausaIdentificadaSummary,
+                summary: missingExplanationSummary,
                 source: .deterministic
             )
         }

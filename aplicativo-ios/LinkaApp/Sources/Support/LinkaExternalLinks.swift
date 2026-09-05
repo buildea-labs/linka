@@ -34,7 +34,7 @@ enum LinkaWiFiPreferences {
 
 enum LinkaAdvancedWiFiIntegration {
     static let shortcutName = "Linka Wi-Fi Advanced"
-    static let shortcutsAppURL = URL(string: "https://linka.app/atalho")!
+    static let shortcutsAppURL = URL(string: "shortcuts://")!
     static let runShortcutURL = URL(string: "shortcuts://run-shortcut?name=Linka%20Wi-Fi%20Advanced")!
 }
 

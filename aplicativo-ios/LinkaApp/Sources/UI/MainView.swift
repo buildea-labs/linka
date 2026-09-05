@@ -270,7 +270,7 @@ struct MainView: View {
             if isPlusActive {
                 navPath.append(AppRoute.history)
             } else {
-                purchaseEntryPoint = .settings
+                purchaseEntryPoint = .shortcut
                 showPurchase = true
             }
             intentCoordinator.consumeOpenHistory()
@@ -282,7 +282,7 @@ struct MainView: View {
                     navPath.append(AppRoute.measurementDetail(latest))
                 }
             } else {
-                purchaseEntryPoint = .settings
+                purchaseEntryPoint = .shortcut
                 showPurchase = true
             }
             intentCoordinator.consumeOpenLatestMeasurement()
