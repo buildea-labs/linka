@@ -1,35 +1,50 @@
 ---
 name: delegar-subagente
-description: Delegar uma tarefa independente a um subagente nativo do Codex usando os perfis Giammattey, Tiago ou Igor, com escopo, permissões e retorno verificáveis.
+description: Delegar uma tarefa independente aos agentes nativos Íris, Camillo ou Tito do Codex com objetivo, escopo, permissões e retorno verificáveis.
 ---
 
 # Skill: delegar-subagente
 
-Use esta skill quando uma parte do trabalho for independente, concreta e suficientemente delimitada para rodar em paralelo. Ela orienta o agente principal; não cria um subagente sozinha.
+Use esta skill quando uma parte do trabalho for concreta, independente e suficientemente delimitada para ganhar com especialização ou paralelismo.
 
-## Escolha do perfil
+Os agentes são definidos nativamente em `.codex/agents/`:
 
-- **Giammattey**: produto, experiência, curadoria, plano e aceite contra requisito.
-- **Tiago**: implementação e testes, com arquivos de escrita explicitamente autorizados.
-- **Igor**: auditoria, testes e verificação; somente leitura por padrão.
+- **Íris (`iris`)** — produto, experiência, curadoria, UX/UI, copy e critérios de aceite. Somente leitura.
+- **Camillo (`camillo`)** — engenharia, arquitetura, implementação, motor e integrações Apple. Escrita apenas quando autorizada.
+- **Tito (`tito`)** — qualidade, auditoria, regressão, testes, acessibilidade e segurança. Somente leitura por padrão.
 
 ## Antes de delegar
 
-Defina objetivo, contexto mínimo, arquivos permitidos, política de escrita e formato de retorno. Não delegue decisões acopladas ao próximo passo crítico, tarefas vagas ou duas tarefas que escrevam nos mesmos arquivos.
+Defina:
+
+1. objetivo concreto;
+2. contexto mínimo necessário;
+3. arquivos/módulos que podem ser lidos;
+4. escopo de escrita, se houver;
+5. restrições;
+6. formato de retorno esperado.
+
+Não delegue tarefa vaga, decisão acoplada ao próximo passo crítico ou duas tarefas que escrevam nos mesmos arquivos.
 
 ## Mensagem mínima
 
 ```text
-Papel: <giammattey|tiago|igor>
+Especialista: <iris|camillo|tito>
 Objetivo: <entrega concreta>
 Escopo de leitura: <arquivos ou módulos>
-Escopo de escrita: <somente leitura ou arquivos exatos>
-Restrições: preserve mudanças existentes; não faça merge, push, deploy ou publicação.
-Retorno: arquivos alterados, comandos/testes, evidências, riscos e bloqueios.
+Escopo de escrita: <somente leitura ou arquivos/módulos autorizados>
+Restrições: preserve mudanças existentes; sem merge, deploy, publicação, segredo ou exclusão destrutiva.
+Retorno: evidências, arquivos alterados quando houver, comandos/testes, riscos e bloqueios.
 ```
 
-Para Igor, exigir `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA` com evidência. Para Tiago, revisar o diff retornado antes de integrar. Para qualquer perfil, o retorno não é aprovação de Giammattey ou Luiz.
+Para Tito, exigir verdict `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA` com evidência reproduzível.
+
+Para Camillo, o agente principal revisa o diff antes de integrar.
+
+Íris aconselha produto; não representa decisão do Luiz.
 
 ## Depois de delegar
 
-Enquanto o subagente trabalha, faça apenas trabalho não sobreposto. Aguarde quando o resultado for necessário, integre o retorno, valide a evidência e encerre o subagente concluído. Relate claramente o que foi delegado e o que foi verificado pelo agente principal.
+O Codex principal integra o retorno, resolve divergências e valida o que for material. Não repita todo o trabalho do subagente, mas também não trate o retorno como verdade automática.
+
+Modelo e esforço seguem `.codex/config.toml` e `AGENTS.md §4a`. Escale pela criticidade da tarefa, não pelo nome do especialista.
