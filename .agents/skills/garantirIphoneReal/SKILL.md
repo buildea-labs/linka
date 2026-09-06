@@ -1,11 +1,11 @@
 ---
 name: garantir-iphone-real
-description: Procedimento do Camillo para validar o Linka em iPhone, iPad e Mac reais; Tito usa o mesmo checklist na auditoria.
+description: Valida o Linka em iPhone, iPad e Mac reais e registra evidência verificável.
 ---
 
 # Skill: garantir-iphone-real
 
-Procedimento de **Camillo** para garantir que a implementação funciona no ecossistema Apple real. **Tito** usa o mesmo roteiro para verificar o que foi ou não validado.
+Use esta skill para validar que a implementação funciona no ecossistema Apple real. A auditoria usa o mesmo roteiro para verificar o que foi ou não validado.
 
 Simulador ajuda em layout e navegação, mas não prova medição real, permissões, ciclo de vida ou rede móvel.
 
@@ -40,7 +40,7 @@ Mudanças que tocam medição, rede, permissões, background, App Intents/Widget
 
 ## Permissões
 
-Permissão nova é mudança material. Deve ter finalidade clara, descrição coerente e caminho de recuperação quando negada. Se a necessidade de produto não estiver definida, o Codex consulta Íris/Luiz antes de Camillo adicionar a capability.
+Permissão nova é mudança material. Deve ter finalidade clara, descrição coerente e caminho de recuperação quando negada. Se a necessidade de produto não estiver definida, o Codex consulta a definição de produto/Luiz antes de adicionar a capability.
 
 ## Resultado parcial e erro
 

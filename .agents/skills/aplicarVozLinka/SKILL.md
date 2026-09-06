@@ -5,7 +5,7 @@ description: Aplica a voz canônica do Linka definida em documentacao/produto/VO
 
 # Skill: aplicar-voz-linka
 
-**Íris** é a principal responsável por produto e copy. **Camillo** usa esta skill ao implementar texto especificado. **Tito** usa a mesma regra ao auditar a entrega.
+Use esta skill para criar ou revisar copy de produto, durante implementação ou auditoria.
 
 A fonte canônica da voz é `documentacao/produto/VOZ.md`. Esta skill é procedimento, não uma segunda personalidade.
 
@@ -49,7 +49,7 @@ Site, Sobre, Como medimos, Privacidade e release notes podem explicar mais, mas 
 
 ## Teste final
 
-Antes de aprovar copy, Íris/Tito perguntam:
+Antes de aprovar copy, pergunte:
 
 1. o usuário precisa ler isso?
 2. dá para dizer com menos palavras?

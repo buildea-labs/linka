@@ -1,11 +1,11 @@
 ---
 name: escrever-adaptador-nativo
-description: Procedimento do Camillo para ligar capacidades Apple e pacotes do Linka à UI sem quebrar a fronteira Engine/Adapter/UI.
+description: Liga capacidades Apple e pacotes do Linka à UI sem quebrar a fronteira Engine/Adapter/UI.
 ---
 
 # Skill: escrever-adaptador-nativo
 
-Procedimento de **Camillo**.
+Use esta skill para implementar um adapter nativo depois de avaliar se o gate arquitetural se aplica.
 
 Regra central:
 

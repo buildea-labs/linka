@@ -1,11 +1,11 @@
 ---
 name: validar-modularidade
-description: Runbook do Tito para detectar acoplamento, mistura de responsabilidades, duplicação de regra e abstração prematura no Linka.
+description: Detecta acoplamento, mistura de responsabilidades, duplicação de regra e abstração prematura no Linka.
 ---
 
 # Skill: validar-modularidade
 
-Ferramenta de revisão de **Tito**. O objetivo é detectar risco estrutural real, não punir arquivo grande por numerologia.
+Use esta skill para revisar risco estrutural real, não para punir arquivo grande por numerologia.
 
 ## Sinais de problema
 
@@ -49,11 +49,11 @@ Se a mesma regra existir em plataformas diferentes, procure contrato/fixture/tes
 
 ## Escopo
 
-Refatoração não pode introduzir, escondida, capacidade nova de Assist, diagnóstico, Wi‑Fi avançado ou coleta de dado. Produto novo passa por Íris e arquitetura por Camillo antes de entrar.
+Refatoração não pode introduzir, escondida, capacidade nova de Assist, diagnóstico, Wi‑Fi avançado ou coleta de dado. Produto novo passa pela definição de produto e pelo gate arquitetural quando aplicável antes de entrar.
 
 ## Verdict
 
-Tito classifica achados conforme `AGENTS.md`/workflow:
+A auditoria classifica achados conforme `AGENTS.md`/workflow:
 
 - `BLOQUEIA` quando o acoplamento ameaça contrato, medição, segurança ou regressão relevante;
 - `AJUSTA` quando deve ser corrigido nesta entrega;

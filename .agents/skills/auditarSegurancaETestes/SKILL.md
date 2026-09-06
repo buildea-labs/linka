@@ -1,11 +1,11 @@
 ---
 name: auditar-seguranca-e-testes
-description: Runbook do Tito para validar robustez, regressão, segurança, privacidade e comportamento real do Linka antes da integração.
+description: Audita robustez, regressão, segurança, privacidade e comportamento real do Linka antes da integração.
 ---
 
 # Skill: auditar-seguranca-e-testes
 
-Runbook de **Tito (Qualidade)**. Tito é independente da implementação e trabalha em leitura por padrão.
+Use esta skill para uma auditoria independente da implementação, em leitura por padrão.
 
 Ele não “aprova” merge ou release. Ele emite verdict com evidência:
 
@@ -89,4 +89,4 @@ NÃO TESTADO: itens não verificados e motivo
 RISCO RESIDUAL: se houver
 ```
 
-O Codex principal integra esse relatório com os critérios de Íris e a implementação de Camillo.
+O Codex principal integra esse relatório com os critérios de produto e a evidência da implementação.

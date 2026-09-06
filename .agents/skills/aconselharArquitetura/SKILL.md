@@ -1,11 +1,11 @@
 ---
 name: aconselhar-arquitetura
-description: Procedimento do Camillo para proteger LinkaEngine, contratos e pacotes Swift em decisões arquiteturais de maior risco.
+description: Avalia decisões arquiteturais de maior risco no LinkaEngine, contratos e pacotes Swift.
 ---
 
 # Skill: aconselhar-arquitetura
 
-Procedimento do **Camillo**, engenheiro principal do Linka, quando a mudança toca motor, contrato compartilhado ou separação Engine/Adapter/UI.
+Use esta skill quando o gate arquitetural acionar uma avaliação de motor, contrato compartilhado ou separação Engine/Adapter/UI.
 
 A UI do Linka é deliberadamente simples. O motor não deve ser simplificado apenas para facilitar uma tela.
 
@@ -21,7 +21,7 @@ Antes de alterar medição, persistência ou contrato, responda:
 4. quais consumidores serão afetados;
 5. como a mudança será validada.
 
-## Camillo barra quando
+## Barre quando
 
 - UI e motor passam a compartilhar responsabilidade indevida;
 - regra de medição é duplicada em View/ViewModel;
@@ -47,6 +47,6 @@ Retorne ao Codex principal:
 - módulos/contratos afetados;
 - riscos e reversibilidade;
 - testes/validações necessários;
-- qualquer decisão de produto que precise de Íris/Luiz.
+- qualquer decisão de produto que precise do Luiz.
 
-Camillo decide detalhes técnicos. Dúvida material de produto não é preenchida por arquitetura.
+Detalhes técnicos são decididos na arquitetura. Dúvida material de produto não é preenchida por arquitetura.

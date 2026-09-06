@@ -7,7 +7,7 @@ description: Como o Linka escreve issue, PR e commit com linguagem direta, factu
 
 Issue, PR e commit são texto de trabalho, não cerimônia.
 
-O **Codex principal** normalmente consolida e registra. **Íris** fornece problema/aceite de produto, **Camillo** fornece detalhes técnicos e implementação, **Tito** fornece relatório de qualidade.
+O **Codex principal** normalmente consolida e registra informações de produto, decisão técnica e qualidade quando aplicáveis.
 
 Passe pelo filtro `matar-cheiro-de-ia`.
 
@@ -60,13 +60,13 @@ Não misture mudanças não relacionadas no mesmo commit.
 O corpo do PR deve carregar o que o revisor precisa para decidir:
 
 - problema e mudança observável;
-- principais decisões técnicas de Camillo;
-- critérios de produto de Íris, quando aplicável;
-- relatório de Tito com automático/leitura/aparelho real/não testado;
+- principais decisões técnicas;
+- critérios de produto, quando aplicável;
+- relatório de qualidade com automático/leitura/aparelho real/não testado;
 - passos manuais de verificação quando necessários;
 - riscos ou pendências reais.
 
-Não escreva que Íris/Tito/Luiz aprovou se essa aprovação não aconteceu.
+Não escreva que especialista ou Luiz aprovou se essa aprovação não aconteceu.
 
 ## Regra final
 

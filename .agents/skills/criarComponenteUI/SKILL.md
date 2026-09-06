@@ -1,13 +1,13 @@
 ---
 name: criar-componente-ui
-description: Procedimento do Camillo para construir componentes SwiftUI do Linka e componentes do site institucional com fidelidade ao protótipo e Design System.
+description: Constrói componentes SwiftUI do Linka e do site institucional com fidelidade ao protótipo e Design System.
 ---
 
 # Skill: criar-componente-ui
 
-Procedimento de **Camillo** para implementar UI. Íris define comportamento/experiência e o protótipo/Design System são as fontes visuais.
+Use esta skill para implementar UI depois que comportamento e especificação visual estiverem definidos. Protótipo e Design System são as fontes visuais.
 
-Se surgir decisão de produto ou visual material não coberta pela especificação, não invente padrão dentro do componente: devolva ao Codex para consulta a Íris.
+Se surgir decisão de produto ou visual material não coberta pela especificação, não invente padrão dentro do componente: devolva ao Codex para a definição de produto.
 
 ## Regras
 
@@ -39,7 +39,7 @@ No app Apple:
 
 ## Copy
 
-Use `aplicar-voz-linka` para texto de produto e `matar-cheiro-de-ia` para remover enfeite artificial. Se a tela precisar de parágrafos para explicar o fluxo principal, reveja o desenho com Íris.
+Use `aplicar-voz-linka` para texto de produto e `matar-cheiro-de-ia` para remover enfeite artificial. Se a tela precisar de parágrafos para explicar o fluxo principal, reveja o desenho da experiência.
 
 ## Validação
 

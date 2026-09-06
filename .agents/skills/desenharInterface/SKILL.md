@@ -1,11 +1,11 @@
 ---
 name: desenhar-interface
-description: Procedimento da Íris para especificar a UI do Linka a partir do protótipo e Design System antes do Camillo implementar.
+description: Especifica a UI do Linka a partir do protótipo e Design System antes da implementação.
 ---
 
 # Skill: desenhar-interface
 
-**Íris** transforma a experiência aprovada em especificação visual. **Camillo** implementa. O Codex principal resolve conflitos e leva ao Luiz apenas decisões materiais de produto.
+Use esta skill para transformar a experiência aprovada em especificação visual antes da implementação. O Codex principal resolve conflitos e leva ao Luiz apenas decisões materiais de produto.
 
 Fontes:
 
@@ -50,4 +50,4 @@ NÃO FAZ: limites explícitos
 
 Se for componente novo, justifique por que composição dos existentes não resolve.
 
-Camillo recebe a especificação e usa `criar-componente-ui`. Tito confere fidelidade na revisão.
+A implementação usa `criar-componente-ui`; a auditoria confere fidelidade na revisão.

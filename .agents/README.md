@@ -30,16 +30,18 @@ Não use perfis JSON em `.agents/plugins/` para simular agentes. A migração de
 O **Codex principal** é o orquestrador e interlocutor com o Luiz. Ele decide quando delegar, integra os retornos e continua responsável pela entrega final.
 
 - **Íris** — Produto, jornada, UX/UI, copy, curadoria, priorização e critérios de aceite. Somente leitura.
-- **Camillo** — Engenharia principal, arquitetura, implementação, motor, pacotes Swift e integrações Apple. Escrita quando a tarefa autorizar.
+- **Camillo** — Principal Engineer transversal: arquitetura, contratos, motor, pacotes Swift, integrações Apple entre superfícies e revisão sistêmica. Escrita quando o gate arquitetural ou uma delegação explícita justificar; não é implementador obrigatório da rotina.
 - **Tito** — Qualidade, regressão, testes, acessibilidade, segurança/privacidade e revisão independente. Somente leitura por padrão; responde com `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA`.
 
 Especialistas não precisam aparecer em toda tarefa. Se o trabalho for pequeno, coeso e puder ser resolvido com segurança pelo agente principal, não crie handoff artificial.
+
+Camillo é acionado obrigatoriamente pelo gate arquitetural do `AGENTS.md`: contratos, múltiplos módulos, APIs, integrações, persistência compartilhada, `LinkaEngine`, dependência estrutural, refatoração, segurança/privacidade sistêmica ou grande raio de impacto. Fora disso, o Codex principal implementa ou delega pelo ganho real.
 
 ## Skills
 
 Skills são **procedimentos**, não agentes e não fontes de verdade. A descoberta ocorre pelo `SKILL.md` e pelo `name` do frontmatter.
 
-### Produto / Íris
+### Produto
 
 - `pensar-como-medicao` — curadoria do escopo do Linka.
 - `desenhar-experiencia` — fluxo e estados.
@@ -47,7 +49,7 @@ Skills são **procedimentos**, não agentes e não fontes de verdade. A descober
 - `aplicar-voz-linka` — voz/copy do produto.
 - `matar-cheiro-de-ia` — filtro de linguagem e formatação artificial.
 
-### Engenharia / Camillo
+### Engenharia
 
 - `arquitetar-modulo` — arquitetura da mudança e fronteira Engine/UI.
 - `aconselhar-arquitetura` — decisões difíceis do motor e contratos.
@@ -57,7 +59,7 @@ Skills são **procedimentos**, não agentes e não fontes de verdade. A descober
 - `garantir-iphone-real` — validação em dispositivo real.
 - `rodar-no-iphone` — build, assinatura e instalação local.
 
-### Qualidade / Tito
+### Qualidade
 
 - `validar-modularidade` — acoplamento, duplicação e fronteiras.
 - `auditar-seguranca-e-testes` — pipeline, rede real, privacidade e comportamento.

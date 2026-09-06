@@ -1,11 +1,11 @@
 ---
 name: desenhar-experiencia
-description: Procedimento da Íris para desenhar fluxo e estados do Linka antes de pixels e código, sem inflar o produto.
+description: Desenha fluxo e estados do Linka antes de pixels e código, sem inflar o produto.
 ---
 
 # Skill: desenhar-experiencia
 
-Procedimento de **Íris** para definir **o que acontece**: fluxo, estados, ações, falhas e saída.
+Use esta skill para definir **o que acontece**: fluxo, estados, ações, falhas e saída.
 
 Fontes, em ordem: visão atual do produto, `AGENTS.md`, escopo Free/Plus, protótipo e Design System.
 
@@ -25,7 +25,7 @@ ABRIR → MEDIR → MOSTRAR RESULTADO → REPETIR
 
 Uma feature pode criar superfícies secundárias, mas não deve complicar o caminho principal sem benefício claro.
 
-## Para cada mudança, Íris responde
+## Para cada mudança, responda
 
 1. qual estado muda;
 2. o que o usuário vê ao entrar;
@@ -59,4 +59,4 @@ NÃO VIRA: limites do escopo
 ACEITE: comportamento observável
 ```
 
-O Codex principal combina esse resultado com a arquitetura de Camillo. A forma visual detalhada pode usar `desenhar-interface`.
+O Codex principal combina esse resultado com a arquitetura quando o gate aplicável for acionado. A forma visual detalhada pode usar `desenhar-interface`.

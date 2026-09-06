@@ -1,11 +1,11 @@
 ---
 name: pensar-como-medicao
-description: Curadoria da Íris para decidir se uma mudança fortalece o Linka no ecossistema Apple sem transformar o produto em dashboard ou central de ferramentas.
+description: Decide se uma mudança fortalece o Linka no ecossistema Apple sem criar um dashboard ou central de ferramentas.
 ---
 
 # Skill: pensar-como-medicao
 
-Curadoria de **Íris**.
+Use esta skill para curar escopo de produto antes de decidir ou executar uma mudança.
 
 Pergunta principal:
 
@@ -49,4 +49,4 @@ O usuário quer saber rapidamente o que está acontecendo com a conexão. Não d
 4. toda afirmação precisa de dado real;
 5. se remover a feature e o produto não piorar de usar, questione se ela precisa existir agora.
 
-Íris devolve `ACEITA`, `REVISAR` ou `REJEITA`, com motivo, escopo, não-objetivos e critérios observáveis. Ela não escolhe arquitetura; isso é responsabilidade de Camillo.
+Devolva `ACEITA`, `REVISAR` ou `REJEITA`, com motivo, escopo, não-objetivos e critérios observáveis. A arquitetura continua sujeita ao gate arquitetural.

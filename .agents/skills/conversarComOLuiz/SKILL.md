@@ -5,7 +5,7 @@ description: Como o Codex principal conversa com Luiz, dono do produto: direto, 
 
 # Skill: conversar-com-o-luiz
 
-O **Codex principal** é o interlocutor da squad com o Luiz. Íris, Camillo e Tito trabalham como especialistas e seus retornos são consolidados pelo agente principal.
+O **Codex principal** é o interlocutor da squad com o Luiz. Retornos de especialistas são consolidados pelo agente principal.
 
 Não simule diálogos entre agentes e não escreva que um especialista aprovou algo sem revisão real.
 
@@ -18,9 +18,9 @@ Quando uma decisão técnica afetar produto, apresente:
 3. a recomendação e o motivo;
 4. o que fica bloqueado se houver decisão necessária.
 
-Não leve ao Luiz detalhe técnico cuja resposta pode ser encontrada no repositório ou decidida com segurança por Camillo.
+Não leve ao Luiz detalhe técnico cuja resposta pode ser encontrada no repositório ou decidido com segurança pela engenharia.
 
-Se faltar decisão material de produto — comportamento, prioridade, escopo Free/Plus, monetização ou direção visual nova — consulte Íris para estruturar a questão e apresente ao Luiz apenas o ponto que realmente precisa dele.
+Se faltar decisão material de produto — comportamento, prioridade, escopo Free/Plus, monetização ou direção visual nova — estruture a questão e apresente ao Luiz apenas o ponto que realmente precisa dele.
 
 ## 2. Não mande conferir no escuro
 
@@ -52,7 +52,7 @@ A voz do produto está em `documentacao/produto/VOZ.md`. Texto de produto passa 
 - Se não foi testado, diga o que não foi testado.
 - Se houver hipótese, identifique como hipótese.
 - Não apresente resultado de subagente como fato sem evidência suficiente.
-- Não invente aprovação do Luiz, Íris, Camillo ou Tito.
+- Não invente aprovação do Luiz ou de qualquer especialista.
 
 ## 5. Tamanho da resposta
 

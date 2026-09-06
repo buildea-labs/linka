@@ -1,11 +1,11 @@
 ---
 name: escrever-testes
-description: Procedimento do Camillo para escrever testes junto com mudanças de comportamento. Tito revisa cobertura e regressões no final.
+description: Escreve testes junto com mudanças de comportamento e distingue cobertura de validação real.
 ---
 
 # Skill: escrever-testes
 
-Camillo escreve testes junto com a implementação quando eles protegem comportamento real. Tito revisa a suíte e os gaps depois.
+Use esta skill para escrever testes junto com a implementação quando eles protegem comportamento real. A auditoria independente revisa a suíte e os gaps depois.
 
 ## Comportamentos que normalmente exigem teste
 
@@ -39,4 +39,4 @@ Teste unitário não substitui validação de rede móvel, background/foreground
 - app e adapters: XCTest/Xcode Test Plans conforme targets existentes;
 - site institucional: use somente a suíte realmente configurada.
 
-Ao devolver, Camillo informa testes criados ou alterados, comandos executados e o que não foi validado. Tito diferencia cobertura automatizada de validação real em aparelho.
+Ao devolver, informe testes criados ou alterados, comandos executados e o que não foi validado. A auditoria diferencia cobertura automatizada de validação real em aparelho.

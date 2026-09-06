@@ -9,6 +9,7 @@ O Linka usa o **Codex como agente principal e orquestrador**. Os agentes especia
 ## Uso pelo Codex
 
 - O **Codex principal** é o interlocutor único com o Luiz e o responsável por integrar o trabalho.
+- Toda solicitação começa pela perspectiva de produto: problema, usuário, comportamento esperado e impacto. Pergunta ou hipótese é exploração; decisão consolida o comportamento; somente um pedido explícito de execução autoriza alteração de código.
 - Os especialistas nativos do projeto são **Íris**, **Camillo** e **Tito**, definidos em `.codex/agents/`.
 - Delegue apenas quando especialização ou paralelismo trouxer ganho real. Tarefa pequena e coesa não precisa virar cerimônia multiagente.
 - A delegação é por tarefa: objetivo delimitado, contexto mínimo, escopo explícito e retorno verificável.
@@ -112,7 +113,7 @@ O Codex principal é o **orquestrador**, não um quarto especialista.
 | Agente | Responsabilidade | Política padrão |
 |---|---|---|
 | **Íris** | Produto, jornada, UX, UI, copy, curadoria, priorização e critérios de aceite. Protege o foco do Linka e separa necessidade do usuário de solução técnica sugerida. | Somente leitura. |
-| **Camillo** | Engenharia principal, arquitetura, implementação, LinkaEngine, pacotes Swift, integrações Apple e correção de bugs. | Escrita somente quando delegada/autorizada. |
+| **Camillo** | Principal Engineer transversal: arquitetura sistêmica, contratos, LinkaEngine, integrações Apple entre superfícies e revisões de alto raio de impacto. Pode implementar mudanças grandes quando delegado; não é o executor obrigatório de toda tarefa rotineira. | Escrita somente quando delegada/autorizada. |
 | **Tito** | Qualidade, regressão, testes, acessibilidade, segurança/privacidade, fidelidade ao produto e revisão do motor. | Somente leitura; emite `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA`. |
 
 Luiz é o dono do produto e mantém a decisão final sobre publicação, custo, exclusão, monetização e mudança estratégica.
@@ -123,6 +124,27 @@ Luiz é o dono do produto e mantém a decisão final sobre publicação, custo, 
 - Camillo implementa; não aprova a própria entrega.
 - Tito audita; não corrige o código que está revisando por padrão e não aprova merge/release.
 - O Codex principal consolida as perspectivas, resolve conflitos técnicos razoáveis e leva ao Luiz apenas decisões de produto ou gates realmente necessários.
+
+### Gate arquitetural — Camillo
+
+Antes de começar uma implementação, o Codex aciona Camillo para investigar e criar ou revisar um Architecture Plan curto quando a tarefa envolver pelo menos um destes gatilhos:
+
+1. múltiplos módulos ou pacotes;
+2. criação ou alteração de API;
+3. integração entre sistemas ou app ↔ backend;
+4. contrato compartilhado;
+5. schema ou persistência com impacto entre componentes;
+6. mudança relevante no `LinkaEngine`;
+7. novo serviço ou dependência estrutural;
+8. integração Apple que alcance múltiplas superfícies;
+9. integração entre produtos da Buildea;
+10. refatoração arquitetural;
+11. segurança ou privacidade com impacto sistêmico;
+12. decisão errada com grande raio de impacto.
+
+O fluxo é: produto define o problema → Camillo investiga e planeja → implementação → Tito valida → Camillo revisa de novo apenas quando a entrega materializar decisão arquitetural relevante.
+
+O plano não é documento longo. Registra, quando aplicável: problema, comportamento desejado, arquitetura atual relevante, módulos, decisão proposta, contratos/fluxo de dados, persistência, falhas, segurança/privacidade, compatibilidade, testes, riscos e não-objetivos. Camillo pode pedir uma segunda opinião quando houver ambiguidade arquitetural real, mas compara as alternativas e continua responsável pelo plano final.
 
 ---
 
@@ -142,7 +164,7 @@ Risco da tarefa decide capacidade; o nome do agente não.
 
 ## 5. Roteamento e trilhas de trabalho
 
-O **Codex principal** roteia a demanda. Íris é consultada quando houver decisão de produto, experiência, escopo ou copy; Camillo quando houver engenharia; Tito quando uma revisão independente agregar confiança.
+O **Codex principal** roteia a demanda. Íris é consultada quando houver decisão de produto, experiência, escopo ou copy; Camillo entra pelo gate arquitetural ou quando sua especialidade trouxer ganho real; Tito quando uma revisão independente agregar confiança.
 
 | Classe | Critério | Trilha |
 |---|---|---|
@@ -153,16 +175,16 @@ O **Codex principal** roteia a demanda. Íris é consultada quando houver decis�
 
 ### Fast-lane
 
-Codex delimita → Camillo implementa quando houver código → Tito valida se o risco justificar → Codex revisa e relata.
+Codex delimita → implementação local pelo Codex principal ou delegada conforme o ganho real → Tito valida se o risco justificar → Codex revisa e relata.
 
 Sem `plano.md` obrigatório e sem release automática.
 
 ### Full-flow
 
-1. **Produto — Íris**: define problema, comportamento esperado, não-objetivos e critérios de aceite.
-2. **Arquitetura — Camillo**: propõe a menor solução técnica coerente, pacotes/contratos afetados, riscos e testes.
-3. **Plano — Codex principal**: consolida em `.agents/plano.md` quando a mudança material exigir planejamento. Se houver decisão de produto realmente aberta, apresenta ao Luiz antes de codificar.
-4. **Implementação — Camillo**: implementa em escopo delimitado, preserva o motor, escreve os testes relevantes e valida o módulo tocado.
+1. **Produto — Íris**: define problema, comportamento esperado, não-objetivos e critérios de aceite quando houver decisão de produto.
+2. **Arquitetura — Camillo**: atua somente se o gate arquitetural acima for acionado; propõe a menor solução técnica coerente, pacotes/contratos afetados, riscos e testes.
+3. **Plano — Codex principal**: consolida o Architecture Plan em `.agents/plano.md` quando o gate ou o tamanho/risco da mudança o exigir. Se houver decisão de produto realmente aberta, apresenta ao Luiz antes de codificar.
+4. **Implementação — Codex principal ou delegado**: executa o escopo delimitado, preserva o motor, escreve os testes relevantes e valida o módulo tocado. Camillo pode implementar mudanças grandes, mas não é uma etapa obrigatória da implementação comum.
 5. **Evaluate — Tito**: audita e devolve `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA` com evidência reproduzível.
 6. **Integração — Codex principal**: revisa o diff, resolve o retorno de Tito e confronta a entrega com os critérios de Íris.
 7. **Gate humano**: mudança material só é mergeada/publicada quando o gate definido pelo Luiz ou por este arquivo tiver sido cumprido.
@@ -170,7 +192,7 @@ Sem `plano.md` obrigatório e sem release automática.
 
 ### Hot-lane
 
-Codex define severidade/escopo → Camillo faz correção cirúrgica → Tito executa validação proporcional → Codex apresenta resultado e riscos. Não use hotfix como desculpa para refatoração oportunista.
+Codex define severidade/escopo → correção cirúrgica pelo Codex principal ou delegado → Tito executa validação proporcional → Codex apresenta resultado e riscos. Se o hotfix acionar o gate arquitetural, Camillo faz a análise estrutural posterior. Não use hotfix como desculpa para refatoração oportunista.
 
 ### Regras comuns
 

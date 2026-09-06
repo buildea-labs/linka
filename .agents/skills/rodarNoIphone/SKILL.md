@@ -1,11 +1,11 @@
 ---
 name: rodar-no-iphone
-description: Procedimento do Camillo para construir, assinar e instalar o Linka em iPhone, iPad ou Mac reais sem transformar build local em publicação.
+description: Constrói, assina e instala o Linka em dispositivos Apple reais sem transformar build local em publicação.
 ---
 
 # Skill: rodar-no-iphone
 
-Procedimento de **Camillo** para build e instalação local no ecossistema Apple.
+Use esta skill para build e instalação local no ecossistema Apple.
 
 Projeto principal: `aplicativo-ios/LinkaApp.xcodeproj`. Use o estado real do repositório como fonte para schemes, targets e pacotes disponíveis.
 
@@ -54,4 +54,4 @@ Informe:
 - cenários verificados;
 - o que ficou sem teste.
 
-Tito usa essa evidência na auditoria; “build verde” sozinho não encerra validação de comportamento.
+A auditoria usa essa evidência; “build verde” sozinho não encerra validação de comportamento.

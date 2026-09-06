@@ -10,7 +10,7 @@ A voz do produto é definida em [`documentacao/produto/VOZ.md`](../documentacao/
 
 - **Codex principal** — orquestra, conversa com o Luiz, delimita escopo, integra resultados e revisa a entrega.
 - **Íris** — produto, jornada, UX/UI, copy, curadoria e critérios de aceite. Somente leitura.
-- **Camillo** — engenharia, arquitetura, implementação, motor e integrações Apple. Escrita quando autorizada.
+- **Camillo** — Principal Engineer transversal: arquitetura, contratos, motor, integrações Apple entre superfícies e revisão sistêmica. Escrita quando autorizada; não é o implementador obrigatório de tarefas comuns.
 - **Tito** — qualidade, regressão, testes, acessibilidade, segurança e revisão independente. Somente leitura por padrão.
 
 Especialista é ferramenta de trabalho, não personagem que precisa aparecer em toda tarefa. O Codex não deve criar handoff só para cumprir rito.
@@ -28,7 +28,13 @@ Toda demanda é classificada antes de execução:
 | **Hotfix** | comportamento quebrado em produção afetando usuário | Hot-lane |
 | **Rejeitar** | não melhora medir/entender/acompanhar no Apple ou exige capacidade que a plataforma não expõe | volta ao Luiz com justificativa |
 
-Quando houver dúvida de produto, o Codex consulta **Íris**. Quando a decisão for puramente técnica e reversível, o Codex/Camillo decide sem interromper o Luiz.
+Quando houver dúvida de produto, o Codex consulta **Íris**. Quando a decisão for puramente técnica e reversível, o Codex decide sem interromper o Luiz.
+
+## Gate arquitetural
+
+Camillo é obrigatório antes de implementar quando houver múltiplos módulos/pacotes; API; integração entre sistemas, app ↔ backend ou produtos Buildea; contrato compartilhado; schema/persistência entre componentes; alteração relevante no `LinkaEngine`; novo serviço/dependência estrutural; integração Apple em múltiplas superfícies; refatoração arquitetural; segurança/privacidade sistêmica; ou grande raio de impacto.
+
+Nesses casos: Produto/Íris define o comportamento → Camillo cria ou revisa o Architecture Plan → implementação → Tito valida → Camillo revisa de novo apenas se a entrega materializar uma decisão arquitetural relevante. Fora desses gatilhos, o Codex principal pode implementar normalmente.
 
 ---
 
@@ -37,7 +43,7 @@ Quando houver dúvida de produto, o Codex consulta **Íris**. Quando a decisão 
 Para mudanças pequenas e reversíveis.
 
 1. **Codex principal** delimita o problema e o aceite mínimo.
-2. **Camillo** implementa quando houver código. Para alteração realmente trivial, o agente principal pode executar sem delegação.
+2. O **Codex principal** implementa ou delega só quando isso trouxer ganho real. Camillo só participa se o gate arquitetural for acionado ou se a revisão dele agregar confiança.
 3. **Tito** é acionado quando uma revisão independente agregar confiança: comportamento, regressão, acessibilidade, medição ou contrato. Mudança puramente documental não exige Tito por rito.
 4. **Codex principal** revisa o diff/evidências e relata ao Luiz.
 
@@ -62,7 +68,7 @@ Para feature ou mudança material.
 
 Íris não escolhe solução técnica só para preencher o plano.
 
-### 2. Arquitetura — Camillo
+### 2. Arquitetura — Camillo, quando o gate acionar
 
 Camillo confronta o problema com o código e propõe:
 
@@ -78,7 +84,7 @@ Mudanças em `LinkaEngine`, `NetworkCore`, `MeasurementHistory`, `NetworkInsight
 
 ### 3. Plano — Codex principal
 
-O Codex consolida produto + arquitetura em `.agents/plano.md` quando o tamanho/risco justificar.
+O Codex consolida produto + arquitetura em `.agents/plano.md` quando o gate ou o tamanho/risco justificar.
 
 O plano deve ser curto e conter:
 
@@ -93,7 +99,7 @@ RISCOS / VALIDAÇÃO
 
 Se ainda houver decisão material de produto sem resposta, o Codex apresenta a questão ao Luiz. Não transforma dúvida de produto em suposição técnica.
 
-### 4. Implementação — Camillo
+### 4. Implementação — Codex principal ou delegado
 
 - trabalha em branch apropriada;
 - implementa apenas o escopo combinado;
@@ -104,7 +110,7 @@ Se ainda houver decisão material de produto sem resposta, o Codex apresenta a q
 - não transforma descoberta lateral em feature nova;
 - revisa o próprio diff e executa validação proporcional antes de devolver.
 
-Partes independentes podem ser delegadas em paralelo apenas quando os escopos de escrita forem disjuntos.
+Camillo pode implementar a mudança quando a investigação dele continuar naturalmente até a execução; isso não o transforma no executor obrigatório da squad. Partes independentes podem ser delegadas em paralelo apenas quando os escopos de escrita forem disjuntos.
 
 ### 5. Evaluate — Tito
 
@@ -151,10 +157,10 @@ O Codex:
 Para produção quebrada.
 
 1. **Codex principal** define severidade, sintoma e menor escopo possível.
-2. **Camillo** faz correção cirúrgica. Sem refatoração oportunista.
+2. O **Codex principal** ou um delegado faz correção cirúrgica. Sem refatoração oportunista.
 3. **Tito** roda a validação mínima capaz de detectar regressão relevante.
 4. **Codex principal** revisa e apresenta resultado, risco residual e o que não foi testado.
-5. Dívida necessária para evitar reincidência vira issue separada; não é escondida dentro do hotfix.
+5. Se o hotfix acionar o gate arquitetural, Camillo registra a análise estrutural posterior. Dívida necessária para evitar reincidência vira issue separada; não é escondida dentro do hotfix.
 
 ---
 
