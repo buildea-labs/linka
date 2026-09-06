@@ -1,105 +1,62 @@
 ---
 name: desenhar-experiencia
-description: Procedimento do Giammattey para desenhar o fluxo e os estados do Linka (abrir → medir → mostrar → repetir) sem inventar tela nova nem inflar o produto.
+description: Procedimento da Íris para desenhar fluxo e estados do Linka antes de pixels e código, sem inflar o produto.
 ---
 
-# Skill: desenharExperiencia
+# Skill: desenhar-experiencia
 
-Procedimento do **Giammattey** para desenhar **o que acontece** — fluxo, estado, sensação e saída — antes de qualquer pixel e antes de qualquer código.
+Procedimento de **Íris** para definir **o que acontece**: fluxo, estados, ações, falhas e saída.
 
-> ## FONTES CANÔNICAS DA EXPERIÊNCIA
->
-> Nesta ordem:
->
-> 1. [`documentacao/funcional/VISAO.md`](../../../documentacao/funcional/VISAO.md) — o que o Linka é hoje;
-> 2. [`AGENTS.md`](../../../AGENTS.md) §1, §6 — o essencial do produto e os princípios obrigatórios;
-> 3. [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) — fronteira Free/Plus;
-> 4. [`documentacao/design/prototipo/`](../../../documentacao/design/prototipo/) — o protótipo canônico do fluxo e da geometria;
-> 5. [`documentacao/design/design_system/readme.md`](../../../documentacao/design/design_system/readme.md) — como cada estado se parece.
->
-> Se o desenho quiser um estado que o protótipo não descreve, isso é escopo novo. Volta para o §0.
+Fontes, em ordem: visão atual do produto, `AGENTS.md`, escopo Free/Plus, protótipo e Design System.
 
-## 0. Escopo antes de tudo
+## Filtro inicial
 
-Leia [`AGENTS.md`](../../../AGENTS.md) §14 (a pergunta final):
+Pergunta de `AGENTS.md §1`:
 
-> Isso ajuda o Linka a medir a internet melhor, mais rápido, mais confiável ou de forma mais clara?
+> **Isso melhora medir, entender ou acompanhar a conexão no Apple sem competir com o resultado?**
 
-Se a resposta for "não", provavelmente não pertence ao Linka. Registra no backlog e não desenha.
+Se não, não desenhe infraestrutura para a ideia nesta tarefa.
 
-## 1. O fluxo do Linka é curto
-
-O Linka tem um fluxo principal deliberadamente simples ([`AGENTS.md`](../../../AGENTS.md) §1):
+## Fluxo principal
 
 ```text
 ABRIR → MEDIR → MOSTRAR RESULTADO → REPETIR
 ```
 
-Estados principais (na prática):
+Uma feature pode criar superfícies secundárias, mas não deve complicar o caminho principal sem benefício claro.
 
-- **preparação** — app abre, medição inicia automaticamente;
-- **medição de latência** — pode ser silenciosa se a UI já comunicar;
-- **medição de download** — número dominante;
-- **medição de upload** — mesma tela, muda a fase;
-- **resultado** — download + upload lado a lado, opção de detalhes, ação "testar novamente";
-- **erro/parcial** — se uma fase falhou, mostrar o que foi possível medir com honestidade.
+## Para cada mudança, Íris responde
 
-Não invente "tela nova". Se a mudança precisa de um sexto estado, questiona: dá para caber sob expansão de um estado existente ou é uma superfície secundária separada (histórico, Assist, detalhes)? Antes de aumentar a máquina de estados principal, pense em divulgação progressiva.
+1. qual estado muda;
+2. o que o usuário vê ao entrar;
+3. qual ação existe, se houver;
+4. qual é a saída;
+5. o que acontece em erro/offline/timeout/permissão/partial;
+6. se adiciona toque ou fricção antes do resultado;
+7. como funciona com Reduce Motion;
+8. o que a mudança **não deve virar**.
 
-## 2. As perguntas
+## Regras
 
-Para cada mudança, responda por escrito:
+- estado não fica preso;
+- erro conta a verdade;
+- ausência de dado não vira zero;
+- resultado medido vem antes da interpretação;
+- histórico/Assist/detalhes usam divulgação progressiva;
+- não crie tela nova quando expansão ou superfície existente resolve melhor;
+- não crie onboarding/login/seleção de modo como fricção do fluxo principal sem decisão explícita de produto.
 
-1. **Qual estado muda?** Muda o conteúdo, a saída, ou nasce transição nova?
-2. **O que o usuário está sentindo** ao entrar nesse estado? E ao sair?
-3. **Quantos toques** até o resultado? Dá para tirar um?
-4. **Qual é a saída?** Todo estado tem saída. Estado sem saída é bug de design.
-5. **E se der ruim?** Sem rede, permissão negada, servidor lento, medição incompleta. Cada caso vai para onde?
-6. **Depois do resultado, o que naturalmente acontece?** No Linka a resposta padrão é "testar novamente" — não é "compartilhar", "compare com outros", "adicione ao histórico" (o histórico é background). Divulgação progressiva ([`AGENTS.md`](../../../AGENTS.md) §6).
-7. **Com `prefers-reduced-motion` ligado**, a informação continua completa?
-8. **O que isso NÃO deve virar?** Escreve. Isso vira o "Não viaja" da issue.
-
-## 3. Regras que não se negociam
-
-- **Nada finge que funciona.** Botão sem backend fica desabilitado. Mock fica marcado. Falha não vira sucesso por copy ([`AGENTS.md`](../../../AGENTS.md) §6, §8).
-- **Estado nunca fica preso.** Sempre existe caminho de cancelar ou tentar de novo.
-- **Recurso sensível tem começo e fim visíveis.** `URLSession`, `Task`, timer: usuário entende que o app está trabalhando e entende quando parou.
-- **Erro conta a verdade.** Se a medição de upload falhou mas o download foi bom, o resultado é `partial` e a UI reflete isso, sem inventar valor.
-- **Resultado é medida antes de interpretação.** No primeiro frame do resultado, o usuário vê o número. Interpretação ("sua conexão está boa para X") existe se sustentada em dado real, mas vive em superfície secundária (detalhes, histórico, Assist) e nunca substitui o número. Ver [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md).
-- **A tela de medição não é feed.** Sem cards, sem histórico visível no meio, sem gráfico decorativo. Histórico é background acessível, não é hero.
-
-## 4. Sem fricção antes da medição
-
-Por padrão, o Linka NÃO faz o usuário passar por:
-
-- login;
-- onboarding obrigatório;
-- formulário;
-- seleção de modo (rápido/completo);
-- seleção manual de servidor.
-
-O teste inicia automaticamente. Ver [`AGENTS.md`](../../../AGENTS.md) §6.
-
-## 5. A saída
-
-O que sai daqui entra no plano do Giammattey ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 0) e na issue:
+## Saída
 
 ```text
-ESTADO: qual estado do fluxo, e o que muda nele
-ANTES:  o que o usuário vê e sente ao entrar
-AÇÃO:   o que ele faz (se aplicável — muitos estados são passivos)
-DEPOIS: o que ele vê ao sair, e para onde vai
-DEU RUIM: cada falha e para onde ela leva
-REDUCED MOTION: o que muda
-NÃO VIAJA: no que isso não pode virar
+ESTADO: onde muda
+ANTES: o que o usuário encontra
+AÇÃO: o que faz
+DEPOIS: saída/estado seguinte
+DEU RUIM: falhas e recuperação
+REDUCED MOTION: comportamento
+NÃO VIRA: limites do escopo
+ACEITE: comportamento observável
 ```
 
-Depois entra a [`desenharInterface`](../desenharInterface/SKILL.md).
-
-## Relacionados
-
-- **Como isso vira forma:** [`desenharInterface`](../desenharInterface/SKILL.md)
-- **Filtro de escopo do produto:** [`pensarComoMedicao`](../pensarComoMedicao/SKILL.md)
-- **Voz e copy:** [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md)
-- **Arquitetura:** [`arquitetarModulo`](../arquitetarModulo/SKILL.md)
-- **Quem implementa:** [`criarComponenteUI`](../criarComponenteUI/SKILL.md)
+O Codex principal combina esse resultado com a arquitetura de Camillo. A forma visual detalhada pode usar `desenhar-interface`.
