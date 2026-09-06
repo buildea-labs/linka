@@ -87,7 +87,7 @@ jobs:
         run: |
           xcodebuild test \
             -project LinkaApp.xcodeproj \
-            -scheme LinkaApp_iOS \
+            -scheme LinkaApp \
             -destination 'platform=iOS Simulator,name=iPhone 17' \
             -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO
@@ -97,7 +97,7 @@ jobs:
         run: |
           xcodebuild build \
             -project LinkaApp.xcodeproj \
-            -scheme LinkaApp_iOS \
+            -scheme LinkaApp \
             -destination 'platform=iOS Simulator,name=iPhone 17' \
             -configuration Release \
             -skipMacroValidation \

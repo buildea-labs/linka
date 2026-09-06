@@ -64,6 +64,8 @@ targets:
       - target: LinkaApp
     sources:
       - path: ../store/app-store/screenshots
+        excludes:
+          - final/pt-BR/iphone/02-resultado.png
 
   LinkaAppTests:
     type: bundle.unit-test
@@ -117,4 +119,3 @@ packages:
     path: MeasurementHistoryCloudKit
   LinkaWidgetShared:
     path: LinkaWidgetShared
-
