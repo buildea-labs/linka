@@ -128,9 +128,12 @@ public struct NDSRequestBuilder: Sendable {
         let noise = advanced?.noiseDbm
         let snr = advanced?.snrDb
         let channel = advanced?.channelNumber
-        let gwIP = context?.gatewayIP
-        let gwVendor = context?.gatewayVendor
-        let gwAdminURL = context?.gatewayAdminURL
+        // Endereços e URLs locais não são necessários para a avaliação
+        // remota. Permanecem no aparelho para a tela de detalhes, mas nunca
+        // entram no payload do relay.
+        let gwIP: String? = nil
+        let gwVendor: String? = nil
+        let gwAdminURL: String? = nil
         
         guard rssi != nil || linkSpeed != nil || validBand != nil || securityType != nil || rxRate != nil || txRate != nil || noise != nil || snr != nil || channel != nil || gwIP != nil || gwVendor != nil || gwAdminURL != nil else { return nil }
         

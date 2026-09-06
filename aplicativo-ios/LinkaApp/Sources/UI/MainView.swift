@@ -55,8 +55,8 @@ struct MainView: View {
         return NetworkMeasurement(
             outcome: .complete,
             downloadMbps: viewModel.downloadSpeed > 0 ? viewModel.downloadSpeed : nil,
-            uploadMbps: viewModel.uploadSpeed > 0 ? viewModel.uploadSpeed : nil,
-            latencyMs: viewModel.ping > 0 ? Double(viewModel.ping) : nil,
+            uploadMbps: viewModel.hasMeasuredUpload ? viewModel.uploadSpeed : nil,
+            latencyMs: viewModel.hasMeasuredPing ? Double(viewModel.ping) : nil,
             jitterMs: viewModel.jitter,
             packetLossPercent: viewModel.packetLossPercent,
             loadedLatencyMs: viewModel.loadedLatencyMs,
@@ -236,7 +236,7 @@ struct MainView: View {
                 }
             }
             .sheet(isPresented: $showAssist) {
-                AssistView(
+                AssistProblemSelectionView(
                     currentMeasurement: measurementForAssist,
                     recentMeasurements: viewModel.recentMeasurements,
                     usageContext: usageContextForAssist,
@@ -245,8 +245,7 @@ struct MainView: View {
                         viewModel.startTest()
                     },
                     onShowDetails: { showDetails = true },
-                    entitlements: entitlements,
-                    onCloseSheet: { showAssist = false }
+                    entitlements: entitlements
                 )
             }
         .onChange(of: intentCoordinator.pendingStartSpeedTest) { pending in
@@ -267,12 +266,7 @@ struct MainView: View {
         }
         .onChange(of: intentCoordinator.pendingOpenHistory) { pending in
             guard pending else { return }
-            if isPlusActive {
-                navPath.append(AppRoute.history)
-            } else {
-                purchaseEntryPoint = .shortcut
-                showPurchase = true
-            }
+            navPath.append(AppRoute.history)
             intentCoordinator.consumeOpenHistory()
         }
         .onChange(of: intentCoordinator.pendingOpenLatestMeasurement) { pending in
@@ -589,11 +583,11 @@ struct MainView: View {
                 // Demais métricas reveladas: Upload, Ping e Perdas lado a lado
                 if showMoreMetrics {
                     HStack(spacing: 0) {
-                        metricColumn(title: "Upload", value: "\(Int(round(viewModel.uploadSpeed)))", unit: "Mbps")
+                        metricColumn(title: "Upload", value: metricValue(viewModel.uploadSpeed, isMeasured: viewModel.hasMeasuredUpload), unit: viewModel.hasMeasuredUpload ? "Mbps" : nil)
                         Divider().frame(height: 32)
-                        metricColumn(title: "Ping", value: "\(viewModel.ping)", unit: "ms")
+                        metricColumn(title: "Ping", value: metricValue(Double(viewModel.ping), isMeasured: viewModel.hasMeasuredPing), unit: viewModel.hasMeasuredPing ? "ms" : nil)
                         Divider().frame(height: 32)
-                        metricColumn(title: "Perdas", value: "\(Int(round(viewModel.packetLossPercent ?? 0)))", unit: "%")
+                        metricColumn(title: "Perdas", value: viewModel.packetLossPercent.map { "\(Int(round($0)))" } ?? "Não medido", unit: viewModel.packetLossPercent == nil ? nil : "%")
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
@@ -658,7 +652,7 @@ struct MainView: View {
         }
     }
 
-    private func metricColumn(title: String, value: String, unit: String) -> some View {
+    private func metricColumn(title: String, value: String, unit: String?) -> some View {
         VStack(spacing: 2) {
             Text(title)
                 .font(.captionSmall)
@@ -667,12 +661,18 @@ struct MainView: View {
                 Text(value)
                     .font(.headline.weight(.bold))
                     .foregroundColor(.textPrimary)
-                Text(unit)
-                    .font(.caption2.weight(.medium))
-                    .foregroundColor(.textSecondary)
+                if let unit {
+                    Text(unit)
+                        .font(.caption2.weight(.medium))
+                        .foregroundColor(.textSecondary)
+                }
             }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func metricValue(_ value: Double, isMeasured: Bool) -> String {
+        isMeasured ? "\(Int(round(value)))" : "Não medido"
     }
 
     // 4. Erro (Error)

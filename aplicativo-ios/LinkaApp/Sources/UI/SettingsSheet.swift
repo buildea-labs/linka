@@ -26,6 +26,7 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            #if DEBUG
             Section {
                 Button(action: openSubscription) {
                     HStack {
@@ -98,6 +99,7 @@ struct SettingsView: View {
             } footer: {
                 Text("Ativa o Linka Plus sem compra. Use apenas para validar funcionalidades em desenvolvimento.")
             }
+            #endif
 
             Section {
                 Text("Versão \(appVersion)")

@@ -100,7 +100,7 @@ const pages: Record<string, InfoPage> = {
   }
 };
 
-export function infoPageForPath(pathname: string): InfoPage {
+function infoPageForPath(pathname: string): InfoPage {
   return pages[pathname] ?? pages['/sobre'];
 }
 

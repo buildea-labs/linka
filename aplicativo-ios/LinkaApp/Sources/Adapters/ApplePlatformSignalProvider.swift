@@ -31,6 +31,9 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
     }
 
     private func currentWifi() async -> PlatformHints.Wifi? {
+        // Identificação desligada significa não iniciar sondagem do roteador
+        // nem coletar contexto Wi-Fi para envio ao diagnóstico remoto.
+        guard LinkaWiFiPreferences.isIdentificationEnabled else { return nil }
         var gatewayInfo: GatewayInfo? = nil
         let discovery = LocalGatewayDiscovery()
         if let iface = discovery.discoverPrimaryInterface(), let gw = iface.gatewayCandidate {

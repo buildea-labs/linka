@@ -40,6 +40,7 @@ struct HistoryView: View {
     @State private var isLoading = true
     @State private var hasPlus = false
     @State private var showAssist = false
+    @State private var assistMeasurement: NetworkMeasurement?
     @State private var showPurchase = false
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .historyInsights
     @State private var insightText: String?
@@ -140,12 +141,29 @@ struct HistoryView: View {
                     } else {
                         Section("Medições") {
                             ForEach(filteredMeasurements, id: \.id) { measurement in
-                                Button {
-                                    onSelectMeasurement?(measurement)
-                                } label: {
-                                    PrototypeHistoryRow(measurement: measurement)
+                                HStack(spacing: 8) {
+                                    Button {
+                                        onSelectMeasurement?(measurement)
+                                    } label: {
+                                        PrototypeHistoryRow(measurement: measurement)
+                                    }
+                                    .buttonStyle(.plain)
+
+                                    Button {
+                                        assistMeasurement = measurement
+                                        if hasPlus {
+                                            showAssist = true
+                                        } else {
+                                            purchaseEntryPoint = .assist
+                                            showPurchase = true
+                                        }
+                                    } label: {
+                                        Image(systemName: "sparkles")
+                                            .foregroundColor(.brandAccentWarm)
+                                            .frame(minWidth: 44, minHeight: 44)
+                                    }
+                                    .accessibilityLabel("Analisar esta medição no Assist")
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -158,9 +176,9 @@ struct HistoryView: View {
         .navigationBarTitleDisplayMode(.large)
         #endif
         .sheet(isPresented: $showAssist) {
-            AssistView(
-                currentMeasurement: measurements.first,
-                recentMeasurements: Array(measurements.dropFirst().prefix(20)),
+            AssistProblemSelectionView(
+                currentMeasurement: assistMeasurement,
+                recentMeasurements: Array(measurements.filter { $0.id != assistMeasurement?.id }.prefix(20)),
                 entitlements: entitlements
             )
         }
