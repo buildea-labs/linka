@@ -1,100 +1,62 @@
 ---
 name: validar-modularidade
-description: Runbook do Igor para detectar acoplamento, responsabilidades misturadas e duplicação de regra no código do Linka.
+description: Runbook do Tito para detectar acoplamento, mistura de responsabilidades, duplicação de regra e abstração prematura no Linka.
 ---
 
-# Skill: validarModularidade
+# Skill: validar-modularidade
 
-Ferramenta de revisão do **Igor (Qualidade)** para impedir que o Linka vire um bloco impossível de mexer.
+Ferramenta de revisão de **Tito**. O objetivo é detectar risco estrutural real, não punir arquivo grande por numerologia.
 
-## 1. O que é monólito aqui
+## Sinais de problema
 
-Não é simplesmente "arquivo grande".
+- SwiftUI `View` conhece `URLSession`, cálculo de bytes ou persistência de domínio;
+- regra de medição/conversão duplicada;
+- cleanup de `Task`, `URLSession` ou timer sem dono;
+- tipo muda por várias razões independentes;
+- pacote de motor depende de framework de UI;
+- contrato canônico tem mais de uma definição;
+- abstração criada para feature futura sem necessidade atual;
+- teste de regra exige montar o app inteiro sem motivo.
 
-Problemas reais:
+## Tamanho
 
-- `View` SwiftUI que também conhece `URLSession` ou cálculo de bytes;
-- regra de conversão (bytes → Mbps, latência média, jitter) duplicada em vários pacotes;
-- cleanup de `URLSession`/`Task`/`Timer` sem dono claro — quem inicia é quem cancela;
-- função com responsabilidades independentes que mudam por razões diferentes;
-- `ObservableObject` que virou depósito de qualquer estado da tela;
-- utilitário genérico que depende de tipo específico de feature (dependência invertida);
-- pacote Swift impossível de testar sem montar o app inteiro (importação silenciosa de UI framework);
-- pacote de motor (`NetworkCore`, `LinkaEngine`) importando `SwiftUI` — quebra imediata da fronteira Engine/UI.
+Tamanho de arquivo é sinal para revisar coesão, não verdict automático. Arquivo grande com uma responsabilidade e invariantes coesos pode ser melhor que decomposição artificial.
 
-Tamanho de arquivo é **sinal para olhar**, não sentença automática.
-
-## 2. Heurística de tamanho
-
-Ao encontrar arquivo novo ou modificado grande:
-
-- acima de ~200 linhas: revisar coesão com atenção;
-- acima de ~400 linhas: exigir justificativa explícita ou decomposição;
-- exceção aceitável quando manter o invariante no mesmo lugar torna o código mais seguro e legível.
-
-Exemplo válido: `FileMeasurementHistoryRepository` concentra escrita atômica, criação de diretório, tratamento de arquivo corrompido e migração de versão porque separar essas partes espalharia o invariante "toda persistência falha fechada".
-
-A justificativa precisa falar de responsabilidade, não "não deu tempo".
-
-## 3. Separação de camadas do Linka
+## Direção de dependências
 
 Preferir:
 
-- **`View` (SwiftUI)** apresenta e interage;
-- **Adapter/ViewModel** cuida do ciclo de vida e converte pacote → estado observável;
-- **Pacote de domínio** (`NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaEngine`) calcula regra pura ou I/O específico, sem UI;
-- **Contrato canônico** (`NetworkMeasurement` v1) é a única definição da medição.
+```text
+View → Adapter/ViewModel → domínio/motor
+```
 
-Não criar camada vazia só para dizer que tem arquitetura limpa.
+Nunca o motor dependendo da View.
 
-## 4. Dependências
+`NetworkCore` e contratos de base não devem depender de componentes de produto que os consomem.
 
-Verifique direção:
+## Duplicação perigosa
 
-- pacote de motor **não** importa `SwiftUI`/`UIKit`/`AppKit`;
-- `LinkaApp` importa os pacotes de motor — nunca o contrário;
-- `NetworkCore` é a base — os outros pacotes dependem dele, ele não depende de ninguém do produto;
-- se cinco lugares precisam da mesma regra, procure o dono canônico antes de copiar (ver [`escreverAdaptadorNativo`](../escreverAdaptadorNativo/SKILL.md)).
+Priorize duplicação de regra, não repetição cosmética:
 
-## 5. Duplicação perigosa
+- bytes → Mbps;
+- complete vs partial;
+- retenção do histórico;
+- agregações estatísticas;
+- schema de `NetworkMeasurement`;
+- thresholds/regras determinísticas.
 
-Duplicação perigosa não é copiar 20 linhas — é duplicar **regra de negócio ou contrato**:
+Se a mesma regra existir em plataformas diferentes, procure contrato/fixture/teste de paridade em vez de deixar implementações divergirem silenciosamente.
 
-- fórmula de conversão de banda;
-- definição do que é `complete` vs `partial` na medição;
-- política de retenção do histórico;
-- regra de agregação estatística (média, mediana, desvio padrão);
-- schema do `NetworkMeasurement`.
+## Escopo
 
-Quando houver duas implementações inevitáveis (ex.: Swift do motor + JavaScript de um consumidor futuro), precisa existir schema JSON + fixtures + teste de paridade — o que já existe em [`documentacao/arquitetura/contratos/`](../../../documentacao/arquitetura/contratos/).
+Refatoração não pode introduzir, escondida, capacidade nova de Assist, diagnóstico, Wi‑Fi avançado ou coleta de dado. Produto novo passa por Íris e arquitetura por Camillo antes de entrar.
 
-## 6. Escopo também é modularidade
+## Verdict
 
-Leia [`AGENTS.md`](../../../AGENTS.md) §1-2 e [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md).
+Tito classifica achados conforme `AGENTS.md`/workflow:
 
-Não aprove refatoração que, para "organizar melhor", **antecipa** infraestrutura de diagnóstico, Assist, análise Wi-Fi ou chatbot sem constar do `plano.md` aprovado. Interpretação e Assist são bem-vindos no Linka desde que passem pela Full‑flow com Architect (Giammattey) e aprovação do Luiz — não entram silenciosamente por dentro de uma refatoração.
+- `BLOQUEIA` quando o acoplamento ameaça contrato, medição, segurança ou regressão relevante;
+- `AJUSTA` quando deve ser corrigido nesta entrega;
+- `ISSUE_FUTURA` quando é dívida real sem relação necessária com a fatia atual.
 
-Refatoração boa reduz risco da fatia atual. Não usa limpeza como desculpa para reabrir o que foi fechado.
-
-**Remover código legado é o oposto disso e é bem-vindo** — mas em fatias, uma área por PR, sem se misturar com features novas. Ver o padrão dos PRs #33 e #34 (limpezas grandes, isoladas, com relatório de verificação).
-
-## 7. Checklist de QA
-
-- cada arquivo/tipo tem responsabilidade explicável em uma frase?
-- regra canônica (medição, retenção, agregação) tem um dono?
-- cleanup de `URLSession`/`Task`/`Timer` tem um dono?
-- `View` conhece detalhes de motor sem necessidade?
-- pacote de motor importa framework de UI? (deve ser NÃO)
-- há abstração prematura para feature futura?
-- teste consegue atingir a regra sem montar o app inteiro?
-- arquivo grande tem justificativa de coesão?
-- a mudança não está introduzindo capacidade nova (interpretação, Assist, diagnóstico) fora do `plano.md` aprovado?
-
-Se a resposta ruim for "mas ficou em menos de 200 linhas", continua ruim.
-
-## Relacionados
-
-- **Arquitetura de módulo:** [`arquitetarModulo`](../arquitetarModulo/SKILL.md)
-- **Aconselhamento arquitetural:** [`aconselharArquitetura`](../aconselharArquitetura/SKILL.md)
-- **Adapter:** [`escreverAdaptadorNativo`](../escreverAdaptadorNativo/SKILL.md)
-- **Auditoria final:** [`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)
+Inclua arquivo/símbolo, efeito concreto e recomendação mínima. Evite “crie uma camada” como resposta automática.
