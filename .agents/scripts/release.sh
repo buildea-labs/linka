@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Iniciando automação de Release (Linka)..."
+echo "Preparando uma candidata de release do Linka..."
+echo "Este script altera somente os arquivos locais para uma PR; ele nunca faz merge, tag, upload ou publicação."
 
 PROJECT_YML="aplicativo-ios/project.yml"
 PBXPROJ="aplicativo-ios/LinkaApp.xcodeproj/project.pbxproj"
@@ -103,4 +104,4 @@ if [ "$PBXPROJ_BUILD" != "$NEW_BUILD" ]; then
 fi
 
 echo "✅ pbxproj validado: MARKETING_VERSION=$PBXPROJ_VERSION, CURRENT_PROJECT_VERSION=$PBXPROJ_BUILD"
-echo "🎉 Projeto preparado! Lembre-se de anexar o RELEASE_NOTES.md no commit."
+echo "Projeto preparado. Atualize RELEASE_NOTES.md, abra uma PR e aguarde o CI antes de pedir o TestFlight."

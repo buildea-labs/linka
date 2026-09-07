@@ -11,6 +11,8 @@
 default_platform(:ios)
 
 require "base64"
+require "digest"
+require "json"
 require "shellwords"
 require "tmpdir"
 
@@ -24,6 +26,14 @@ platform :ios do
     required_envs = %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_CONTENT APPLE_TEAM_ID]
     missing_envs = required_envs.reject { |name| ENV[name] && !ENV[name].empty? }
     UI.user_error!("Secrets ausentes: #{missing_envs.join(', ')}") unless missing_envs.empty?
+
+    project_yml = File.expand_path("../aplicativo-ios/project.yml", __dir__)
+    release_notes_path = File.expand_path("../RELEASE_NOTES.md", __dir__)
+    project_contents = File.read(project_yml)
+    version = project_contents[/MARKETING_VERSION:\s*"([0-9]+(?:\.[0-9]+){1,2})"/, 1]
+    build_number = project_contents[/CURRENT_PROJECT_VERSION:\s*"([0-9]+)"/, 1]
+    UI.user_error!("Versão ou build ausente em #{project_yml}") unless version && build_number
+    UI.user_error!("RELEASE_NOTES.md é obrigatório para TestFlight") unless File.exist?(release_notes_path) && !File.read(release_notes_path).strip.empty?
 
     # 1. Autenticação na App Store Connect via API Key
     api_key = app_store_connect_api_key(
@@ -46,8 +56,16 @@ platform :ios do
     ].join(" ")
 
     begin
+      latest_build = latest_testflight_build_number(
+        version: version,
+        app_identifier: "com.linka.assist",
+        api_key: api_key,
+        initial_build_number: 0
+      )
+      UI.user_error!("Build #{version} (#{build_number}) não é novo; Apple já tem build #{latest_build}.") if latest_build >= build_number.to_i
+
       # 2. Gerar projeto Xcode com XcodeGen
-      sh("xcodegen generate --spec ../aplicativo-ios/project.yml --project ../aplicativo-ios")
+      sh("xcodegen generate --spec #{project_yml.shellescape} --project #{File.dirname(project_yml).shellescape}")
 
       # 3. Build e Archive (IPA para App Store)
       gym(
@@ -61,10 +79,8 @@ platform :ios do
         output_name:      "LinkaApp.ipa"
       )
 
-      # 4. Ler release notes se o arquivo existir
-      changelog = File.exist?("../RELEASE_NOTES.md") \
-                    ? File.read("../RELEASE_NOTES.md") \
-                    : "Nova versão disponível no TestFlight."
+      # 4. As notas aprovadas na PR candidata são obrigatórias.
+      changelog = File.read(release_notes_path)
 
       # 5. Upload para TestFlight
       pilot(
@@ -73,18 +89,33 @@ platform :ios do
         changelog:                       changelog,
         distribute_external:             false,
         notify_external_testers:         false,
-        skip_waiting_for_build_processing: true
+        skip_waiting_for_build_processing: false,
+        wait_processing_interval: 30
       )
+
+      processed_build = latest_testflight_build_number(
+        version: version,
+        app_identifier: "com.linka.assist",
+        api_key: api_key,
+        initial_build_number: 0
+      )
+      UI.user_error!("Apple não confirmou o processamento de #{version} (#{build_number}).") unless processed_build == build_number.to_i
+
+      ipa_path = File.expand_path("build/LinkaApp.ipa", Dir.pwd)
+      evidence_path = File.expand_path("build/testflight-evidence.json", Dir.pwd)
+      File.write(evidence_path, JSON.pretty_generate({
+        version: version,
+        build: build_number.to_i,
+        git_sha: ENV.fetch("GITHUB_SHA", "local"),
+        ipa_sha256: Digest::SHA256.file(ipa_path).hexdigest,
+        processed_build: processed_build
+      }))
+      UI.important("TestFlight processado: #{version} (#{build_number}), SHA #{ENV.fetch('GITHUB_SHA', 'local')}")
     ensure
       File.delete(authentication_key_path) if File.exist?(authentication_key_path)
     end
 
-    # 6. Git tag da versão e push
-    version = get_version_number(
-      xcodeproj: "aplicativo-ios/LinkaApp.xcodeproj",
-      target:    "LinkaApp"
-    )
-    add_git_tag(tag: "v#{version}")
-    push_git_tags
+    # A tag é criada pela workflow somente depois da confirmação da Apple.
+    # Tags vX.Y.Z continuam reservadas para a promoção pública autorizada.
   end
 end
