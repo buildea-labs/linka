@@ -18,7 +18,6 @@ jobs:
     name: Build, upload and verify TestFlight
     runs-on: macos-latest
     timeout-minutes: 45
-    environment: testflight
 
     steps:
       - name: Refuse anything other than main
