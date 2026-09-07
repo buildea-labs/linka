@@ -4,7 +4,7 @@ options:
 settings:
   base:
     MARKETING_VERSION: "1.1.2"
-    CURRENT_PROJECT_VERSION: "44"
+    CURRENT_PROJECT_VERSION: "45"
 targets:
   LinkaApp:
     type: application
