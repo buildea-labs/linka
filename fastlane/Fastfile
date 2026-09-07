@@ -10,6 +10,10 @@
 
 default_platform(:ios)
 
+require "base64"
+require "shellwords"
+require "tmpdir"
+
 platform :ios do
   # ------------------------------------------------------------------
   # Lane: beta
@@ -17,6 +21,10 @@ platform :ios do
   # ------------------------------------------------------------------
   desc "Build e upload para TestFlight via App Store Connect API"
   lane :beta do
+    required_envs = %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_CONTENT APPLE_TEAM_ID]
+    missing_envs = required_envs.reject { |name| ENV[name] && !ENV[name].empty? }
+    UI.user_error!("Secrets ausentes: #{missing_envs.join(', ')}") unless missing_envs.empty?
+
     # 1. Autenticação na App Store Connect via API Key
     api_key = app_store_connect_api_key(
       key_id:        ENV["ASC_KEY_ID"],
@@ -26,41 +34,52 @@ platform :ios do
       in_house: false
     )
 
-    # 2. Gerar projeto Xcode com XcodeGen
-    sh("xcodegen generate --spec ../aplicativo-ios/project.yml --project ../aplicativo-ios")
+    # O xcodebuild precisa da mesma chave para criar/baixar os perfis de
+    # distribuição no runner efêmero do GitHub Actions.
+    authentication_key_path = File.join(Dir.tmpdir, "AuthKey_#{ENV['ASC_KEY_ID']}.p8")
+    File.binwrite(authentication_key_path, Base64.strict_decode64(ENV.fetch("ASC_KEY_CONTENT")))
+    authentication_xcargs = [
+      "-allowProvisioningUpdates",
+      "-authenticationKeyPath #{authentication_key_path.shellescape}",
+      "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID').shellescape}",
+      "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID').shellescape}"
+    ].join(" ")
 
-    # 3. Build e Archive (IPA para App Store)
-    gym(
-      project:          "aplicativo-ios/LinkaApp.xcodeproj",
-      scheme:           "LinkaApp",
-      configuration:    "Release",
-      export_method:    "app-store",
-      clean:            true,
-      output_directory: "build",
-      output_name:      "LinkaApp.ipa"
-    )
+    begin
+      # 2. Gerar projeto Xcode com XcodeGen
+      sh("xcodegen generate --spec ../aplicativo-ios/project.yml --project ../aplicativo-ios")
 
-    # 4. Ler release notes se o arquivo existir
-    changelog = File.exist?("../RELEASE_NOTES.md") \
-                  ? File.read("../RELEASE_NOTES.md") \
-                  : "Nova versão disponível no TestFlight."
+      # 3. Build e Archive (IPA para App Store)
+      gym(
+        project:          "aplicativo-ios/LinkaApp.xcodeproj",
+        scheme:           "LinkaApp_iOS",
+        configuration:    "Release",
+        export_method:    "app-store",
+        clean:            true,
+        xcargs:           authentication_xcargs,
+        output_directory: "build",
+        output_name:      "LinkaApp.ipa"
+      )
 
-    # 5. Upload para TestFlight
-    pilot(
-      api_key:                         api_key,
-      ipa:                             "build/LinkaApp.ipa",
-      changelog:                       changelog,
-      distribute_external:             false,
-      notify_external_testers:         false,
-      skip_waiting_for_build_processing: true
-    )
+      # 4. Ler release notes se o arquivo existir
+      changelog = File.exist?("../RELEASE_NOTES.md") \
+                    ? File.read("../RELEASE_NOTES.md") \
+                    : "Nova versão disponível no TestFlight."
 
-    # 6. Git tag da versão e push
-    version = get_version_number(
-      xcodeproj: "aplicativo-ios/LinkaApp.xcodeproj",
-      target:    "LinkaApp"
-    )
-    add_git_tag(tag: "v#{version}")
-    push_git_tags
+      # 5. Upload para TestFlight
+      pilot(
+        api_key:                         api_key,
+        ipa:                             "build/LinkaApp.ipa",
+        changelog:                       changelog,
+        distribute_external:             false,
+        notify_external_testers:         false,
+        skip_waiting_for_build_processing: true
+      )
+    ensure
+      File.delete(authentication_key_path) if File.exist?(authentication_key_path)
+    end
+
+    # O envio ao TestFlight não cria nem envia tags. Versionamento e publicação
+    # de Git continuam sujeitos ao gate humano do release.
   end
 end
