@@ -64,6 +64,7 @@ targets:
       - path: ../store/app-store/screenshots
         excludes:
           - final/pt-BR/iphone/02-resultado.png
+          - rascunhos-*/**
 
   LinkaAppTests:
     type: bundle.unit-test
