@@ -112,8 +112,9 @@ platform :ios do
       )
       UI.user_error!("Apple não confirmou o processamento de #{version} (#{build_number}).") unless processed_build == build_number.to_i
 
-      ipa_path = File.expand_path("build/LinkaApp.ipa", Dir.pwd)
-      evidence_path = File.expand_path("build/testflight-evidence.json", Dir.pwd)
+      ipa_path = File.join(repository_root, "build/LinkaApp.ipa")
+      evidence_path = File.join(repository_root, "build/testflight-evidence.json")
+      UI.user_error!("IPA ausente para registrar a evidência: #{ipa_path}") unless File.exist?(ipa_path)
       File.write(evidence_path, JSON.pretty_generate({
         version: version,
         build: build_number.to_i,
