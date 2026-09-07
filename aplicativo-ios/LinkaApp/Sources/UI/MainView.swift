@@ -50,6 +50,7 @@ struct MainView: View {
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
+    @Environment(\.requestReview) private var requestReview
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @AppStorage(LinkaWiFiPreferences.advancedConfiguredKey) private var advancedWiFiConfigured = false
@@ -302,6 +303,9 @@ struct MainView: View {
             ConnectivityTriageView(onRetry: { viewModel.startTest() })
         }
         .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
+        .onChange(of: showShareSheet) { isPresented in
+            if !isPresented { requestAppStoreReviewAfterResultInteraction() }
+        }
         .sheet(isPresented: $showDetails) {
             NavigationStack {
                 MeasurementDetailView(measurement: currentMeasurement, duration: viewModel.testDuration)
@@ -314,6 +318,9 @@ struct MainView: View {
                         }
                     }
             }
+        }
+        .onChange(of: showDetails) { isPresented in
+            if !isPresented { requestAppStoreReviewAfterResultInteraction() }
         }
         .sheet(isPresented: $showUsage) {
             UsageDiagnosticsView(measurement: currentMeasurement)
@@ -389,6 +396,48 @@ struct MainView: View {
                 #endif
             }
         }
+        }
+    }
+
+    private var isReviewPromptSafeToPresent: Bool {
+        AppStoreReviewPromptPresentationPolicy.isSafe(
+            sceneIsActive: scenePhase == .active,
+            resultIsVisible: navPath.isEmpty && viewModel.uiPhase == .done,
+            hasBlockingPresentation: showAssistProblemSelection
+                || showAssistResult
+                || showPurchase
+                || showShareSheet
+                || showDetails
+                || showUsage
+                || showConnectionPath
+                || showConnectivityTriage
+                || showExpertModeMigrationBanner
+        )
+    }
+
+    /// Só pede depois de uma ação no resultado; nunca na abertura ou no fim
+    /// da medição. A espera preserva o número e o CTA de reteste como foco.
+    private func requestAppStoreReviewAfterResultInteraction() {
+        guard isReviewPromptSafeToPresent else { return }
+
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard isReviewPromptSafeToPresent,
+                  let history = await viewModel.appStoreReviewHistory() else {
+                return
+            }
+
+            let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+            let policy = AppStoreReviewPolicy()
+            guard policy.shouldRequestReview(
+                completedMeasurementCount: history.completedCount,
+                firstCompletedMeasurementAt: history.firstCompletedAt,
+                hasInteractedWithCurrentResult: true,
+                appVersion: version
+            ) else { return }
+
+            policy.recordAutomaticRequest(appVersion: version)
+            requestReview()
         }
     }
 
@@ -576,6 +625,7 @@ struct MainView: View {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                         showMoreMetrics.toggle()
                     }
+                    if showMoreMetrics { requestAppStoreReviewAfterResultInteraction() }
                 } label: {
                     HStack(spacing: 5) {
                         Text("Mais")
