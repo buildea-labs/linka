@@ -18,7 +18,6 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "2Z4T8228GR"
         PRODUCT_BUNDLE_IDENTIFIER: com.linka.assist
-        TARGETED_DEVICE_FAMILY: "1"
     info:
       path: LinkaApp/Info.plist
       properties:
@@ -38,6 +37,11 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     sources:
       - path: LinkaApp/Sources
     dependencies:
