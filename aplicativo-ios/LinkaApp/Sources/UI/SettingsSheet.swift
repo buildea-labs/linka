@@ -14,6 +14,7 @@ import AppKit
 struct SettingsView: View {
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @Environment(\.openURL) private var openURL
+    @Environment(\.requestReview) private var requestReview
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
     @State private var showPurchase = false
     @State private var showSubscriptionManagement = false
@@ -83,6 +84,14 @@ struct SettingsView: View {
                 }
                 Link(destination: LinkaExternalLinks.support) {
                     Label("Suporte", systemImage: "questionmark.circle")
+                }
+                Button {
+                    requestReview()
+                } label: {
+                    Label("Avaliar o Linka", systemImage: "star")
+                }
+                Link(destination: LinkaExternalLinks.support) {
+                    Label("Enviar feedback", systemImage: "text.bubble")
                 }
             }
 

@@ -322,6 +322,22 @@ public class SpeedTestViewModel: ObservableObject {
         self.isTesting = false
     }
 
+    /// Consulta somente medições completas já persistidas para que o convite
+    /// de avaliação nunca conte resultado parcial, cancelado ou recente.
+    func appStoreReviewHistory() async -> (completedCount: Int, firstCompletedAt: Date)? {
+        let repository = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
+        let query = MeasurementQuery(
+            outcomes: [.complete],
+            limit: AppStoreReviewPolicy.minimumCompletedMeasurements,
+            sortOrder: .oldestFirst
+        )
+        guard let measurements = try? await repository.measurements(matching: query),
+              let first = measurements.first else {
+            return nil
+        }
+        return (measurements.count, first.measuredAt)
+    }
+
     
     public func startTest() {
         guard !isTesting else { return }
