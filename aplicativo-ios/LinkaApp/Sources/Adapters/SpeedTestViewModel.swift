@@ -225,11 +225,9 @@ public class SpeedTestViewModel: ObservableObject {
     /// (issue #65) — testável via `@testable import` sem expor API pública.
     var lastValidResultSnapshot: ResultSnapshot?
 
-    /// Verdadeiro quando existe, nesta sessão, um resultado válido pra
-    /// restaurar (issue #47). A UI usa isto só pra escolher o texto do
-    /// botão de saída ("Pular" quando ainda não há resultado vs. "Cancelar"
-    /// quando há um reteste em andamento) — a ação por trás dos dois é
-    /// sempre `skipOrCancel()`, nunca dois mecanismos distintos.
+    /// Mantido para consumidores que precisam saber se a sessão já concluiu
+    /// uma medição. Cancelar não restaura mais esse resultado: a pessoa
+    /// volta sempre para a Home.
     public var hasValidResult: Bool {
         lastValidResultSnapshot != nil
     }
@@ -495,41 +493,18 @@ public class SpeedTestViewModel: ObservableObject {
         }
     }
     
-    /// Único mecanismo técnico pra interromper um teste em andamento
-    /// (issue #47) — "Pular" na primeira medição automática e "Cancelar"
-    /// num reteste chamam sempre este mesmo método, nunca dois handlers
-    /// separados. Cancela a task/stream do motor e nunca deixa o teste
-    /// interrompido entrar no histórico (ver guarda `!Task.isCancelled` em
-    /// `startTest()`). Restaura integralmente o último resultado válido
-    /// desta sessão quando existir ("Cancelar"); senão reinicia um teste
-    /// novo automaticamente ("Pular" — bug reportado por Marcelo na rodada
-    /// 2 do PR #91: sem um snapshot pra restaurar, `uiPhase = .idle` sozinho
-    /// é beco sem saída, porque nenhum botão em `MainView` no branch
-    /// `.idle` chama `startTest()`; "Pular" sem resultado precisa, ele
-    /// mesmo, reiniciar o loop natural do produto).
+    /// Interrompe uma medição iniciada pela pessoa e retorna à Home. Não é
+    /// resultado parcial e não pode restaurar uma medição anterior: isso
+    /// faria o cancelamento parecer um teste concluído, inclusive com zeros
+    /// ou números que não pertencem à execução recém-cancelada.
     public func skipOrCancel() {
         testTask?.cancel()
         testTask = nil
 
         failureReason = nil
         isTesting = false
-
-        if let snapshot = lastValidResultSnapshot {
-            // Reteste cancelado: restaura o último resultado válido — usuário
-            // volta a ver exatamente o que estava vendo antes de tocar em
-            // "Testar novamente".
-            restoreLastValidSnapshot(snapshot)
-        } else {
-            // Primeira medição pulada: sem snapshot para restaurar, volta ao
-            // estado pronto-para-medir. Não fabrica valores zerados (issue #47
-            // aceite: "sem resultado anterior, a interface não fabrica valores").
-            // A saída do beco sem saída fica na UI: MainView mostra um botão
-            // "Testar" quando uiPhase == .idle e não há resultado — o
-            // auto-restart do R3 confundia o usuário ("botão Pular não faz
-            // nada porque o teste reinicia imediatamente").
-            progress = 0.0
-            uiPhase = .idle
-        }
+        progress = 0.0
+        uiPhase = .idle
     }
 
     /// Retorna à tela inicial (Home/Idle) a partir do resultado ou de qualquer outro estado.
@@ -900,6 +875,34 @@ public class SpeedTestViewModel: ObservableObject {
         return digest.prefix(16).map { String(format: "%02x", $0) }.joined()
     }
 
+    /// `--` e `—` são placeholders que o CoreTelephony pode devolver quando
+    /// não expõe a operadora; nunca representam o nome de uma rede.
+    static func liveCellularNetworkLabel(operatorName: String?, technology: String?) -> String {
+        func displayValue(_ raw: String?) -> String? {
+            guard let value = raw?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !value.isEmpty,
+                  value != "--",
+                  value != "—" else {
+                return nil
+            }
+            return value
+        }
+
+        let operatorName = displayValue(operatorName)
+        let technology = displayValue(technology)
+
+        switch (operatorName, technology) {
+        case let (.some(operatorName), .some(technology)):
+            return "\(operatorName) · \(technology)"
+        case let (.some(operatorName), nil):
+            return operatorName
+        case let (nil, .some(technology)):
+            return technology
+        case (nil, nil):
+            return "Rede móvel"
+        }
+    }
+
     // MARK: - Monitoramento em Tempo Real (Idle / Home)
 
     private func startLiveNetworkMonitoring() {
@@ -969,18 +972,10 @@ public class SpeedTestViewModel: ObservableObject {
         } else if kind == .cellular {
             self.liveWiFiContext = nil
             let hints = await ApplePlatformSignalProvider().currentHints()
-            let op = hints.mobile?.operatorName?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let tech = hints.mobile?.technology?.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            if let op, !op.isEmpty, let tech, !tech.isEmpty {
-                self.liveNetworkLabel = "\(op) · \(tech)"
-            } else if let op, !op.isEmpty {
-                self.liveNetworkLabel = op
-            } else if let tech, !tech.isEmpty {
-                self.liveNetworkLabel = tech
-            } else {
-                self.liveNetworkLabel = "Rede móvel"
-            }
+            self.liveNetworkLabel = Self.liveCellularNetworkLabel(
+                operatorName: hints.mobile?.operatorName,
+                technology: hints.mobile?.technology
+            )
         } else if kind == .ethernet {
             self.liveWiFiContext = nil
             self.liveNetworkLabel = "Ethernet"

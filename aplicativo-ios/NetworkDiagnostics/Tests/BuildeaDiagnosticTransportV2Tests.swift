@@ -185,6 +185,7 @@ final class BuildeaDiagnosticTransportV2Tests: XCTestCase {
         XCTAssertEqual(context?["reported_problem"] as? String, "Minha internet cai só quando chove.")
         XCTAssertNil(context?["objective"])
         XCTAssertNil(context?["subcategory"])
+        XCTAssertNil(payload?["historical"])
     }
 }
 
