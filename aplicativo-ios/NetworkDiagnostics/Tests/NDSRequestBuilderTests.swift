@@ -20,7 +20,7 @@ final class NDSRequestBuilderTests: XCTestCase {
         XCTAssertEqual(request.sessionId, measurement.id.uuidString)
         XCTAssertEqual(request.platform, "ios")
         XCTAssertEqual(request.app?.version, "1.0.0")
-        XCTAssertEqual(request.capabilities, ["wifi"])
+        XCTAssertEqual(request.capabilities, ["connection", "wifi", "speed", "quality"])
         XCTAssertEqual(request.requestedOutputs, ["scoring", "ai"])
         XCTAssertEqual(request.connection?.type, "wifi")
         XCTAssertEqual(request.wifi?.rssiDbm, -50)
@@ -163,6 +163,8 @@ final class NDSRequestBuilderTests: XCTestCase {
         XCTAssertFalse(json.contains("AA:BB:CC:DD:EE:FF"))
         XCTAssertFalse(json.contains("derived-ap"))
         XCTAssertFalse(json.contains("advanced-derived-ap"))
+        XCTAssertFalse(json.contains("gateway_ip"))
+        XCTAssertFalse(json.contains("gateway_admin_url"))
     }
 
     func testBuildRequest_forwardsHistoricalEvidenceAsCapability() throws {
@@ -188,7 +190,7 @@ final class NDSRequestBuilderTests: XCTestCase {
             historical: historical
         )
 
-        XCTAssertEqual(request.capabilities, ["historical"])
+        XCTAssertEqual(request.capabilities, ["speed", "quality", "historical"])
         XCTAssertEqual(request.historical, historical)
 
         let encoded = try JSONEncoder().encode(request)

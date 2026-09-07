@@ -43,6 +43,8 @@ public class SpeedTestViewModel: ObservableObject {
     @Published public var networkType: String = ""
     @Published public var testDuration: String = ""
     @Published public var packetLossPercent: Double? = nil
+    @Published public private(set) var hasMeasuredUpload = false
+    @Published public private(set) var hasMeasuredPing = false
     @Published public var uiPhase: SpeedTestUIPhase = .idle
     /// Fato tipado da falha fatal (issue #66) — não-`nil` só quando
     /// `uiPhase == .error`. Mapeamento pra mensagem amigável vive só na UI.
@@ -174,6 +176,8 @@ public class SpeedTestViewModel: ObservableObject {
         let downloadSpeed: Double
         let uploadSpeed: Double
         let ping: Int
+        let hasMeasuredUpload: Bool
+        let hasMeasuredPing: Bool
         let jitter: Double
         let provider: String
         let networkType: String
@@ -188,6 +192,8 @@ public class SpeedTestViewModel: ObservableObject {
             downloadSpeed: Double,
             uploadSpeed: Double,
             ping: Int,
+            hasMeasuredUpload: Bool? = nil,
+            hasMeasuredPing: Bool? = nil,
             jitter: Double,
             provider: String,
             networkType: String,
@@ -201,6 +207,8 @@ public class SpeedTestViewModel: ObservableObject {
             self.downloadSpeed = downloadSpeed
             self.uploadSpeed = uploadSpeed
             self.ping = ping
+            self.hasMeasuredUpload = hasMeasuredUpload ?? (uploadSpeed > 0)
+            self.hasMeasuredPing = hasMeasuredPing ?? (ping > 0)
             self.jitter = jitter
             self.provider = provider
             self.networkType = networkType
@@ -274,6 +282,8 @@ public class SpeedTestViewModel: ObservableObject {
         self.downloadSpeed = measurement.downloadMbps ?? 0.0
         self.uploadSpeed = measurement.uploadMbps ?? 0.0
         self.ping = Int((measurement.latencyMs ?? 0).rounded())
+        self.hasMeasuredUpload = measurement.uploadMbps != nil
+        self.hasMeasuredPing = measurement.latencyMs != nil
         self.jitter = measurement.jitterMs ?? 0.0
         self.provider = measurement.networkIdentifier ?? ""
         if let dur = measurement.durationMs {
@@ -296,6 +306,8 @@ public class SpeedTestViewModel: ObservableObject {
             downloadSpeed: self.downloadSpeed,
             uploadSpeed: self.uploadSpeed,
             ping: self.ping,
+            hasMeasuredUpload: self.hasMeasuredUpload,
+            hasMeasuredPing: self.hasMeasuredPing,
             jitter: self.jitter,
             provider: self.provider,
             networkType: self.networkType,
@@ -421,6 +433,8 @@ public class SpeedTestViewModel: ObservableObject {
                         downloadSpeed: self.downloadSpeed,
                         uploadSpeed: self.uploadSpeed,
                         ping: self.ping,
+                        hasMeasuredUpload: self.hasMeasuredUpload,
+                        hasMeasuredPing: self.hasMeasuredPing,
                         jitter: self.jitter,
                         provider: self.provider,
                         networkType: self.networkType,
@@ -435,8 +449,8 @@ public class SpeedTestViewModel: ObservableObject {
                     let m = NetworkMeasurement(
                         outcome: .complete,
                         downloadMbps: self.downloadSpeed,
-                        uploadMbps: self.uploadSpeed,
-                        latencyMs: Double(self.ping),
+                        uploadMbps: self.hasMeasuredUpload ? self.uploadSpeed : nil,
+                        latencyMs: self.hasMeasuredPing ? Double(self.ping) : nil,
                         jitterMs: self.jitter,
                         packetLossPercent: self.packetLossPercent,
                         loadedLatencyMs: self.loadedLatencyMs,
@@ -549,6 +563,8 @@ public class SpeedTestViewModel: ObservableObject {
         networkType = ""
         testDuration = ""
         packetLossPercent = nil
+        hasMeasuredUpload = false
+        hasMeasuredPing = false
         loadedLatencyMs = nil
         loadedLatencyUploadMs = nil
         dnsResolutionMs = nil
@@ -642,6 +658,8 @@ public class SpeedTestViewModel: ObservableObject {
         downloadSpeed = snapshot.downloadSpeed
         uploadSpeed = snapshot.uploadSpeed
         ping = snapshot.ping
+        hasMeasuredUpload = snapshot.hasMeasuredUpload
+        hasMeasuredPing = snapshot.hasMeasuredPing
         jitter = snapshot.jitter
         provider = snapshot.provider
         networkType = snapshot.networkType
@@ -731,6 +749,8 @@ public class SpeedTestViewModel: ObservableObject {
             downloadSpeed: snapshot.downloadSpeed,
             uploadSpeed: snapshot.uploadSpeed,
             ping: snapshot.ping,
+            hasMeasuredUpload: snapshot.hasMeasuredUpload,
+            hasMeasuredPing: snapshot.hasMeasuredPing,
             jitter: snapshot.jitter,
             provider: snapshot.provider,
             networkType: snapshot.networkType,
@@ -778,10 +798,16 @@ public class SpeedTestViewModel: ObservableObject {
 
     private func update(with state: MeasurementState) {
         self.progress = state.progress
-        if let p = state.ping { self.ping = Int(p) }
+        if let p = state.ping {
+            self.ping = Int(p)
+            self.hasMeasuredPing = true
+        }
         if let j = state.jitter { self.jitter = j }
         if let d = state.downloadSpeed { self.downloadSpeed = d }
-        if let u = state.uploadSpeed { self.uploadSpeed = u }
+        if let u = state.uploadSpeed {
+            self.uploadSpeed = u
+            self.hasMeasuredUpload = true
+        }
         if let prov = state.provider { self.provider = prov }
         if let net = state.networkType { self.networkType = net }
         if let dur = state.duration {

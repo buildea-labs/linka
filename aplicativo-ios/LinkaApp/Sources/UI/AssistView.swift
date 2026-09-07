@@ -170,6 +170,24 @@ struct AssistView: View {
                     .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
+                Button("Tentar novamente") {
+                    Task {
+                        await viewModel.retry(
+                            currentMeasurement: currentMeasurement,
+                            recentMeasurements: recentMeasurements,
+                            usageContext: usageContext,
+                            failureSignal: failureSignal,
+                            objective: objective,
+                            subcategory: subcategory,
+                            reportedProblem: reportedProblem
+                        )
+                    }
+                }
+                .buttonStyle(.linkaPrimary)
+                .padding(.horizontal, 24)
+                Button("Voltar") { closeSheet() }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.brandAccentWarm)
             }
             .frame(maxHeight: .infinity)
         case .success(let data):
@@ -618,7 +636,7 @@ private struct AssistWaitingAnalysisView: View {
                 Text("Analisando sua conexão...")
                     .font(.displayMedium)
                     .foregroundColor(.textPrimary)
-                Text("A inteligência artificial está examinando os dados medidos e a rota de rede.")
+                Text("A inteligência artificial está examinando os dados medidos disponíveis.")
                     .font(.bodyRegular)
                     .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)

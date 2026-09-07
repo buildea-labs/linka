@@ -45,6 +45,14 @@ struct LinkaApp: App {
                     return LinkaSystemActionResponse(action: .getLatestResult, value: resultString)
                 }
                 return LinkaSystemActionResponse(action: .getLatestResult, value: "Você ainda não tem uma medição no Linka.")
+
+            case .openHistory:
+                // Histórico básico é Free; só insights e automações premium
+                // continuam protegidos pela capability de integração Apple.
+                await MainActor.run {
+                    AppIntentCoordinator.shared.requestOpenHistory()
+                }
+                return LinkaSystemActionResponse(action: .openHistory)
                 
             default:
                 let decision = LinkaEntitlementPolicy.decision(
@@ -59,12 +67,7 @@ struct LinkaApp: App {
                     return LinkaSystemActionResponse(action: action)
                 }
                 
-                if action == .openHistory {
-                    await MainActor.run {
-                        AppIntentCoordinator.shared.requestOpenHistory()
-                    }
-                    return LinkaSystemActionResponse(action: .openHistory)
-                } else if action == .openLatestMeasurement {
+                if action == .openLatestMeasurement {
                     await MainActor.run {
                         AppIntentCoordinator.shared.requestOpenLatestMeasurement()
                     }

@@ -686,7 +686,6 @@
 				EBB07AE0AC66329D52CC1475 /* 01-entenda-sua-conexao.png in Resources */,
 				17844AA3F865EC3C43DAD6AA /* 01-home.png in Resources */,
 				0C8ECCB89B1CEA92EEA79277 /* 02-resultado.png in Resources */,
-				8A6275A34C1E4ABEC097590D /* 02-resultado.png in Resources */,
 				A11D357CC4C079407819131E /* 03-contexto.png in Resources */,
 				F845AE6E141A8BCBA2AD0272 /* 04-assist1.png in Resources */,
 				F4045A0A948894F658AD747A /* 05-assist2.png in Resources */,

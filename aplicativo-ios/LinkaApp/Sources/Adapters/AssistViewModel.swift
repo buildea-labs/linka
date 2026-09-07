@@ -125,6 +125,28 @@ final class AssistViewModel: ObservableObject {
         }
     }
 
+    func retry(
+        currentMeasurement: NetworkMeasurement?,
+        recentMeasurements: [NetworkMeasurement] = [],
+        usageContext: String? = nil,
+        failureSignal: NetworkAssistFailureSignal?,
+        objective: String? = nil,
+        subcategory: String? = nil,
+        reportedProblem: String? = nil
+    ) async {
+        guard case .error = state else { return }
+        state = .idle
+        await load(
+            currentMeasurement: currentMeasurement,
+            recentMeasurements: recentMeasurements,
+            usageContext: usageContext,
+            failureSignal: failureSignal,
+            objective: objective,
+            subcategory: subcategory,
+            reportedProblem: reportedProblem
+        )
+    }
+
     /// Monta somente o contexto que a tela realmente possui. Histórico é
     /// limitado ao contrato do Assist, e uma finalidade de uso só passa se
     /// tiver sido informada por uma superfície que a coletou.
