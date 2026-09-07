@@ -1,4 +1,6 @@
-import { Wordmark } from '../ui/components/brand/Wordmark';
+import { useEffect } from 'react';
+import { Header } from '../ui/components/layout/Header';
+import { Footer } from '../ui/components/layout/Footer';
 
 type InfoPage = {
   eyebrow: string;
@@ -17,80 +19,76 @@ type InfoPage = {
 const pages: Record<string, InfoPage> = {
   '/sobre': {
     eyebrow: 'Sobre',
-    title: 'Linka SpeedTest',
-    intro: 'Um app Apple para medir a qualidade da conexao de forma direta.',
+    title: 'Medição direta. Sem distrações.',
+    intro: 'O Linka é um app para iPhone, iPad e Mac focado exclusivamente em entregar o resultado da sua conexão de forma rápida.',
     sections: [
       {
-        title: 'O que o Linka faz',
-        body: 'Mede download, upload, latencia, jitter e perda quando esses dados estao disponiveis.'
+        title: 'Foco absoluto',
+        body: 'Mede a velocidade de download, upload e latência (ping). Sem telas extras, sem enrolação.'
       },
       {
-        title: 'O que o Linka nao faz',
-        body: 'Nao exige conta para medir e nao transforma a medicao em um painel tecnico.'
+        title: 'Sem painéis',
+        body: 'Não exige conta, cadastro ou configuração prévia, e não transforma a medição em um painel cheio de informações inúteis.'
       }
     ]
   },
   '/como-medimos': {
     eyebrow: 'Como medimos',
-    title: 'Medicao real, resultado simples.',
-    intro: 'O teste executa fases de conexao, download e upload e mostra o resultado principal sem pedir configuracao previa.',
+    title: 'Três fases. Um resultado.',
+    intro: 'O teste executa a medição de verdade e mostra o número que importa imediatamente.',
     sections: [
       {
-        title: 'Fases',
-        body: 'Primeiro o app prepara a conexao. Depois mede download e upload. Quando possivel, tambem exibe latencia, jitter, perdas e contexto da rede.'
+        title: 'A Metodologia',
+        body: 'O app determina o servidor ideal, e então mede latência, download e upload em sequência.'
       },
       {
-        title: 'Rede atual',
-        body: 'No iPhone, algumas informacoes de Wi-Fi dependem das permissoes que a Apple exige para expor o nome da rede.'
+        title: 'Integração Apple',
+        body: 'No iPhone, iPad e Mac, a exibição de informações da rede usa as permissões nativas do ecossistema Apple de forma transparente.'
       }
     ]
   },
   '/privacidade': {
     eyebrow: 'Privacidade',
-    title: 'Privacidade do Linka',
-    intro: 'O Linka coleta apenas o necessario para medir e explicar a conexao dentro do app.',
+    title: 'Privacidade levada a sério.',
+    intro: 'Luiz F. Giammattey atua como responsável pelo Linka. O app coleta apenas o essencial para medir sua conexão, seguindo os rigorosos padrões do ecossistema Apple.',
     sections: [
       {
-        title: 'Medicoes',
-        body: 'As medicoes podem incluir velocidade, latencia, horario, tipo de conexao e, quando autorizado, nome da rede Wi-Fi.'
+        title: 'Dados de Medição',
+        body: 'Transferimos apenas dados de teste entre seu aparelho e nossos servidores para calcular a velocidade da sua rede. Não fazemos rastreamento paralelo.'
       },
       {
-        title: 'Wi-Fi',
-        body: 'A permissao de localizacao e usada porque o iPhone exige essa autorizacao para informar o nome da rede Wi-Fi. O Linka nao usa isso para rastrear localizacao.'
-      },
-      {
-        title: 'Compras',
-        body: 'Assinaturas e restauracao de compra sao processadas pela Apple.'
+        title: 'Fale conosco',
+        body: 'Questões sobre privacidade? Nosso canal oficial está sempre aberto.',
+        action: {
+          href: 'mailto:suporte@linka.app?subject=Privacidade%20Linka',
+          label: 'Falar com suporte@linka.app'
+        }
       }
     ]
   },
   '/termos': {
     eyebrow: 'Termos',
-    title: 'Termos de Uso',
-    intro: 'Ao usar o Linka, voce entende que resultados de rede variam conforme horario, local, aparelho, roteador, operadora e servidor disponivel.',
+    title: 'Regras claras. Uso simples.',
+    intro: 'Ao usar o Linka, você entende que resultados de rede variam naturalmente conforme o aparelho, o local, o roteador e a operadora.',
     sections: [
       {
-        title: 'Uso do app',
-        body: 'O Linka oferece medicao e orientacao informativa. Ele nao substitui suporte tecnico da operadora nem garante desempenho minimo contratado.'
-      },
-      {
-        title: 'Assinatura',
-        body: 'O Linka Plus e renovado e cancelado pelos controles oficiais da Apple.'
+        title: 'Natureza do app',
+        body: 'O Linka oferece medição e orientação puramente informativa. Ele não atua como certificação legal de velocidade contratada perante a sua operadora.'
       }
     ]
   },
   '/suporte': {
     eyebrow: 'Suporte',
-    title: 'Suporte Linka',
-    intro: 'Use este canal para duvidas sobre assinatura, privacidade, medicoes ou funcionamento do app.',
+    title: 'Suporte. Direto ao ponto.',
+    intro: 'Precisa de ajuda com o app, resultados das medições ou quer relatar um problema técnico?',
     sections: [
       {
-        title: 'Antes de chamar suporte',
-        body: 'Inclua modelo do aparelho, versao do iOS ou macOS, versao do Linka e uma descricao curta do que aconteceu.'
+        title: 'O que enviar',
+        body: 'Sempre inclua na sua mensagem: modelo do aparelho (iPhone, iPad ou Mac), versão do sistema (iOS, iPadOS ou macOS), versão do Linka e o que aconteceu.'
       },
       {
-        title: 'Canal oficial',
-        body: 'O atendimento oficial do Linka usa o endereco do proprio dominio do produto.',
+        title: 'Como falar',
+        body: 'Use o endereço oficial do nosso domínio.',
         action: {
           href: 'mailto:suporte@linka.app?subject=Suporte%20Linka',
           label: 'Enviar e-mail para suporte@linka.app'
@@ -107,24 +105,36 @@ function infoPageForPath(pathname: string): InfoPage {
 export function InfoScreen({ pathname }: { pathname: string }) {
   const page = infoPageForPath(pathname);
 
+  useEffect(() => {
+    document.title = `${page.title} - Linka Speedtest`;
+    document.querySelector('meta[name="description"]')?.setAttribute('content', page.intro);
+  }, [page]);
+
   return (
-    <div style={{ minHeight: '100vh', fontFamily: 'var(--font-body, sans-serif)', color: 'var(--text-primary, #000)', background: 'var(--surface-page, #f9f9f9)' }}>
-      <header style={{ padding: '22px 24px', maxWidth: 760, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-        <a href="/" aria-label="Linka" style={{ color: 'inherit', textDecoration: 'none' }}>
-          <Wordmark size="md" color={undefined} dotColor={undefined} />
-        </a>
-      </header>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-body, sans-serif)', color: 'var(--text-primary, #000)', background: 'var(--surface-page, #f9f9f9)' }}>
+      <style>{`
+        @keyframes linkaRise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+        .centered-container { max-width: 860px; margin: 0 auto; width: 100%; box-sizing: border-box; padding: 0 24px 120px; text-align: left; }
+        .hero-block { padding: clamp(80px, 15vw, 120px) 0 clamp(40px, 8vw, 60px); text-align: left; }
+        .section-block { padding: clamp(40px, 8vw, 60px) 0 0; text-align: left; }
+      `}</style>
 
-      <main style={{ maxWidth: 760, margin: '0 auto', padding: '48px 24px 96px', boxSizing: 'border-box' }}>
-        <p style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary, #666)', margin: '0 0 16px' }}>{page.eyebrow}</p>
-        <h1 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 'clamp(34px, 6vw, 56px)', lineHeight: 1.05, margin: '0 0 20px' }}>{page.title}</h1>
-        <p style={{ fontSize: 18, lineHeight: 1.6, color: 'var(--text-secondary, #666)', margin: '0 0 48px', maxWidth: 620 }}>{page.intro}</p>
+      <Header />
 
-        <div style={{ display: 'grid', gap: 32 }}>
+      <main className="centered-container">
+        <section className="hero-block">
+          <div style={{ animation: 'linkaRise .8s cubic-bezier(.22,.61,.36,1) both' }}>
+            <p style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-secondary, #666)', margin: '0 0 16px' }}>{page.eyebrow}</p>
+            <h1 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 'clamp(34px, 5.5vw, 56px)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 24px', textWrap: 'pretty' }}>{page.title}</h1>
+            <p style={{ fontSize: '19px', lineHeight: 1.6, color: 'var(--text-secondary, #666)', margin: '0 0 20px', maxWidth: 640, textWrap: 'pretty' }}>{page.intro}</p>
+          </div>
+        </section>
+
+        <div style={{ display: 'grid', gap: '16px', animation: 'linkaRise .8s cubic-bezier(.22,.61,.36,1) both', animationDelay: '100ms' }}>
           {page.sections.map((section) => (
-            <section key={section.title}>
-              <h2 style={{ fontSize: 22, lineHeight: 1.2, margin: '0 0 10px' }}>{section.title}</h2>
-              <p style={{ fontSize: 16, lineHeight: 1.7, color: 'var(--text-secondary, #666)', margin: 0 }}>{section.body}</p>
+            <section key={section.title} className="section-block">
+              <h2 style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 'clamp(24px, 3.4vw, 32px)', fontWeight: 700, letterSpacing: '-0.015em', margin: '0 0 16px', textWrap: 'pretty' }}>{section.title}</h2>
+              <p style={{ fontSize: '16px', lineHeight: 1.6, color: 'var(--text-secondary, #666)', margin: 0, maxWidth: 640 }}>{section.body}</p>
               {section.action ? (
                 <a
                   href={section.action.href}
@@ -132,7 +142,7 @@ export function InfoScreen({ pathname }: { pathname: string }) {
                     display: 'inline-flex',
                     alignItems: 'center',
                     minHeight: 44,
-                    marginTop: 16,
+                    marginTop: 20,
                     color: 'var(--brand-accent, #007aff)',
                     fontSize: 16,
                     fontWeight: 600,
@@ -146,6 +156,8 @@ export function InfoScreen({ pathname }: { pathname: string }) {
           ))}
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }
