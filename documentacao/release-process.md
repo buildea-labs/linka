@@ -1,58 +1,50 @@
-# Processo de Release - Linka
+# Processo de release do Linka
 
-Este documento define o processo operacional para gerar novas versões, builds e releases do aplicativo Linka.
+O build testado, o build enviado e o build que aparece no TestFlight precisam ser o mesmo. Um workflow iniciado, um archive local ou uma tag isolada não contam como entrega.
 
-## 1. Fonte Canônica de Versão
-A versão do aplicativo (Marketing Version e Build Number) está definida no arquivo `ios/aplicativo-ios/project.yml` nas chaves:
-- `MARKETING_VERSION`
-- `CURRENT_PROJECT_VERSION`
+## Fluxo obrigatório
 
-O XcodeGen usa esses valores para gerar os `.xcodeproj` e injetar nos `Info.plist` de todos os targets (App e Widget). O App exibe essa versão na tela de Ajustes no formato: `Versão 1.1.0 (42)`.
+1. A candidata nasce numa PR. Ela altera `aplicativo-ios/project.yml` e `RELEASE_NOTES.md` juntos.
+2. `MARKETING_VERSION` identifica a versão para pessoas. `CURRENT_PROJECT_VERSION` é a identidade única da build e sempre cresce. A CI rejeita uma candidata com build não crescente.
+3. A PR só pode ser mesclada depois de todos os checks verdes. A main roda a mesma CI no commit de merge.
+4. Depois de validar a build candidata no simulador e, quando disponível, no iPhone, Luiz autoriza explicitamente o TestFlight.
+5. Depois da autorização explícita do Luiz nesta conversa, o workflow **Deploy to TestFlight** é disparado manualmente na `main` e recusa qualquer SHA que não seja a ponta atual da main.
+6. A própria workflow testa esse SHA no simulador, consulta a Apple para garantir que o par versão/build ainda não existe, cria o archive e faz o upload.
+7. A workflow espera a Apple processar a build. Só então registra a tag imutável `testflight/v<versao>-b<build>` no mesmo SHA e anexa uma evidência com versão, build, SHA e hash da IPA.
 
-## 2. Padrão de Versionamento
-Adotamos o formato SemVer simplificado: `MAJOR.MINOR.PATCH` (ex: 1.1.0).
-- `MAJOR`: Grandes reformulações ou novas eras do produto.
-- `MINOR`: Novas funcionalidades.
-- `PATCH`: Correções de bugs ou melhorias contínuas.
+## O que cada estado significa
 
-O Build Number (`CURRENT_PROJECT_VERSION`) é um número inteiro sempre crescente (ex: 42, 43, 44). Múltiplas builds podem ter a mesma Marketing Version. **TestFlight** recebe builds para testes, que não são necessariamente releases finais.
+| Estado | Significado |
+| --- | --- |
+| PR verde | Código candidato aprovado, ainda não distribuído. |
+| Merge na main | Código integrado, ainda não enviado à Apple. |
+| Workflow em execução | Upload pode não ter ocorrido. |
+| Evidência anexada e tag `testflight/...` | A Apple processou exatamente a build indicada. |
+| Distribuição externa ou App Store | Gates separados e sempre exigem nova autorização do Luiz. |
 
-## 3. Como Escolher a Próxima Versão e Incrementar Build
-Antes de qualquer release ou envio ao TestFlight:
-1. Abra `ios/aplicativo-ios/project.yml`.
-2. Se for uma nova versão pública, atualize `MARKETING_VERSION`.
-3. Sempre incremente `CURRENT_PROJECT_VERSION` em +1 para qualquer nova build enviada à Apple.
-4. Rode `xcodegen generate` para atualizar o projeto Xcode.
+## Preparar uma candidata
 
-## 4. Como Preparar Notas (CHANGELOG)
-1. Antes de criar a release, atualize o `ios/CHANGELOG.md`.
-2. Adicione uma seção `## [v1.1.0] - AAAA-MM-DD`.
-3. Documente novidades, melhorias e correções (separando notas técnicas de notas para o usuário).
-4. As notas da App Store devem usar linguagem acessível, evitando jargões técnicos.
+Rode `.agents/scripts/release.sh patch`, `minor`, `major` ou uma versão explícita. Ele prepara os valores localmente e não publica nada. Atualize `RELEASE_NOTES.md`, execute a suíte local, abra a PR e espere a CI.
 
-## 5. Como Gerar Build Candidata (TestFlight)
-1. Crie uma PR com as atualizações de versão no `project.yml` e no `CHANGELOG.md`.
-2. Após o merge, faça o build no Xcode (Archive) ou via CI para enviar para o App Store Connect.
-3. TestFlight ≠ Release Pública. Você pode enviar várias builds ao TestFlight incrementando apenas o Build Number e mantendo a Marketing Version.
+## Proteção técnica no GitHub
 
-## 6. Como Promover a Versão e Criar Tag
-Quando uma build for aprovada para envio à App Store (gate final):
-1. Crie uma tag git no formato `vMAJOR.MINOR.PATCH` apontando EXATAMENTE para o commit usado na build aprovada.
-   ```bash
-   git tag v1.1.0
-   git push origin v1.1.0
-   ```
+O gate humano é a autorização explícita do Luiz nesta conversa; não existe aprovação paralela em outra interface.
 
-## 7. Como Criar GitHub Release
-1. Após subir a tag, vá até a aba "Releases" no GitHub.
-2. Crie uma nova release selecionando a tag recém-criada (ex: `v1.1.0`).
-3. O título deve ser "Linka v1.1.0".
-4. Copie as mudanças correspondentes do `CHANGELOG.md`.
+Um ruleset para `testflight/**` bloqueia criação, atualização e exclusão dessas tags para pessoas e libera somente `github-actions[bot]`. Sem essa regra, a tag não é uma prova imutável: alguém com permissão de escrita poderia criá-la antes da Apple ou movê-la depois.
 
-## 8. Hotfix
-Fluxo para correção urgente em produção (ex: atual é 1.2.0):
-1. Incremente o PATCH: `MARKETING_VERSION` vira `1.2.1`.
-2. Incremente o Build Number.
-3. Crie as release notes explicando o hotfix.
-4. Envie a build e aprove internamente (gate mínimo).
-5. Após o deploy na App Store, crie a tag `v1.2.1` e a GitHub Release.
+## Verificação antes de autorizar
+
+Use estes comandos no commit candidato:
+
+```bash
+cd aplicativo-ios
+xcodegen generate
+xcodebuild test -project LinkaApp.xcodeproj -scheme LinkaApp \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -skipMacroValidation CODE_SIGNING_ALLOWED=NO
+xcodebuild build -project LinkaApp.xcodeproj -scheme LinkaApp \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -configuration Release -skipMacroValidation CODE_SIGNING_ALLOWED=NO
+```
+
+O iPhone é a confirmação adicional da jornada real. Se ele não estiver conectado, isso precisa ser registrado como ausência de teste físico, nunca apresentado como se tivesse acontecido.
