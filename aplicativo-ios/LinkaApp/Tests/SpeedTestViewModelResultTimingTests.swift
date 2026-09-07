@@ -22,6 +22,21 @@ import LinkaEntitlements
 @MainActor
 final class SpeedTestViewModelResultTimingTests: XCTestCase {
 
+    func test_liveCellularNetworkLabel_ignoresSystemCarrierPlaceholder() {
+        XCTAssertEqual(
+            SpeedTestViewModel.liveCellularNetworkLabel(operatorName: "--", technology: "5G"),
+            "5G"
+        )
+        XCTAssertEqual(
+            SpeedTestViewModel.liveCellularNetworkLabel(operatorName: "Vivo", technology: "5G"),
+            "Vivo · 5G"
+        )
+        XCTAssertEqual(
+            SpeedTestViewModel.liveCellularNetworkLabel(operatorName: "—", technology: nil),
+            "Rede móvel"
+        )
+    }
+
     func test_advancedWiFiInboxValidatesAndDerivesOnlyLocalAccessPointIdentifier() throws {
         let suite = "linka-issue-134-\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: suite) else { return XCTFail("suite de teste indisponível") }

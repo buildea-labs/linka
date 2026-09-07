@@ -39,8 +39,6 @@ struct HistoryView: View {
     @State private var measurements: [NetworkMeasurement] = []
     @State private var isLoading = true
     @State private var hasPlus = false
-    @State private var showAssist = false
-    @State private var assistMeasurement: NetworkMeasurement?
     @State private var showPurchase = false
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .historyInsights
     @State private var insightText: String?
@@ -149,20 +147,6 @@ struct HistoryView: View {
                                     }
                                     .buttonStyle(.plain)
 
-                                    Button {
-                                        assistMeasurement = measurement
-                                        if hasPlus {
-                                            showAssist = true
-                                        } else {
-                                            purchaseEntryPoint = .assist
-                                            showPurchase = true
-                                        }
-                                    } label: {
-                                        Image(systemName: "sparkles")
-                                            .foregroundColor(.brandAccentWarm)
-                                            .frame(minWidth: 44, minHeight: 44)
-                                    }
-                                    .accessibilityLabel("Analisar esta medição no Assist")
                                 }
                             }
                         }
@@ -175,13 +159,6 @@ struct HistoryView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
-        .sheet(isPresented: $showAssist) {
-            AssistProblemSelectionView(
-                currentMeasurement: assistMeasurement,
-                recentMeasurements: Array(measurements.filter { $0.id != assistMeasurement?.id }.prefix(20)),
-                entitlements: entitlements
-            )
-        }
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet(entryPoint: purchaseEntryPoint) {
                 loadData()

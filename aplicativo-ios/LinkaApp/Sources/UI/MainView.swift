@@ -33,7 +33,12 @@ struct MainView: View {
     @State private var showMoreMetrics: Bool = false
     @State private var showPurchase: Bool = false
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
-    @State private var showAssist: Bool = false
+    @State private var showAssistProblemSelection: Bool = false
+    @State private var showAssistResult: Bool = false
+    @State private var pendingAssistMeasurement = false
+    @State private var pendingAssistObjective: String?
+    @State private var pendingAssistSubcategory: String?
+    @State private var pendingAssistReportedProblem: String?
     @State private var showShareSheet: Bool = false
     @State private var showDetails: Bool = false
     @State private var showUsage: Bool = false
@@ -70,13 +75,6 @@ struct MainView: View {
         )
     }
 
-    private var measurementForAssist: NetworkMeasurement? {
-        if viewModel.uiPhase == .done {
-            return currentMeasurement
-        }
-        return viewModel.latestFinishedMeasurement ?? viewModel.recentMeasurements.first
-    }
-
     private var isPlusActive: Bool {
         LinkaEntitlementPolicy.decision(
             for: .assist,
@@ -102,11 +100,6 @@ struct MainView: View {
     private var usageSuitabilityReport: UsageSuitabilityReport? {
         guard let currentMeasurement else { return nil }
         return UsageSuitabilityEvaluator().evaluate(currentMeasurement)
-    }
-
-    private var usageContextForAssist: String? {
-        guard let usageSuitabilityReport else { return nil }
-        return UsageDiagnosticsAssistBridge.assistSummary(for: usageSuitabilityReport)
     }
 
     private var usageQualityLevel: UsageQualityLevel? {
@@ -235,15 +228,28 @@ struct MainView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showAssist) {
+            .sheet(isPresented: $showAssistProblemSelection) {
                 AssistProblemSelectionView(
-                    currentMeasurement: measurementForAssist,
-                    recentMeasurements: viewModel.recentMeasurements,
-                    usageContext: usageContextForAssist,
-                    onRetry: {
-                        showAssist = false
-                        viewModel.startTest()
+                    currentMeasurement: nil,
+                    recentMeasurements: [],
+                    onStartFreshMeasurement: { objective, subcategory, reportedProblem in
+                        startAssistMeasurement(
+                            objective: objective,
+                            subcategory: subcategory,
+                            reportedProblem: reportedProblem
+                        )
                     },
+                    entitlements: entitlements
+                )
+            }
+            .sheet(isPresented: $showAssistResult) {
+                AssistView(
+                    currentMeasurement: currentMeasurement,
+                    recentMeasurements: [],
+                    objective: pendingAssistObjective,
+                    subcategory: pendingAssistSubcategory,
+                    reportedProblem: pendingAssistReportedProblem,
+                    onRetry: { retryAssistMeasurement() },
                     onShowDetails: { showDetails = true },
                     entitlements: entitlements
                 )
@@ -252,6 +258,11 @@ struct MainView: View {
             guard pending else { return }
             viewModel.startTest()
             intentCoordinator.consumeStartSpeedTestRequest()
+        }
+        .onChange(of: viewModel.uiPhase) { phase in
+            guard phase == .done, pendingAssistMeasurement else { return }
+            pendingAssistMeasurement = false
+            showAssistResult = true
         }
         .onChange(of: intentCoordinator.pendingAdvancedWiFiDiagnosticsImport) { pending in
             guard pending else { return }
@@ -283,7 +294,7 @@ struct MainView: View {
         }
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet(entryPoint: purchaseEntryPoint) {
-                if purchaseEntryPoint == .assist { showAssist = true }
+                if purchaseEntryPoint == .assist { showAssistProblemSelection = true }
             }
             .environmentObject(entitlements)
         }
@@ -423,7 +434,7 @@ struct MainView: View {
                         Button(action: {
                             startSpeedTest()
                         }) {
-                            Text("Analisar rede")
+                            Text("Testar velocidade")
                                 .multilineTextAlignment(.center)
                         }
                         .buttonStyle(.linkaPrimary)
@@ -460,7 +471,7 @@ struct MainView: View {
                         // Card Assist
                         Button {
                             if isPlusActive {
-                                showAssist = true
+                                showAssistProblemSelection = true
                             } else {
                                 purchaseEntryPoint = .assist
                                 showPurchase = true
@@ -471,7 +482,7 @@ struct MainView: View {
                                     .font(.monoCaption)
                                     .textCase(.uppercase)
                                     .foregroundColor(.brandAccentWarm)
-                                Text(usageContextForAssist ?? "Problemas na sua conexão? Entenda o que está acontecendo.")
+                                Text("Analisar minha conexão agora")
                                     .font(.captionSmall)
                                     .foregroundColor(.textPrimary)
                                     .multilineTextAlignment(.leading)
@@ -525,7 +536,7 @@ struct MainView: View {
             Button(action: {
                 viewModel.skipOrCancel()
             }) {
-                Text(viewModel.hasValidResult ? "Cancelar" : "Pular")
+                Text("Cancelar")
                     .font(.bodySmall)
                     .foregroundColor(.textSecondary)
                     .frame(minWidth: 44, minHeight: 44)
@@ -609,7 +620,7 @@ struct MainView: View {
                 // 4. CTA para o Assist: "Problemas com sua conexão?"
                 Button {
                     if isPlusActive {
-                        showAssist = true
+                        showAssistProblemSelection = true
                     } else {
                         purchaseEntryPoint = .assist
                         showPurchase = true
@@ -617,10 +628,10 @@ struct MainView: View {
                 } label: {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Problemas com sua conexão?")
+                            Text("Analisar minha conexão agora")
                                 .font(.bodyRegularStrong)
                                 .foregroundColor(.textPrimary)
-                            Text("Consulte o Assist para um diagnóstico detalhado.")
+                            Text("Vamos medir agora e investigar o que está acontecendo.")
                                 .font(.captionSmall)
                                 .foregroundColor(.textSecondary)
                         }
@@ -961,6 +972,24 @@ struct MainView: View {
         withAnimation {
             viewModel.startTest()
         }
+    }
+
+    private func startAssistMeasurement(
+        objective: String?,
+        subcategory: String?,
+        reportedProblem: String?
+    ) {
+        pendingAssistObjective = objective
+        pendingAssistSubcategory = subcategory
+        pendingAssistReportedProblem = reportedProblem
+        pendingAssistMeasurement = true
+        startSpeedTest()
+    }
+
+    private func retryAssistMeasurement() {
+        showAssistResult = false
+        pendingAssistMeasurement = true
+        startSpeedTest()
     }
 
     private func triggerWiFiAdvancedShortcut() {

@@ -104,6 +104,9 @@ struct AssistProblemSelectionView: View {
     let usageContext: String?
     let onRetry: (() -> Void)?
     let onShowDetails: (() -> Void)?
+    /// Quando presente, esta tela apenas coleta o sintoma e devolve o
+    /// controle para a Home iniciar uma medição nova antes do Assist.
+    let onStartFreshMeasurement: ((String?, String?, String?) -> Void)?
     let entitlements: StoreKitEntitlementProvider?
 
     @State private var reportedProblemText: String = ""
@@ -120,6 +123,7 @@ struct AssistProblemSelectionView: View {
         usageContext: String? = nil,
         onRetry: (() -> Void)? = nil,
         onShowDetails: (() -> Void)? = nil,
+        onStartFreshMeasurement: ((String?, String?, String?) -> Void)? = nil,
         entitlements: StoreKitEntitlementProvider? = nil
     ) {
         self.currentMeasurement = currentMeasurement
@@ -127,6 +131,7 @@ struct AssistProblemSelectionView: View {
         self.usageContext = usageContext
         self.onRetry = onRetry
         self.onShowDetails = onShowDetails
+        self.onStartFreshMeasurement = onStartFreshMeasurement
         self.entitlements = entitlements
     }
 
@@ -259,6 +264,11 @@ struct AssistProblemSelectionView: View {
     }
 
     private func presentAssist(objective: String?, subcategory: String?, reportedProblem: String?) {
+        if let onStartFreshMeasurement {
+            onStartFreshMeasurement(objective, subcategory, reportedProblem)
+            dismissSheet()
+            return
+        }
         assistObjective = objective
         assistSubcategory = subcategory
         assistReportedProblem = reportedProblem

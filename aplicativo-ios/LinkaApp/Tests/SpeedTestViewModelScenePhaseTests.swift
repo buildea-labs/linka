@@ -36,6 +36,21 @@ final class SpeedTestViewModelScenePhaseTests: XCTestCase {
         )
     }
 
+    func test_cancelDuringRetest_returnsToHomeInsteadOfRestoringResult() {
+        let viewModel = SpeedTestViewModel()
+        viewModel.lastValidResultSnapshot = makeSnapshot(downloadSpeed: 87.3)
+        viewModel.uiPhase = .downloading
+        viewModel.isTesting = true
+        viewModel.downloadSpeed = 4.2
+        viewModel.progress = 0.4
+
+        viewModel.skipOrCancel()
+
+        XCTAssertEqual(viewModel.uiPhase, .idle)
+        XCTAssertFalse(viewModel.isTesting)
+        XCTAssertEqual(viewModel.progress, 0)
+    }
+
     // MARK: - .background durante medição em andamento, SEM snapshot válido
 
     func test_background_duringDownload_withoutSnapshot_goesIdle() {

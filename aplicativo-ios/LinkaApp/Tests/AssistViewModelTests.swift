@@ -5,7 +5,7 @@ import NetworkCore
 
 @MainActor
 final class AssistViewModelTests: XCTestCase {
-    func test_makeContext_usesCurrentAndRecentMeasurementsAsEvidence() {
+    func test_makeContext_usesOnlyTheCurrentMeasurementAsEvidence() {
         let current = measurement(id: UUID())
         let recent = [measurement(id: UUID()), measurement(id: UUID())]
 
@@ -16,19 +16,17 @@ final class AssistViewModelTests: XCTestCase {
 
         XCTAssertEqual(context.question, "Interprete esta medição com os dados disponíveis.")
         XCTAssertEqual(context.currentMeasurement.id, current.id)
-        XCTAssertEqual(context.recentMeasurements.map(\.id), recent.map(\.id))
+        XCTAssertTrue(context.recentMeasurements.isEmpty)
         XCTAssertNil(context.usageContext)
         XCTAssertEqual(
             context.evidence.map(\.id),
             [
-                NetworkAssistRequest.currentMeasurementEvidenceID(current.id),
-                NetworkAssistRequest.recentMeasurementEvidenceID(recent[0].id),
-                NetworkAssistRequest.recentMeasurementEvidenceID(recent[1].id)
+                NetworkAssistRequest.currentMeasurementEvidenceID(current.id)
             ]
         )
     }
 
-    func test_makeContext_doesNotInferUsageContext_andLimitsHistory() {
+    func test_makeContext_doesNotInferUsageContextOrUseHistory() {
         let current = measurement(id: UUID())
         let recent = (0..<25).map { _ in measurement(id: UUID()) }
 
@@ -38,7 +36,7 @@ final class AssistViewModelTests: XCTestCase {
             usageContext: nil
         )
 
-        XCTAssertEqual(context.recentMeasurements.count, 20)
+        XCTAssertTrue(context.recentMeasurements.isEmpty)
         XCTAssertNil(context.usageContext)
     }
 

@@ -277,45 +277,6 @@ final class NDSContractTests: XCTestCase {
         XCTAssertEqual(calledURL, URL(string: "https://example.com/v2/diagnostics/evaluate")!)
     }
 
-    func testTransportSummarizesRecentMeasurementsForNDS() {
-        let reference = Date(timeIntervalSince1970: 1_000_000)
-        let current = NetworkMeasurement(
-            measuredAt: reference,
-            outcome: .complete,
-            downloadMbps: 100,
-            uploadMbps: 40,
-            latencyMs: 20
-        )
-        let recent = [
-            NetworkMeasurement(
-                measuredAt: reference.addingTimeInterval(-86_400),
-                outcome: .complete,
-                downloadMbps: 200,
-                uploadMbps: 60,
-                latencyMs: 30
-            ),
-            NetworkMeasurement(
-                measuredAt: reference.addingTimeInterval(-40 * 86_400),
-                outcome: .complete,
-                downloadMbps: 999,
-                uploadMbps: 999,
-                latencyMs: 999
-            )
-        ]
-
-        let historical = BuildeaDiagnosticTransport.historicalSnapshot(
-            current: current,
-            recent: recent,
-            referenceDate: reference,
-            lookbackDays: 30
-        )
-
-        XCTAssertEqual(historical?.tests30d, 2)
-        XCTAssertEqual(historical?.tests7d, 2)
-        XCTAssertEqual(historical?.avgDownload30d, 150)
-        XCTAssertEqual(historical?.avgDownload7d, 150)
-        XCTAssertEqual(historical?.avgPing30d, 25)
-    }
 }
 
 private struct StubDiagnosticHTTPClient: DiagnosticHTTPClient {
