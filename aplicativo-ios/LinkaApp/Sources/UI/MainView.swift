@@ -13,6 +13,16 @@ enum AppRoute: Hashable {
     case measurementDetail(NetworkMeasurement)
 }
 
+private enum AssistEntryPoint {
+    case fresh
+    case result(NetworkMeasurement)
+
+    var measurement: NetworkMeasurement? {
+        guard case .result(let measurement) = self else { return nil }
+        return measurement
+    }
+}
+
 struct MainView: View {
     private var mainTitle: String {
         switch viewModel.uiPhase {
@@ -24,6 +34,7 @@ struct MainView: View {
             return "Velocidade"
         }
     }
+
     @StateObject private var viewModel = SpeedTestViewModel()
     @StateObject private var healthCheck = LinkaHealthCheck()
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
@@ -35,7 +46,10 @@ struct MainView: View {
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
     @State private var showAssistProblemSelection: Bool = false
     @State private var showAssistResult: Bool = false
+    @State private var assistEntryPoint: AssistEntryPoint = .fresh
     @State private var pendingAssistMeasurement = false
+    @State private var pendingAdvancedWiFiMeasurement = false
+    @State private var showAdvancedWiFiRecovery = false
     @State private var pendingAssistObjective: String?
     @State private var pendingAssistSubcategory: String?
     @State private var pendingAssistReportedProblem: String?
@@ -58,22 +72,29 @@ struct MainView: View {
 
     private var currentMeasurement: NetworkMeasurement? {
         guard viewModel.uiPhase == .done else { return nil }
-        return NetworkMeasurement(
-            outcome: .complete,
-            downloadMbps: viewModel.downloadSpeed > 0 ? viewModel.downloadSpeed : nil,
-            uploadMbps: viewModel.hasMeasuredUpload ? viewModel.uploadSpeed : nil,
-            latencyMs: viewModel.hasMeasuredPing ? Double(viewModel.ping) : nil,
-            jitterMs: viewModel.jitter,
-            packetLossPercent: viewModel.packetLossPercent,
-            loadedLatencyMs: viewModel.loadedLatencyMs,
-            loadedLatencyUploadMs: viewModel.loadedLatencyUploadMs,
-            dnsResolutionMs: viewModel.dnsResolutionMs,
-            connectionKind: viewModel.connectionKind,
-            wifiBandGHz: viewModel.wifiBandGHz,
-            wifiContext: viewModel.wifiContext,
-            advancedWiFiDiagnostics: viewModel.advancedWiFiDiagnostics,
-            networkIdentifier: viewModel.provider.isEmpty ? nil : viewModel.provider
-        )
+        // A medição exibida, compartilhada e enviada ao Assist precisa ser a
+        // mesma instância que o ViewModel acabou de persistir. Reconstruí-la
+        // aqui gerava um UUID novo em cada redraw e fazia o Assist analisar a
+        // mesma coleta mais de uma vez.
+        return viewModel.latestFinishedMeasurement
+    }
+
+    /// O CTA do resultado trabalha estritamente com a amostra daquele
+    /// resultado. Já o Assist iniciado pela Home (ou outra entrada fresca)
+    /// não pode receber a última medição enquanto sua própria coleta ainda
+    /// acontece — mesmo que a tela principal ainda esteja mostrando um
+    /// resultado anterior por baixo do sheet.
+    private var assistMeasurement: NetworkMeasurement? {
+        switch assistEntryPoint {
+        case .result(let measurement):
+            return measurement
+        case .fresh:
+            return pendingAssistMeasurement ? nil : currentMeasurement
+        }
+    }
+
+    private var latestMeasurementForIntent: NetworkMeasurement? {
+        viewModel.latestFinishedMeasurement ?? viewModel.recentMeasurements.first
     }
 
     private var isPlusActive: Bool {
@@ -155,35 +176,11 @@ struct MainView: View {
             ZStack {
                 Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    if viewModel.uiPhase == .error {
-                        errorView
-                    } else if viewModel.uiPhase == .connectionChanged {
-                        connectionChangedView
-                    } else if viewModel.uiPhase == .idle {
-                        idleView
-                    } else if viewModel.uiPhase == .connecting || viewModel.uiPhase == .downloading || viewModel.uiPhase == .uploading {
-                        measuringView
-                    } else {
-                        resultView
-                    }
-                }
+                activeMeasurementView
             }
             .navigationTitle(mainTitle)
             .navigationDestination(for: AppRoute.self) { route in
-                switch route {
-                case .settings:
-                    SettingsView()
-                        .environmentObject(entitlements)
-                case .history:
-                    HistoryView(onSelectMeasurement: { measurement in
-                        navPath.append(AppRoute.measurementDetail(measurement))
-                    })
-                    .environmentObject(entitlements)
-                case .measurementDetail(let measurement):
-                    HistoricalMeasurementDetailView(measurement: measurement)
-                        .environmentObject(entitlements)
-                }
+                destinationView(for: route)
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -229,24 +226,24 @@ struct MainView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showAssistProblemSelection) {
+            .sheet(
+                isPresented: $showAssistProblemSelection,
+                onDismiss: beginPendingAssistCollection
+            ) {
                 AssistProblemSelectionView(
-                    currentMeasurement: nil,
+                    currentMeasurement: assistEntryPoint.measurement,
                     recentMeasurements: [],
                     onStartFreshMeasurement: { objective, subcategory, reportedProblem in
-                        startAssistMeasurement(
-                            objective: objective,
-                            subcategory: subcategory,
-                            reportedProblem: reportedProblem
-                        )
+                        startAssistMeasurement(objective: objective, subcategory: subcategory, reportedProblem: reportedProblem)
                     },
                     entitlements: entitlements
                 )
             }
             .sheet(isPresented: $showAssistResult) {
                 AssistView(
-                    currentMeasurement: currentMeasurement,
+                    currentMeasurement: assistMeasurement,
                     recentMeasurements: [],
+                    isCollectingMeasurement: pendingAssistMeasurement,
                     objective: pendingAssistObjective,
                     subcategory: pendingAssistSubcategory,
                     reportedProblem: pendingAssistReportedProblem,
@@ -261,14 +258,15 @@ struct MainView: View {
             intentCoordinator.consumeStartSpeedTestRequest()
         }
         .onChange(of: viewModel.uiPhase) { phase in
-            guard phase == .done, pendingAssistMeasurement else { return }
-            pendingAssistMeasurement = false
-            showAssistResult = true
+            handleAssistMeasurementCompletion(phase)
         }
         .onChange(of: intentCoordinator.pendingAdvancedWiFiDiagnosticsImport) { pending in
             guard pending else { return }
             viewModel.consumePendingAdvancedWiFiDiagnostics()
             intentCoordinator.consumeAdvancedWiFiDiagnosticsImport()
+            guard pendingAdvancedWiFiMeasurement else { return }
+            pendingAdvancedWiFiMeasurement = false
+            beginSpeedTest()
         }
         .onChange(of: intentCoordinator.pendingPurchasePrompt) { pending in
             guard pending else { return }
@@ -277,21 +275,10 @@ struct MainView: View {
             intentCoordinator.consumePurchasePrompt()
         }
         .onChange(of: intentCoordinator.pendingOpenHistory) { pending in
-            guard pending else { return }
-            navPath.append(AppRoute.history)
-            intentCoordinator.consumeOpenHistory()
+            handleOpenHistoryRequest(pending)
         }
         .onChange(of: intentCoordinator.pendingOpenLatestMeasurement) { pending in
-            guard pending else { return }
-            if isPlusActive {
-                if let latest = viewModel.latestFinishedMeasurement ?? viewModel.recentMeasurements.first {
-                    navPath.append(AppRoute.measurementDetail(latest))
-                }
-            } else {
-                purchaseEntryPoint = .shortcut
-                showPurchase = true
-            }
-            intentCoordinator.consumeOpenLatestMeasurement()
+            handleOpenLatestMeasurementRequest(pending)
         }
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet(entryPoint: purchaseEntryPoint) {
@@ -301,6 +288,13 @@ struct MainView: View {
         }
         .sheet(isPresented: $showConnectivityTriage) {
             ConnectivityTriageView(onRetry: { viewModel.startTest() })
+        }
+        .confirmationDialog("Não recebemos os dados do Wi-Fi", isPresented: $showAdvancedWiFiRecovery, titleVisibility: .visible) {
+            Button("Tentar novamente") { startSpeedTest() }
+            Button("Medir sem dados avançados") { beginSpeedTest() }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("O atalho pode ter sido cancelado ou precisa ser configurado no Atalhos.")
         }
         .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
         .onChange(of: showShareSheet) { isPresented in
@@ -351,51 +345,87 @@ struct MainView: View {
         .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: scenePhase) { newPhase in
             viewModel.handleScenePhaseChange(newPhase)
-            if newPhase == .active {
-                healthCheck.start()
-            } else if newPhase == .background {
-                healthCheck.stop()
-            }
-        }
-        .onChange(of: viewModel.uiPhase) { newPhase in
-            if newPhase != .error {
-                showConnectivityTriage = false
-            }
             switch newPhase {
-            case .uploading:
-                #if canImport(UIKit)
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                #endif
-                if !reduceMotion {
-                    withAnimation(LinkaMotion.pulse) {
-                        ringScale = 1.05
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        withAnimation(LinkaMotion.pulse) {
-                            ringScale = 1.0
-                        }
-                    }
-                }
-            case .downloading, .done:
-                #if canImport(UIKit)
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                #endif
-            default:
+            case .active:
+                healthCheck.start()
+                recoverAdvancedWiFiMeasurementIfNeeded()
+            case .background:
+                healthCheck.stop()
+            case .inactive:
                 break
             }
-
-            if newPhase == .done, !isPlusActive, !ExpertModeMigrationBannerState.hasBeenSeen() {
-                showExpertModeMigrationBanner = true
-            }
-
-            if newPhase == .done,
-               let category = connectionPathReport?.category,
-               category != .healthy {
-                #if canImport(UIKit)
-                UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                #endif
-            }
         }
+        .onChange(of: viewModel.uiPhase) { handleUIPhaseChange($0) }
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var activeMeasurementView: AnyView {
+        switch viewModel.uiPhase {
+        case .error:
+            return AnyView(errorView)
+        case .connectionChanged:
+            return AnyView(connectionChangedView)
+        case .idle:
+            return AnyView(idleView)
+        case .connecting, .downloading, .uploading:
+            return AnyView(measuringView)
+        case .done:
+            return AnyView(resultView)
+        }
+    }
+
+    private func destinationView(for route: AppRoute) -> AnyView {
+        switch route {
+        case .settings:
+            return AnyView(SettingsView().environmentObject(entitlements))
+        case .history:
+            return AnyView(
+                HistoryView(onSelectMeasurement: selectHistoricalMeasurement)
+                    .environmentObject(entitlements)
+            )
+        case .measurementDetail(let measurement):
+            return AnyView(
+                HistoricalMeasurementDetailView(
+                    measurement: measurement,
+                    onStartNewMeasurementWithAdvancedWiFi: startNewMeasurementFromHistory
+                )
+                .environmentObject(entitlements)
+            )
+        }
+    }
+
+    private func handleUIPhaseChange(_ newPhase: SpeedTestUIPhase) {
+        if case .error = newPhase {
+        } else {
+            showConnectivityTriage = false
+        }
+        switch newPhase {
+        case .uploading:
+            #if canImport(UIKit)
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            #endif
+            guard !reduceMotion else { return }
+            withAnimation(LinkaMotion.pulse) { ringScale = 1.05 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                withAnimation(LinkaMotion.pulse) { ringScale = 1.0 }
+            }
+        case .downloading, .done:
+            #if canImport(UIKit)
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
+        default:
+            break
+        }
+        guard newPhase == .done else { return }
+        if !isPlusActive, !ExpertModeMigrationBannerState.hasBeenSeen() {
+            showExpertModeMigrationBanner = true
+        }
+        if let category = connectionPathReport?.category, category != .healthy {
+            #if canImport(UIKit)
+            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            #endif
         }
     }
 
@@ -412,6 +442,7 @@ struct MainView: View {
                 || showConnectionPath
                 || showConnectivityTriage
                 || showExpertModeMigrationBanner
+                || showAdvancedWiFiRecovery
         )
     }
 
@@ -435,7 +466,6 @@ struct MainView: View {
                 hasInteractedWithCurrentResult: true,
                 appVersion: version
             ) else { return }
-
             policy.recordAutomaticRequest(appVersion: version)
             requestReview()
         }
@@ -519,12 +549,7 @@ struct MainView: View {
 
                         // Card Assist
                         Button {
-                            if isPlusActive {
-                                showAssistProblemSelection = true
-                            } else {
-                                purchaseEntryPoint = .assist
-                                showPurchase = true
-                            }
+                            requestAssist(from: .fresh)
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Assist ✦")
@@ -669,19 +694,14 @@ struct MainView: View {
 
                 // 4. CTA para o Assist: "Problemas com sua conexão?"
                 Button {
-                    if isPlusActive {
-                        showAssistProblemSelection = true
-                    } else {
-                        purchaseEntryPoint = .assist
-                        showPurchase = true
-                    }
+                    requestAssistFromResult()
                 } label: {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Analisar minha conexão agora")
                                 .font(.bodyRegularStrong)
                                 .foregroundColor(.textPrimary)
-                            Text("Vamos medir agora e investigar o que está acontecendo.")
+                            Text("Vamos analisar os dados desta medição.")
                                 .font(.captionSmall)
                                 .foregroundColor(.textSecondary)
                         }
@@ -1016,12 +1036,22 @@ struct MainView: View {
     }
 
     private func startSpeedTest() {
-        if viewModel.liveConnectionKind == .wifi, advancedWiFiConfigured, advancedWiFiEnabled {
-            triggerWiFiAdvancedShortcut()
+        let advancedWiFiAllowed = LinkaEntitlementPolicy.decision(
+            for: .advancedWiFiDiagnostics,
+            snapshot: entitlements.snapshot,
+            at: Date()
+        ).isGranted
+        if viewModel.liveConnectionKind == .wifi,
+           advancedWiFiConfigured,
+           advancedWiFiEnabled,
+           advancedWiFiAllowed {
+            pendingAdvancedWiFiMeasurement = true
+            if triggerWiFiAdvancedShortcut() {
+                return
+            }
+            pendingAdvancedWiFiMeasurement = false
         }
-        withAnimation {
-            viewModel.startTest()
-        }
+        beginSpeedTest()
     }
 
     private func startAssistMeasurement(
@@ -1033,21 +1063,103 @@ struct MainView: View {
         pendingAssistSubcategory = subcategory
         pendingAssistReportedProblem = reportedProblem
         pendingAssistMeasurement = true
+        // A coleta só começa depois que o seletor fechar e o sheet do Assist
+        // já estiver visível. Assim o Speed Test nunca toma a tela.
+    }
+
+    private func requestAssist(from entryPoint: AssistEntryPoint) {
+        assistEntryPoint = entryPoint
+        if isPlusActive {
+            showAssistProblemSelection = true
+        } else {
+            purchaseEntryPoint = .assist
+            showPurchase = true
+        }
+    }
+
+    /// O CTA da tela de resultado nunca pode cair no caminho de coleta nova.
+    /// A ausência de uma amostra é uma inconsistência de estado, não uma
+    /// autorização para reiniciar o Speed Test.
+    private func requestAssistFromResult() {
+        guard let measurement = currentMeasurement else { return }
+        requestAssist(from: .result(measurement))
+    }
+
+    private func selectHistoricalMeasurement(_ measurement: NetworkMeasurement) {
+        navPath.append(AppRoute.measurementDetail(measurement))
+    }
+
+    private func startNewMeasurementFromHistory() {
+        navPath = NavigationPath()
         startSpeedTest()
     }
 
+    private func handleOpenHistoryRequest(_ pending: Bool) {
+        guard pending else { return }
+        navPath.append(AppRoute.history)
+        intentCoordinator.consumeOpenHistory()
+    }
+
+    private func handleAssistMeasurementCompletion(_ phase: SpeedTestUIPhase) {
+        guard phase == .done, pendingAssistMeasurement else { return }
+        pendingAssistMeasurement = false
+        showAssistResult = true
+    }
+
+    private func handleOpenLatestMeasurementRequest(_ pending: Bool) {
+        guard pending else { return }
+        if isPlusActive, let latest = latestMeasurementForIntent {
+            navPath.append(AppRoute.measurementDetail(latest))
+        } else if !isPlusActive {
+            purchaseEntryPoint = .shortcut
+            showPurchase = true
+        }
+        intentCoordinator.consumeOpenLatestMeasurement()
+    }
+
     private func retryAssistMeasurement() {
-        showAssistResult = false
         pendingAssistMeasurement = true
         startSpeedTest()
     }
 
-    private func triggerWiFiAdvancedShortcut() {
+    private func beginPendingAssistCollection() {
+        guard pendingAssistMeasurement, !showAssistResult else { return }
+        showAssistResult = true
+
+        // Dá ao sheet do Assist a primeira apresentação antes de iniciar a
+        // coleta. O teste segue ativo por trás dele, inclusive no retorno do
+        // Atalho Wi-Fi avançado.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            guard pendingAssistMeasurement else { return }
+            startSpeedTest()
+        }
+    }
+
+    private func triggerWiFiAdvancedShortcut() -> Bool {
         #if canImport(UIKit)
         if UIApplication.shared.canOpenURL(LinkaAdvancedWiFiIntegration.runShortcutURL) {
             UIApplication.shared.open(LinkaAdvancedWiFiIntegration.runShortcutURL, options: [:], completionHandler: nil)
+            return true
         }
         #endif
+        return false
+    }
+
+    private func beginSpeedTest() {
+        withAnimation {
+            viewModel.startTest()
+        }
+    }
+
+    private func recoverAdvancedWiFiMeasurementIfNeeded() {
+        guard pendingAdvancedWiFiMeasurement else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1))
+            guard pendingAdvancedWiFiMeasurement,
+                  !intentCoordinator.pendingAdvancedWiFiDiagnosticsImport else { return }
+            pendingAdvancedWiFiMeasurement = false
+            showAdvancedWiFiRecovery = true
+        }
     }
 }
 

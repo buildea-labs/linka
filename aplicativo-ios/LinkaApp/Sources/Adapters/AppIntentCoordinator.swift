@@ -315,6 +315,27 @@ enum AdvancedWiFiDiagnosticsInbox {
 // parâmetro padrão suportado por App Intents e mantém a composição dentro do
 // app Atalhos; não há API privada, serviço intermediário ou segredo na URL.
 #if os(iOS)
+private enum ShortcutEntitlementSnapshot {
+    static func current() async -> LinkaEntitlementSnapshot {
+        #if DEBUG
+        // O App Intent roda fora da árvore SwiftUI e, por isso, não recebe o
+        // provider usado pela tela de Ajustes. Mantém o override de teste
+        // alinhado ao app sem expô-lo em builds de distribuição.
+        let forcePlusKey = await StoreKitEntitlementProvider.forcePlusKey
+        if UserDefaults.standard.bool(forKey: forcePlusKey) {
+            return .plus(status: .active, source: .promotion)
+        }
+        #endif
+
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result,
+                  LinkaStoreProductID.all.contains(transaction.productID) else { continue }
+            return .plus(status: .active, source: .subscription, validUntil: transaction.expirationDate)
+        }
+        return .free
+    }
+}
+
 struct ImportWiFiDiagnosticsIntent: AppIntent {
     static var title: LocalizedStringResource { "Importar diagnóstico Wi-Fi" }
     static let description = IntentDescription("Importa dados Wi-Fi medidos pelo atalho Linka Wi-Fi Advanced.")
@@ -334,7 +355,7 @@ struct ImportWiFiDiagnosticsIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        let snapshot = await currentSnapshot()
+        let snapshot = await ShortcutEntitlementSnapshot.current()
         _ = try AdvancedWiFiDiagnosticsInbox.importPayload(payloadJSON, entitlement: snapshot)
         await MainActor.run {
             AppIntentCoordinator.shared.requestAdvancedWiFiDiagnosticsImport()
@@ -342,14 +363,6 @@ struct ImportWiFiDiagnosticsIntent: AppIntent {
         return .result()
     }
 
-    private func currentSnapshot() async -> LinkaEntitlementSnapshot {
-        for await result in Transaction.currentEntitlements {
-            guard case .verified(let transaction) = result,
-                  LinkaStoreProductID.all.contains(transaction.productID) else { continue }
-            return .plus(status: .active, source: .subscription, validUntil: transaction.expirationDate)
-        }
-        return .free
-    }
 }
 
 struct RegisterAdvancedWiFiDiagnosticsIntent: AppIntent {
@@ -408,7 +421,7 @@ struct RegisterAdvancedWiFiDiagnosticsIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        let snapshot = await currentSnapshot()
+        let snapshot = await ShortcutEntitlementSnapshot.current()
         _ = try AdvancedWiFiDiagnosticsInbox.importFields(
             entitlement: snapshot,
             ssid: ssid,
@@ -426,13 +439,5 @@ struct RegisterAdvancedWiFiDiagnosticsIntent: AppIntent {
         return .result()
     }
 
-    private func currentSnapshot() async -> LinkaEntitlementSnapshot {
-        for await result in Transaction.currentEntitlements {
-            guard case .verified(let transaction) = result,
-                  LinkaStoreProductID.all.contains(transaction.productID) else { continue }
-            return .plus(status: .active, source: .subscription, validUntil: transaction.expirationDate)
-        }
-        return .free
-    }
 }
 #endif

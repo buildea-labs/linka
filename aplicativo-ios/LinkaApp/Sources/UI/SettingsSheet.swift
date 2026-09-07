@@ -1,5 +1,6 @@
 import SwiftUI
 import StoreKit
+import AppIntents
 import LinkaEntitlements
 import LinkaModules
 #if canImport(CoreLocation) && os(iOS)
@@ -165,14 +166,21 @@ struct SettingsView: View {
                     showPurchase = true
                 }
             case .needsConfiguration:
-                Button("Configurar no Atalhos") { openShortcuts() }
+                Button("Adicionar atalho Wi-Fi avançado") {
+                    importAdvancedWiFiShortcut()
+                    advancedWiFiEnabled = true
+                }
             case .active:
                 Button("Executar diagnóstico Wi-Fi") { runAdvancedWiFiShortcut() }
-                Button("Atualizar atalho") { openShortcuts() }
+                Button("Atualizar atalho Wi-Fi avançado") {
+                    importAdvancedWiFiShortcut()
+                }
                 Button("Desativar integração", role: .destructive) { advancedWiFiEnabled = false }
             case .disabled:
                 Button("Ativar integração") { advancedWiFiEnabled = true }
-                Button("Atualizar atalho") { openShortcuts() }
+                Button("Atualizar atalho Wi-Fi avançado") {
+                    importAdvancedWiFiShortcut()
+                }
             }
             Button("Cancelar", role: .cancel) {}
         } message: {
@@ -240,7 +248,7 @@ struct SettingsView: View {
         case .requiresPlus:
             return "O diagnóstico Wi-Fi avançado faz parte do Linka Plus."
         case .needsConfiguration:
-            return "Configure o atalho oficial para importar dados extras quando você executar uma medição."
+            return "No Atalhos, crie “Linka Wi-Fi Advanced”: obtenha os detalhes da rede e depois adicione a ação “Registrar diagnóstico Wi-Fi avançado” do Linka."
         case .active:
             return "O Atalhos fornece dados extras quando você executa a integração."
         case .disabled:
@@ -275,16 +283,24 @@ struct SettingsView: View {
             showAdvancedActions = true
         } else {
             advancedWiFiEnabled = true
-            openShortcuts()
+            showAdvancedActions = true
         }
-    }
-
-    private func openShortcuts() {
-        openURL(LinkaAdvancedWiFiIntegration.shortcutsAppURL)
     }
 
     private func runAdvancedWiFiShortcut() {
         openURL(LinkaAdvancedWiFiIntegration.runShortcutURL)
+    }
+
+    private func importAdvancedWiFiShortcut() {
+        #if canImport(UIKit)
+        // O botão vive em um confirmationDialog. Espera o fechamento da
+        // folha antes de pedir a troca para o app Atalhos.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            UIApplication.shared.open(LinkaAdvancedWiFiIntegration.importShortcutURL)
+        }
+        #else
+        openURL(LinkaAdvancedWiFiIntegration.importShortcutURL)
+        #endif
     }
 }
 

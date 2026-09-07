@@ -35,6 +35,12 @@ enum LinkaWiFiPreferences {
 enum LinkaAdvancedWiFiIntegration {
     static let shortcutName = "Linka Wi-Fi Advanced"
     static let shortcutsAppURL = URL(string: "shortcuts://")!
+    /// Template oficial publicado pela Buildea no iCloud Shortcuts.
+    static let sharedShortcutURL = URL(string: "https://www.icloud.com/shortcuts/3f7b0f6b23924865b805177189c2638d")!
+    /// A página oficial da Apple mostra o template e exige a confirmação de
+    /// adição. O esquema `import-shortcut` só aceita arquivos .shortcut e
+    /// não deve receber este link compartilhado do iCloud.
+    static let importShortcutURL = sharedShortcutURL
     static let runShortcutURL = URL(string: "shortcuts://run-shortcut?name=Linka%20Wi-Fi%20Advanced")!
 }
 

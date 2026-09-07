@@ -712,10 +712,10 @@ public class SpeedTestViewModel: ObservableObject {
         self.update(with: state)
     }
 
-    /// Consome um callback vindo do App Intent/URL. Se uma medição estiver
-    /// em andamento, o dado fica no inbox até o resultado; se ela já acabou,
-    /// atualiza somente a última medição local quando a mesma janela temporal
-    /// comprova a associação. Nunca cria uma nova medição por conta própria.
+    /// Processa um callback vindo do App Intent/URL. Se a próxima medição
+    /// ainda não começou, o dado volta ao inbox para ser associado a ela;
+    /// se já houver medição, só atualiza a última quando a janela temporal
+    /// comprovar a associação. Nunca cria uma nova medição por conta própria.
     func consumePendingAdvancedWiFiDiagnostics() {
         guard let diagnostics = AdvancedWiFiDiagnosticsInbox.takePending() else { return }
         if isTesting {
@@ -726,7 +726,10 @@ public class SpeedTestViewModel: ObservableObject {
         }
         guard connectionKind == .wifi,
               let snapshot = lastValidResultSnapshot,
-              let finishedMeasurement = latestFinishedMeasurement else { return }
+              let finishedMeasurement = latestFinishedMeasurement else {
+            AdvancedWiFiDiagnosticsInbox.requeue(diagnostics)
+            return
+        }
         let endedAt = finishedMeasurement.measuredAt
         let startedAt = endedAt.addingTimeInterval(-Double(finishedMeasurement.durationMs ?? 0) / 1_000)
         guard diagnostics.isEligible(

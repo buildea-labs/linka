@@ -18,6 +18,7 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "2Z4T8228GR"
         PRODUCT_BUNDLE_IDENTIFIER: com.linka.assist
+        TARGETED_DEVICE_FAMILY: "1"
     info:
       path: LinkaApp/Info.plist
       properties:
@@ -27,6 +28,8 @@ targets:
           - CFBundleURLName: com.linka.wifi-advanced
             CFBundleURLSchemes:
               - linka
+        LSApplicationQueriesSchemes:
+          - shortcuts
         NDAssistRelayEndpoint: "https://linka-assist-relay.buildealabs.workers.dev/v2/assist"
         NSLocationWhenInUseUsageDescription: "O Linka usa a localização apenas porque o iPhone exige essa autorização para informar o nome da rede Wi-Fi atual. Sua localização não é salva para identificar a rede."
         NSLocalNetworkUsageDescription: "O Linka consulta o roteador da rede local para identificar o equipamento e diagnosticar a qualidade da conexão Wi-Fi."
@@ -35,11 +38,6 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        UISupportedInterfaceOrientations~ipad:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationPortraitUpsideDown
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
     sources:
       - path: LinkaApp/Sources
     dependencies:

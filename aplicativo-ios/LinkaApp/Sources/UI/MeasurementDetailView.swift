@@ -9,6 +9,9 @@ import LinkaModules
 struct MeasurementDetailView: View {
     let measurement: NetworkMeasurement?
     let duration: String?
+    /// Um registro histórico não é alterado por telemetria posterior. Esta
+    /// ação retorna à jornada que coleta os detalhes antes de uma nova medida.
+    let onStartNewMeasurementWithAdvancedWiFi: (() -> Void)?
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
@@ -16,6 +19,16 @@ struct MeasurementDetailView: View {
     @State private var showPurchase = false
     @State private var showShareSheet = false
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
+
+    init(
+        measurement: NetworkMeasurement?,
+        duration: String?,
+        onStartNewMeasurementWithAdvancedWiFi: (() -> Void)? = nil
+    ) {
+        self.measurement = measurement
+        self.duration = duration
+        self.onStartNewMeasurementWithAdvancedWiFi = onStartNewMeasurementWithAdvancedWiFi
+    }
 
     private var canUseExpertMode: Bool {
         LinkaEntitlementPolicy.decision(
@@ -187,21 +200,18 @@ struct MeasurementDetailView: View {
                                 LabeledContent("Taxa Wi-Fi", value: [tx, rx].compactMap { $0 }.joined(separator: " · "))
                             }
                         } else {
-                            HStack {
-                                Text("Diagnóstico Wi-Fi detalhado")
-                                    .foregroundColor(.textPrimary)
-                                Spacer()
-                                #if os(iOS)
-                                Button(UserDefaults.standard.bool(forKey: LinkaWiFiPreferences.advancedConfiguredKey) ? "Obter detalhes" : "Configurar") {
-                                    if UserDefaults.standard.bool(forKey: LinkaWiFiPreferences.advancedConfiguredKey) {
-                                        openURL(LinkaAdvancedWiFiIntegration.runShortcutURL)
-                                    } else {
-                                        openURL(LinkaAdvancedWiFiIntegration.shortcutsAppURL)
-                                    }
+                            LabeledContent("Diagnóstico Wi-Fi detalhado", value: "Não coletado nesta medição")
+
+                            if let onStartNewMeasurementWithAdvancedWiFi {
+                                Button("Fazer nova medição com detalhes") {
+                                    onStartNewMeasurementWithAdvancedWiFi()
                                 }
                                 .font(.bodySmallStrong)
                                 .foregroundColor(.brandAccentWarm)
-                                #endif
+
+                                Text("Os detalhes são coletados antes da nova medição e não alteram este registro.")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
                             }
                         }
                     } else {
