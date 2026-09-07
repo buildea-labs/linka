@@ -121,11 +121,17 @@ struct AssistView: View {
                 contentView
             }
             .linkaSheetToolbar(title: "Assist", onDismiss: closeSheet)
+            // Uma única tarefa coordena análise e estabilidade para a mesma
+            // identidade de medição. Duas `.task(id:)` paralelas reagem ao
+            // mesmo redraw e deixam o ciclo de análise suscetível a repetição.
             .task(id: currentMeasurement?.id) {
                 guard !isCollectingMeasurement else { return }
                 if let current = currentMeasurement {
+                    async let stability: Void = stabilityViewModel.load(currentMeasurement: current)
                     await loadAssist(with: current)
+                    await stability
                 } else {
+                    async let stability: Void = stabilityViewModel.load(currentMeasurement: nil)
                     await viewModel.load(
                         currentMeasurement: nil,
                         recentMeasurements: recentMeasurements,
@@ -135,10 +141,8 @@ struct AssistView: View {
                         subcategory: subcategory,
                         reportedProblem: reportedProblem
                     )
+                    await stability
                 }
-            }
-            .task(id: currentMeasurement?.id) {
-                await stabilityViewModel.load(currentMeasurement: currentMeasurement)
             }
         }
     }

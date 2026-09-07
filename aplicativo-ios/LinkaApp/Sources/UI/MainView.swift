@@ -72,22 +72,25 @@ struct MainView: View {
 
     private var currentMeasurement: NetworkMeasurement? {
         guard viewModel.uiPhase == .done else { return nil }
-        return NetworkMeasurement(
-            outcome: .complete,
-            downloadMbps: viewModel.downloadSpeed > 0 ? viewModel.downloadSpeed : nil,
-            uploadMbps: viewModel.hasMeasuredUpload ? viewModel.uploadSpeed : nil,
-            latencyMs: viewModel.hasMeasuredPing ? Double(viewModel.ping) : nil,
-            jitterMs: viewModel.jitter,
-            packetLossPercent: viewModel.packetLossPercent,
-            loadedLatencyMs: viewModel.loadedLatencyMs,
-            loadedLatencyUploadMs: viewModel.loadedLatencyUploadMs,
-            dnsResolutionMs: viewModel.dnsResolutionMs,
-            connectionKind: viewModel.connectionKind,
-            wifiBandGHz: viewModel.wifiBandGHz,
-            wifiContext: viewModel.wifiContext,
-            advancedWiFiDiagnostics: viewModel.advancedWiFiDiagnostics,
-            networkIdentifier: viewModel.provider.isEmpty ? nil : viewModel.provider
-        )
+        // A medição exibida, compartilhada e enviada ao Assist precisa ser a
+        // mesma instância que o ViewModel acabou de persistir. Reconstruí-la
+        // aqui gerava um UUID novo em cada redraw e fazia o Assist analisar a
+        // mesma coleta mais de uma vez.
+        return viewModel.latestFinishedMeasurement
+    }
+
+    /// O CTA do resultado trabalha estritamente com a amostra daquele
+    /// resultado. Já o Assist iniciado pela Home (ou outra entrada fresca)
+    /// não pode receber a última medição enquanto sua própria coleta ainda
+    /// acontece — mesmo que a tela principal ainda esteja mostrando um
+    /// resultado anterior por baixo do sheet.
+    private var assistMeasurement: NetworkMeasurement? {
+        switch assistEntryPoint {
+        case .result(let measurement):
+            return measurement
+        case .fresh:
+            return pendingAssistMeasurement ? nil : currentMeasurement
+        }
     }
 
     private var latestMeasurementForIntent: NetworkMeasurement? {
@@ -238,7 +241,7 @@ struct MainView: View {
             }
             .sheet(isPresented: $showAssistResult) {
                 AssistView(
-                    currentMeasurement: currentMeasurement,
+                    currentMeasurement: assistMeasurement,
                     recentMeasurements: [],
                     isCollectingMeasurement: pendingAssistMeasurement,
                     objective: pendingAssistObjective,
