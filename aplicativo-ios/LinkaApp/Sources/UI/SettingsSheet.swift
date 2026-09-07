@@ -27,7 +27,6 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            #if DEBUG
             Section {
                 Button(action: openSubscription) {
                     HStack {
@@ -95,6 +94,7 @@ struct SettingsView: View {
                 }
             }
 
+            #if DEBUG
             Section {
                 Toggle(isOn: Binding(
                     get: { UserDefaults.standard.bool(forKey: StoreKitEntitlementProvider.forcePlusKey) },
