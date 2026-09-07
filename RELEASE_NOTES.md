@@ -1,4 +1,8 @@
-# Linka 1.1.2 (build 45)
+# Linka 1.1.2 (build 46)
+
+## Correções
+
+A tela Ajustes está disponível normalmente também no TestFlight, incluindo o acesso à conta Linka+ e aos recursos do app.
 
 ## Melhorias
 
