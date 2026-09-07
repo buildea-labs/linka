@@ -29,6 +29,10 @@ on:
       - "release/**"
   workflow_dispatch:
 
+# A lane beta cria a tag da versão depois que o build é aceito no TestFlight.
+permissions:
+  contents: write
+
 jobs:
   testflight:
     name: Build & Upload to TestFlight
