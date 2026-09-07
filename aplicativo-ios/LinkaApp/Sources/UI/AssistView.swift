@@ -26,6 +26,9 @@ struct AssistView: View {
 
     let currentMeasurement: NetworkMeasurement?
     let recentMeasurements: [NetworkMeasurement]
+    /// Quando o Assist foi aberto sem amostra, a coleta acontece por trás
+    /// deste sheet. Não se usa nenhum resultado anterior nesse intervalo.
+    let isCollectingMeasurement: Bool
     let usageContext: String?
     let failureSignal: NetworkAssistFailureSignal?
     let onRetry: (() -> Void)?
@@ -69,6 +72,7 @@ struct AssistView: View {
     init(
         currentMeasurement: NetworkMeasurement?,
         recentMeasurements: [NetworkMeasurement] = [],
+        isCollectingMeasurement: Bool = false,
         usageContext: String? = nil,
         failureSignal: NetworkAssistFailureSignal? = nil,
         objective: String? = nil,
@@ -83,6 +87,7 @@ struct AssistView: View {
     ) {
         self.currentMeasurement = currentMeasurement
         self.recentMeasurements = recentMeasurements
+        self.isCollectingMeasurement = isCollectingMeasurement
         self.usageContext = usageContext
         self.failureSignal = failureSignal
         self.objective = objective
@@ -116,7 +121,8 @@ struct AssistView: View {
                 contentView
             }
             .linkaSheetToolbar(title: "Assist", onDismiss: closeSheet)
-            .task {
+            .task(id: currentMeasurement?.id) {
+                guard !isCollectingMeasurement else { return }
                 if let current = currentMeasurement {
                     await loadAssist(with: current)
                 } else {
@@ -131,7 +137,7 @@ struct AssistView: View {
                     )
                 }
             }
-            .task {
+            .task(id: currentMeasurement?.id) {
                 await stabilityViewModel.load(currentMeasurement: currentMeasurement)
             }
         }
@@ -153,7 +159,9 @@ struct AssistView: View {
     private var contentView: some View {
         switch viewModel.state {
         case .idle, .loading:
-            if let currentMeasurement {
+            if isCollectingMeasurement {
+                AssistCollectingMeasurementView()
+            } else if let currentMeasurement {
                 AssistWaitingAnalysisView(measurement: currentMeasurement)
             } else {
                 unavailableMeasurementView
@@ -579,6 +587,23 @@ struct AssistView: View {
         case .ethernet: return "Ethernet"
         case .other: return "Outra rede"
         }
+    }
+}
+
+private struct AssistCollectingMeasurementView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .controlSize(.large)
+            Text("Atualizando a medição")
+                .font(.displayTitle)
+            Text("O Assist está coletando uma amostra nova para analisar sua conexão. Você continua nesta tela.")
+                .font(.bodyRegular)
+                .foregroundColor(.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+        }
+        .frame(maxHeight: .infinity)
     }
 }
 

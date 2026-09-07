@@ -264,7 +264,10 @@ struct AssistProblemSelectionView: View {
     }
 
     private func presentAssist(objective: String?, subcategory: String?, reportedProblem: String?) {
-        if let onStartFreshMeasurement {
+        // A medição só é reaproveitada quando esta jornada foi aberta da
+        // própria tela de resultado. Os demais pontos de entrada chegam sem
+        // amostra e iniciam uma coleta nova pelo callback.
+        if currentMeasurement == nil, let onStartFreshMeasurement {
             onStartFreshMeasurement(objective, subcategory, reportedProblem)
             dismissSheet()
             return

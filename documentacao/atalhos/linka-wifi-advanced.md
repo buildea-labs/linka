@@ -3,18 +3,23 @@
 **Versão do atalho:** 1  
 **Schema do payload:** 1
 
-O atalho oficial é montado conscientemente no app **Atalhos**. Ele não usa
-API privada, perfil de diagnóstico, serviço de terceiros ou instalação
-silenciosa.
+O template oficial é distribuído pelo iCloud Shortcuts. No Linka, a pessoa
+abre a página de importação da Apple, revisa o fluxo e confirma **Adicionar
+Atalho**. Não há instalação silenciosa, API privada ou perfil de diagnóstico.
 
 ## Montagem
 
-1. Crie um atalho chamado **Linka Wi-Fi Advanced**.
-2. Adicione **Obter detalhes da rede** e peça, quando disponíveis: Nome da
-   rede, BSSID, Padrão Wi-Fi, Taxa RX, Taxa TX, RSSI, Ruído e Número do canal.
-3. Adicione a ação Linka **Registrar diagnóstico Wi-Fi avançado**.
-4. Encaixe cada saída de **Obter detalhes da rede** no parâmetro equivalente
-   da ação do Linka.
+1. No Linka, abra **Ajustes → Diagnóstico Wi-Fi avançado** e escolha
+   **Adicionar atalho Wi-Fi avançado**.
+2. Revise o template na interface da Apple e confirme **Adicionar Atalho**.
+3. O atalho instalado se chama **Linka Wi-Fi Advanced** e coleta Nome da rede,
+   BSSID, Padrão Wi-Fi, Taxa RX, Taxa TX, RSSI, Ruído e Número do canal antes
+   de chamar **Registrar diagnóstico Wi-Fi avançado** do Linka.
+
+Ao tocar em medir no Linka, o app executa o atalho primeiro. Quando o Atalhos
+devolve os dados, a medição começa; se o atalho for cancelado, a medição não é
+iniciada por engano e o Linka oferece tentar novamente ou medir sem os dados
+avançados.
 
 ## Caminho legado por JSON
 
