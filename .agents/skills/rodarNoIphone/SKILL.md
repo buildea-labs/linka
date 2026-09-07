@@ -1,137 +1,57 @@
 ---
 name: rodar-no-iphone
-description: Procedimento do Tiago para construir, assinar e instalar o Linka num iPhone/iPad/Mac de verdade, com os portões do Xcode que travam o caminho.
+description: Constrói, assina e instala o Linka em dispositivos Apple reais sem transformar build local em publicação.
 ---
 
-# Skill: rodarNoIphone
+# Skill: rodar-no-iphone
 
-Procedimento do **Tiago** para pôr o Linka rodando **no aparelho de verdade** — iPhone, iPad ou Mac.
+Use esta skill para build e instalação local no ecossistema Apple.
 
-O que decide se o produto funciona não é o build. É o comportamento em rede real, a permissão iOS, o ciclo de vida do app. Simulador não prova medição ([`garantirIphoneReal`](../garantirIphoneReal/SKILL.md)).
+Projeto principal: `aplicativo-ios/LinkaApp.xcodeproj`. Use o estado real do repositório como fonte para schemes, targets e pacotes disponíveis.
 
-Projeto Xcode: [`aplicativo-ios/LinkaApp.xcodeproj`](../../../aplicativo-ios/LinkaApp.xcodeproj). Pacotes Swift: `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaEngine`, `LinkaModules`, `LinkaAppIntents`, `LinkaEntitlements`. CI: [`.github/workflows/swift-modules-ci.yml`](../../../.github/workflows/swift-modules-ci.yml).
+## Primeiro valide os pacotes tocados
 
----
+Execute `swift test` nos pacotes afetados antes de partir para validação mais cara no app.
 
-## 1. O básico
+## Simulador
 
-Rodar pacotes Swift isoladamente (rápido, sem UI):
+Simulador é útil para layout, navegação e adaptação rápida de telas. Não é prova de medição de rede real.
 
-```bash
-cd aplicativo-ios/NetworkCore && swift test
-cd aplicativo-ios/MeasurementHistory && swift test
-cd aplicativo-ios/NetworkInsights && swift test
-cd aplicativo-ios/NetworkAssist && swift test
-cd aplicativo-ios/LinkaModules && swift test
-```
+## Dispositivo real
 
-Abrir o app no Xcode:
+Com aparelho autorizado e configuração de assinatura válida:
 
-```bash
-open aplicativo-ios/LinkaApp.xcodeproj
-```
+- faça build usando Xcode/xcodebuild conforme o target atual;
+- instale pelo Xcode ou ferramentas oficiais da Apple;
+- valide em Wi‑Fi e celular quando a mudança tocar medição;
+- teste background/foreground, cancelamento e offline quando aplicável.
 
-Ou usar XcodeGen se o `project.yml` foi modificado:
+Não altere `DEVELOPMENT_TEAM`, certificados ou entitlements compartilhados no repositório apenas para fazer a máquina local compilar sem entender o impacto.
 
-```bash
-cd aplicativo-ios && xcodegen
-```
+## Problemas de ambiente
 
-## 2. Os portões da máquina, na ordem em que eles aparecem
+Licença do Xcode, plataforma iOS ausente, Developer Mode, signing e Keychain podem exigir ação do dono da máquina. Não tente contornar segurança da plataforma nem desabilite assinatura/testes para declarar sucesso.
 
-Todos já morderam alguém. Alguns exigem senha do dono do Mac.
+## O que esta skill não autoriza
 
-| Sintoma | O que é | Quem resolve |
-|---|---|---|
-| Qualquer comando de build responde "you have not agreed to the Xcode license" | licença do Xcode nunca aceita | dono do Mac: `sudo xcodebuild -license accept` |
-| "Found no destinations" / "iOS X.Y is not installed" | Xcode instalado, plataforma iOS não baixada (~8 GB) | `xcodebuild -downloadPlatform iOS` |
-| "Signing for App requires a development team" | nenhuma conta Apple registrada no Xcode | dono do Mac: Xcode → Settings → Accounts → **+** |
-| "Developer Mode disabled" | trava do iOS 16+ no aparelho | dono do aparelho: Ajustes → Privacidade e Segurança → Modo de Desenvolvedor, e **reinicia** |
-| `errSecInternalComponent` no `codesign` | chaveiro recusou a chave para processo sem tela | rodar uma vez pelo Xcode (▶) e responder **Sempre Permitir** |
-| "Invalid trust settings ... restore system default" | alguém mexeu na confiança do certificado no chaveiro | Acesso às Chaves → aba **Certificados** → o certificado → Confiar → **Usar Padrões do Sistema** |
-| App instala e não abre | conta gratuita: o aparelho ainda não confia no desenvolvedor | Ajustes → Geral → VPN e Gerenciamento de Dispositivo → Confiar |
+- TestFlight;
+- App Store;
+- distribuição externa;
+- nova entitlement/capability material;
+- nova permissão sensível;
+- mudança de credencial;
+- desabilitar pipeline.
 
-**Não mande o dono do Mac mexer em "Chaves" quando o problema é "Certificados".** São abas diferentes do Acesso às Chaves e trocar uma pela outra quebra assinatura.
+Essas ações seguem os gates de `AGENTS.md`.
 
-## 3. Simulador (para layout, não para medição)
+## Relatório
 
-```bash
-# lista simulators
-xcrun simctl list devices available
+Informe:
 
-# boot
-xcrun simctl boot "iPhone 16 Pro"
+- destino usado;
+- build/testes executados;
+- instalação realizada ou não;
+- cenários verificados;
+- o que ficou sem teste.
 
-# build para simulator
-xcodebuild -project aplicativo-ios/LinkaApp.xcodeproj -scheme LinkaApp \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
-  -configuration Debug \
-  CODE_SIGNING_ALLOWED=NO build
-
-# install + launch
-xcrun simctl install "iPhone 16 Pro" /path/to/build/Debug-iphonesimulator/LinkaApp.app
-xcrun simctl launch "iPhone 16 Pro" com.linka.speedtest
-
-# screenshot
-xcrun simctl io "iPhone 16 Pro" screenshot /tmp/tela.png
-```
-
-Simulador serve para conferir layout em várias tamanhos Apple (iPhone SE, iPhone 16 Pro Max, iPad Pro, Mac). **Não serve para medição real** — a rede é a do Mac.
-
-## 4. iPhone/iPad real
-
-Aparelho **plugado e desbloqueado**:
-
-```bash
-# lista aparelhos conectados
-xcrun devicectl list devices
-
-# build + install
-xcodebuild -project aplicativo-ios/LinkaApp.xcodeproj -scheme LinkaApp \
-  -destination 'id=<device-id>' \
-  -configuration Debug \
-  -allowProvisioningUpdates build
-
-xcrun devicectl device install app --device <device-id> \
-  /path/to/build/Debug-iphoneos/LinkaApp.app
-```
-
-Depois, no aparelho: rodar em rede real (Wi-Fi + celular), observar o comportamento — não só o layout.
-
-## 5. Mac
-
-O Linka roda em Mac (Apple-only inclui iPhone/iPad/Mac). No Xcode, selecione o esquema `LinkaApp` com destino "My Mac (Designed for iPad)" ou destino nativo Mac se o target Catalyst/Mac estiver configurado. Testar janela redimensionável e Full Screen.
-
-## 6. O time de assinatura não vai para o repositório
-
-`DEVELOPMENT_TEAM` fica fora do controle de versão: cada dev tem sua conta. Se aparecer no `git status` depois de um build, é ruído — não commite.
-
-## 7. O que só o aparelho responde
-
-Build verde não é entrega. No aparelho, com o Linka na mão:
-
-- [ ] medição inicia sozinha ao abrir
-- [ ] fluxo Preparando → Download → Upload → Finalizando → Resultado sem trancar
-- [ ] "Testar novamente" reinicia limpo
-- [ ] cancelar durante a medição libera task, não deixa órfão
-- [ ] mandar app para background durante medição não corrompe estado
-- [ ] rede desligada: erro tratado, não fica rodando em vão
-- [ ] rede lenta (Network Link Conditioner ou 3G real): gera `partial` honesto
-- [ ] retrato + paisagem, se permitido
-- [ ] `Reduce Motion` ligado: informação completa
-
-O que não foi testado **vai escrito como não testado** no relatório do PR ([`registrarIssue`](../registrarIssue/SKILL.md) §5, [`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 2).
-
-## 8. O que esta skill NÃO autoriza
-
-- publicar em App Store, TestFlight ou distribuir fora sem autorização do Luiz;
-- adicionar entitlement ou capability nova sem discutir escopo com o Giammattey;
-- mudar `Info.plist` de forma que exija permissão sensível nova sem alinhamento;
-- desabilitar teste ou pipeline "para o build passar".
-
-## Relacionados
-
-- **iPhone real:** [`garantirIphoneReal`](../garantirIphoneReal/SKILL.md)
-- **Adapter entre motor e UI:** [`escreverAdaptadorNativo`](../escreverAdaptadorNativo/SKILL.md)
-- **Auditoria final:** [`auditarSegurancaETestes`](../auditarSegurancaETestes/SKILL.md)
-- **Testes automatizados:** [`escreverTestes`](../escreverTestes/SKILL.md)
+A auditoria usa essa evidência; “build verde” sozinho não encerra validação de comportamento.

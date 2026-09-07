@@ -1,40 +1,43 @@
-# AGENTS.md — autoridade do Linka SpeedTest
+# AGENTS.md — autoridade do Linka
 
-Este arquivo é a **autoridade única de governança** do repositório `linka-speedtest`.
+Este arquivo é a **autoridade única de governança** do repositório `buildea-labs/linka`.
 
-`CLAUDE.md` deve conter somente `@AGENTS.md`. Este arquivo também é a instrução de trabalho carregada pelo Codex; não existe segunda governança escondida nem documentação legada que possa sobrepô-lo.
+O Linka usa o **Codex como agente principal e orquestrador**. Os agentes especialistas nativos do projeto vivem em `.codex/agents/`. As skills em `.agents/skills/` são procedimentos auxiliares; não substituem este arquivo, o código, os testes, o protótipo ou o Design System.
 
-### Uso pelo Codex
+`CLAUDE.md` permanece apenas como shim de compatibilidade e deve apontar para `@AGENTS.md`. Não existe uma segunda governança específica para Claude.
 
-- O Codex é o interlocutor único desta sessão. **Giammattey**, **Tiago** e **Igor** são papéis de trabalho, não processos que devam ser simulados como conversas separadas.
-- O papel aplicável é escolhido pelo tipo de tarefa e pelas skills em `.agents/`. Para trabalho independente e bem delimitado, o Codex pode delegar usando sua ferramenta nativa de subagentes. Não invente handoffs, aprovações ou resultados de outro papel.
-- A delegação é por tarefa, não por agente permanente: o agente principal define o escopo, envia contexto mínimo, revisa o retorno e encerra o subagente quando ele não for mais necessário.
-- **Giammattey** coordena produto e aceite; **Tiago** pode receber implementação com escopo de escrita explícito; **Igor** recebe revisão somente leitura por padrão. Nenhum subagente pode aprovar a própria entrega ou publicar, fazer merge, deploy ou alterar credenciais sem autorização explícita.
-- Os arquivos JSON em `.agents/plugins/` são perfis de prompt para essa delegação. O runtime nativo não os carrega automaticamente; ao delegar, o agente principal deve passar ao subagente o papel, o objetivo, os arquivos permitidos, a política de escrita e o formato de retorno.
-- A ferramenta nativa não substitui autorização: subagente não faz merge, push, deploy, publicação, exclusão material ou alteração de segredo. O agente principal revisa qualquer patch e apresenta o resultado ao Luiz.
+## Uso pelo Codex
 
-#### Contrato de delegação
+- O **Codex principal** é o interlocutor único com o Luiz e o responsável por integrar o trabalho.
+- Toda solicitação começa pela perspectiva de produto: problema, usuário, comportamento esperado e impacto. Pergunta ou hipótese é exploração; decisão consolida o comportamento; somente um pedido explícito de execução autoriza alteração de código.
+- Os especialistas nativos do projeto são **Íris**, **Camillo** e **Tito**, definidos em `.codex/agents/`.
+- Delegue apenas quando especialização ou paralelismo trouxer ganho real. Tarefa pequena e coesa não precisa virar cerimônia multiagente.
+- A delegação é por tarefa: objetivo delimitado, contexto mínimo, escopo explícito e retorno verificável.
+- Não invente handoff, revisão, aprovação ou resultado de especialista que não tenha sido executado de fato.
+- Nenhum especialista substitui a decisão do Luiz em publicação, custo, monetização, exclusão material, mudança estratégica ou outro gate humano explícito.
+- Subagente não faz merge, deploy, publicação, alteração de credenciais, force push ou exclusão destrutiva sem autorização explícita.
+- O agente principal revisa patches e evidências antes de incorporá-los à conclusão.
 
-Toda chamada a subagente deve conter, no mínimo:
+### Contrato de delegação
 
-1. **Papel** — `giammattey`, `tiago` ou `igor`, conforme o perfil em `.agents/plugins/squad-linka/agents/`.
-2. **Objetivo delimitado** — uma pergunta ou entrega concreta, sem “analise tudo”.
-3. **Escopo** — arquivos, módulos e repositórios que pode ler; para escrita, conjunto disjunto e explícito.
-4. **Permissão** — somente leitura por padrão; escrita apenas para Tiago quando a tarefa autorizar.
-5. **Retorno** — arquivos alterados, comandos executados, evidências, riscos e bloqueios; Igor deve usar `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA`.
-6. **Modelo e esforço** — escolhidos conforme a política de §4a e o `model_policy` do perfil em `.agents/plugins/squad-linka/agents/`; não suba para Opus por padrão.
+Toda delegação deve informar, no mínimo:
 
-O agente principal não duplica o trabalho delegado, aguarda apenas quando o resultado bloquear o próximo passo e encerra subagentes concluídos com a ferramenta nativa. Subagente não representa aprovação de Giammattey ou Luiz.
-- Ao relatar uma revisão, diga qual papel foi aplicado e apresente evidência observável. Nunca escreva que Igor, Giammattey ou Luiz aprovou algo sem essa aprovação ter acontecido de fato.
-- Skills locais são procedimentos auxiliares. A descoberta ocorre pelo `SKILL.md` e sua descrição; o `AGENTS.md`, o código e os testes continuam sendo as fontes de autoridade.
+1. **Especialista** — `iris`, `camillo` ou `tito`.
+2. **Objetivo** — uma pergunta ou entrega concreta; evite “analise tudo”.
+3. **Escopo** — módulos/arquivos que podem ser lidos e, se houver escrita, os limites de escrita.
+4. **Permissão** — Íris e Tito são somente leitura por padrão; Camillo escreve apenas quando a tarefa autorizar.
+5. **Retorno** — evidências, arquivos alterados quando houver, comandos/testes, riscos e bloqueios.
+6. **Modelo/esforço** — use os defaults do projeto e aumente capacidade apenas quando o risco justificar.
+
+O agente principal não precisa duplicar o trabalho delegado. Ele deve validar o que importa, resolver divergências e consolidar a resposta.
 
 ---
 
 ## 1. O que é o Linka
 
-**Linka é um SpeedTest minimalista, eficiente e visualmente refinado, exclusivo do ecossistema Apple (iPhone, iPad, Mac).**
+**Linka é um SpeedTest minimalista, eficiente e visualmente refinado, exclusivo do ecossistema Apple (iPhone, iPad e Mac).**
 
-O núcleo do produto continua sendo:
+O núcleo do produto é:
 
 > **medir a qualidade da conexão e apresentar o resultado de forma imediata, clara e bonita.**
 
@@ -44,50 +47,46 @@ O fluxo principal é deliberadamente simples:
 ABRIR → MEDIR → MOSTRAR RESULTADO → REPETIR
 ```
 
-O usuário não escolhe modo de teste antes de começar. O teste inicia automaticamente.
-
-Minimalismo não significa motor simples: a complexidade técnica deve ficar por baixo da interface.
+O usuário não escolhe modo de teste antes de começar. Minimalismo na interface não significa simplificação do motor.
 
 ### Escopo estendido no ecossistema Apple
 
-O **SignallQ tornou-se um produto exclusivo Android e Web** por limitações impostas pela Apple à metodologia de diagnóstico dele. Como consequência, **o Linka pode absorver, dentro do ecossistema Apple, as capacidades do SignallQ que forem tecnicamente viáveis nas plataformas da Apple** — histórico, comparação, tendências, interpretação de medições, Assist, integrações Widgets/App Intents/Siri Shortcuts e qualquer outra capacidade análoga que a Apple permita.
+Como o SignallQ é Android/Web, o Linka pode absorver capacidades que façam sentido e sejam tecnicamente viáveis no ecossistema Apple — histórico, comparação, tendências, interpretação, Assist, Widgets, App Intents e Shortcuts, entre outras.
 
-Isso **não** transforma o Linka em painel, dashboard ou central de ferramentas. A curadoria continua rígida:
+Isso não transforma o Linka em dashboard ou central de ferramentas. Toda capacidade nova passa por quatro filtros:
 
-1. **Medir a conexão vem primeiro.** Nenhuma feature nova pode atrasar, mascarar ou disputar espaço com a medição.
-2. **Divulgação progressiva.** Detalhe, interpretação e histórico aparecem sob expansão, nunca no primeiro frame do resultado.
-3. **Só entra o que é viável no Apple.** Se depende de capacidade que a Apple não expõe, não vira ginástica — fica de fora.
-4. **Só entra o que se sustenta em dado real.** Interpretação e recomendação precisam de base medida ou de dado do sistema; nada de opinião fabricada.
+1. **Medir vem primeiro.** Nada pode atrasar, mascarar ou disputar espaço com a medição.
+2. **Divulgação progressiva.** Detalhes e interpretação aparecem em superfícies secundárias.
+3. **Viabilidade Apple.** Se a plataforma não expõe o dado necessário, não invente uma aproximação enganosa.
+4. **Dado real.** Recomendação e interpretação precisam se sustentar em medição ou dado de sistema disponível.
 
-Uma feature nova é aceita quando responde sim a: *isso melhora a experiência de medir, entender ou acompanhar a conexão no Apple, sem competir com o resultado?*
+Pergunta de curadoria:
+
+> **Isso melhora medir, entender ou acompanhar a conexão no Apple sem competir com o resultado?**
 
 ---
 
 ## 2. Plataformas e direção técnica
 
-**O Linka é distribuído exclusivamente para o ecossistema Apple (iPhone, iPad, Mac). Não haverá versão Web nem Android.**
+### Produto Apple
 
-### Apple (única plataforma do produto)
-
-- iPhone, iPad e Mac são o único destino do Linka.
+- iPhone, iPad e Mac são os destinos do produto.
 - A experiência deve parecer nativa do ecossistema Apple.
-- **Não haverá versão para Android.**
-- **Não haverá versão Web** do produto (Web-app, PWA instalável, motor de medição no navegador, etc. estão fora de escopo).
+- Não haverá versão Android do Linka.
+- Não haverá Web App/PWA do Linka.
 
-### Site institucional e de marketing (`aplicacao-web/`)
+### Site institucional (`aplicacao-web/`)
 
 - React + TypeScript + Vite.
-- **Não é uma versão do Linka.** É um site institucional/marketing adaptativo para desktop e mobile que apresenta o produto, comunica a marca e direciona o usuário para o app Apple.
-- Não roda teste de velocidade, não instala como PWA, não é caminho de evolução do produto.
-- Compartilha tokens e componentes do Design System para parecer parte do mesmo produto visualmente.
+- É marketing/institucional, não uma versão Web do produto.
+- Não executa speed test e não deve evoluir para PWA de medição.
+- Pode compartilhar identidade visual e Design System com o produto.
 
 ### Linka Engine
 
-O motor é uma capacidade separada da interface.
+O motor é separado da interface e pode alimentar SwiftUI, App Intents, Widgets e Assist sem duplicação da metodologia.
 
-No ecossistema Apple, ele pode alimentar múltiplas superfícies do próprio Linka (SwiftUI, App Intents, Widgets, Assist) sem que a UI principal deixe de ser deliberadamente mínima.
-
-Não reimplemente ou simule o motor apenas para reproduzir um protótipo visual. O comportamento real de medição vence mocks e demos.
+Não reimplemente nem simule o motor para satisfazer protótipo visual. O comportamento real de medição vence mocks e demos.
 
 ---
 
@@ -95,96 +94,116 @@ Não reimplemente ou simule o motor apenas para reproduzir um protótipo visual.
 
 Em caso de conflito, use esta ordem:
 
-1. **Pedido explícito do dono do produto na sessão atual.**
-2. **Comportamento real do código e testes.** Não alegue capacidade que não existe.
-3. **Protótipo canônico do novo Linka** em `documentacao/design/prototipo/` para fluxo, geometria e aparência.
-4. **Design System do novo Linka** em `documentacao/design/design_system/` para tokens, componentes, tipografia, cores, espaçamento e motion.
-5. **Este `AGENTS.md`** para governança, papéis e forma de trabalho.
-6. **`.agents/WORKFLOW.md`** para a esteira operacional da squad.
-7. Demais documentação atual compatível com a nova visão.
+1. Pedido explícito do Luiz na sessão atual.
+2. Comportamento real do código e testes.
+3. Protótipo canônico em `documentacao/design/prototipo/` para fluxo, geometria e aparência.
+4. Design System em `documentacao/design/design_system/` para tokens, componentes, tipografia, cores, spacing e motion.
+5. Este `AGENTS.md` para governança e forma de trabalho.
+6. `.agents/WORKFLOW.md` para a esteira operacional.
+7. Demais documentação atual compatível.
 
-Material histórico, legado Android, documentação antiga de Material Design 3, antigo PWA e antigas estruturas multiagente são contexto histórico, não autoridade de produto.
-
-Se uma documentação antiga contradizer o novo Linka, **a documentação antiga perde**.
+Material legado contraditório é contexto histórico, não autoridade.
 
 ---
 
-## 4. A Squad Linka
+## 4. A Squad Linka no Codex
 
-A squad é enxuta e carrega personagens e relações humanas vindas do Auê, agora atuando no Linka.
+O Codex principal é o **orquestrador**, não um quarto especialista.
 
-| Agente | Papel no Linka |
-|---|---|
-| **Giammattey** | **Produto, experiência e direção.** Conhece telecom por trabalhar com atendimento, reparo e produtos digitais. Define escopo, UX, UI, copy, arquitetura de produto, prioridade e aceite final. Sua principal obrigação é manter o Linka focado — protagonismo do resultado, divulgação progressiva e curadoria contra excesso de painel — mesmo enquanto o produto absorve capacidades vindas do SignallQ que sejam viáveis no Apple. |
-| **Tiago** | **Implementação, arquitetura e proteção do motor.** Constrói o que foi decidido, abre branch/PR quando aplicável, escreve código e testes. Também responde pelas decisões que tocam medição, contratos e separação UI/engine — mantém `LinkaEngine` e os pacotes Swift protegidos de simplificação apressada. Pode questionar complexidade desnecessária, mas não amplia escopo sozinho. |
-| **Igor** | **Qualidade.** Tenta quebrar o produto e o motor: typecheck, lint, testes, build, acessibilidade, fidelidade ao protótipo, estados ruins de rede e regressões. Não aprova a própria implementação. |
-
-Luiz é o dono do produto e tem a decisão final de publicação, custo, exclusão, monetização e mudança estratégica.
-
----
-
-## 4a. Modelo e esforço
-
-O Linka veio para dentro da Buildea e herda a disciplina de custo dos demais repositórios do
-portfólio: **Sonnet é o default de todo mundo. Opus só quando o custo de errar supera o custo de
-Opus. Haiku para o que é mecânico.** Effort (baixo/médio/alto) escala junto com o modelo — não
-existe Opus com effort baixo nem Haiku com effort alto; se a tarefa não justifica o esforço, ela
-também não justifica o modelo caro.
-
-| Modelo | Quando usar | Quem tipicamente usa |
+| Agente | Responsabilidade | Política padrão |
 |---|---|---|
-| **Haiku** | Tarefa mecânica, resposta curta, pior caso é uma linha diferente: classificar rota óbvia, rodar lint/build de um módulo pequeno, checagem de formato de PR, revalidação de algo que já passou antes. | Giammattey (triagem), Igor (pipeline mínimo do Fast‑lane), Tiago (fix trivial sem tocar motor). |
-| **Sonnet** (default) | A maior parte do trabalho real: decompor demanda, escrever `plano.md`, implementar feature comum, revisar PR padrão, aplicar skill. | Giammattey, Tiago, Igor — default dos três. |
-| **Opus** | Só quando o raio de impacto do erro é alto e silencioso: mudança em `LinkaEngine`/contratos compartilhados, decisão de portfólio ou trade-off com múltiplos vetores, auditoria de segurança/privacidade tocando dado do usuário, terceira rodada do loop Tiago↔Igor (§5), decisão que a Apple não permite desfazer facilmente (App Store, privacidade). | Qualquer um dos três, só nesses gatilhos — nunca por hábito ou porque "é uma tarefa importante". |
+| **Íris** | Produto, jornada, UX, UI, copy, curadoria, priorização e critérios de aceite. Protege o foco do Linka e separa necessidade do usuário de solução técnica sugerida. | Somente leitura. |
+| **Camillo** | Principal Engineer transversal: arquitetura sistêmica, contratos, LinkaEngine, integrações Apple entre superfícies e revisões de alto raio de impacto. Pode implementar mudanças grandes quando delegado; não é o executor obrigatório de toda tarefa rotineira. | Escrita somente quando delegada/autorizada. |
+| **Tito** | Qualidade, regressão, testes, acessibilidade, segurança/privacidade, fidelidade ao produto e revisão do motor. | Somente leitura; emite `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA`. |
 
-Regra de decisão rápida, na ordem:
+Luiz é o dono do produto e mantém a decisão final sobre publicação, custo, exclusão, monetização e mudança estratégica.
 
-1. **O erro é reversível numa entrega pequena e o pior caso é baixo?** → Haiku, effort baixo.
-2. **É trabalho padrão de produto, implementação ou revisão sem os gatilhos acima?** → Sonnet, effort médio. Fica aqui por padrão.
-3. **Toca motor, contrato compartilhado, segurança, dado do usuário, ou já estourou o teto de rodadas?** → Opus, effort alto — e só nesse escopo, não na tarefa inteira.
+### Limites de autoridade
 
-Cada perfil em `.agents/plugins/squad-linka/agents/*.json` tem um campo `model_policy` com os
-gatilhos específicos do papel (`escalate_when`, `downgrade_when`). Ao delegar um subagente, o agente
-principal escolhe o modelo pelo gatilho real da tarefa, não pelo papel por padrão — um Tiago
-corrigindo string de UI é Haiku; um Tiago mexendo em `LinkaEngine` é Opus, mesmo sendo a mesma
-pessoa.
+- Íris aconselha produto; não fala em nome do Luiz.
+- Camillo implementa; não aprova a própria entrega.
+- Tito audita; não corrige o código que está revisando por padrão e não aprova merge/release.
+- O Codex principal consolida as perspectivas, resolve conflitos técnicos razoáveis e leva ao Luiz apenas decisões de produto ou gates realmente necessários.
+
+### Gate arquitetural — Camillo
+
+Antes de começar uma implementação, o Codex aciona Camillo para investigar e criar ou revisar um Architecture Plan curto quando a tarefa envolver pelo menos um destes gatilhos:
+
+1. múltiplos módulos ou pacotes;
+2. criação ou alteração de API;
+3. integração entre sistemas ou app ↔ backend;
+4. contrato compartilhado;
+5. schema ou persistência com impacto entre componentes;
+6. mudança relevante no `LinkaEngine`;
+7. novo serviço ou dependência estrutural;
+8. integração Apple que alcance múltiplas superfícies;
+9. integração entre produtos da Buildea;
+10. refatoração arquitetural;
+11. segurança ou privacidade com impacto sistêmico;
+12. decisão errada com grande raio de impacto.
+
+O fluxo é: produto define o problema → Camillo investiga e planeja → implementação → Tito valida → Camillo revisa de novo apenas quando a entrega materializar decisão arquitetural relevante.
+
+O plano não é documento longo. Registra, quando aplicável: problema, comportamento desejado, arquitetura atual relevante, módulos, decisão proposta, contratos/fluxo de dados, persistência, falhas, segurança/privacidade, compatibilidade, testes, riscos e não-objetivos. Camillo pode pedir uma segunda opinião quando houver ambiguidade arquitetural real, mas compara as alternativas e continua responsável pelo plano final.
+
+---
+
+## 4a. Modelo e esforço no Codex
+
+A configuração de subagentes do projeto vive em `.codex/config.toml`.
+
+- O default existe para manter delegações rápidas e econômicas.
+- Não vincule um especialista permanentemente ao modelo mais caro ou ao maior esforço.
+- Aumente modelo/esforço quando o custo de errar for alto: `LinkaEngine`, contrato compartilhado, migração de dado persistido, segurança/privacidade, regressão de medição difícil de reproduzir ou arquitetura ambígua com impacto amplo.
+- Trabalho mecânico, leitura e verificação simples devem permanecer no default ou em configuração mais leve suportada pelo runtime.
+- Se duas rodadas Camillo ↔ Tito não resolverem a mesma falha material, pare o loop e replique o problema no nível de arquitetura/escopo antes de tentar uma terceira correção.
+
+Risco da tarefa decide capacidade; o nome do agente não.
 
 ---
 
 ## 5. Roteamento e trilhas de trabalho
 
-Toda demanda entra pelo **Roteador (Passo 0)** operado pelo Giammattey, que a classifica em uma de quatro classes:
+O **Codex principal** roteia a demanda. Íris é consultada quando houver decisão de produto, experiência, escopo ou copy; Camillo entra pelo gate arquitetural ou quando sua especialidade trouxer ganho real; Tito quando uma revisão independente agregar confiança.
 
 | Classe | Critério | Trilha |
 |---|---|---|
-| **Trivial** | copy, tweak visual, bug isolado com fix pequeno, sem tocar `LinkaEngine` nem contrato de módulo | **Fast‑lane** |
-| **Feature** | nova capacidade, mudança de fluxo, tocando UI + motor ou introduzindo novo módulo | **Full‑flow** |
-| **Hotfix** | quebrado em produção afetando usuário agora | **Hot‑lane** |
-| **Rejeitar** | não melhora medir/entender/acompanhar a conexão no Apple, ou depende de capacidade que a Apple não expõe | volta ao Luiz com "não" |
+| **Trivial** | copy, tweak visual, documentação ou bug isolado pequeno sem tocar motor/contrato | Fast-lane |
+| **Feature** | nova capacidade, mudança de fluxo, UI + motor ou novo módulo | Full-flow |
+| **Hotfix** | comportamento quebrado em produção afetando usuário | Hot-lane |
+| **Rejeitar** | não melhora medir/entender/acompanhar no Apple ou depende de dado que a Apple não expõe | volta ao Luiz com justificativa |
 
-### Fast‑lane
-Giammattey decide → Tiago implementa → Igor roda pipeline mínimo → Giammattey aceita → merge. Sem `plano.md`, sem release notes, sem passo de empacotamento.
+### Fast-lane
 
-### Full‑flow
-1. **Architect (Giammattey)** — escreve `plano.md` curto (objetivo · mudança arquitetural · requisito de aceite · não‑objetivo). Luiz aprova a arquitetura antes de qualquer código.
-2. **Orchestrate (Tiago)** — implementa. Onde partes forem independentes, o Codex pode delegar tarefas com escopo de escrita disjunto; se uma tarefa for acoplada ou crítica ao caminho principal, mantenha-a no agente principal. Protege o motor (`LinkaEngine`, `NetworkCore`, `MeasurementHistory`, `NetworkInsights`, `NetworkAssist`, `LinkaModules`) contra acoplamento e simplificação apressada.
-3. **Evaluate (Igor)** — pipeline + auditoria funcional. Devolve com verdict tipado: **BLOQUEIA** (impede merge), **AJUSTA** (Tiago corrige nesta entrega) ou **ISSUE_FUTURA** (registra e segue). Loop Tiago ↔ Igor tem teto de **2 rodadas**; a terceira escala para o Giammattey replanejar.
-4. **Approve (Giammattey + Luiz)** — Giammattey consolida contra o requisito e apresenta ao Luiz. Merge só com aprovação do Luiz quando a mudança for material.
-5. **Release (Giammattey propõe, Luiz aprova)** — quando aplicável, Giammattey propõe execução de `.agents/scripts/release.sh` e rascunho de `RELEASE_NOTES.md`. Nada é executado antes do sim explícito do Luiz.
+Codex delimita → implementação local pelo Codex principal ou delegada conforme o ganho real → Tito valida se o risco justificar → Codex revisa e relata.
 
-### Hot‑lane
-Giammattey nomeia severidade → Tiago corrige em branch de hotfix → Igor roda pipeline mínimo sobre o módulo tocado → Giammattey merge → **postmortem obrigatório em 48h** vira issue de retrabalho na Full‑flow.
+Sem `plano.md` obrigatório e sem release automática.
 
-Regras que valem em todas as trilhas:
+### Full-flow
 
-- Não implemente antes de entender o problema e o impacto no produto.
-- Não crie feature só porque é tecnicamente possível — passa pela curadoria de minimalismo do §1.
-- Mudança visual relevante deve ser confrontada com protótipo e Design System.
-- Mudança no motor exige revisão de contratos, testes e impacto nos consumidores.
-- Um agente não declara a própria entrega aprovada por outro agente sem revisão real.
-- Estado vive em artefatos (`plano.md`, PR, verdict do Igor, `RELEASE_NOTES.md`), não na conversa.
+1. **Produto — Íris**: define problema, comportamento esperado, não-objetivos e critérios de aceite quando houver decisão de produto.
+2. **Arquitetura — Camillo**: atua somente se o gate arquitetural acima for acionado; propõe a menor solução técnica coerente, pacotes/contratos afetados, riscos e testes.
+3. **Plano — Codex principal**: consolida o Architecture Plan em `.agents/plano.md` quando o gate ou o tamanho/risco da mudança o exigir. Se houver decisão de produto realmente aberta, apresenta ao Luiz antes de codificar.
+4. **Implementação — Codex principal ou delegado**: executa o escopo delimitado, preserva o motor, escreve os testes relevantes e valida o módulo tocado. Camillo pode implementar mudanças grandes, mas não é uma etapa obrigatória da implementação comum.
+5. **Evaluate — Tito**: audita e devolve `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA` com evidência reproduzível.
+6. **Integração — Codex principal**: revisa o diff, resolve o retorno de Tito e confronta a entrega com os critérios de Íris.
+7. **Gate humano**: mudança material só é mergeada/publicada quando o gate definido pelo Luiz ou por este arquivo tiver sido cumprido.
+8. **Release**: `release.sh`, TestFlight, App Store, deploy ou publicação são propostas; nunca automáticas sem autorização explícita.
 
-A esteira detalhada, com artefatos e verdicts, vive em `.agents/WORKFLOW.md`.
+### Hot-lane
+
+Codex define severidade/escopo → correção cirúrgica pelo Codex principal ou delegado → Tito executa validação proporcional → Codex apresenta resultado e riscos. Se o hotfix acionar o gate arquitetural, Camillo faz a análise estrutural posterior. Não use hotfix como desculpa para refatoração oportunista.
+
+### Regras comuns
+
+- Não implemente antes de entender o problema.
+- Não crie feature só porque é tecnicamente possível.
+- Mudança visual relevante é confrontada com protótipo e Design System.
+- Mudança no motor exige revisão de contratos, testes e consumidores.
+- Nenhum agente declara a própria entrega aprovada por outro sem revisão real.
+- Estado vive em artefatos (`plano.md`, issue/PR, verdict de Tito, `RELEASE_NOTES.md`), não em encenação de conversa entre agentes.
+
+A esteira detalhada vive em `.agents/WORKFLOW.md`.
 
 ---
 
@@ -196,7 +215,7 @@ O número medido vem antes de logo, menu, texto, anúncio, gráfico ou diagnóst
 
 ### Divulgação progressiva
 
-Mostre primeiro o essencial. Ping, jitter, servidor e outros detalhes aparecem somente quando ajudam e preferencialmente sob expansão/detalhes.
+Mostre primeiro o essencial. Ping, jitter, servidor e outros detalhes aparecem quando ajudam e preferencialmente sob expansão/detalhes.
 
 ### Sem fricção antes da medição
 
@@ -207,45 +226,36 @@ Por padrão:
 - sem formulário;
 - sem seleção de modo;
 - sem seleção manual de servidor para usuário comum;
-- início automático.
-
-### Apple-only no produto, site institucional separado
-
-O produto Linka é Apple-only. A pasta `aplicacao-web/` é apenas o site institucional e não é uma versão Web do app.
+- início automático da medição no fluxo principal.
 
 ### Precisão antes de espetáculo
 
-Não invente valor, não simule medição em produção e não esconda resultado parcial. Se uma fase falhar, represente a limitação corretamente.
+Não invente valor, não simule medição em produção e não esconda resultado parcial. Zero real, ausência de dado e erro de medição não são semanticamente a mesma coisa.
 
 ### Beleza sem excesso
 
 Evite cardização, sombras gratuitas, gradientes decorativos, dashboards, gráficos sem utilidade e animações que competem com a medição.
 
-Motion deve transmitir estado e precisão, não chamar atenção para si.
+Motion transmite estado e precisão, não espetáculo.
 
 ---
 
 ## 7. Design e identidade
 
-O novo Design System em `documentacao/design/design_system/` substitui a governança visual antiga.
-- A pasta `documentacao/design/design_system/assets/icons/` é a ÚNICA fonte de verdade dos ícones. É expressamente proibido redesenhar o símbolo ou manter variantes visuais antigas concorrentes.
-- **Logo Oficial:** O logo do produto é estrita e unicamente o arquivo `wordmark.svg` (tanto na Web quanto no App). É expressamente proibido usar texto puro (ex: `<div>Linka</div>`) no lugar da logo.
+O Design System em `documentacao/design/design_system/` é a fonte visual do Linka.
 
-Não use Material Design 3 como regra do novo Linka.
-
-Não restaure por hábito:
-
-- navegação do Linka antigo;
-- linguagem visual Android/MD3;
-- cards e dashboards antigos;
-- Geist apenas porque existia antes;
-- componentes legados quando contradizem o novo protótipo.
+- `documentacao/design/design_system/assets/icons/` é a fonte de verdade dos ícones.
+- O wordmark oficial é `wordmark.svg`; não substitua por texto puro quando a marca é requerida.
+- Não use Material Design 3 como regra do Linka.
+- Não restaure componentes legados quando contradizem protótipo/Design System atuais.
 
 Quando protótipo e Design System divergirem:
 
-- protótipo decide comportamento e geometria da experiência;
-- Design System decide tokens, identidade, componentes e regras visuais;
-- se a divergência for material e não puder ser conciliada, Giammattey decide antes de implementar.
+- protótipo decide comportamento e geometria;
+- Design System decide tokens, identidade e componentes;
+- Íris decide a intenção de produto/experiência;
+- Camillo decide a implementação técnica;
+- divergência material que altere o produto é apresentada ao Luiz.
 
 ---
 
@@ -260,26 +270,26 @@ Ao tocar no engine:
 - preserve adaptação necessária para conexões móveis/lentas;
 - preserve resultado parcial quando uma fase não puder ser concluída;
 - não duplique lógica de medição na UI;
-- não acople diagnóstico avançado ao motor do Linka;
-- mantenha contratos compatíveis ou versione mudanças incompatíveis.
+- mantenha interpretação/diagnóstico fora do motor;
+- mantenha contratos compatíveis ou versione mudanças incompatíveis;
+- campos ausentes significam não medido/não disponível, nunca zero por conveniência.
 
-Afirmações públicas em `Como medimos` precisam ser verificáveis no código. Não publique número de servidores, quantidade de conexões, duração, precisão ou metodologia se não houver evidência correspondente.
+Afirmações públicas em `Como medimos` precisam ser verificáveis no código.
 
 ---
 
 ## 9. IA, interpretação e diagnóstico
 
-Com o SignallQ fora do ecossistema Apple, o Linka pode oferecer **interpretação, orientação e Assist** sobre as medições que ele mesmo fez e sobre dados que a Apple expõe ao aplicativo, respeitando a curadoria do §1:
+O Linka pode oferecer interpretação, orientação e Assist sobre medições e dados que a Apple expõe, respeitando a curadoria do §1.
 
-- interpretação vive em superfície secundária (detalhes, histórico, Assist), **nunca no primeiro frame do resultado**;
-- toda afirmação sobre a conexão precisa se sustentar em dado medido ou em dado de sistema exposto pela Apple — nada de opinião fabricada;
-- Assist e recomendações não podem atrasar, mascarar ou substituir a medição;
-- nenhuma capacidade nova entra "de carona" no motor: `LinkaEngine` continua responsável exclusivamente pela medição, e camadas de interpretação vivem em módulos separados (ex.: `LinkaModules`);
-- se a capacidade depende de algo que a Apple não expõe, ela não entra — não vira ginástica.
+- interpretação vive em superfície secundária, nunca substitui o número medido;
+- toda afirmação sobre a conexão precisa de evidência medida ou dado de sistema;
+- Assist não pode atrasar, mascarar ou substituir a medição;
+- `LinkaEngine` continua responsável pela medição; interpretação vive em módulos separados;
+- se a Apple não expõe o dado necessário, não invente causa raiz;
+- regras determinísticas confiáveis devem preceder interpretação de IA quando aplicável.
 
-IA continua permitida como ferramenta de desenvolvimento, revisão e operação.
-
-Nunca exponha segredo, token ou chave de API no bundle Web (site institucional). Variáveis públicas de frontend não são cofre de segredo.
+IA é permitida para desenvolvimento, revisão e operação, mas segredos/tokens nunca entram em bundle cliente.
 
 ---
 
@@ -287,8 +297,8 @@ Nunca exponha segredo, token ou chave de API no bundle Web (site institucional).
 
 - Sem conta obrigatória para medir.
 - Colete e retenha apenas o necessário.
-- Política pública deve descrever o comportamento real, não intenção futura.
-- Não afirme anonimização, retenção, relatórios agregados ou compartilhamento se isso não estiver implementado e validado.
+- Política pública descreve o comportamento real, não intenção futura.
+- Não afirme anonimização, retenção, agregação ou compartilhamento sem implementação validada.
 - Informação sensível não aparece em compartilhamento por padrão.
 
 Publicidade, quando existir:
@@ -303,70 +313,61 @@ Publicidade, quando existir:
 
 ## 11. Qualidade mínima antes de declarar pronto
 
-Para mudanças Web relevantes, execute quando aplicável:
+Para mudanças Web relevantes, quando aplicável:
 
 ```text
 npm run lint
 npm run build
 ```
 
-Execute typecheck explícito se não estiver coberto pelo build (`tsc -b` já roda dentro de `npm run
-build` em `aplicacao-web/`). **`npm test` não está disponível hoje** — `aplicacao-web/package.json`
-não define script de teste e não há suíte. Não alegue tê-lo executado. Se uma mudança relevante
-merece cobertura automatizada, registre isso como pendência em vez de simular o comando.
+`aplicacao-web/` não possui hoje uma suíte `npm test` canônica. Não alegue execução de comando inexistente.
 
-Além disso, valide:
+Para Swift, execute `swift test` nos pacotes tocados e build/testes do app conforme o escopo.
 
-- início automático;
+Além disso, valide quando aplicável:
+
+- início da medição;
 - download → upload → resultado;
 - reteste;
 - erro/offline;
+- timeout/cancelamento;
 - resultado parcial;
-- responsividade mobile e desktop;
+- responsividade/adaptação Apple;
 - acessibilidade básica;
 - fidelidade ao protótipo;
-- ausência de `@ts-nocheck` usado para esconder incompatibilidade nova;
-- ausência de segredo exposto no cliente.
+- ausência de segredo exposto;
+- ausência de `@ts-nocheck` ou equivalente usado para esconder incompatibilidade nova.
 
-Se algo não foi testado, diga que não foi testado.
+Se algo não foi testado, diga exatamente o que não foi testado.
 
 ---
 
 ## 12. Git e execução
 
-- Trabalhe em branch para mudanças relevantes; não trate `main` como bancada de experimento.
-- Preserve alterações existentes do usuário.
+- Trabalhe em branch para mudanças relevantes; `main` não é bancada de experimento.
+- Preserve alterações existentes do usuário e de outros agentes.
+- Revise `git status`/diff antes de alterar e antes de concluir.
 - Não use force push sem autorização explícita.
 - Não faça deploy, publicação em loja, mudança de infraestrutura com custo ou exclusão destrutiva sem autorização do Luiz.
-- Commit e push fazem parte da execução somente quando o escopo autorizado os exigir; nunca alegue que foram feitos sem confirmação real.
+- Não alegue commit, push, teste ou validação que não aconteceu.
 
 ---
 
-## 13. O que está aposentado
+## 13. Governança aposentada
 
-Estão **formalmente aposentados como governança**:
+Estão aposentados como governança ativa:
 
-- qualquer suposto modo de agente que concorra com estas instruções;
-- papéis legados Renan / Marcos / Gema / Lia deste repositório (nomes de uma squad anterior, retirados antes da atual — não confundir com o Igor de Qualidade em uso hoje, nem com o Renan/Marcos que atuam em outros repositórios do portfólio, ver AGENTS.md raiz);
-- obrigação PWA-only;
+- **Giammattey, Tiago e Igor** como agentes atuais do Linka — substituídos em 2026-09-06 por **Íris, Camillo e Tito** na migração para agentes nativos do Codex;
+- perfis de prompt JSON em `.agents/plugins/squad-linka/agents/`;
+- política de modelos Haiku/Sonnet/Opus;
+- qualquer segundo conjunto de regras em `CLAUDE.md`;
+- papéis legados Renan / Marcos / Gema / Lia deste repositório;
 - Material Design 3 como padrão visual;
-- Cloudflare Pages como destino obrigatório;
-- dependências de caminhos absolutos do antigo workspace Windows `E:\Projetos\Linka`;
-- documentos antigos que descrevem o Linka como central de diagnóstico ou mini-SignallQ;
-- **fronteira dura "Linka mede, SignallQ diagnostica" no ecossistema Apple** — desde que o SignallQ passou a ser produto Android/Web-only, o Linka absorve, com curadoria, as capacidades viáveis no Apple (ver §1 e §9). A curadoria de minimalismo continua valendo; a proibição por domínio, não;
-- **esteira única linear "Giammattey → Tiago → Marcos → Giammattey → Luiz"** (nome antigo do papel de Qualidade, hoje Igor) — substituída pelo Roteador + Fast‑lane / Full‑flow / Hot‑lane (ver §5 e `.agents/WORKFLOW.md`);
-- **execução automática do release** (`release.sh` e `RELEASE_NOTES.md` sem aprovação do Luiz) — release agora é proposta, não ato autônomo (ver §5 e §12);
-- regra de trabalhar sempre diretamente em `main`;
-- qualquer segundo conjunto de regras em `CLAUDE.md`.
+- PWA/Web App como direção do produto;
+- dependências de caminhos absolutos do antigo workspace Windows;
+- documentos antigos que descrevem o Linka como dashboard/central de diagnóstico;
+- fronteira rígida “Linka mede, SignallQ diagnostica” no Apple — vale a curadoria do §1;
+- esteira antiga baseada em personagens ou handoffs simulados;
+- execução automática de release sem gate humano.
 
-O código legado pode continuar existindo até ser removido conscientemente. **Legado existente não vira regra atual só porque ainda está no repositório.**
-
----
-
-## 14. Regra final
-
-Antes de construir qualquer coisa, faça a pergunta:
-
-> **Isso melhora a experiência de medir, entender ou acompanhar a conexão no Apple, sem competir com o resultado?**
-
-Se a resposta for não, provavelmente não pertence ao Linka.
+Histórico em `.agents/.old/`, changelogs e documentos que registram eventos passados não precisa ser reescrito para usar os nomes atuais.

@@ -1,127 +1,60 @@
 ---
 name: aplicar-voz-linka
-description: Aplica a voz canônica do Linka definida em documentacao/produto/VOZ.md sem inventar escopo, sem entusiasmo artificial e sem interpretar resultado.
+description: Aplica a voz canônica do Linka definida em documentacao/produto/VOZ.md sem inventar capacidade, entusiasmo artificial ou interpretação sem evidência.
 ---
 
-# Skill: aplicarVozLinka
+# Skill: aplicar-voz-linka
 
-Procedimento do **Giammattey** — dono da copy — para escrever texto do Linka. O **Tiago** usa a mesma skill ao implementar a copy especificada. O **Igor** usa para checar se o texto entregue bate com a voz.
+Use esta skill para criar ou revisar copy de produto, durante implementação ou auditoria.
 
-> ## ESTA SKILL NÃO É A FONTE DA VOZ
->
-> A fonte canônica é [`documentacao/produto/VOZ.md`](../../../documentacao/produto/VOZ.md).
->
-> Leia a fonte antes de escrever. Esta skill é procedimento, não segundo manual de personalidade.
+A fonte canônica da voz é `documentacao/produto/VOZ.md`. Esta skill é procedimento, não uma segunda personalidade.
 
-Todo texto passa depois pela [`matarCheiroDeIA`](../matarCheiroDeIA/SKILL.md). Voz certa com cheiro de robô não passa.
+Todo texto relevante passa também por `matar-cheiro-de-ia`.
 
-## 0. Voz não cria capacidade
-
-Antes de escrever copy para implementação, confirme em [`AGENTS.md`](../../../AGENTS.md) §2 e em [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) que o comportamento pertence ao Linka. Se a frase promete algo que o app não faz, o problema é a frase — não a implementação.
-
-**Rótulo de botão é contrato e não varia.** `Testar novamente`, `Detalhes`, `Como medimos` — esses termos ficam estáveis. Copy de estado (mensagens de erro, transição, resultado) pode variar dentro dos limites da voz.
-
-## 1. Princípio central
+## Princípio
 
 > **O Linka fala menos e se posiciona mais.**
 
-O produto não tenta convencer que é simples ou premium. A experiência demonstra. Se uma frase puder ser removida sem prejuízo, remova.
+Se uma frase puder ser removida sem prejudicar entendimento ou ação, remova.
 
-## 2. Como a voz do Linka é
+## A voz
 
 - frases curtas;
 - verbos diretos;
-- linguagem comum, sem jargão desnecessário;
-- afirmativo, não persuasivo;
-- confiante, não arrogante;
-- elegante, não afetado;
-- calmo, não frio;
-- técnico por baixo, simples por cima.
+- linguagem comum;
+- confiante sem ser arrogante;
+- calma e precisa;
+- técnica por baixo, simples por cima;
+- sem marketing dentro do fluxo de medição.
 
-## 3. Ao escrever
+Rótulos canônicos de controles não variam por criatividade. Preserve termos já definidos pelo produto e protótipo.
 
-- diga o fato, não a intenção;
-- se precisar de contexto, use um segundo parágrafo curto;
-- não narre progresso: a interface já comunica;
-- não repita que o Linka é minimalista em toda seção;
-- não use exclamação para enfatizar;
-- não use emoji na interface;
-- não use "estamos", "nossa equipe", "nós acreditamos".
+## Voz não cria capacidade
 
-### Preferir
+Antes de escrever, confirme que o comportamento existe ou faz parte do escopo aprovado. Não use copy para prometer dado, diagnóstico ou ação que o código não entrega.
 
-```
-Preparando
-Download
-Upload
-Finalizando
-Detalhes
-Testar novamente
-Como medimos
-Sem conta
-Sua conexão. Sem distrações.
-```
+## Resultado primeiro
 
-### Evitar
+O primeiro frame do resultado prioriza a medição. Interpretação, recomendação e Assist ficam em superfície secundária e precisam de dado real.
 
-```
-Estamos analisando sua rede...
-Quase pronto!
-Descubra uma nova forma revolucionária de medir sua internet.
-Nossa experiência minimalista foi criada para...
-Sua conexão está ótima para qualquer tarefa.
-```
+Nunca transforme falha ou ausência de dado em linguagem otimista. Erro fala a verdade. Parcial continua parcial.
 
-## 4. O Linka não opina no primeiro frame do resultado
+## Estados
 
-Nunca escreva copy que interprete a medição **antes do número aparecer**: "sua conexão está boa para jogos", "ideal para streaming", "recomendamos", "atenção: pode causar travamentos" não abrem a tela de resultado. Interpretação vive em superfície secundária (detalhes, histórico, Assist) e precisa se sustentar em dado real — nada de opinião fabricada ([`AGENTS.md`](../../../AGENTS.md) §1 e §9).
+Use a fonte `documentacao/produto/VOZ.md` para os estados canônicos. Evite frases rotativas, decorativas ou narrativas durante a medição.
 
-O Linka apresenta números primeiro. Interpretação vem sob expansão, quando o usuário pedir.
+## Páginas institucionais
 
-`Linka Assist` (feature Plus) pode responder perguntas do usuário sobre a medição atual ou o histórico e pode oferecer orientação sustentada nos dados que a Apple expõe ao app. O que não faz é substituir o número por opinião automática nem inventar causa raiz sem base. Escopo em [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) e [`documentacao/arquitetura/PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md).
+Site, Sobre, Como medimos, Privacidade e release notes podem explicar mais, mas continuam factuais. Não escreva manifesto, comparação promocional gratuita ou promessa de metodologia sem evidência no código.
 
-## 5. Estados da medição
+## Teste final
 
-Ver [`documentacao/produto/VOZ.md`](../../../documentacao/produto/VOZ.md) seção "Estados da medição". Resumo:
+Antes de aprovar copy, pergunte:
 
-- preparação: `Preparando`
-- latência: pode ser silenciosa se a interface já comunicar
-- download: `Download`
-- upload: `Upload`
-- término: `Finalizando`
-- erro: dizer objetivamente o que aconteceu e oferecer nova tentativa
+1. o usuário precisa ler isso?
+2. dá para dizer com menos palavras?
+3. é fato ou tentativa de parecer moderno?
+4. promete algo que o código não comprova?
+5. interpreta algo que deveria apenas ser medido?
 
-Nunca usar frases rotativas ou decorativas durante a medição.
-
-## 6. Páginas institucionais e release notes
-
-Sobre, Como medimos, Apps, Privacidade e páginas do site em `aplicacao-web/` podem explicar mais, mas seguem a mesma voz: título forte, primeiro parágrafo curto, informação factual, sem manifesto, sem comparação promocional com concorrente.
-
-`RELEASE_NOTES.md` tem uma pitada mais comercial (é anúncio de release), mas ainda dentro do princípio "afirmar, não vender". Ver o arquivo atual para calibre.
-
-## 7. Teste final
-
-Antes de publicar, cinco perguntas ([`VOZ.md`](../../../documentacao/produto/VOZ.md) seção final):
-
-1. O usuário precisa realmente ler isso?
-2. Dá para dizer com menos palavras?
-3. Estamos afirmando um fato ou tentando parecer modernos?
-4. Existe promessa que o código não comprova?
-5. Estamos interpretando algo que deveria apenas ser medido?
-
-Falhou em qualquer, reescreve ou remove.
-
-## 8. O que esta skill NÃO autoriza
-
-- mudar escopo do produto;
-- ligar feature flag;
-- transformar Linka em produto de diagnóstico;
-- expor segredo, API key ou telemetria não declarada;
-- afirmação sobre metodologia (número de servidores, precisão, duração) sem evidência no código.
-
-## Relacionados
-
-- **A fonte da voz:** [`documentacao/produto/VOZ.md`](../../../documentacao/produto/VOZ.md)
-- **Filtro anti-IA:** [`matarCheiroDeIA`](../matarCheiroDeIA/SKILL.md)
-- **Falar com o Luiz:** [`conversarComOLuiz`](../conversarComOLuiz/SKILL.md)
-- **Copy em issue/PR/commit:** [`registrarIssue`](../registrarIssue/SKILL.md)
+Se falhar, reescreva ou remova.

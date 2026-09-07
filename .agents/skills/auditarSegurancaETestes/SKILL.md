@@ -1,44 +1,27 @@
 ---
 name: auditar-seguranca-e-testes
-description: Runbook do Igor para validar robustez do LinkaEngine, comportamento em rede real e integridade da separação motor/interpretação.
+description: Audita robustez, regressão, segurança, privacidade e comportamento real do Linka antes da integração.
 ---
 
-# Skill: auditarSegurancaETestes
+# Skill: auditar-seguranca-e-testes
 
-Runbook do **Igor (Qualidade)** antes de responder com verdict tipado (`BLOQUEIA` / `AJUSTA` / `ISSUE_FUTURA`) para uma entrega do Linka.
+Use esta skill para uma auditoria independente da implementação, em leitura por padrão.
 
-Igor aprova qualidade e garante que ninguém está sendo enganado pelo próprio código. O **aceite** contra os requisitos é do Giammattey na Full‑flow ([`.agents/WORKFLOW.md`](../../WORKFLOW.md) Passo 4).
+Ele não “aprova” merge ou release. Ele emite verdict com evidência:
 
-Teste verde é necessário, não suficiente. Não prova que o produto funciona num iPhone 12 no 4G, dentro do metrô, no fim do dia útil.
+- **BLOQUEIA** — regressão material, medição incorreta, quebra de contrato, segurança/privacidade ou comportamento enganoso;
+- **AJUSTA** — correção necessária nesta entrega;
+- **ISSUE_FUTURA** — melhoria válida fora do escopo atual.
 
-## 0. Leia o escopo
+## 1. Comece pelo escopo
 
-Igor barra **expansão silenciosa** e **cheiro de painel**. Interpretação, histórico e Assist são bem-vindos quando viáveis no Apple ([`AGENTS.md`](../../../AGENTS.md) §1 e §9), mas ele reprova se:
+Leia o pedido/plano, o diff e os contratos afetados. Verifique expansão silenciosa, interpretação sem evidência, acoplamento ao motor e divergência do protótipo/Design System.
 
-- capacidade nova aparece no PR sem constar no `plano.md` aprovado;
-- interpretação subiu ao primeiro frame do resultado em vez de ficar em superfície secundária;
-- diagnóstico foi acoplado ao motor em vez de viver em módulo separado (ex.: `LinkaModules`);
-- afirmação sobre a conexão não se sustenta em dado medido ou dado de sistema exposto pela Apple.
+## 2. Pipeline
 
-Confira também [`documentacao/produto/LINKA_PLUS.md`](../../../documentacao/produto/LINKA_PLUS.md) para saber se a mudança pertence ao Free, ao Plus, ou está fora.
+Para pacotes Swift, rode `swift test` nos pacotes tocados e os demais testes necessários conforme dependências reais.
 
-## 1. Pipeline automático
-
-Para os pacotes Swift em `aplicativo-ios/`:
-
-```bash
-cd aplicativo-ios/NetworkCore && swift test
-cd aplicativo-ios/MeasurementHistory && swift test
-cd aplicativo-ios/NetworkInsights && swift test
-cd aplicativo-ios/NetworkAssist && swift test
-cd aplicativo-ios/LinkaModules && swift test
-```
-
-CI oficial: [`.github/workflows/swift-modules-ci.yml`](../../../.github/workflows/swift-modules-ci.yml). Qualquer erro aqui bloqueia.
-
-Para o app SwiftUI (`LinkaApp`), build via Xcode + testes de UI/integração quando existirem. Ver [`rodarNoIphone`](../rodarNoIphone/SKILL.md).
-
-Para o site institucional em `aplicacao-web/`:
+Para o site institucional:
 
 ```bash
 cd aplicacao-web
@@ -46,62 +29,64 @@ npm run lint
 npm run build
 ```
 
-## 2. Teste do comportamento de rede (condições adversas)
+Não invente `npm test` se o projeto não tiver suíte configurada.
 
-A maior mentira num SpeedTest é assumir que o socket nunca cai. Igor exige resposta para:
+## 3. Rede e estados adversos
 
-- E se o usuário trocar do Wi-Fi para 5G no meio do download?
-- E se o pacote de latência simplesmente não voltar (timeout)?
-- E se o usuário fechar e reabrir o app rápido? Uma medição antiga ficou rodando em background contaminando dados?
-- E se a conexão é lenta demais para completar uma fase? O motor tem que produzir `partial` (ver [`documentacao/arquitetura/contratos/network-measurement.schema.json`](../../../documentacao/arquitetura/contratos/network-measurement.schema.json)) em vez de mentir.
-- Cancelamento pelo usuário libera `URLSession`, `Task`, timer? (`aconselharArquitetura` § adaptadores)
+Quando a mudança tocar medição, valide por código/teste e, quando possível, em aparelho real:
 
-## 3. O falso sucesso (mentira visual)
+- perda/troca de rede no meio do teste;
+- timeout;
+- cancelamento;
+- background/foreground;
+- conexão lenta;
+- resultado parcial;
+- resposta vazia ou inválida;
+- limpeza de `Task`, `URLSession`, timer e monitores.
 
-O pior bug de um SpeedTest não é o app fechar. É desenhar uma tela linda com `100 Mbps` sendo que o teste falhou nos bastidores e mostrou número gravado em cache ou inventado.
+Falha não vira zero. Ausência de dado não vira sucesso silencioso.
 
-- Ausência de erro em requisição **não é** sucesso. Resposta vazia ou lenta = motor avisa e aborta o cálculo.
-- Interface bonita com número errado é **só um erro bem desenhado**.
-- Mock em código de produção é reprovação automática (o commit `b410c6e` os removeu; qualquer PR que traga de volta precisa justificar).
+## 4. Mentira visual
 
-## 4. Aparelho real (Apple-only)
+BLOQUEIA quando a UI apresenta resultado confiável que o motor não mediu de forma válida, reaproveita cache como se fosse teste atual ou esconde falha atrás de número/default.
 
-**iPhone real é padrão.** No simulador e no desktop a latência costuma ser 1 ms — não mostra o produto que o usuário vai ver.
+Uma tela bonita com número incorreto continua sendo bug crítico.
 
-O Linka é distribuído exclusivamente para o ecossistema Apple ([`AGENTS.md`](../../../AGENTS.md) §2). Igor valida:
+## 5. Apple real e acessibilidade
 
-- iPhone real (idealmente entrada + topo): safe area, gestos, notch/Dynamic Island, retrato/paisagem se aplicável;
-- iPad: adaptação de layout, split view se relevante;
-- Mac: janela redimensionável, comportamento no macOS;
-- rede Wi-Fi + celular + offline;
-- `prefers-reduced-motion` respeitado;
-- acessibilidade básica (VoiceOver lê o resultado, foco visível);
-- contraste em sol direto e em ambiente escuro.
+Conforme o escopo, verifique:
 
-## 5. Curadoria de minimalismo
+- iPhone/iPad/Mac;
+- light/dark;
+- Dynamic Type;
+- VoiceOver;
+- Reduce Motion;
+- safe areas/adaptação de janela;
+- Wi‑Fi/celular/offline;
+- permissões novas e recuperação quando negadas.
 
-Igor é a última linha antes do aceite do Giammattey. Confere:
+Se não houve aparelho real, declare isso.
 
-- copy da entrega não interpreta o resultado **no primeiro frame** (ver [`aplicarVozLinka`](../aplicarVozLinka/SKILL.md));
-- nenhuma tela nova coloca "sua conexão está boa para X" antes do número medido;
-- interpretação nova (se houver) se sustenta em dado real e vive em superfície secundária, não competindo com o resultado ([`AGENTS.md`](../../../AGENTS.md) §9);
-- `NetworkAssist`, se tocado, continua fora do motor de medição e opera sobre dado medido/exposto pelo sistema — nada de opinião fabricada ([`documentacao/arquitetura/PLANO_NETWORK_ASSIST.md`](../../../documentacao/arquitetura/PLANO_NETWORK_ASSIST.md));
-- nenhum segredo de API ficou no bundle (busca por `sk-ant-`, `AIza`, chaves de fornecedor).
+## 6. Segurança e privacidade
 
-## 6. Formato do relatório
+- nenhum segredo em bundle;
+- coleta proporcional à finalidade;
+- dados sensíveis não aparecem em share por padrão;
+- claims públicos correspondem ao comportamento real;
+- nova permissão sensível tem justificativa e copy apropriada.
 
-O relatório de qualidade vira parágrafo no corpo do PR ([`registrarIssue`](../registrarIssue/SKILL.md)), separando:
+## 7. Relatório
 
-1. o que foi verificado automaticamente (`swift test`, `build`);
-2. o que foi verificado por leitura de código;
-3. o que foi testado em aparelho real (qual, em que rede);
-4. o que **não** foi verificado, e por quê.
+Retorne:
 
-"Compilou" não é uma linha do relatório.
+```text
+VERDICT: BLOQUEIA | AJUSTA | ISSUE_FUTURA | SEM ACHADOS MATERIAIS
+ACHADOS: evidência reproduzível + arquivo/símbolo
+AUTOMÁTICO: comandos/testes executados
+LEITURA: o que foi validado por revisão
+APARELHO REAL: o que foi testado e onde
+NÃO TESTADO: itens não verificados e motivo
+RISCO RESIDUAL: se houver
+```
 
-## Relacionados
-
-- **Aconselhamento arquitetural:** [`aconselharArquitetura`](../aconselharArquitetura/SKILL.md)
-- **Modularidade:** [`validarModularidade`](../validarModularidade/SKILL.md)
-- **iPhone real:** [`garantirIphoneReal`](../garantirIphoneReal/SKILL.md)
-- **Rodar no iPhone:** [`rodarNoIphone`](../rodarNoIphone/SKILL.md)
+O Codex principal integra esse relatório com os critérios de produto e a evidência da implementação.
