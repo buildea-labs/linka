@@ -28,7 +28,9 @@ Rode `.agents/scripts/release.sh patch`, `minor`, `major` ou uma versão explíc
 
 ## Configuração única no GitHub
 
-Crie o ambiente `testflight` em **Settings → Environments** e exija aprovação de quem autoriza releases. As chaves `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_CONTENT` e `APPLE_TEAM_ID` permanecem como secrets desse ambiente. Sem esse ambiente protegido, a workflow continua funcional, mas a aprovação humana não fica tecnicamente protegida.
+Crie o ambiente `testflight` em **Settings → Environments** e exija aprovação de quem autoriza releases. As chaves `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_CONTENT` e `APPLE_TEAM_ID` devem existir somente nesse ambiente, nunca como secrets acessíveis por workflows comuns.
+
+Crie também um ruleset para `testflight/**` em **Settings → Rules → Rulesets**. Ele precisa bloquear criação, atualização e exclusão dessas tags para pessoas e liberar somente `github-actions[bot]`. Sem essa regra, a tag não é uma prova imutável: alguém com permissão de escrita poderia criá-la antes da Apple ou movê-la depois.
 
 ## Verificação antes de autorizar
 

@@ -89,6 +89,8 @@ jobs:
           VERSION: ${{ steps.release.outputs.version }}
           BUILD: ${{ steps.release.outputs.build }}
         run: |
+          git fetch origin main:refs/remotes/origin/main
+          test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
           TAG="testflight/v${VERSION}-b${BUILD}"
           git rev-parse -q --verify "refs/tags/$TAG" && { echo "Tag $TAG já existe."; exit 1; } || true
           git config user.name "github-actions[bot]"

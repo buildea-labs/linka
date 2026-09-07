@@ -23,6 +23,17 @@ platform :ios do
   # ------------------------------------------------------------------
   desc "Build e upload para TestFlight via App Store Connect API"
   lane :beta do
+    UI.user_error!("TestFlight só pode rodar pela GitHub Actions.") unless ENV["GITHUB_ACTIONS"] == "true"
+    UI.user_error!("TestFlight só pode partir da main.") unless ENV["GITHUB_REF"] == "refs/heads/main"
+    release_sha = ENV["GITHUB_SHA"]
+    UI.user_error!("SHA de release ausente.") if release_sha.to_s.empty?
+
+    repository_root = File.expand_path("..", __dir__)
+    sh("git -C #{repository_root.shellescape} fetch origin main:refs/remotes/origin/main")
+    head_sha = sh("git -C #{repository_root.shellescape} rev-parse HEAD").strip
+    main_sha = sh("git -C #{repository_root.shellescape} rev-parse origin/main").strip
+    UI.user_error!("O SHA de release não é a ponta atual da main.") unless release_sha == head_sha && head_sha == main_sha
+
     required_envs = %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_CONTENT APPLE_TEAM_ID]
     missing_envs = required_envs.reject { |name| ENV[name] && !ENV[name].empty? }
     UI.user_error!("Secrets ausentes: #{missing_envs.join(', ')}") unless missing_envs.empty?
@@ -106,11 +117,11 @@ platform :ios do
       File.write(evidence_path, JSON.pretty_generate({
         version: version,
         build: build_number.to_i,
-        git_sha: ENV.fetch("GITHUB_SHA", "local"),
+        git_sha: release_sha,
         ipa_sha256: Digest::SHA256.file(ipa_path).hexdigest,
         processed_build: processed_build
       }))
-      UI.important("TestFlight processado: #{version} (#{build_number}), SHA #{ENV.fetch('GITHUB_SHA', 'local')}")
+      UI.important("TestFlight processado: #{version} (#{build_number}), SHA #{release_sha}")
     ensure
       File.delete(authentication_key_path) if File.exist?(authentication_key_path)
     end
