@@ -149,6 +149,7 @@ O Codex:
 - Mudança material segue o gate humano definido em [`AGENTS.md`](../AGENTS.md).
 - `.agents/scripts/release.sh`, TestFlight, App Store, deploy e publicação **nunca são automáticos** sem autorização explícita do Luiz.
 - `RELEASE_NOTES.md`, quando necessário, descreve mudança observável para o usuário, não implementação interna.
+- Antes de release relevante, revise `documentacao/funcional/VISAO.md`, `documentacao/funcional/HISTORIA.md`, `documentacao/produto/LINKA_PLUS.md` e `documentacao/arquitetura/PLANO_*.md` contra o código atual — não deixe esses documentos descrever uma fundação que o código já superou.
 
 ---
 
