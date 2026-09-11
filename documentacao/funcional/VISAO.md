@@ -487,6 +487,20 @@ Os dois compartilham o nome Linka, mas não devem ser confundidos.
 
 ---
 
+# Acesso ao roteador
+
+O Linka nasceu porque Giam não lembrava a senha do próprio modem. Essa origem voltou a fazer parte do escopo oficial do produto: o Linka pode localizar o gateway da rede atual e abrir o painel de administração dele dentro do app, guardando a senha informada pelo usuário no Keychain do dispositivo para a próxima vez.
+
+Isso não é um scanner de dispositivos nem uma central de ferramentas de rede. É uma conveniência pontual e estritamente vinculada à rede que o usuário acabou de medir:
+
+* encontrar o gateway atual (não inventariar a rede inteira);
+* abrir a página de administração desse gateway;
+* guardar a credencial localmente para poupar o usuário de decorá-la de novo.
+
+O Linka não interpreta o que existe dentro do painel do roteador, não lista os dispositivos conectados a ele e não usa esse acesso como insumo para diagnóstico ou Assist — isso continua sendo território do SignallQ. Fica só o gesto que deu origem ao produto: abrir o roteador quando o usuário precisa.
+
+Como o painel de administração normalmente só existe em HTTP simples na rede local (limitação do próprio equipamento, não escolha do Linka), essa tela precisa deixar claro ao usuário que está entrando em uma página fora do controle do app, e a senha salva no Keychain deve poder ser removida por quem a guardou.
+
 # O teste para qualquer nova funcionalidade
 
 Antes de adicionar alguma coisa ao Linka, devemos perguntar:
@@ -505,7 +519,9 @@ Exemplos:
 
 **Mostrar latência como detalhe:** sim.
 
-**Criar scanner de dispositivos:** não.
+**Encontrar o roteador da rede atual e abrir o painel de administração dele:** sim — escopo oficial. Ver seção "Acesso ao roteador" abaixo.
+
+**Criar scanner de dispositivos genérico (inventário de todo equipamento da rede):** não.
 
 **Diagnosticar canal Wi-Fi:** não.
 

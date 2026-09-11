@@ -1,6 +1,6 @@
 # NetworkAssist — plano e implementação
 
-Status: backend isolado implementado na branch `feat/network-assist`. Nenhuma UI ou conexão real com fornecedor de IA foi criada.
+Status (atualizado em 2026-09-11): o backend descrito abaixo saiu do isolamento original. Existe UI real (`AssistContainer`, `AssistProblemSelectionView`) e um transport remoto real: o app conecta a um relay (`linka-assist-relay.buildealabs.workers.dev`) que fala com a infraestrutura de diagnóstico da Buildea/SignallQ. Consistente com a regra abaixo, não há chave de fornecedor de IA embutida no cliente — o transporte usa `transportAuth: .relay`, sem bearer token no bundle.
 
 ## Objetivo
 
@@ -74,13 +74,13 @@ Uma resposta `answered` precisa citar pelo menos uma evidência conhecida. O mó
 - `answered` sem evidência é rejeitado;
 - política enviada ao transport proíbe inferir causa raiz e recomendar reparo.
 
+## Integração já realizada
+
+Um adapter de produto (`AssistContainer`) mapeia `requiresDiagnosis` e as demais disposições para a experiência de UI do Assist. O transport remoto vive fora do pacote `NetworkAssist`, mantendo as credenciais no servidor — nunca houve chave de fornecedor de IA embutida no cliente.
+
 ## Integração futura
 
-Um adapter de `NetworkInsights` poderá converter comparações, estatísticas e tendências em `NetworkAssistEvidence`.
-
-Um adapter de produto poderá mapear `requiresDiagnosis` para uma experiência específica. Essa decisão não pertence ao módulo.
-
-Um transport remoto deverá viver fora do pacote e manter credenciais no servidor. Nunca deve haver chave de fornecedor de IA embutida no cliente.
+Um adapter de `NetworkInsights` poderá converter comparações, estatísticas e tendências em `NetworkAssistEvidence` de forma mais completa do que hoje.
 
 ## Gate
 

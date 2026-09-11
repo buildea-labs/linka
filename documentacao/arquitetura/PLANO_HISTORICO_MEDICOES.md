@@ -1,6 +1,8 @@
 # Histórico de medições — plano e implementação
 
-Status: módulo isolado implementado na branch `feat/linka-plus-modules`. Nenhuma integração com Web, SwiftUI ou SpeedTest foi criada.
+Status (atualizado em 2026-09-11): o módulo saiu do isolamento descrito abaixo e está integrado ao app. `LinkaMeasurementHistory.makeRepository()` é consumido por `SpeedTestViewModel`, `HistoryView`, `MainView`, `LinkaApp` e `NetworkStabilityPatternsViewModel`. `FileMeasurementHistoryRepository` persiste em disco com escrita atômica e falha fechada em corrupção — não é mais apenas a fundação isolada da Fase 0-2 registrada a seguir.
+
+A narrativa de "Fase 0/1/2" abaixo descreve a construção original do módulo e permanece útil como contexto histórico de arquitetura, mas a seção "O que continua fora do módulo" não reflete mais o estado atual do produto.
 
 ## Arquitetura adotada
 
@@ -37,12 +39,12 @@ A integração será uma decisão posterior e deverá acontecer por adapter.
 
 O Linka já tinha um embrião de histórico em `LinkaModules`: `MeasurementSnapshot`, `HistoryProviding` e `InMemoryHistoryStore`. Essa base foi aproveitada conceitualmente, sem criar uma segunda implementação concorrente.
 
-Também foram registradas duas dívidas do engine iOS, sem alterá-las:
+Também foram registradas duas dívidas do engine iOS, sem alterá-las na época:
 
-- `SpeedTestCore` ainda simula jitter;
-- `LinkaEngine.swift` ainda contém um caminho placeholder com resultado fixo.
+- `SpeedTestCore` ainda simulava jitter;
+- `LinkaEngine.swift` ainda continha um caminho placeholder com resultado fixo.
 
-Como o módulo permanece desconectado do engine, essas dívidas não bloqueiam seu desenvolvimento isolado.
+Ambas já foram corrigidas: `SpeedTestCore` calcula jitter real a partir da diferença entre pings consecutivos, e o caminho placeholder foi removido. Registro mantido aqui apenas como contexto histórico da Fase 0.
 
 ## Fase 1 — contrato canônico
 
@@ -118,7 +120,9 @@ A política pertence ao repositório, não à UI nem ao plano Free/Plus.
 - versão de store não suportada;
 - contrato canônico e serialização JSON.
 
-## O que continua fora do módulo
+## O que ficou fora do módulo original (histórico da Fase 0-2)
+
+Na fundação isolada, ainda não existiam:
 
 - adapter do motor de SpeedTest;
 - qualquer ViewModel;
@@ -129,14 +133,12 @@ A política pertence ao repositório, não à UI nem ao plano Free/Plus.
 - Assist/IA;
 - diagnóstico e recomendação.
 
-## Próximo gate
+O gate abaixo já foi cumprido: o adapter iOS existe, o módulo está ligado ao motor e às telas via `SpeedTestViewModel`/`HistoryView`, e a sincronização CloudKit tem um módulo próprio (`MeasurementHistoryCloudKit`, código pronto, aguardando apenas o provisionamento do container iCloud no Developer Portal para operar em produção — ver `LINKA_PLUS.md`). React/Web e diagnóstico/recomendação continuam fora, por decisão de produto (ver `AGENTS.md` e `VISAO.md`), não por limitação técnica.
 
-Antes de considerar o módulo concluído para integração:
+## Gate original (cumprido)
 
 1. executar `swift test` em `aplicativo-ios/NetworkCore`;
 2. executar `swift test` em `aplicativo-ios/MeasurementHistory`;
 3. executar `swift test` em `aplicativo-ios/LinkaModules` para validar compatibilidade;
 4. revisar API pública e política de retenção;
 5. somente depois decidir se haverá adapter iOS, Web ou ambos.
-
-Até esse gate passar, o módulo existe como backend isolado e não deve ser ligado às interfaces.

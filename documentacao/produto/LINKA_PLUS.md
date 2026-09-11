@@ -73,24 +73,25 @@ A UI não deve espalhar verificações de assinatura. Ela pergunta ao provedor d
 
 - contratos públicos dos módulos;
 - política Free/Plus;
-- histórico em memória;
-- comparação determinística entre duas medições;
-- transporte injetável do Assist;
-- abstração de disponibilidade das integrações Apple;
-- testes unitários da matriz de acesso, histórico, comparação e falha segura do Assist.
+- histórico persistido em disco (`FileMeasurementHistoryRepository`), integrado ao fluxo principal do app;
+- comparação determinística entre duas medições e tendência via `NetworkInsights`;
+- StoreKit 2 real (compra, restauração, entitlements) e paywall (`PurchaseSheet`);
+- Widgets de tela de bloqueio/início, atualizados após cada medição;
+- App Intents/Siri Shortcuts (início de teste, última medição, histórico); a medição silenciosa via atalho existe mas fica desligada por padrão (feature flag);
+- Network Assist conectado a um relay remoto real, sem chave embutida no cliente;
+- código de sincronização CloudKit entre dispositivos, incluindo resolução de conflito e fila de exclusão offline;
+- testes unitários da matriz de acesso, histórico, comparação, Assist e sincronização CloudKit.
+
+### Implementado no código, mas ainda não operante em produção
+
+- **CloudKit/sincronização entre dispositivos**: o código está pronto e testado, mas o container iCloud ainda não foi provisionado no Apple Developer Portal. Enquanto isso não acontecer, o app degrada com segurança para funcionamento 100% local — a sincronização não chega ao usuário final.
 
 ### Deliberadamente ainda não implementado
 
-- StoreKit e compra real;
-- persistência permanente do histórico;
-- CloudKit/sincronização entre dispositivos;
-- Widgets;
-- App Intents/Siri;
-- endpoint ou chave de IA;
-- autenticação/backend;
-- paywall final.
+- persistência/autenticação de conta de usuário (o Linka não exige login);
+- backend de contas.
 
-O `UnconfiguredAssistTransport` falha de forma explícita. Nenhuma chave ou chamada remota é embutida no app nesta fundação.
+Atualizado após auditoria de código em 2026-09-11: esta seção descrevia StoreKit, CloudKit, Widgets e App Intents como não implementados; todos já estão no código. Mantenha esta lista sincronizada com o estado real do app a cada mudança relevante de escopo, em vez de deixá-la descrever uma fundação inicial que já foi superada.
 
 ## Assist: limite de escopo
 
