@@ -290,7 +290,7 @@ private struct PrototypeHistoryRow: View {
 
     private var formattedDate: String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = LinkaLanguagePreference.currentLocale
         formatter.dateFormat = "d MMM, HH:mm"
         return formatter.string(from: measurement.measuredAt)
     }
@@ -366,7 +366,7 @@ struct HistoryRow: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = LinkaLanguagePreference.currentLocale
         return formatter.string(from: date)
     }
 

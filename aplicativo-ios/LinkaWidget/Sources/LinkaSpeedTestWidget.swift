@@ -8,6 +8,12 @@ struct LinkaSpeedTestWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: LinkaWidgetEntry
 
+    private var locale: Locale {
+        LinkaWidgetShared.effectiveLocale(
+            preference: LinkaWidgetShared.languagePreference()
+        )
+    }
+
     var body: some View {
         Group {
             switch family {
@@ -17,6 +23,7 @@ struct LinkaSpeedTestWidgetView: View {
                 smallBody
             }
         }
+        .environment(\.locale, locale)
         .containerBackground(Color.surfacePage, for: .widget)
     }
 
@@ -146,31 +153,39 @@ struct LinkaSpeedTestWidgetView: View {
     }
 
     private func formattedMbps(_ value: Double) -> String {
-        String(format: "%.1f", value).replacingOccurrences(of: ".", with: ",")
+        value.formatted(.number.precision(.fractionLength(1)).locale(locale))
     }
 
     private func relativeLabel(for date: Date) -> String {
         if Calendar.current.isDateInToday(date) {
             let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "pt_BR")
+            formatter.locale = locale
             formatter.dateFormat = "HH:mm"
-            return "Hoje, \(formatter.string(from: date))"
+            return String(
+                format: String(localized: "Hoje, %@", defaultValue: "Today, %@", locale: locale),
+                locale: locale,
+                formatter.string(from: date)
+            )
         }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = locale
         formatter.dateFormat = "dd/MM"
         return formatter.string(from: date)
     }
     
     private func fullDateTimeLabel(for date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = locale
         if Calendar.current.isDateInToday(date) {
-            formatter.dateFormat = "'Hoje,' HH:mm"
+            return String(
+                format: String(localized: "Hoje, %@", defaultValue: "Today, %@", locale: locale),
+                locale: locale,
+                formatter.string(from: date)
+            )
         } else {
             formatter.dateFormat = "dd/MM/yyyy, HH:mm"
+            return formatter.string(from: date)
         }
-        return formatter.string(from: date)
     }
 }
 

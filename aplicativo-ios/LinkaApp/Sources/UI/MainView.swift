@@ -1022,7 +1022,7 @@ struct MainView: View {
 
     private func formatRelativeTime(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = LinkaLanguagePreference.currentLocale
         let calendar = Calendar.current
         if calendar.isDateInToday(date) {
             formatter.dateFormat = "HH:mm"

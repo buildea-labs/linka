@@ -10,6 +10,9 @@ import LinkaAppIntents
 import UIKit
 #elseif os(macOS)
 import AppKit
+import LinkaWidgetShared
+#if canImport(WidgetKit)
+import WidgetKit
 #endif
 
 @main
@@ -22,6 +25,7 @@ struct LinkaApp: App {
     @StateObject private var entitlements: StoreKitEntitlementProvider
     @StateObject private var serviceStatus = ServiceStatusStore()
     @AppStorage("appAppearance") private var appAppearance = "system"
+    @AppStorage(LinkaLanguagePreference.storageKey) private var languagePreference = LinkaLanguagePreference.system.rawValue
 
     init() {
         let entitlementProvider = StoreKitEntitlementProvider()
@@ -103,6 +107,7 @@ struct LinkaApp: App {
                 .environmentObject(entitlements)
                 .environmentObject(serviceStatus)
                 .preferredColorScheme(preferredColorScheme)
+                .environment(\.locale, effectiveLocale)
             .alert("Instabilidade em serviço", isPresented: Binding(
                 get: { serviceStatus.popupIncident != nil },
                 set: { if !$0 { serviceStatus.popupIncident = nil } }
@@ -123,7 +128,9 @@ struct LinkaApp: App {
             .task {
                 await entitlements.refreshSnapshot()
                 await serviceStatus.refresh()
+                syncWidgetLanguagePreference()
             }
+            .onChange(of: languagePreference) { _ in syncWidgetLanguagePreference() }
         }
         #if os(macOS)
         .defaultSize(width: 980, height: 680)
@@ -144,6 +151,19 @@ struct LinkaApp: App {
         MacMainView()
         #else
         MainView()
+        #endif
+    }
+
+    private var effectiveLocale: Locale {
+        LinkaLanguagePreference.fromStoredValue(languagePreference).locale
+    }
+
+    private func syncWidgetLanguagePreference() {
+        LinkaWidgetShared.writeLanguagePreference(
+            LinkaLanguagePreference.fromStoredValue(languagePreference).rawValue
+        )
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: LinkaWidgetShared.widgetKind)
         #endif
     }
 }

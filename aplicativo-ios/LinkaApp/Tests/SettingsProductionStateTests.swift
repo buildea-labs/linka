@@ -42,6 +42,29 @@ final class SettingsProductionStateTests: XCTestCase {
         XCTAssertNil(LinkaAppearancePreference(rawValue: "unknown")?.colorScheme)
     }
 
+    func testLanguagePreferenceSupportsSystemPortugueseEnglishAndLatinAmericanSpanish() {
+        XCTAssertEqual(LinkaLanguagePreference.allCases.map(\.rawValue), ["system", "pt-BR", "en", "es-419"])
+        XCTAssertEqual(LinkaLanguagePreference.fromStoredValue("en"), .english)
+        XCTAssertEqual(LinkaLanguagePreference.fromStoredValue("unknown"), .system)
+    }
+
+    func testPermissionPromptsRemainBoundToSystemLanguageResources() throws {
+        // iOS owns permission prompts. The in-app language picker must not
+        // override the device language used by InfoPlist.strings.
+        let appDirectory = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        for language in ["pt-BR", "en", "es-419"] {
+            let url = appDirectory
+                .appendingPathComponent("Resources")
+                .appendingPathComponent("\(language).lproj")
+                .appendingPathComponent("InfoPlist.strings")
+            let contents = try String(contentsOf: url)
+            XCTAssertTrue(contents.contains("NSLocationWhenInUseUsageDescription"))
+            XCTAssertTrue(contents.contains("NSLocalNetworkUsageDescription"))
+        }
+    }
+
     func testVersionDisplayUsesRealBundleKeysAndFallbacks() {
         XCTAssertEqual(
             LinkaAppVersion.displayString(

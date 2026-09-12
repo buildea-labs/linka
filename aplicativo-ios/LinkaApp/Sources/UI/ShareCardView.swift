@@ -158,7 +158,7 @@ struct ShareCardView: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = LinkaLanguagePreference.currentLocale
         return formatter.string(from: measurement.measuredAt)
     }
 }

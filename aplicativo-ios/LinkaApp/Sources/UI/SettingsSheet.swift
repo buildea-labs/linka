@@ -24,6 +24,7 @@ struct SettingsView: View {
     @State private var showWiFiExplanation = false
     @State private var showAdvancedActions = false
     @AppStorage("appAppearance") private var appAppearance = "system"
+    @AppStorage(LinkaLanguagePreference.storageKey) private var languagePreference = LinkaLanguagePreference.system.rawValue
     @AppStorage(LinkaWiFiPreferences.identificationEnabledKey) private var networkIdentificationEnabled = true
     @AppStorage(LinkaWiFiPreferences.advancedConfiguredKey) private var advancedWiFiConfigured = false
     @AppStorage(LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) private var advancedWiFiEnabled = true
@@ -83,6 +84,13 @@ struct SettingsView: View {
                     Text("Claro").tag("light")
                     Text("Escuro").tag("dark")
                 }
+
+                Picker(String(localized: "settings.language.title", defaultValue: "Idioma"), selection: $languagePreference) {
+                    ForEach(LinkaLanguagePreference.allCases) { language in
+                        Text(language.displayName).tag(language.rawValue)
+                    }
+                }
+                .accessibilityHint(String(localized: "settings.language.hint", defaultValue: "Sistema usa o idioma definido no iPhone."))
             }
 
             Section("Status de serviços") {
