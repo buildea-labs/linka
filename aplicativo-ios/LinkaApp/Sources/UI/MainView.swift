@@ -912,9 +912,12 @@ struct MainView: View {
         if viewModel.connectionKind == .wifi {
             if let ssid = viewModel.wifiContext?.ssid {
                 if let band = viewModel.wifiBandGHz {
-                    let bandStr = band.truncatingRemainder(dividingBy: 1) == 0
-                        ? String(format: "%.0f", band)
-                        : String(format: "%.1f", band)
+                    let fractionLength = band.truncatingRemainder(dividingBy: 1) == 0 ? 0 : 1
+                    let bandStr = band.formatted(
+                        .number
+                            .precision(.fractionLength(fractionLength))
+                            .locale(LinkaLanguagePreference.currentLocale)
+                    )
                     return "\(ssid) · \(bandStr) GHz"
                 }
                 return ssid
@@ -1021,18 +1024,15 @@ struct MainView: View {
     }
 
     private func formatRelativeTime(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = LinkaLanguagePreference.currentLocale
+        let locale = LinkaLanguagePreference.currentLocale
+        let time = date.formatted(.dateTime.hour().minute().locale(locale))
         let calendar = Calendar.current
         if calendar.isDateInToday(date) {
-            formatter.dateFormat = "HH:mm"
-            return LinkaCopy.format("home.relative.today", formatter.string(from: date))
+            return LinkaCopy.format("home.relative.today", time)
         } else if calendar.isDateInYesterday(date) {
-            formatter.dateFormat = "HH:mm"
-            return LinkaCopy.format("home.relative.yesterday", formatter.string(from: date))
+            return LinkaCopy.format("home.relative.yesterday", time)
         } else {
-            formatter.dateFormat = "d MMM, HH:mm"
-            return formatter.string(from: date)
+            return date.formatted(.dateTime.day().month(.abbreviated).hour().minute().locale(locale))
         }
     }
 

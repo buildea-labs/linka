@@ -158,33 +158,24 @@ struct LinkaSpeedTestWidgetView: View {
 
     private func relativeLabel(for date: Date) -> String {
         if Calendar.current.isDateInToday(date) {
-            let formatter = DateFormatter()
-            formatter.locale = locale
-            formatter.dateFormat = "HH:mm"
             return String(
                 format: String(localized: "Hoje, %@", defaultValue: "Today, %@", locale: locale),
                 locale: locale,
-                formatter.string(from: date)
+                date.formatted(.dateTime.hour().minute().locale(locale))
             )
         }
-        let formatter = DateFormatter()
-        formatter.locale = locale
-        formatter.dateFormat = "dd/MM"
-        return formatter.string(from: date)
+        return date.formatted(.dateTime.month(.twoDigits).day(.twoDigits).locale(locale))
     }
     
     private func fullDateTimeLabel(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = locale
         if Calendar.current.isDateInToday(date) {
             return String(
                 format: String(localized: "Hoje, %@", defaultValue: "Today, %@", locale: locale),
                 locale: locale,
-                formatter.string(from: date)
+                date.formatted(.dateTime.hour().minute().locale(locale))
             )
         } else {
-            formatter.dateFormat = "dd/MM/yyyy, HH:mm"
-            return formatter.string(from: date)
+            return date.formatted(.dateTime.year().month(.twoDigits).day(.twoDigits).hour().minute().locale(locale))
         }
     }
 }

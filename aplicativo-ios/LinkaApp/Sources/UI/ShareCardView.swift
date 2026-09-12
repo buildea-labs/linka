@@ -148,9 +148,12 @@ struct ShareCardView: View {
             return kindLabel
         }
 
-        let band = wifiBandGHz.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", wifiBandGHz)
-            : String(format: "%.1f", wifiBandGHz)
+        let fractionLength = wifiBandGHz.truncatingRemainder(dividingBy: 1) == 0 ? 0 : 1
+        let band = wifiBandGHz.formatted(
+            .number
+                .precision(.fractionLength(fractionLength))
+                .locale(LinkaLanguagePreference.currentLocale)
+        )
         return "\(kindLabel) · \(band)GHz"
     }
 

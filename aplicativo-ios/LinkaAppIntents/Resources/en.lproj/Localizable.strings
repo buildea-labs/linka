@@ -11,3 +11,10 @@
 "Esta funcionalidade ainda não está disponível." = "This feature is not available yet.";
 "Analisar conexão" = "Check connection";
 "Último resultado" = "Latest result";
+"Analisar conexão com \\(.applicationName)" = "Check connection with \\(.applicationName)";
+"Testar internet com \\(.applicationName)" = "Test internet with \\(.applicationName)";
+"Testar Wi-Fi com \\(.applicationName)" = "Test Wi-Fi with \\(.applicationName)";
+"Medir velocidade no \\(.applicationName)" = "Measure speed in \\(.applicationName)";
+"Último resultado do \\(.applicationName)" = "Latest result from \\(.applicationName)";
+"Ver resultado do \\(.applicationName)" = "View result from \\(.applicationName)";
+"Qual foi a última medição no \\(.applicationName)" = "What was the latest measurement in \\(.applicationName)";

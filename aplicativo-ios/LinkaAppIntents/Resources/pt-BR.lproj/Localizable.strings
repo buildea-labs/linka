@@ -11,3 +11,10 @@
 "Esta funcionalidade ainda não está disponível." = "Esta funcionalidade ainda não está disponível.";
 "Analisar conexão" = "Analisar conexão";
 "Último resultado" = "Último resultado";
+"Analisar conexão com \\(.applicationName)" = "Analisar conexão com \\(.applicationName)";
+"Testar internet com \\(.applicationName)" = "Testar internet com \\(.applicationName)";
+"Testar Wi-Fi com \\(.applicationName)" = "Testar Wi-Fi com \\(.applicationName)";
+"Medir velocidade no \\(.applicationName)" = "Medir velocidade no \\(.applicationName)";
+"Último resultado do \\(.applicationName)" = "Último resultado do \\(.applicationName)";
+"Ver resultado do \\(.applicationName)" = "Ver resultado do \\(.applicationName)";
+"Qual foi a última medição no \\(.applicationName)" = "Qual foi a última medição no \\(.applicationName)";

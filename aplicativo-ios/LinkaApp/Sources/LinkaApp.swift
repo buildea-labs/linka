@@ -46,20 +46,33 @@ struct LinkaApp: App {
                 let query = MeasurementQuery(limit: 1, sortOrder: .newestFirst)
                 if let latest = try? await repository.measurements(matching: query).first {
                     var parts: [String] = []
+                    let locale = LinkaLanguagePreference.currentLocale
                     if let down = latest.downloadMbps {
-                        parts.append("\(Int(round(down))) Mbps de download")
+                        parts.append(LinkaCopy.format(
+                            "appIntent.latestResult.download",
+                            down.formatted(.number.precision(.fractionLength(0)).locale(locale))
+                        ))
                     }
                     if let up = latest.uploadMbps {
-                        parts.append("\(Int(round(up))) Mbps de upload")
+                        parts.append(LinkaCopy.format(
+                            "appIntent.latestResult.upload",
+                            up.formatted(.number.precision(.fractionLength(0)).locale(locale))
+                        ))
                     }
                     if let ping = latest.latencyMs {
-                        parts.append("ping \(Int(round(ping))) ms")
+                        parts.append(LinkaCopy.format(
+                            "appIntent.latestResult.ping",
+                            ping.formatted(.number.precision(.fractionLength(0)).locale(locale))
+                        ))
                     }
                     
                     let resultString = parts.joined(separator: ", ")
                     return LinkaSystemActionResponse(action: .getLatestResult, value: resultString)
                 }
-                return LinkaSystemActionResponse(action: .getLatestResult, value: "Você ainda não tem uma medição no Linka.")
+                return LinkaSystemActionResponse(
+                    action: .getLatestResult,
+                    value: LinkaCopy.value("appIntent.latestResult.empty")
+                )
 
             case .openHistory:
                 // Histórico básico é Free; só insights e automações premium
