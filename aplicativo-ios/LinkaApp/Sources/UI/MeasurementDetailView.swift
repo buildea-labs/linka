@@ -137,7 +137,7 @@ struct MeasurementDetailView: View {
                 Section(LinkaCopy.value("detail.quality")) {
                     if canUseExpertMode {
                         if let jitter = measurement.jitterMs {
-                            LabeledContent("Jitter", value: String(format: "%.0f ms", jitter))
+                            LabeledContent(LinkaCopy.value("detail.jitter"), value: milliseconds(jitter))
                         }
                         if let packetLoss = measurement.packetLossPercent {
                             LabeledContent(LinkaCopy.value("detail.packetLoss"), value: "\(Int(packetLoss))%")
@@ -199,39 +199,39 @@ struct MeasurementDetailView: View {
                     if canUseAdvancedWiFiDiagnostics {
                         if let advanced = measurement.advancedWiFiDiagnostics {
                             if let standard = advanced.wifiStandard {
-                                LabeledContent("Padrão", value: standard)
+                                LabeledContent(LinkaCopy.value("detail.wifi.standard"), value: standard)
                             }
                             if let rssi = advanced.rssiDbm {
-                                LabeledContent("Sinal", value: String(format: "%.0f dBm", rssi))
+                                LabeledContent(LinkaCopy.value("detail.wifi.signal"), value: decibels(rssi, unit: "dBm"))
                             }
                             if let noise = advanced.noiseDbm {
-                                LabeledContent("Ruído", value: String(format: "%.0f dBm", noise))
+                                LabeledContent(LinkaCopy.value("detail.wifi.noise"), value: decibels(noise, unit: "dBm"))
                             }
                             if let snr = advanced.snrDb {
-                                LabeledContent("SNR", value: String(format: "%.0f dB", snr))
+                                LabeledContent(LinkaCopy.value("detail.wifi.snr"), value: decibels(snr, unit: "dB"))
                             }
                             if let channel = advanced.channelNumber {
-                                LabeledContent("Canal", value: "\(channel)")
+                                LabeledContent(LinkaCopy.value("detail.wifi.channel"), value: "\(channel)")
                             }
                             if let band = advanced.bandGHz {
                                 LabeledContent("Banda", value: band == floor(band) ? String(format: "%.0f GHz", band) : String(format: "%.1f GHz", band))
                             }
                             if advanced.txRateMbps != nil || advanced.rxRateMbps != nil {
-                                let tx = advanced.txRateMbps.map { String(format: "TX %.0f Mbps", $0) }
-                                let rx = advanced.rxRateMbps.map { String(format: "RX %.0f Mbps", $0) }
-                                LabeledContent("Taxa Wi-Fi", value: [tx, rx].compactMap { $0 }.joined(separator: " · "))
+                                let tx = advanced.txRateMbps.map { wifiRate("detail.wifi.txRate", $0) }
+                                let rx = advanced.rxRateMbps.map { wifiRate("detail.wifi.rxRate", $0) }
+                                LabeledContent(LinkaCopy.value("detail.wifi.rate"), value: [tx, rx].compactMap { $0 }.joined(separator: " · "))
                             }
                         } else {
-                            LabeledContent("Diagnóstico Wi-Fi detalhado", value: "Não coletado nesta medição")
+                            LabeledContent(LinkaCopy.value("detail.wifi.diagnostics"), value: LinkaCopy.value("detail.wifi.notCollected"))
 
                             if let onStartNewMeasurementWithAdvancedWiFi {
-                                Button("Fazer nova medição com detalhes") {
+                                Button(LinkaCopy.value("detail.wifi.measureAgain")) {
                                     onStartNewMeasurementWithAdvancedWiFi()
                                 }
                                 .font(.bodySmallStrong)
                                 .foregroundColor(.brandAccentWarm)
 
-                                Text("Os detalhes são coletados antes da nova medição e não alteram este registro.")
+                                Text(LinkaCopy.value("detail.wifi.measureAgain.hint"))
                                     .font(.bodySmall)
                                     .foregroundColor(.textSecondary)
                             }
@@ -242,7 +242,7 @@ struct MeasurementDetailView: View {
                             showPurchase = true
                         } label: {
                             HStack {
-                                Text("Wi-Fi avançado")
+                                Text(LinkaCopy.value("detail.wifi.advanced"))
                                     .foregroundColor(.textPrimary)
                                 Spacer()
                                 LinkaPlusBadge()
@@ -257,9 +257,9 @@ struct MeasurementDetailView: View {
 
             // SEÇÃO DESEMPENHO SOB CARGA
             if let measurement, measurement.loadedLatencyMs != nil || measurement.loadedLatencyUploadMs != nil || responsivenessResult != nil {
-                Section("Desempenho sob carga") {
+                Section(LinkaCopy.value("detail.loadPerformance")) {
                     if let result = responsivenessResult {
-                        LabeledContent("Responsividade", value: LoadResponsivenessCopy.label(for: result.category))
+                        LabeledContent(LinkaCopy.value("detail.responsiveness"), value: LoadResponsivenessCopy.label(for: result.category))
                         
                         Text(LoadResponsivenessCopy.explanation(for: result.category))
                             .font(.bodySmall)
@@ -268,37 +268,37 @@ struct MeasurementDetailView: View {
                     }
                     
                     if let ping = measurement.latencyMs {
-                        LabeledContent("Em repouso", value: String(format: "%.0f ms", ping))
+                        LabeledContent(LinkaCopy.value("detail.idle"), value: milliseconds(ping))
                     } else {
-                        LabeledContent("Em repouso", value: "Não avaliada")
+                        LabeledContent(LinkaCopy.value("detail.idle"), value: LinkaCopy.value("detail.notAssessed"))
                     }
 
                     if let loadedDl = measurement.loadedLatencyMs {
                         VStack(alignment: .leading, spacing: 2) {
-                            LabeledContent("Durante download", value: String(format: "%.0f ms", loadedDl))
+                            LabeledContent(LinkaCopy.value("detail.duringDownload"), value: milliseconds(loadedDl))
                             if let delta = responsivenessResult?.downloadComparison.absoluteDelta, delta > 0 {
-                                Text(String(format: "+%.0f ms", delta))
+                                Text(deltaMilliseconds(delta))
                                     .font(.bodySmall)
                                     .foregroundColor(.textSecondary)
                                     .frame(maxWidth: .infinity, alignment: .trailing)
                             }
                         }
                     } else {
-                        LabeledContent("Durante download", value: "Não avaliada")
+                        LabeledContent(LinkaCopy.value("detail.duringDownload"), value: LinkaCopy.value("detail.notAssessed"))
                     }
                     
                     if let loadedUl = measurement.loadedLatencyUploadMs {
                         VStack(alignment: .leading, spacing: 2) {
-                            LabeledContent("Durante upload", value: String(format: "%.0f ms", loadedUl))
+                            LabeledContent(LinkaCopy.value("detail.duringUpload"), value: milliseconds(loadedUl))
                             if let delta = responsivenessResult?.uploadComparison.absoluteDelta, delta > 0 {
-                                Text(String(format: "+%.0f ms", delta))
+                                Text(deltaMilliseconds(delta))
                                     .font(.bodySmall)
                                     .foregroundColor(.textSecondary)
                                     .frame(maxWidth: .infinity, alignment: .trailing)
                             }
                         }
                     } else {
-                        LabeledContent("Durante upload", value: "Não avaliada")
+                        LabeledContent(LinkaCopy.value("detail.duringUpload"), value: LinkaCopy.value("detail.notAssessed"))
                     }
                 }
             }
@@ -315,6 +315,7 @@ struct MeasurementDetailView: View {
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                     }
+                    .accessibilityLabel(LinkaCopy.value("detail.share.accessibility"))
                 }
             }
         }
@@ -336,20 +337,25 @@ struct MeasurementDetailView: View {
     private func speed(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale)) + " Mbps" }
     private func milliseconds(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale)) + " ms" }
     private func seconds(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale)) + " s" }
+    private func decibels(_ value: Double, unit: String) -> String { value.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale)) + " \(unit)" }
+    private func deltaMilliseconds(_ value: Double) -> String { "+" + milliseconds(value) }
+    private func wifiRate(_ key: String, _ value: Double) -> String {
+        String(format: LinkaCopy.value(key), locale: LinkaLanguagePreference.currentLocale, value.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale)))
+    }
 
     private func networkKindLabel(_ m: NetworkMeasurement) -> String {
         var base: String
         switch m.connectionKind {
-        case .wifi: base = "Wi-Fi"
-        case .cellular: base = "Rede móvel"
-        case .ethernet: base = "Ethernet"
-        case .other, .none: base = "Conexão de rede"
+        case .wifi: base = LinkaCopy.value("network.wifi")
+        case .cellular: base = LinkaCopy.value("network.cellular")
+        case .ethernet: base = LinkaCopy.value("network.ethernet")
+        case .other, .none: base = LinkaCopy.value("network.connection")
         }
 
         if let band = m.wifiBandGHz {
             let bandStr = band.truncatingRemainder(dividingBy: 1) == 0
-                ? String(format: "%.0f", band)
-                : String(format: "%.1f", band)
+                ? band.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale))
+                : band.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale))
             base += " · \(bandStr) GHz"
         }
         return base

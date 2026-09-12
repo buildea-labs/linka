@@ -326,24 +326,24 @@ struct AssistView: View {
                             } else if let measurement = currentMeasurement {
                                 measurementEvidenceRow(
                                     title: LinkaCopy.value("detail.download"),
-                                    value: measurement.downloadMbps.map { String(format: "%.1f Mbps", $0) } ?? "--"
+                                    value: measurement.downloadMbps.map(formattedSpeed) ?? LinkaCopy.value("common.unavailable")
                                 )
                                 if let upload = measurement.uploadMbps, upload > 0 {
                                     Divider()
                                     measurementEvidenceRow(
                                         title: LinkaCopy.value("detail.upload"),
-                                        value: String(format: "%.1f Mbps", upload)
+                                        value: formattedSpeed(upload)
                                     )
                                 }
                                 Divider()
                                 measurementEvidenceRow(
                                     title: LinkaCopy.value("assist.latency"),
-                                    value: measurement.latencyMs.map { "\(Int($0.rounded())) ms" } ?? "--"
+                                    value: measurement.latencyMs.map(formattedMilliseconds) ?? LinkaCopy.value("common.unavailable")
                                 )
                                 Divider()
                                 measurementEvidenceRow(
                                     title: LinkaCopy.value("assist.network"),
-                                    value: measurement.connectionKind.map { connectionLabel($0) } ?? "--"
+                                    value: measurement.connectionKind.map { connectionLabel($0) } ?? LinkaCopy.value("common.unavailable")
                                 )
                             }
                         }
@@ -584,11 +584,19 @@ struct AssistView: View {
         .frame(maxHeight: .infinity)
     }
 
+    private func formattedSpeed(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale)) + " Mbps"
+    }
+
+    private func formattedMilliseconds(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale)) + " ms"
+    }
+
     private func connectionLabel(_ kind: NetworkConnectionKind) -> String {
         switch kind {
         case .wifi: return LinkaCopy.value("network.wifi")
         case .cellular: return LinkaCopy.value("network.cellular")
-        case .ethernet: return "Ethernet"
+        case .ethernet: return LinkaCopy.value("network.ethernet")
         case .other: return LinkaCopy.value("network.other")
         }
     }
@@ -630,22 +638,21 @@ private struct AssistWaitingAnalysisView: View {
             list.append(FactItem(id: "ul", title: LinkaCopy.value("assist.fact.upload"), value: formattedSpeed(ul)))
         }
         if let ping = measurement.latencyMs {
-            list.append(FactItem(id: "ping", title: LinkaCopy.value("assist.latency"), value: "\(Int(ping.rounded())) ms"))
+            list.append(FactItem(id: "ping", title: LinkaCopy.value("assist.latency"), value: formattedMilliseconds(ping)))
         }
         if let kind = measurement.connectionKind {
-            list.append(FactItem(id: "kind", title: "Tipo de rede", value: connectionLabel(kind)))
+            list.append(FactItem(id: "kind", title: LinkaCopy.value("assist.fact.networkType"), value: connectionLabel(kind)))
         }
         if let adv = measurement.advancedWiFiDiagnostics {
             if let band = adv.bandGHz {
-                list.append(FactItem(id: "band", title: "Frequência Wi-Fi", value: "\(band) GHz"))
+                list.append(FactItem(id: "band", title: LinkaCopy.value("assist.fact.wifiFrequency"), value: formattedGigahertz(band)))
             } else if let channel = adv.channelNumber {
-                list.append(FactItem(id: "chan", title: "Canal Wi-Fi", value: "Canal \(channel)"))
+                list.append(FactItem(id: "chan", title: LinkaCopy.value("assist.fact.wifiChannel"), value: String(format: LinkaCopy.value("assist.fact.wifiChannel.value"), locale: LinkaLanguagePreference.currentLocale, channel)))
             }
         } else if let band = measurement.wifiBandGHz {
-            let bandStr = band.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", band) : String(format: "%.1f", band)
-            list.append(FactItem(id: "band", title: "Frequência Wi-Fi", value: "\(bandStr) GHz"))
+            list.append(FactItem(id: "band", title: LinkaCopy.value("assist.fact.wifiFrequency"), value: formattedGigahertz(band)))
         } else if let jitter = measurement.jitterMs {
-            list.append(FactItem(id: "jitter", title: "Estabilidade (Jitter)", value: String(format: "%.0f ms", jitter)))
+            list.append(FactItem(id: "jitter", title: LinkaCopy.value("assist.fact.stability"), value: formattedMilliseconds(jitter)))
         }
         return list
     }
@@ -739,11 +746,20 @@ private struct AssistWaitingAnalysisView: View {
         value.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale)) + " Mbps"
     }
 
+    private func formattedMilliseconds(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale)) + " ms"
+    }
+
+    private func formattedGigahertz(_ value: Double) -> String {
+        let precision = value.truncatingRemainder(dividingBy: 1) == 0 ? 0 : 1
+        return value.formatted(.number.precision(.fractionLength(precision)).locale(LinkaLanguagePreference.currentLocale)) + " GHz"
+    }
+
     private func connectionLabel(_ kind: NetworkConnectionKind) -> String {
         switch kind {
         case .wifi: return LinkaCopy.value("network.wifi")
         case .cellular: return LinkaCopy.value("network.cellular")
-        case .ethernet: return "Ethernet"
+        case .ethernet: return LinkaCopy.value("network.ethernet")
         case .other: return LinkaCopy.value("network.other")
         }
     }
