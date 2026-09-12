@@ -53,6 +53,8 @@ O usuário não escolhe modo de teste antes de começar. Minimalismo na interfac
 
 Como o SignallQ é Android/Web, o Linka pode absorver capacidades que façam sentido e sejam tecnicamente viáveis no ecossistema Apple — histórico, comparação, tendências, interpretação, Assist, Widgets, App Intents e Shortcuts, entre outras.
 
+O acesso ao roteador (localizar o gateway da rede atual e abrir o painel de administração dele, com a senha salva no Keychain a pedido do usuário) é escopo oficial do produto — é a origem histórica do Linka (ver `documentacao/funcional/HISTORIA.md` e `documentacao/funcional/VISAO.md`, seção "Acesso ao roteador"), não um scanner de dispositivos genérico nem uma ferramenta de diagnóstico de rede.
+
 Isso não transforma o Linka em dashboard ou central de ferramentas. Toda capacidade nova passa por quatro filtros:
 
 1. **Medir vem primeiro.** Nada pode atrasar, mascarar ou disputar espaço com a medição.

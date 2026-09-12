@@ -273,6 +273,8 @@ Se quiser detalhes, eles estão lá.
 
 Mas o produto não obriga ninguém a estudá-los.
 
+Uma peça daquela primeira ideia voltou de propósito: encontrar o roteador da rede atual e abrir o painel de administração dele, com a senha guardada para a próxima vez. É a mesma necessidade que fez Giam começar tudo isso — não um convite para o Linka virar de novo uma central de ferramentas de rede. Ver `VISAO.md`, seção "Acesso ao roteador", para os limites dessa funcionalidade.
+
 ---
 
 # Linka e SignallQ
