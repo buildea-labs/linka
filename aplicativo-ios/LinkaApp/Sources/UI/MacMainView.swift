@@ -1,5 +1,6 @@
 #if os(macOS)
 import SwiftUI
+import AppKit
 import LinkaEngine
 import MeasurementHistory
 import NetworkCore
@@ -8,32 +9,10 @@ import LinkaModules
 import NetworkConnectivityTriage
 import NetworkInsights
 
-/// Shell de navegação exclusivo do Mac (plano `plano-direcao-visual-mac-ios.md`).
-///
-/// Não é uma adaptação de `MainView`: é uma segunda camada de apresentação
-/// sobre os MESMOS view models (`SpeedTestViewModel`, `StoreKitEntitlementProvider`,
-/// `AppIntentCoordinator`). O iOS continua usando `MainView` inalterado —
-/// este arquivo só existe no target `LinkaApp_macOS`.
-///
-/// Decisões de produto vindas da Íris (delegação via Codex, 2026-09-12),
-/// restritas a esta plataforma:
-/// - D1: gauge semicircular único (não o `MetricRing` do iOS).
-/// - D2: só 2 pills persistentes (Velocímetro / Histórico); Ajustes, Assist,
-///   Usage, Router e Purchase continuam em sheet. Histórico fica visível e
-///   desabilitado durante medição ativa.
-/// - D3: um único painel-card cobre todos os estados do Velocímetro — a
-///   moldura não muda, só o conteúdo dentro dela. Sem dashboard de métricas.
-/// - D4: sem ícones de casa/relógio no toolbar; Ajustes em sheet; share só
-///   no resultado concluído; sem seleção manual de servidor (o nome do
-///   servidor, quando existir, aparece como texto informativo).
 private enum MacDestination: Hashable {
     case speedTest
     case history
-}
-
-private enum MacSettingsDismissalAction {
-    case purchase(PurchaseEntryPoint)
-    case subscriptionManagement
+    case settings
 }
 
 private enum MacPurchaseDismissalAction {
@@ -46,10 +25,14 @@ private enum MacAssistEntryPoint {
     case result(NetworkMeasurement)
 
     var measurement: NetworkMeasurement? {
-        guard case .result(let measurement) = self else { return nil }
-        return measurement
+        guard case .result(let m) = self else { return nil }
+        return m
     }
 }
+
+private enum DotPhase { case pending, active, done }
+
+// MARK: - MacMainView
 
 struct MacMainView: View {
     @StateObject private var viewModel = SpeedTestViewModel()
@@ -57,11 +40,8 @@ struct MacMainView: View {
     @ObservedObject private var intentCoordinator = AppIntentCoordinator.shared
 
     @State private var destination: MacDestination = .speedTest
-    @State private var showSettings = false
     @State private var showPurchase = false
     @State private var showSubscriptionManagement = false
-    @State private var pendingSettingsDismissalAction: MacSettingsDismissalAction?
-    @State private var pendingMeasurementStartAfterSettings = false
     @State private var pendingPurchaseDismissalAction: MacPurchaseDismissalAction?
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
     @State private var assistEntryPoint: MacAssistEntryPoint = .fresh
@@ -79,8 +59,8 @@ struct MacMainView: View {
     @State private var showConnectionPath = false
     @State private var showShareSheet = false
     @State private var showAdvancedWiFiUnavailable = false
-    @State private var isSettingsHovered = false
-    @State private var isMoreHovered = false
+
+    // MARK: Computed
 
     private var isPlusActive: Bool {
         LinkaEntitlementPolicy.decision(for: .assist, snapshot: entitlements.snapshot, at: Date()).isGranted
@@ -96,27 +76,26 @@ struct MacMainView: View {
     }
 
     private var connectionPathReport: ConnectionPathReport? {
-        guard let currentMeasurement else { return nil }
-        return ConnectionPathEvaluator().evaluate(currentMeasurement)
+        guard let m = currentMeasurement else { return nil }
+        return ConnectionPathEvaluator().evaluate(m)
     }
 
     private var assistMeasurement: NetworkMeasurement? {
         switch assistEntryPoint {
-        case .result(let measurement):
-            return measurement
-        case .fresh:
-            return pendingAssistMeasurement ? nil : currentMeasurement
+        case .result(let m): return m
+        case .fresh: return pendingAssistMeasurement ? nil : currentMeasurement
         }
     }
 
     private var isMeasuring: Bool {
         switch viewModel.uiPhase {
-        case .connecting, .downloading, .uploading:
-            return true
-        default:
-            return false
+        case .connecting, .downloading, .uploading: return true
+        default: return false
         }
     }
+
+    private var isFinalResult: Bool { viewModel.uiPhase == .done }
+    private var isDownloading: Bool { viewModel.uiPhase == .downloading }
 
     private var canStartAdvancedWiFiMeasurement: Bool {
         guard viewModel.liveConnectionKind == .wifi,
@@ -128,31 +107,30 @@ struct MacMainView: View {
         ).isGranted
     }
 
+    // MARK: - Body
+
     var body: some View {
-        VStack(spacing: 0) {
-            header
+        HStack(spacing: 0) {
+            sidebar
             Divider()
             Group {
                 switch destination {
                 case .speedTest:
-                    speedTestPane
+                    HStack(spacing: 0) {
+                        mainStage
+                        Divider()
+                        rightPanel
+                            .frame(width: 320)
+                    }
                 case .history:
-                    historyPane
+                    historyView
+                case .settings:
+                    settingsView
                 }
             }
         }
-        .frame(minWidth: 780, minHeight: 560)
+        .frame(minWidth: 900, minHeight: 560)
         .background(Color.surfacePage)
-        .sheet(isPresented: $showSettings, onDismiss: handleSettingsDismissal) {
-            NavigationStack {
-                SettingsView(
-                    onPurchaseRequest: presentPurchaseFromSettings,
-                    onSubscriptionManagementRequest: presentSubscriptionManagementFromSettings
-                )
-                    .environmentObject(entitlements)
-            }
-            .frame(width: 540, height: 640)
-        }
         .sheet(isPresented: $showPurchase, onDismiss: handlePurchaseDismissal) {
             PurchaseSheet(entryPoint: purchaseEntryPoint) {
                 if purchaseEntryPoint == .assist {
@@ -209,11 +187,8 @@ struct MacMainView: View {
         }
         .sheet(isPresented: $showCurrentMeasurementDetails) {
             NavigationStack {
-                MeasurementDetailView(
-                    measurement: currentMeasurement,
-                    duration: viewModel.testDuration
-                )
-                .environmentObject(entitlements)
+                MeasurementDetailView(measurement: currentMeasurement, duration: viewModel.testDuration)
+                    .environmentObject(entitlements)
             }
             .frame(minWidth: 620, minHeight: 680)
         }
@@ -239,26 +214,16 @@ struct MacMainView: View {
         }
         .onChange(of: viewModel.uiPhase) { phase in
             intentCoordinator.setMeasurementActive(isMeasuring)
-            if phase == .connecting {
-                speedGaugeUpperBound = 1
-            }
+            if phase == .connecting { speedGaugeUpperBound = 1 }
             guard phase == .done, pendingAssistMeasurement else { return }
             pendingAssistMeasurement = false
             showAssistResult = true
         }
         .onChange(of: intentCoordinator.pendingStartSpeedTest) { pending in
             guard pending else { return }
-            guard !isMeasuring else {
-                intentCoordinator.consumeStartSpeedTestRequest()
-                return
-            }
+            guard !isMeasuring else { intentCoordinator.consumeStartSpeedTestRequest(); return }
             destination = .speedTest
-            if showSettings {
-                pendingMeasurementStartAfterSettings = true
-                showSettings = false
-            } else {
-                viewModel.startTest()
-            }
+            viewModel.startTest()
             intentCoordinator.consumeStartSpeedTestRequest()
         }
         .onChange(of: intentCoordinator.pendingOpenHistory) { pending in
@@ -266,10 +231,7 @@ struct MacMainView: View {
         }
         .onChange(of: intentCoordinator.pendingPurchasePrompt) { pending in
             guard pending else { return }
-            guard !isMeasuring else {
-                intentCoordinator.consumePurchasePrompt()
-                return
-            }
+            guard !isMeasuring else { intentCoordinator.consumePurchasePrompt(); return }
             purchaseEntryPoint = .shortcut
             showPurchase = true
             intentCoordinator.consumePurchasePrompt()
@@ -284,7 +246,7 @@ struct MacMainView: View {
         }
         .onChange(of: intentCoordinator.pendingOpenSettings) { pending in
             guard pending else { return }
-            if !isMeasuring { showSettings = true }
+            if !isMeasuring { destination = .settings }
             intentCoordinator.consumeOpenSettings()
         }
         .onAppear {
@@ -294,193 +256,249 @@ struct MacMainView: View {
         .onDisappear { intentCoordinator.setMeasurementActive(false) }
     }
 
-    // MARK: - Header (D2, D4)
+    // MARK: - Sidebar
 
-    private var header: some View {
-        ZStack {
-            HStack(spacing: 2) {
-                pillButton(title: "Velocímetro", isActive: destination == .speedTest, isEnabled: true) {
-                    destination = .speedTest
-                }
-                pillButton(title: "Histórico", isActive: destination == .history, isEnabled: !isMeasuring) {
-                    destination = .history
-                }
-            }
-            .padding(3)
-            .background(Color.surfaceCard, in: Capsule())
-            HStack {
-                Spacer()
-                Button {
-                    showSettings = true
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.textSecondary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(isMeasuring)
-                .opacity(isMeasuring ? 0.4 : 1)
-                .background(isSettingsHovered ? Color.brandSurface.opacity(0.55) : .clear, in: RoundedRectangle(cornerRadius: 8))
-                .onHover { isSettingsHovered = $0 }
-                .help("Ajustes")
-                .accessibilityLabel("Ajustes")
-                .accessibilityHint(isMeasuring ? "Indisponível durante a medição" : "")
-            }
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 44, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .padding(.horizontal, 10)
+                .padding(.bottom, 28)
+
+            sidebarGroupLabel("Testes")
+            sidebarNavItem("Velocímetro", systemImage: "gauge.medium", dest: .speedTest, disabled: false)
+            sidebarNavItem("Histórico", systemImage: "chart.bar", dest: .history, disabled: isMeasuring)
+
+            sidebarGroupLabel("App").padding(.top, 8)
+            sidebarNavItem("Configurações", systemImage: "gearshape", dest: .settings, disabled: isMeasuring)
+
+            Spacer()
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .padding(.top, 28)
+        .padding(.bottom, 40)
+        .frame(width: 240)
     }
 
-    private func pillButton(title: String, isActive: Bool, isEnabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.captionStrong)
-                .foregroundColor(isActive ? .brandOnSurface : .textSecondary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(isActive ? Color.brandSurface : Color.clear, in: Capsule())
-                .frame(minHeight: 44)
+    private func sidebarGroupLabel(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(.system(size: 11, weight: .bold))
+            .foregroundColor(.textSecondary)
+            .tracking(1.1)
+            .padding(.horizontal, 10)
+            .padding(.top, 16)
+            .padding(.bottom, 6)
+    }
+
+    private func sidebarNavItem(_ title: String, systemImage: String, dest: MacDestination, disabled: Bool) -> some View {
+        Button { destination = dest } label: {
+            Label(title, systemImage: systemImage)
+                .font(.system(size: 14, weight: destination == dest ? .semibold : .medium))
+                .foregroundColor(destination == dest ? .brandAccentWarm : .textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(
+                    destination == dest ? Color.brandAccentWarm.opacity(0.12) : Color.clear,
+                    in: RoundedRectangle(cornerRadius: LinkaRadius.sm, style: .continuous)
+                )
         }
         .buttonStyle(.plain)
-        .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.4)
+        .disabled(disabled)
+        .opacity(disabled ? 0.4 : 1)
         .accessibilityLabel(title)
-        .accessibilityAddTraits(isActive ? .isSelected : [])
+        .accessibilityAddTraits(destination == dest ? .isSelected : [])
     }
 
-    // MARK: - Painel Velocímetro (D3)
+    // MARK: - Main Stage
 
-    private var speedTestPane: some View {
-        GeometryReader { proxy in
-            ScrollView {
-                mainCard(isWide: proxy.size.width >= 1120)
-                    .frame(maxWidth: 1120)
-                    .padding(.horizontal, 28)
-                    .padding(.vertical, 32)
-                    .frame(maxWidth: .infinity)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func mainCard(isWide: Bool) -> some View {
-        if isWide {
-            HStack(alignment: .top, spacing: 32) {
-                measurementContent
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if isFinalResult {
-                    Divider()
-                    supplementalContent
-                        .frame(width: 280, alignment: .leading)
-                }
-            }
-            .padding(28)
-            .linkaCard(cornerRadius: LinkaRadius.lg)
-        } else {
-            VStack(alignment: .leading, spacing: 24) {
-                measurementContent
-                if isFinalResult {
-                    Divider()
-                    supplementalContent
-                }
-            }
-            .padding(24)
-            .linkaCard(cornerRadius: LinkaRadius.lg)
-        }
-    }
-
-    private var measurementContent: some View {
+    private var mainStage: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 8) {
-                SemicircularGauge(
-                    fraction: gaugeFraction,
-                    centerLabel: gaugeCenterLabel,
-                    centerValue: gaugeCenterValue,
-                    centerUnit: gaugeCenterUnit,
-                    isActive: isDownloading
+            // Network info header
+            HStack {
+                Text(liveConnectionName)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.textPrimary)
+                Spacer()
+            }
+            .padding(.horizontal, 40)
+            .padding(.top, 40)
+
+            Spacer()
+
+            // Hero: phase dots + ring + status
+            VStack(spacing: 40) {
+                phaseDots
+
+                MacMetricRing(
+                    isConnecting: viewModel.uiPhase == .connecting,
+                    progress: gaugeFraction,
+                    value: macRingValue,
+                    unit: macRingUnit
                 )
-                    .frame(width: 280, height: 220)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Velocímetro de download")
-                    .accessibilityValue(gaugeAccessibilityValue)
-                if isUploading {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .controlSize(.small)
-                            .tint(Color.brandAccentWarm)
-                        Text("Medindo upload")
-                            .font(.bodySmallStrong)
-                            .foregroundColor(.textPrimary)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Upload em andamento")
-                }
-                Text(phaseMessage)
-                    .font(.bodySmall)
-                    .foregroundColor(.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .frame(minHeight: 18)
-            }
-            .padding(.top, 8)
-            .padding(.bottom, 4)
+                .frame(width: 220, height: 220)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Velocímetro de download")
+                .accessibilityValue(gaugeAccessibilityValue)
 
-            if showsFinalStats {
-                statsRow
-                    .padding(.vertical, 14)
-                    .overlay(
-                        VStack {
-                            Divider()
-                            Spacer()
-                            Divider()
-                        }
-                    )
+                statusPill
             }
 
+            Spacer()
+
+            // Metrics footer
+            HStack(spacing: 48) {
+                footerStatBlock(label: "Ping",     value: pingFooterValue,     unit: "ms")
+                footerStatBlock(label: "Download", value: downloadFooterValue, unit: "Mbps")
+                footerStatBlock(label: "Upload",   value: uploadFooterValue,   unit: "Mbps")
+            }
+            .padding(.bottom, 28)
+
+            // Actions
             actionRow
-                .padding(.top, 16)
+                .padding(.bottom, 40)
                 .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 
-    private var statsRow: some View {
-        HStack(spacing: 0) {
-            statColumn(title: "Upload", value: finalStatValue(viewModel.uploadSpeed, measured: viewModel.hasMeasuredUpload), unit: isFinalResult && viewModel.hasMeasuredUpload ? "Mbps" : nil)
-            statColumn(title: "Latência", value: finalStatValue(Double(viewModel.ping), measured: viewModel.hasMeasuredPing), unit: isFinalResult && viewModel.hasMeasuredPing ? "ms" : nil)
-            statColumn(title: "Perdas", value: finalPacketLossValue, unit: isFinalResult && viewModel.packetLossPercent != nil ? "%" : nil)
+    // MARK: Phase Dots
+
+    private var phaseDots: some View {
+        HStack(spacing: 28) {
+            phaseDot(label: "Ping",     state: pingDotState)
+            phaseDot(label: "Download", state: downloadDotState)
+            phaseDot(label: "Upload",   state: uploadDotState)
         }
     }
 
-    private func statColumn(title: String, value: String, unit: String?) -> some View {
-        VStack(spacing: 3) {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value)
-                    .font(.captionStrong)
-                    .foregroundColor(.textPrimary)
-                if let unit {
-                    Text(unit)
-                        .font(.captionSmall)
-                        .foregroundColor(.textSecondary)
+    private func phaseDot(label: String, state: DotPhase) -> some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(dotFill(state))
+                    .frame(width: 22, height: 22)
+                Circle()
+                    .strokeBorder(dotBorder(state), lineWidth: 1.5)
+                    .frame(width: 22, height: 22)
+                if state == .done {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.brandOnSurface)
                 }
             }
-            Text(title)
-                .font(.captionSmall)
+            Text(label)
+                .font(.system(size: 12, weight: state == .active ? .semibold : .medium))
+                .foregroundColor(state == .active ? .textPrimary : .textSecondary)
+        }
+    }
+
+    private func dotFill(_ state: DotPhase) -> Color {
+        switch state {
+        case .pending: return .clear
+        case .active:  return .brandAccentWarm
+        case .done:    return .brandSurface
+        }
+    }
+
+    private func dotBorder(_ state: DotPhase) -> Color {
+        switch state {
+        case .pending: return .borderDefault
+        case .active:  return .brandAccentWarm
+        case .done:    return .brandSurface
+        }
+    }
+
+    private var pingDotState: DotPhase {
+        switch viewModel.uiPhase {
+        case .connecting: return .active
+        case .downloading, .uploading, .done: return .done
+        default: return .pending
+        }
+    }
+
+    private var downloadDotState: DotPhase {
+        switch viewModel.uiPhase {
+        case .downloading: return .active
+        case .uploading, .done: return .done
+        default: return .pending
+        }
+    }
+
+    private var uploadDotState: DotPhase {
+        switch viewModel.uiPhase {
+        case .uploading: return .active
+        case .done: return .done
+        default: return .pending
+        }
+    }
+
+    // MARK: Status pill
+
+    private var statusPill: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(statusDotColor)
+                .frame(width: 6, height: 6)
+            Text(phaseMessage)
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.textSecondary)
         }
-        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .background(Color.surfaceCard, in: Capsule())
     }
+
+    private var statusDotColor: Color {
+        switch viewModel.uiPhase {
+        case .connecting, .downloading, .uploading: return .brandAccentWarm
+        case .done: return .statusGood
+        case .error: return .statusCritical
+        case .connectionChanged: return .statusAttention
+        case .idle: return .textSecondary
+        }
+    }
+
+    // MARK: Footer stat blocks
+
+    private func footerStatBlock(label: String, value: String, unit: String) -> some View {
+        VStack(spacing: 6) {
+            Text(label)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.textSecondary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(value)
+                    .font(.system(size: 24, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.textPrimary)
+                Text(unit)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.textSecondary)
+            }
+        }
+    }
+
+    private var pingFooterValue: String {
+        viewModel.hasMeasuredPing ? "\(viewModel.ping)" : "—"
+    }
+    private var downloadFooterValue: String {
+        viewModel.downloadSpeed > 0 ? String(format: "%.1f", viewModel.downloadSpeed) : "—"
+    }
+    private var uploadFooterValue: String {
+        viewModel.hasMeasuredUpload ? String(format: "%.1f", viewModel.uploadSpeed) : "—"
+    }
+
+    // MARK: - Action Row
 
     private var actionRow: some View {
         switch viewModel.uiPhase {
         case .idle:
             return AnyView(
-                VStack(spacing: 10) {
-                    Button("Testar velocidade") { startMeasurement() }
-                        .buttonStyle(.linkaPrimary)
-                        .frame(maxWidth: 280)
-                        .keyboardShortcut("r", modifiers: .command)
-                }
+                Button("Testar velocidade") { startMeasurement() }
+                    .buttonStyle(.linkaPrimary)
+                    .frame(maxWidth: 280)
+                    .keyboardShortcut("r", modifiers: .command)
             )
         case .connecting, .downloading, .uploading:
             return AnyView(
@@ -495,34 +513,22 @@ struct MacMainView: View {
                         .buttonStyle(.linkaPrimary)
                         .frame(maxWidth: 280)
                         .keyboardShortcut("r", modifiers: .command)
-                    Button {
-                        requestAssistFromResult()
-                    } label: {
+                    Button { requestAssistFromResult() } label: {
                         Label("Assist", systemImage: "sparkles")
                     }
                     .buttonStyle(.linkaSecondary)
                     Menu {
-                        Button("Detalhes da medição") {
-                            showCurrentMeasurementDetails = true
-                        }
-                        Button("Qualidade de uso") {
-                            showUsageDiagnostics = true
-                        }
+                        Button("Detalhes da medição")  { showCurrentMeasurementDetails = true }
+                        Button("Qualidade de uso")      { showUsageDiagnostics = true }
                         if connectionPathReport != nil {
-                            Button("Caminho da conexão") {
-                                showConnectionPath = true
-                            }
+                            Button("Caminho da conexão") { showConnectionPath = true }
                         }
-                        Button("Compartilhar resultado") {
-                            showShareSheet = true
-                        }
+                        Button("Compartilhar resultado") { showShareSheet = true }
                     } label: {
                         Label("Mais", systemImage: "ellipsis.circle")
                     }
                     .menuStyle(.borderlessButton)
-                    .onHover { isMoreHovered = $0 }
                     .help("Mais ações para este resultado")
-                    .background(isMoreHovered ? Color.brandSurface.opacity(0.55) : .clear, in: RoundedRectangle(cornerRadius: 8))
                 }
             )
         case .error:
@@ -546,88 +552,156 @@ struct MacMainView: View {
         }
     }
 
-    // MARK: - Contexto secundário do mesmo painel
+    // MARK: - Right Panel
 
-    private var supplementalContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            DisclosureGroup("Detalhes técnicos") {
-                VStack(spacing: 0) {
-                    techDetailRow(label: "Jitter", value: currentMeasurement?.jitterMs.map { "\(Int(round($0))) ms" } ?? "—")
-                    techDetailRow(label: "Faixa Wi‑Fi", value: wifiBandLabel ?? "—")
-                    techDetailRow(label: "Duração do teste", value: isFinalResult ? (viewModel.testDuration.isEmpty ? "—" : viewModel.testDuration) : "—")
-                }
-                .padding(.top, 8)
+    private var rightPanel: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Qualidade")
+                    .font(.system(size: 19, weight: .bold))
+                    .foregroundColor(.textPrimary)
+                    .padding(.bottom, 16)
+
+                qualityCard
+                    .padding(.bottom, 40)
+
+                Text("Últimas Medições")
+                    .font(.system(size: 19, weight: .bold))
+                    .foregroundColor(.textPrimary)
+                    .padding(.bottom, 12)
+
+                recentMeasurementsList
             }
-            Divider()
-            DisclosureGroup("Últimas medições") {
-                VStack(alignment: .leading, spacing: 10) {
-                    if viewModel.recentMeasurements.isEmpty {
-                        Text("Ainda sem medições.")
-                            .font(.captionMedium)
-                            .foregroundColor(.textSecondary)
-                    } else {
-                        ForEach(viewModel.recentMeasurements.prefix(2)) { measurement in
-                            recentMeasurementRow(measurement)
-                        }
-                    }
-                    Button("Ver histórico completo") { destination = .history }
-                        .buttonStyle(.linkaSecondary)
-                        .disabled(isMeasuring)
-                }
-                .padding(.top, 8)
-            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 40)
         }
+        .background(Color.surfaceCard)
     }
 
-    private func techDetailRow(label: String, value: String) -> some View {
+    private var qualityCard: some View {
+        VStack(spacing: 0) {
+            qualityRow(key: "Latência Média", value: latencyQualityValue)
+            Divider().padding(.horizontal, 16)
+            qualityRow(key: "Jitter", value: jitterQualityValue)
+            Divider().padding(.horizontal, 16)
+            qualityRow(key: "Perda de Pacotes", value: lossQualityValue)
+            Divider().padding(.horizontal, 16)
+            HStack {
+                Text("Estabilidade")
+                    .font(.captionMedium)
+                    .foregroundColor(.textSecondary)
+                Spacer()
+                stabilityBadge
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+        }
+        .background(Color.surfacePage, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
+                .stroke(Color.borderDefault, lineWidth: 0.5)
+        )
+    }
+
+    private func qualityRow(key: String, value: String) -> some View {
         HStack {
-            Text(label)
+            Text(key)
                 .font(.captionMedium)
                 .foregroundColor(.textSecondary)
             Spacer()
             Text(value)
-                .font(.captionStrong)
+                .font(.system(.footnote, design: .monospaced).weight(.semibold))
                 .foregroundColor(.textPrimary)
         }
-        .padding(.vertical, 8)
-        .overlay(alignment: .top) { Divider() }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 
-    private func recentMeasurementRow(_ measurement: NetworkMeasurement) -> some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(Self.dateFormatter.string(from: measurement.measuredAt))
-                    .font(.captionMedium)
-                    .foregroundColor(.textPrimary)
-                Text(networkLabel(for: measurement))
-                    .font(.monoCaption)
+    private var latencyQualityValue: String {
+        guard isFinalResult, let ms = currentMeasurement?.latencyMs else { return "—" }
+        return "\(Int(round(ms))) ms"
+    }
+    private var jitterQualityValue: String {
+        guard isFinalResult, let ms = currentMeasurement?.jitterMs else { return "—" }
+        return String(format: "%.1f ms", ms)
+    }
+    private var lossQualityValue: String {
+        guard isFinalResult, let loss = viewModel.packetLossPercent else { return "—" }
+        return String(format: "%.1f%%", loss)
+    }
+
+    private var stabilityBadge: some View {
+        let (label, color): (String, Color) = {
+            guard isFinalResult,
+                  let ping = currentMeasurement?.latencyMs,
+                  let jitter = currentMeasurement?.jitterMs else { return ("—", .textSecondary) }
+            let loss = viewModel.packetLossPercent ?? 0
+            if ping <= 30 && jitter <= 5  && loss < 0.5 { return ("Excelente", .statusGood) }
+            if ping <= 60 && jitter <= 15 && loss < 2   { return ("Boa",       .statusGood) }
+            if ping <= 120               && loss < 5    { return ("Regular",   .statusAttention) }
+            return ("Instável", .statusCritical)
+        }()
+        return AnyView(LinkaStatusBadge(label, color: color))
+    }
+
+    private var recentMeasurementsList: some View {
+        VStack(spacing: 0) {
+            if viewModel.recentMeasurements.isEmpty {
+                Text("Ainda sem medições.")
+                    .font(.captionSmall)
                     .foregroundColor(.textSecondary)
+                    .padding(.vertical, 16)
+            } else {
+                ForEach(Array(viewModel.recentMeasurements.prefix(5))) { m in
+                    recentRow(m)
+                }
             }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 2) {
-                if let down = measurement.downloadMbps {
-                    Text("\(Int(round(down))) Mbps")
-                        .font(.captionStrong)
-                        .foregroundColor(.textPrimary)
-                }
-                if let up = measurement.uploadMbps, let ping = measurement.latencyMs {
-                    Text("\(Int(round(up))) Mbps · \(Int(round(ping))) ms")
-                        .font(.captionSmall)
-                        .foregroundColor(.textSecondary)
-                }
+            Button("Ver histórico completo") { destination = .history }
+                .buttonStyle(.linkaSecondary)
+                .disabled(isMeasuring)
+                .padding(.top, 12)
+        }
+    }
+
+    private func recentRow(_ m: NetworkMeasurement) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(Self.dateFormatter.string(from: m.measuredAt))
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.textSecondary)
+                Spacer()
+                Text(networkLabel(for: m))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.textPrimary)
+            }
+            HStack(spacing: 16) {
+                miniStatCell(label: "Down", value: m.downloadMbps.map { "\(Int(round($0)))" } ?? "—")
+                miniStatCell(label: "Up",   value: m.uploadMbps.map   { "\(Int(round($0)))" } ?? "—")
+                miniStatCell(label: "Ping", value: m.latencyMs.map    { "\(Int(round($0)))ms" } ?? "—")
             }
         }
-        .padding(.vertical, 8)
-        .overlay(alignment: .top) { Divider() }
+        .padding(.vertical, 16)
+        .overlay(alignment: .bottom) { Divider() }
         .contextMenu {
-            Button("Abrir detalhes") { selectedHistoricalMeasurement = measurement }
+            Button("Abrir detalhes")   { selectedHistoricalMeasurement = m }
             Button("Testar novamente") { startMeasurement() }
         }
     }
 
-    // MARK: - Painel Histórico (D2)
+    private func miniStatCell(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.system(size: 11, weight: .regular))
+                .foregroundColor(.textSecondary)
+            Text(value)
+                .font(.system(.footnote, design: .monospaced).weight(.semibold))
+                .foregroundColor(.textPrimary)
+        }
+    }
 
-    private var historyPane: some View {
+    // MARK: - History View (full width)
+
+    private var historyView: some View {
         NavigationStack {
             HistoryView { measurement in
                 selectedHistoricalMeasurement = measurement
@@ -635,33 +709,44 @@ struct MacMainView: View {
         }
     }
 
-    // MARK: - Assist (reaproveita o mesmo fluxo do iOS, camada de apresentação própria)
+    // MARK: - Settings View (full width, inline)
 
-    private func requestAssist(from entryPoint: MacAssistEntryPoint) {
-        assistEntryPoint = entryPoint
-        if isPlusActive {
-            showAssistProblemSelection = true
-        } else {
-            purchaseEntryPoint = .assist
-            showPurchase = true
+    private var settingsView: some View {
+        NavigationStack {
+            SettingsView(
+                onPurchaseRequest: { entryPoint in
+                    destination = .speedTest
+                    purchaseEntryPoint = entryPoint
+                    showPurchase = true
+                },
+                onSubscriptionManagementRequest: {
+                    destination = .speedTest
+                    showSubscriptionManagement = true
+                }
+            )
+            .environmentObject(entitlements)
         }
     }
 
+    // MARK: - Assist
+
+    private func requestAssist(from entryPoint: MacAssistEntryPoint) {
+        assistEntryPoint = entryPoint
+        if isPlusActive { showAssistProblemSelection = true }
+        else { purchaseEntryPoint = .assist; showPurchase = true }
+    }
+
     private func requestAssistFromResult() {
-        guard let measurement = currentMeasurement else { return }
-        requestAssist(from: .result(measurement))
+        guard let m = currentMeasurement else { return }
+        requestAssist(from: .result(m))
     }
 
     private func startMeasurementFromHistory() {
         selectedHistoricalMeasurement = nil
         destination = .speedTest
-        DispatchQueue.main.async {
-            startMeasurement()
-        }
+        DispatchQueue.main.async { startMeasurement() }
     }
 
-    /// A coleta avançada é uma preferência de Ajustes, não um segundo modo
-    /// de teste. Quando elegível, ela apenas acompanha a medição única.
     private func startMeasurement() {
         guard !isMeasuring else { return }
         let diagnostics = canStartAdvancedWiFiMeasurement
@@ -678,55 +763,21 @@ struct MacMainView: View {
             showAdvancedWiFiUnavailable = true
             return
         }
-        DispatchQueue.main.async {
-            viewModel.startTest(advancedWiFiDiagnostics: diagnostics)
-        }
-    }
-
-    private func presentPurchaseFromSettings(_ entryPoint: PurchaseEntryPoint) {
-        pendingSettingsDismissalAction = .purchase(entryPoint)
-        showSettings = false
-    }
-
-    private func presentSubscriptionManagementFromSettings() {
-        pendingSettingsDismissalAction = .subscriptionManagement
-        showSettings = false
-    }
-
-    private func handleSettingsDismissal() {
-        if pendingMeasurementStartAfterSettings {
-            pendingMeasurementStartAfterSettings = false
-            viewModel.startTest()
-            return
-        }
-        guard let action = pendingSettingsDismissalAction else { return }
-        pendingSettingsDismissalAction = nil
-        switch action {
-        case .purchase(let entryPoint):
-            purchaseEntryPoint = entryPoint
-            showPurchase = true
-        case .subscriptionManagement:
-            showSubscriptionManagement = true
-        }
+        DispatchQueue.main.async { viewModel.startTest(advancedWiFiDiagnostics: diagnostics) }
     }
 
     private func handlePurchaseDismissal() {
         guard let action = pendingPurchaseDismissalAction else { return }
         pendingPurchaseDismissalAction = nil
         switch action {
-        case .assistProblemSelection:
-            showAssistProblemSelection = true
-        case .subscriptionManagement:
-            showSubscriptionManagement = true
+        case .assistProblemSelection: showAssistProblemSelection = true
+        case .subscriptionManagement: showSubscriptionManagement = true
         }
     }
 
     private func handleOpenHistoryRequest(_ pending: Bool) {
         guard pending else { return }
-        guard !isMeasuring else {
-            intentCoordinator.consumeOpenHistory()
-            return
-        }
+        guard !isMeasuring else { intentCoordinator.consumeOpenHistory(); return }
         destination = .history
         intentCoordinator.consumeOpenHistory()
     }
@@ -735,11 +786,7 @@ struct MacMainView: View {
         guard pending else { return }
         defer { intentCoordinator.consumeOpenLatestMeasurement() }
         guard !isMeasuring else { return }
-        guard isPlusActive else {
-            purchaseEntryPoint = .shortcut
-            showPurchase = true
-            return
-        }
+        guard isPlusActive else { purchaseEntryPoint = .shortcut; showPurchase = true; return }
         guard let latest = latestMeasurementForIntent else { return }
         selectedHistoricalMeasurement = latest
     }
@@ -753,205 +800,128 @@ struct MacMainView: View {
         }
     }
 
-    // MARK: - Formatação (apresentação, sem lógica de motor)
+    // MARK: - Formatação
 
     private static let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
-        formatter.dateFormat = "d MMM · HH:mm"
-        return formatter
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "pt_BR")
+        f.dateFormat = "d MMM · HH:mm"
+        return f
     }()
 
-    private func networkLabel(for measurement: NetworkMeasurement) -> String {
-        switch measurement.connectionKind {
-        case .wifi:
-            let ssid = measurement.wifiContext?.ssid ?? "Wi-Fi"
-            return ssid
-        case .cellular:
-            return "Rede móvel"
-        case .ethernet:
-            return "Ethernet"
-        case .other, nil:
-            return "Rede"
+    private func networkLabel(for m: NetworkMeasurement) -> String {
+        switch m.connectionKind {
+        case .wifi:     return m.wifiContext?.ssid ?? "Wi-Fi"
+        case .cellular: return "Rede móvel"
+        case .ethernet: return "Ethernet"
+        default:        return "Rede"
         }
     }
 
-    private var wifiBandLabel: String? {
-        guard isFinalResult, let band = currentMeasurement?.wifiBandGHz else { return nil }
-        let formatted = band.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", band) : String(format: "%.1f", band)
-        return "\(formatted) GHz"
+    private var liveConnectionName: String {
+        viewModel.liveNetworkLabel.isEmpty ? "Conexão atual" : viewModel.liveNetworkLabel
     }
 
-    private var isFinalResult: Bool {
-        viewModel.uiPhase == .done
-    }
-
-    private var showsFinalStats: Bool {
-        isFinalResult
-    }
-
-    private func finalStatValue(_ value: Double, measured: Bool) -> String {
-        isFinalResult && measured ? "\(Int(round(value)))" : "—"
-    }
-
-    private var finalPacketLossValue: String {
-        guard isFinalResult, let packetLoss = viewModel.packetLossPercent else { return "—" }
-        return "\(Int(round(packetLoss)))"
-    }
+    // MARK: - Gauge helpers
 
     private var gaugeFraction: Double {
         guard let value = downloadGaugeValue else { return 0 }
-        let currentScale = max(speedGaugeUpperBound, Self.speedGaugeScale(for: value))
-        return max(0, min(1, value / currentScale))
-    }
-
-    private var gaugeAccessibilityValue: String {
-        switch viewModel.uiPhase {
-        case .idle:
-            return "Pronto para medir"
-        case .connecting:
-            return "Conectando ao servidor"
-        case .downloading:
-            return "Download: \(gaugeCenterValue) megabits por segundo, medição em andamento"
-        case .uploading:
-            return "Download medido: \(gaugeCenterValue) megabits por segundo. Medindo upload"
-        case .done:
-            return "Download: \(gaugeCenterValue) megabits por segundo. Medição concluída"
-        case .error:
-            return "Medição indisponível"
-        case .connectionChanged:
-            return "Medição interrompida porque a rede mudou"
-        }
-    }
-
-    private var isDownloading: Bool {
-        viewModel.uiPhase == .downloading
-    }
-
-    private var isUploading: Bool {
-        viewModel.uiPhase == .uploading
+        let scale = max(speedGaugeUpperBound, Self.speedGaugeScale(for: value))
+        return max(0, min(1, value / scale))
     }
 
     private var downloadGaugeValue: Double? {
         switch viewModel.uiPhase {
-        case .downloading:
-            return viewModel.downloadSpeed
-        case .uploading, .done:
-            return viewModel.downloadSpeed
-        case .idle, .connecting, .error, .connectionChanged:
-            return nil
+        case .downloading, .uploading, .done: return viewModel.downloadSpeed
+        default: return nil
         }
     }
 
-    private var gaugeCenterLabel: String? {
-        downloadGaugeValue == nil ? nil : "DOWNLOAD"
+    private var macRingValue: String {
+        guard downloadGaugeValue != nil else { return "" }
+        return String(format: "%.2f", viewModel.downloadSpeed)
     }
 
-    private var gaugeCenterValue: String {
-        guard let value = downloadGaugeValue else {
-            switch viewModel.uiPhase {
-            case .idle:
-                return "Pronto para medir"
-            case .connecting:
-                return "Conectando…"
-            case .error:
-                return "Indisponível"
-            case .connectionChanged:
-                return "Rede alterada"
-            case .downloading, .uploading, .done:
-                return ""
-            }
+    private var macRingUnit: String? {
+        downloadGaugeValue != nil ? "Mbps" : nil
+    }
+
+    private var gaugeAccessibilityValue: String {
+        switch viewModel.uiPhase {
+        case .idle:             return "Pronto para medir"
+        case .connecting:       return "Conectando ao servidor"
+        case .downloading:      return "Download: \(Int(round(viewModel.downloadSpeed))) Mbps, medição em andamento"
+        case .uploading:        return "Download medido: \(Int(round(viewModel.downloadSpeed))) Mbps. Medindo upload"
+        case .done:             return "Download: \(Int(round(viewModel.downloadSpeed))) Mbps. Medição concluída"
+        case .error:            return "Medição indisponível"
+        case .connectionChanged:return "Medição interrompida porque a rede mudou"
         }
-        return String(format: "%.1f", value).replacingOccurrences(of: ".", with: ",")
-    }
-
-    private var gaugeCenterUnit: String? {
-        downloadGaugeValue == nil ? nil : "Mbps"
-    }
-
-    private static func speedGaugeScale(for value: Double) -> Double {
-        guard value > 0 else { return 1 }
-        let magnitude = pow(10, floor(log10(value)))
-        for multiplier in [1.0, 2.0, 5.0, 10.0] {
-            let candidate = multiplier * magnitude
-            if value <= candidate {
-                return candidate
-            }
-        }
-        return 10 * magnitude
     }
 
     private var phaseMessage: String {
         switch viewModel.uiPhase {
-        case .idle:
-            return "Pronto para medir."
-        case .connecting:
-            return "Conectando ao servidor mais próximo…"
-        case .downloading:
-            return "Medindo velocidade de download…"
-        case .uploading:
-            return "Download concluído. Medindo velocidade de upload…"
-        case .done:
-            return "Sua conexão está pronta."
-        case .error:
-            return viewModel.failureReason == .offline ? "Sem conexão com a internet." : "Não foi possível medir."
-        case .connectionChanged:
-            return "A rede mudou durante a medição."
+        case .idle:             return "Pronto para medir."
+        case .connecting:       return "Conectando ao servidor mais próximo…"
+        case .downloading:      return "Medindo Download…"
+        case .uploading:        return "Medindo Upload…"
+        case .done:             return "Medição concluída."
+        case .error:            return viewModel.failureReason == .offline ? "Sem conexão com a internet." : "Não foi possível medir."
+        case .connectionChanged:return "A rede mudou durante a medição."
         }
+    }
+
+    private static func speedGaugeScale(for value: Double) -> Double {
+        guard value > 0 else { return 1 }
+        let mag = pow(10, floor(log10(value)))
+        for m in [1.0, 2.0, 5.0, 10.0] {
+            let c = m * mag; if value <= c { return c }
+        }
+        return 10 * mag
     }
 }
 
-/// Velocímetro de download. O arco usa apenas a maior amostra real da rodada
-/// como escala dinâmica; não comunica capacidade contratada nem progresso.
-private struct SemicircularGauge: View {
-    var fraction: Double
-    var centerLabel: String?
-    var centerValue: String
-    var centerUnit: String?
-    var isActive: Bool
+// MARK: - MacMetricRing
 
-    private var clamped: Double { max(0, min(1, fraction)) }
+private struct MacMetricRing: View {
+    var isConnecting: Bool
+    var progress: Double
+    var value: String
+    var unit: String?
+
+    private var clamped: Double { max(0, min(1, progress)) }
 
     var body: some View {
-        GeometryReader { proxy in
-            let diameter = min(proxy.size.width, proxy.size.height * 2)
-            let lineWidth: CGFloat = 12
-            ZStack {
-                Circle()
-                    .trim(from: 0, to: 0.5)
-                    .stroke(Color.borderDefault, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                    .rotationEffect(.degrees(180))
-                    .frame(width: diameter, height: diameter)
+        ZStack {
+            Circle()
+                .stroke(Color.borderDefault, lineWidth: 10)
 
+            if !isConnecting {
                 Circle()
-                    .trim(from: 0, to: 0.5 * clamped)
-                    .stroke(Color.brandAccentWarm, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                    .rotationEffect(.degrees(180))
-                    .frame(width: diameter, height: diameter)
-                    .opacity(isActive || clamped > 0 ? 1 : 0)
+                    .trim(from: 0, to: max(0.001, clamped))
+                    .stroke(Color.brandAccentWarm, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 0.08), value: clamped)
+            }
 
-                VStack(spacing: 2) {
-                    if let centerLabel {
-                        Text(centerLabel)
-                            .font(.monoCaption)
-                            .foregroundColor(.textSecondary)
-                    }
-                    Text(centerValue)
-                        .font(centerUnit == nil ? .captionStrong : .heroValueHuge)
+            VStack(spacing: 4) {
+                if isConnecting {
+                    ProgressView()
+                        .controlSize(.large)
+                        .tint(Color.brandAccentWarm)
+                } else if !value.isEmpty {
+                    Text(value)
+                        .font(.system(size: 42, weight: .semibold, design: .monospaced))
                         .foregroundColor(.textPrimary)
                         .lineLimit(1)
-                    if let centerUnit {
-                        Text(centerUnit)
-                            .font(.captionMedium)
+                        .minimumScaleFactor(0.5)
+                    if let unit {
+                        Text(unit.uppercased())
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.textSecondary)
+                            .tracking(0.8)
                     }
                 }
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: diameter * 0.8)
-                .padding(.top, diameter * 0.28)
-                .frame(width: diameter, alignment: .top)
             }
-            .frame(width: diameter, height: diameter, alignment: .top)
         }
     }
 }
