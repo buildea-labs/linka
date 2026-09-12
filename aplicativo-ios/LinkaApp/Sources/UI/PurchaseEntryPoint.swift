@@ -10,26 +10,26 @@ enum PurchaseEntryPoint: Equatable {
 
     var title: String {
         switch self {
-        case .settings: "Linka Plus"
-        case .assist: "Entenda esta medição"
-        case .historyInsights: "Veja o que se repete"
-        case .advancedWiFi: "Veja além da velocidade"
-        case .shortcut, .appIntent: "Automação e Atalhos"
+        case .settings: String(localized: "purchase.entry.settings.title", defaultValue: "Linka Plus")
+        case .assist: String(localized: "purchase.entry.assist.title", defaultValue: "Entenda esta medição")
+        case .historyInsights: String(localized: "purchase.entry.history.title", defaultValue: "Veja o que se repete")
+        case .advancedWiFi: String(localized: "purchase.entry.wifi.title", defaultValue: "Veja além da velocidade")
+        case .shortcut, .appIntent: String(localized: "purchase.entry.shortcuts.title", defaultValue: "Automação e Atalhos")
         }
     }
 
     var subtitle: String {
         switch self {
         case .settings:
-            "Entenda sua conexão, não apenas a velocidade."
+            String(localized: "purchase.entry.settings.subtitle", defaultValue: "Entenda sua conexão, não apenas a velocidade.")
         case .assist:
-            "O Linka Plus interpreta o resultado e mostra o que merece atenção."
+            String(localized: "purchase.entry.assist.subtitle", defaultValue: "O Linka Plus interpreta o resultado e mostra o que merece atenção.")
         case .historyInsights:
-            "Compare suas medições e descubra padrões por rede e horário."
+            String(localized: "purchase.entry.history.subtitle", defaultValue: "Compare suas medições e descubra padrões por rede e horário.")
         case .advancedWiFi:
-            "Use informações extras do Wi-Fi para entender melhor a conexão."
+            String(localized: "purchase.entry.wifi.subtitle", defaultValue: "Use informações extras do Wi-Fi para entender melhor a conexão.")
         case .shortcut, .appIntent:
-            "Automatize testes e acompanhe resultados usando a Siri e os Atalhos."
+            String(localized: "purchase.entry.shortcuts.subtitle", defaultValue: "Automatize testes e acompanhe resultados usando a Siri e os Atalhos.")
         }
     }
 }

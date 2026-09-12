@@ -285,10 +285,10 @@ public class SpeedTestViewModel: ObservableObject {
         latestFinishedMeasurement = measurement
         if let kind = measurement.connectionKind {
             switch kind {
-            case .cellular: self.networkType = "Rede Móvel"
-            case .wifi: self.networkType = "Wi-Fi"
-            case .ethernet: self.networkType = "Ethernet"
-            case .other: self.networkType = "Outra"
+            case .cellular: self.networkType = String(localized: "network.cellular", defaultValue: "Rede móvel")
+            case .wifi: self.networkType = String(localized: "network.wifi", defaultValue: "Wi-Fi")
+            case .ethernet: self.networkType = String(localized: "network.ethernet", defaultValue: "Ethernet")
+            case .other: self.networkType = String(localized: "network.other", defaultValue: "Outra")
             }
         } else {
             self.networkType = ""
@@ -303,7 +303,7 @@ public class SpeedTestViewModel: ObservableObject {
         self.provider = measurement.networkIdentifier ?? ""
         if let dur = measurement.durationMs {
             self.rawTestDuration = Double(dur) / 1000.0
-            self.testDuration = String(format: "%.1fs", self.rawTestDuration!).replacingOccurrences(of: ".", with: ",")
+            self.testDuration = Self.formattedDuration(self.rawTestDuration!)
         } else {
             self.rawTestDuration = nil
             self.testDuration = ""
@@ -812,7 +812,7 @@ public class SpeedTestViewModel: ObservableObject {
         if let prov = state.provider { self.provider = prov }
         if let net = state.networkType { self.networkType = net }
         if let dur = state.duration {
-            self.testDuration = String(format: "%.1fs", dur).replacingOccurrences(of: ".", with: ",")
+            self.testDuration = Self.formattedDuration(dur)
             self.rawTestDuration = dur
         }
         if let loss = state.packetLossPercent { self.packetLossPercent = loss }
@@ -828,6 +828,14 @@ public class SpeedTestViewModel: ObservableObject {
         case .result: self.uiPhase = .done
         case .error: self.uiPhase = .error
         }
+    }
+
+    private static func formattedDuration(_ seconds: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = LinkaLanguagePreference.currentLocale
+        formatter.minimumFractionDigits = 1
+        formatter.maximumFractionDigits = 1
+        return "\(formatter.string(from: NSNumber(value: seconds)) ?? "\(seconds)")s"
     }
 
     /// Amostra pontual e independente do tipo de interface de rede ativa
@@ -925,7 +933,7 @@ public class SpeedTestViewModel: ObservableObject {
         case let (nil, .some(technology)):
             return technology
         case (nil, nil):
-            return "Rede móvel"
+            return String(localized: "network.cellular", defaultValue: "Rede móvel")
         }
     }
 
@@ -993,7 +1001,7 @@ public class SpeedTestViewModel: ObservableObject {
                     self.liveNetworkLabel = ssid
                 }
             } else {
-                self.liveNetworkLabel = "Wi-Fi"
+                self.liveNetworkLabel = String(localized: "network.wifi", defaultValue: "Wi-Fi")
             }
         } else if kind == .cellular {
             self.liveWiFiContext = nil
@@ -1004,13 +1012,13 @@ public class SpeedTestViewModel: ObservableObject {
             )
         } else if kind == .ethernet {
             self.liveWiFiContext = nil
-            self.liveNetworkLabel = "Ethernet"
+            self.liveNetworkLabel = String(localized: "network.ethernet", defaultValue: "Ethernet")
         } else if path.status != .satisfied {
             self.liveWiFiContext = nil
-            self.liveNetworkLabel = "Sem conexão"
+            self.liveNetworkLabel = String(localized: "network.offline", defaultValue: "Sem conexão")
         } else {
             self.liveWiFiContext = nil
-            self.liveNetworkLabel = "Conexão de rede"
+            self.liveNetworkLabel = String(localized: "network.connection", defaultValue: "Conexão de rede")
         }
     }
 }

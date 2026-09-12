@@ -123,7 +123,7 @@ enum AssistContainer {
             func answer(_ request: NetworkAssistRequest) async throws -> NetworkAssistResponse {
                 let ndsResponse = try await api.evaluate(request.currentMeasurement, requestAI: false)
                 guard let rec = ndsResponse.recommendation else {
-                    return NetworkAssistResponse(text: "Diagnóstico inconclusivo.", disposition: .insufficientEvidence, evidenceIDs: [])
+                    return NetworkAssistResponse(text: String(localized: "assist.inconclusive", defaultValue: "Diagnóstico inconclusivo."), disposition: .insufficientEvidence, evidenceIDs: [])
                 }
                 return NetworkAssistResponse(
                     text: rec.title,

@@ -23,11 +23,11 @@ struct LiveConnectionPathView: View {
     private var interfaceLabel: String {
         if !label.isEmpty { return label }
         switch kind {
-        case .wifi: return "Wi-Fi"
-        case .cellular: return "Rede móvel"
-        case .ethernet: return "Ethernet"
-        case .other: return "Conexão de rede"
-        case nil: return "Sem conexão"
+        case .wifi: return String(localized: "network.wifi", defaultValue: "Wi-Fi")
+        case .cellular: return String(localized: "network.cellular", defaultValue: "Rede móvel")
+        case .ethernet: return String(localized: "network.ethernet", defaultValue: "Ethernet")
+        case .other: return String(localized: "network.connection", defaultValue: "Conexão de rede")
+        case nil: return String(localized: "network.offline", defaultValue: "Sem conexão")
         }
     }
 
@@ -35,17 +35,17 @@ struct LiveConnectionPathView: View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 12) {
-                    pathRow(icon: "iphone", label: "Este iPhone")
+                    pathRow(icon: "iphone", label: String(localized: "connectionPath.thisDevice", defaultValue: "Este iPhone"))
                     pathRow(icon: interfaceIcon, label: interfaceLabel)
-                    pathRow(icon: "globe", label: "Internet", muted: kind == nil)
+                    pathRow(icon: "globe", label: String(localized: "connectionPath.internet", defaultValue: "Internet"), muted: kind == nil)
                 }
             } else {
                 HStack(spacing: 0) {
-                    pathItem(icon: "iphone", label: "Este iPhone")
+                    pathItem(icon: "iphone", label: String(localized: "connectionPath.thisDevice", defaultValue: "Este iPhone"))
                     pathArrow
                     pathItem(icon: interfaceIcon, label: interfaceLabel)
                     pathArrow
-                    pathItem(icon: "globe", label: "Internet", muted: kind == nil)
+                    pathItem(icon: "globe", label: String(localized: "connectionPath.internet", defaultValue: "Internet"), muted: kind == nil)
                 }
             }
         }
@@ -54,7 +54,7 @@ struct LiveConnectionPathView: View {
         .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Caminho da conexão: iPhone, \(interfaceLabel), Internet")
+        .accessibilityLabel(String(format: String(localized: "connectionPath.live.accessibility", defaultValue: "Caminho da conexão: iPhone, %@, Internet"), locale: LinkaLanguagePreference.currentLocale, interfaceLabel))
     }
 
     private var pathArrow: some View {
@@ -131,7 +131,7 @@ struct ConnectionPathView: View {
         .disabled(onOpen == nil)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(ConnectionPathCopy.accessibilitySummary(for: report))
-        .accessibilityHint("Toque para ver o caminho da conexão em detalhes")
+        .accessibilityHint(String(localized: "connectionPath.open.hint", defaultValue: "Toque para ver o caminho da conexão em detalhes"))
     }
 
     @ViewBuilder
@@ -167,11 +167,11 @@ enum ConnectionPathCopy {
 
     static func title(for stage: ConnectionPathStage) -> String {
         switch stage {
-        case .device: return "iPhone"
-        case .wifi: return "Wi-Fi"
-        case .router: return "Roteador"
-        case .carrier: return "Operadora"
-        case .internet: return "Internet"
+        case .device: return String(localized: "connectionPath.stage.device", defaultValue: "iPhone")
+        case .wifi: return String(localized: "connectionPath.stage.wifi", defaultValue: "Wi-Fi")
+        case .router: return String(localized: "connectionPath.stage.router", defaultValue: "Roteador")
+        case .carrier: return String(localized: "connectionPath.stage.carrier", defaultValue: "Operadora")
+        case .internet: return String(localized: "connectionPath.stage.internet", defaultValue: "Internet")
         }
     }
 
@@ -196,10 +196,10 @@ enum ConnectionPathCopy {
 
     static func statusAccessibilityLabel(_ status: ConnectionPathStageStatus) -> String {
         switch status {
-        case .normal: return "normal"
-        case .attention: return "atenção"
-        case .likelyProblem: return "problema provável"
-        case .unavailable: return "não verificado"
+        case .normal: return String(localized: "connectionPath.status.normal", defaultValue: "normal")
+        case .attention: return String(localized: "connectionPath.status.attention", defaultValue: "atenção")
+        case .likelyProblem: return String(localized: "connectionPath.status.problem", defaultValue: "problema provável")
+        case .unavailable: return String(localized: "connectionPath.status.unavailable", defaultValue: "não verificado")
         }
     }
 

@@ -8,13 +8,13 @@ import NetworkInsights
 /// é diagnóstico nem tutorial de rede, só o que a métrica significa. Não
 /// repete o número que já está na tela.
 enum MetricExplanation {
-    static let ping = "Tempo de resposta entre o aparelho e o servidor."
-    static let jitter = "Variação no tempo de resposta de uma medição para outra."
-    static let packetLoss = "Parte dos dados que não chegou ao destino."
-    static let loadedLatency = "Quanto o tempo de resposta piora com a conexão ocupada."
+    static var ping: String { String(localized: "metric.explanation.ping", defaultValue: "Tempo de resposta entre o aparelho e o servidor.") }
+    static var jitter: String { String(localized: "metric.explanation.jitter", defaultValue: "Variação no tempo de resposta de uma medição para outra.") }
+    static var packetLoss: String { String(localized: "metric.explanation.packetLoss", defaultValue: "Parte dos dados que não chegou ao destino.") }
+    static var loadedLatency: String { String(localized: "metric.explanation.loadedLatency", defaultValue: "Quanto o tempo de resposta piora com a conexão ocupada.") }
     /// issue #128 — paridade de `loadedLatency` para a fase de upload.
-    static let loadedLatencyUpload = "Quanto o tempo de resposta piora com a conexão ocupada enviando dados."
-    static let dnsResolution = "Tempo para traduzir o endereço do servidor em um número de IP."
+    static var loadedLatencyUpload: String { String(localized: "metric.explanation.loadedLatencyUpload", defaultValue: "Quanto o tempo de resposta piora com a conexão ocupada enviando dados.") }
+    static var dnsResolution: String { String(localized: "metric.explanation.dns", defaultValue: "Tempo para traduzir o endereço do servidor em um número de IP.") }
 }
 
 /// Copy da categoria de responsividade sob carga (issue #128) — vive na UI,
@@ -25,21 +25,21 @@ enum MetricExplanation {
 enum LoadResponsivenessCopy {
     static func label(for category: LoadResponsivenessCategory) -> String {
         switch category {
-        case .high: return "Alta"
-        case .medium: return "Média"
-        case .low: return "Baixa"
-        case .notAssessed: return "Não avaliada"
+        case .high: return String(localized: "loadResponsiveness.high", defaultValue: "Alta")
+        case .medium: return String(localized: "loadResponsiveness.medium", defaultValue: "Média")
+        case .low: return String(localized: "loadResponsiveness.low", defaultValue: "Baixa")
+        case .notAssessed: return String(localized: "loadResponsiveness.notAssessed", defaultValue: "Não avaliada")
         }
     }
 
     static func explanation(for category: LoadResponsivenessCategory) -> String {
         switch category {
         case .high:
-            return "A conexão continua respondendo bem mesmo durante uso intenso."
+            return String(localized: "loadResponsiveness.high.explanation", defaultValue: "A conexão continua respondendo bem mesmo durante uso intenso.")
         case .medium, .low:
-            return "A conexão demora mais para responder quando está ocupada."
+            return String(localized: "loadResponsiveness.limited.explanation", defaultValue: "A conexão demora mais para responder quando está ocupada.")
         case .notAssessed:
-            return "Não foi possível avaliar a responsividade nesta medição."
+            return String(localized: "loadResponsiveness.notAssessed.explanation", defaultValue: "Não foi possível avaliar a responsividade nesta medição.")
         }
     }
 }
@@ -59,22 +59,27 @@ enum UsageSuitabilityCopy {
     /// do mais ao menos exigente aos olhos de quem está lendo o resultado.
     private static let priorityOrder: [UsageCase] = [.streaming4K, .onlineGaming, .streamingHD, .videoCall]
 
-    private static let positiveSentences: [UsageCase: String] = [
-        .videoCall: "Sua conexão sustenta bem chamada em vídeo agora.",
-        .streamingHD: "Sua conexão sustenta bem streaming de vídeo agora.",
-        .streaming4K: "Sua conexão sustenta bem streaming em 4K agora.",
-        .onlineGaming: "Sua conexão sustenta bem jogo online agora.",
-        .workUpload: "Sua conexão sustenta bem envio de arquivos e trabalho agora."
-    ]
+    private static func positiveSentence(for usageCase: UsageCase) -> String {
+        switch usageCase {
+        case .videoCall: return String(localized: "usage.case.videoCall.positive", defaultValue: "Sua conexão sustenta bem chamada em vídeo agora.")
+        case .streamingHD: return String(localized: "usage.case.streamingHD.positive", defaultValue: "Sua conexão sustenta bem streaming de vídeo agora.")
+        case .streaming4K: return String(localized: "usage.case.streaming4K.positive", defaultValue: "Sua conexão sustenta bem streaming em 4K agora.")
+        case .onlineGaming: return String(localized: "usage.case.onlineGaming.positive", defaultValue: "Sua conexão sustenta bem jogo online agora.")
+        case .workUpload: return String(localized: "usage.case.workUpload.positive", defaultValue: "Sua conexão sustenta bem envio de arquivos e trabalho agora.")
+        }
+    }
 
-    private static let limitingMetricLabels: [NetworkMetric: String] = [
-        .downloadMbps: "a velocidade de download",
-        .uploadMbps: "a velocidade de upload",
-        .latencyMs: "o tempo de resposta",
-        .jitterMs: "a variação no tempo de resposta",
-        .packetLossPercent: "a perda de pacotes",
-        .loadedLatencyMs: "o tempo de resposta com a conexão ocupada"
-    ]
+    private static func limitingMetricLabel(_ metric: NetworkMetric) -> String {
+        switch metric {
+        case .downloadMbps: return String(localized: "usage.metric.download", defaultValue: "a velocidade de download")
+        case .uploadMbps: return String(localized: "usage.metric.upload", defaultValue: "a velocidade de upload")
+        case .latencyMs: return String(localized: "usage.metric.latency", defaultValue: "o tempo de resposta")
+        case .jitterMs: return String(localized: "usage.metric.jitter", defaultValue: "a variação no tempo de resposta")
+        case .packetLossPercent: return String(localized: "usage.metric.packetLoss", defaultValue: "a perda de pacotes")
+        case .loadedLatencyMs: return String(localized: "usage.metric.loadedLatency", defaultValue: "o tempo de resposta com a conexão ocupada")
+        case .loadedLatencyUploadMs: return String(localized: "usage.metric.loadedLatencyUpload", defaultValue: "o tempo de resposta com a conexão ocupada enviando dados")
+        }
+    }
 
     /// Escolhe uma única frase: o caso de uso mais exigente com veredito
     /// `.adequate` (o "teto real" da conexão hoje). Quando nenhum caso
@@ -84,32 +89,30 @@ enum UsageSuitabilityCopy {
     static func sentence(for report: UsageSuitabilityReport) -> String {
         for usageCase in priorityOrder {
             guard let verdict = report.verdict(for: usageCase), verdict.level == .adequate else { continue }
-            return positiveSentences[usageCase] ?? ""
+            return positiveSentence(for: usageCase)
         }
 
         for usageCase in priorityOrder {
             guard let verdict = report.verdict(for: usageCase),
-                  let limitingMetric = verdict.limitingMetric,
-                  let label = limitingMetricLabels[limitingMetric] else { continue }
-            return "Hoje, \(label) é o que mais limita o uso desta conexão."
+                  let limitingMetric = verdict.limitingMetric else { continue }
+            let label = limitingMetricLabel(limitingMetric)
+            return String(format: String(localized: "usage.limiting.sentence", defaultValue: "Hoje, %@ é o que mais limita o uso desta conexão."), locale: LinkaLanguagePreference.currentLocale, label)
         }
 
-        return "Ainda não há dados suficientes para avaliar o uso desta conexão."
+        return String(localized: "usage.insufficient", defaultValue: "Ainda não há dados suficientes para avaliar o uso desta conexão.")
     }
 
     /// Título curto de cada `UsageCase`, para a listagem completa de
     /// veredictos (`UsageDiagnosticsView`) — distinto de `positiveSentences`,
     /// que é a frase única de resultado.
-    private static let caseTitles: [UsageCase: String] = [
-        .videoCall: "Chamada em vídeo",
-        .streamingHD: "Streaming em HD",
-        .streaming4K: "Streaming em 4K",
-        .onlineGaming: "Jogo online",
-        .workUpload: "Envio de arquivos e trabalho"
-    ]
-
     static func title(for usageCase: UsageCase) -> String {
-        caseTitles[usageCase] ?? ""
+        switch usageCase {
+        case .videoCall: return String(localized: "usage.case.videoCall.title", defaultValue: "Chamada em vídeo")
+        case .streamingHD: return String(localized: "usage.case.streamingHD.title", defaultValue: "Streaming em HD")
+        case .streaming4K: return String(localized: "usage.case.streaming4K.title", defaultValue: "Streaming em 4K")
+        case .onlineGaming: return String(localized: "usage.case.onlineGaming.title", defaultValue: "Jogo online")
+        case .workUpload: return String(localized: "usage.case.workUpload.title", defaultValue: "Envio de arquivos e trabalho")
+        }
     }
 
     /// Descrição curta de um veredito individual — usada quando cada
@@ -118,15 +121,15 @@ enum UsageSuitabilityCopy {
     static func detail(for verdict: UsageCaseVerdict) -> String {
         switch verdict.level {
         case .adequate:
-            return positiveSentences[verdict.usageCase] ?? "Sua conexão sustenta bem esse uso agora."
+            return positiveSentence(for: verdict.usageCase)
         case .limited:
-            if let limitingMetric = verdict.limitingMetric,
-               let label = limitingMetricLabels[limitingMetric] {
-                return "Hoje, \(label) é o que mais limita esse uso."
+            if let limitingMetric = verdict.limitingMetric {
+                let label = limitingMetricLabel(limitingMetric)
+                return String(format: String(localized: "usage.limiting.detail", defaultValue: "Hoje, %@ é o que mais limita esse uso."), locale: LinkaLanguagePreference.currentLocale, label)
             }
-            return "Sua conexão está limitada para esse uso agora."
+            return String(localized: "usage.limited", defaultValue: "Sua conexão está limitada para esse uso agora.")
         case .notAssessed:
-            return "Ainda não há dados suficientes para avaliar esse uso."
+            return String(localized: "usage.insufficient.case", defaultValue: "Ainda não há dados suficientes para avaliar esse uso.")
         }
     }
 
@@ -159,9 +162,9 @@ enum UsageQualityLevel: Equatable {
 
     var label: String {
         switch self {
-        case .good: return "Boa"
-        case .medium: return "Média"
-        case .poor: return "Ruim"
+        case .good: return String(localized: "usage.quality.good", defaultValue: "Boa")
+        case .medium: return String(localized: "usage.quality.medium", defaultValue: "Média")
+        case .poor: return String(localized: "usage.quality.poor", defaultValue: "Ruim")
         }
     }
 

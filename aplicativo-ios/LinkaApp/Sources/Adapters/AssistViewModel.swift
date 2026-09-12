@@ -40,7 +40,7 @@ final class AssistViewModel: ObservableObject {
         guard case .idle = state else { return }
 
         guard let current = currentMeasurement else {
-            state = .error("Nenhuma medição encontrada para diagnóstico.")
+            state = .error(String(localized: "assist.noMeasurement", defaultValue: "Nenhuma medição encontrada para diagnóstico."))
             return
         }
 
@@ -72,7 +72,7 @@ final class AssistViewModel: ObservableObject {
 
                 if let title = response.title, let summary = response.summary {
                     let data = DiagnosticData(
-                        headerStatus: response.headerStatus ?? "DIAGNÓSTICO CONCLUÍDO",
+                        headerStatus: response.headerStatus ?? String(localized: "assist.completed", defaultValue: "DIAGNÓSTICO CONCLUÍDO"),
                         title: title,
                         summary: summary,
                         recommendation: response.recommendation,
@@ -83,7 +83,7 @@ final class AssistViewModel: ObservableObject {
                 } else {
                     let data = DiagnosticData(
                         headerStatus: "Assist",
-                        title: "Conclusão",
+                        title: String(localized: "assist.conclusion", defaultValue: "Conclusão"),
                         summary: response.text,
                         recommendation: response.recommendation,
                         dimensions: response.dimensions ?? [],
@@ -92,20 +92,20 @@ final class AssistViewModel: ObservableObject {
                     state = .success(data)
                 }
             } else {
-                state = .error("O Assist não retornou um diagnóstico.")
+                state = .error(String(localized: "assist.empty", defaultValue: "O Assist não retornou um diagnóstico."))
             }
         } catch {
             let errorText: String
             switch error {
             case NetworkAssistError.notConfigured:
-                errorText = "O Assist ainda não está configurado neste build."
+                errorText = String(localized: "assist.notConfigured", defaultValue: "O Assist ainda não está configurado neste build.")
             case NetworkAssistError.notEntitled:
-                errorText = "O Assist faz parte do Linka Plus. Assine para conversar sobre seus testes."
+                errorText = String(localized: "assist.notEntitled", defaultValue: "O Assist faz parte do Linka Plus. Assine para conversar sobre seus testes.")
             default:
                 #if DEBUG
                 errorText = "Erro (\(error)): \(error.localizedDescription)"
                 #else
-                errorText = "Não foi possível consultar o Assist agora. Tente novamente em instantes."
+                errorText = String(localized: "assist.error", defaultValue: "Não foi possível consultar o Assist agora. Tente novamente em instantes.")
                 #endif
             }
             state = .error(errorText)
@@ -203,7 +203,7 @@ final class AssistViewModel: ObservableObject {
         }
 
         return NetworkAssistContext(
-            question: "Interprete esta medição com os dados disponíveis.",
+            question: String(localized: "assist.defaultQuestion", defaultValue: "Interprete esta medição com os dados disponíveis."),
             currentMeasurement: currentMeasurement,
             recentMeasurements: Array(recent),
             evidence: allEvidence,
@@ -217,11 +217,11 @@ final class AssistViewModel: ObservableObject {
     private static func message(for disposition: NetworkAssistDisposition) -> String {
         switch disposition {
         case .insufficientEvidence:
-            return "Ainda não há dados suficientes para uma interpretação confiável."
+            return String(localized: "assist.insufficient", defaultValue: "Ainda não há dados suficientes para uma interpretação confiável.")
         case .requiresDiagnosis:
-            return "Esta pergunta exige uma investigação que o Linka não pode concluir só com esta medição."
+            return String(localized: "assist.requiresDiagnosis", defaultValue: "Esta pergunta exige uma investigação que o Linka não pode concluir só com esta medição.")
         case .unsupported:
-            return "O Assist não consegue responder a esse tipo de solicitação."
+            return String(localized: "assist.unsupported", defaultValue: "O Assist não consegue responder a esse tipo de solicitação.")
         case .answered:
             return ""
         }
