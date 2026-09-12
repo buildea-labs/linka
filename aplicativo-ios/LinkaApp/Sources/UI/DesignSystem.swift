@@ -322,7 +322,7 @@ public extension View {
 /// environment handles `Text` literals, while copy produced by view models and
 /// helpers needs this explicit lookup to follow the same preference.
 enum LinkaCopy {
-    static func value(_ key: String) -> String {
+    static func value(_ key: String, defaultValue: String? = nil) -> String {
         let preference = UserDefaults.standard.string(forKey: LinkaWidgetShared.languagePreferenceKey) ?? "system"
         let bundle: Bundle
         if preference == "system" {
@@ -333,7 +333,7 @@ enum LinkaCopy {
         } else {
             bundle = .main
         }
-        return bundle.localizedString(forKey: key, value: key, table: "Localizable")
+        return bundle.localizedString(forKey: key, value: defaultValue ?? key, table: "Localizable")
     }
 
     static func format(_ key: String, _ arguments: CVarArg...) -> String {

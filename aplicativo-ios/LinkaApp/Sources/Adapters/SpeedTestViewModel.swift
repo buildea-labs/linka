@@ -285,10 +285,10 @@ public class SpeedTestViewModel: ObservableObject {
         latestFinishedMeasurement = measurement
         if let kind = measurement.connectionKind {
             switch kind {
-            case .cellular: self.networkType = String(localized: "network.cellular", defaultValue: "Rede móvel")
-            case .wifi: self.networkType = String(localized: "network.wifi", defaultValue: "Wi-Fi")
-            case .ethernet: self.networkType = String(localized: "network.ethernet", defaultValue: "Ethernet")
-            case .other: self.networkType = String(localized: "network.other", defaultValue: "Outra")
+            case .cellular: self.networkType = LinkaCopy.value("network.cellular")
+            case .wifi: self.networkType = LinkaCopy.value("network.wifi")
+            case .ethernet: self.networkType = LinkaCopy.value("network.ethernet")
+            case .other: self.networkType = LinkaCopy.value("network.other")
             }
         } else {
             self.networkType = ""
@@ -933,7 +933,7 @@ public class SpeedTestViewModel: ObservableObject {
         case let (nil, .some(technology)):
             return technology
         case (nil, nil):
-            return String(localized: "network.cellular", defaultValue: "Rede móvel")
+            return LinkaCopy.value("network.cellular")
         }
     }
 
@@ -1001,7 +1001,7 @@ public class SpeedTestViewModel: ObservableObject {
                     self.liveNetworkLabel = ssid
                 }
             } else {
-                self.liveNetworkLabel = String(localized: "network.wifi", defaultValue: "Wi-Fi")
+                self.liveNetworkLabel = LinkaCopy.value("network.wifi")
             }
         } else if kind == .cellular {
             self.liveWiFiContext = nil
@@ -1012,13 +1012,13 @@ public class SpeedTestViewModel: ObservableObject {
             )
         } else if kind == .ethernet {
             self.liveWiFiContext = nil
-            self.liveNetworkLabel = String(localized: "network.ethernet", defaultValue: "Ethernet")
+            self.liveNetworkLabel = LinkaCopy.value("network.ethernet")
         } else if path.status != .satisfied {
             self.liveWiFiContext = nil
-            self.liveNetworkLabel = String(localized: "network.offline", defaultValue: "Sem conexão")
+            self.liveNetworkLabel = LinkaCopy.value("network.offline")
         } else {
             self.liveWiFiContext = nil
-            self.liveNetworkLabel = String(localized: "network.connection", defaultValue: "Conexão de rede")
+            self.liveNetworkLabel = LinkaCopy.value("network.connection")
         }
     }
 }

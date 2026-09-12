@@ -1,5 +1,6 @@
 import XCTest
 import SwiftUI
+import LinkaWidgetShared
 #if canImport(CoreLocation)
 import CoreLocation
 #endif
@@ -46,6 +47,42 @@ final class SettingsProductionStateTests: XCTestCase {
         XCTAssertEqual(LinkaLanguagePreference.allCases.map(\.rawValue), ["system", "pt-BR", "en", "es-419"])
         XCTAssertEqual(LinkaLanguagePreference.fromStoredValue("en"), .english)
         XCTAssertEqual(LinkaLanguagePreference.fromStoredValue("unknown"), .system)
+    }
+
+    func testLanguageSelectorKeepsPortugueseSystemLocaleUntilTheUserOverridesIt() {
+        let portugueseSystem = Locale(identifier: "pt-BR")
+        XCTAssertEqual(
+            LinkaWidgetShared.effectiveLocale(preference: LinkaLanguagePreference.system.rawValue, systemLocale: portugueseSystem).identifier,
+            "pt-BR"
+        )
+        XCTAssertEqual(
+            LinkaWidgetShared.effectiveLocale(preference: LinkaLanguagePreference.english.rawValue, systemLocale: portugueseSystem).identifier,
+            "en"
+        )
+    }
+
+    func testDynamicCopyUsesTheManualLanguageChoiceForPortugueseEnglishAndSpanish() {
+        let defaults = UserDefaults.standard
+        let previousValue = defaults.object(forKey: LinkaLanguagePreference.storageKey)
+        defer {
+            if let previousValue {
+                defaults.set(previousValue, forKey: LinkaLanguagePreference.storageKey)
+            } else {
+                defaults.removeObject(forKey: LinkaLanguagePreference.storageKey)
+            }
+        }
+
+        let expectations: [(String, String, String)] = [
+            ("pt-BR", "Nenhuma medição encontrada para diagnóstico.", "Sua conexão sustenta bem chamada em vídeo agora."),
+            ("en", "No measurement found for diagnosis.", "Your connection supports video calls well right now."),
+            ("es-419", "No se encontró ninguna medición para el diagnóstico.", "Tu conexión admite bien las videollamadas ahora.")
+        ]
+
+        for (language, assistMessage, usageMessage) in expectations {
+            defaults.set(language, forKey: LinkaLanguagePreference.storageKey)
+            XCTAssertEqual(LinkaCopy.value("assist.noMeasurement"), assistMessage, "language: \(language)")
+            XCTAssertEqual(LinkaCopy.value("usage.case.videoCall.positive"), usageMessage, "language: \(language)")
+        }
     }
 
     func testPermissionPromptsRemainBoundToSystemLanguageResources() throws {
