@@ -27,11 +27,11 @@ struct MainView: View {
     private var mainTitle: String {
         switch viewModel.uiPhase {
         case .idle, .connectionChanged, .error:
-            return "Início"
+            return LinkaCopy.value("home.title")
         case .connecting, .downloading, .uploading:
-            return "Testando..."
+            return LinkaCopy.value("home.testing")
         case .done:
-            return "Velocidade"
+            return LinkaCopy.value("home.speed")
         }
     }
 
@@ -136,11 +136,11 @@ struct MainView: View {
         let loss = viewModel.packetLossPercent ?? 0
 
         if dl >= 15 && ul >= 5 && ping <= 60 && loss < 2 {
-            return ("Bom", .statusGood)
+            return (LinkaCopy.value("home.verdict.good"), .statusGood)
         } else if dl >= 5 && ul >= 1.5 && ping <= 120 && loss < 5 {
-            return ("Regular", .statusAttention)
+            return (LinkaCopy.value("home.verdict.fair"), .statusAttention)
         } else {
-            return ("Ruim", .statusCritical)
+            return (LinkaCopy.value("home.verdict.poor"), .statusCritical)
         }
     }
 
@@ -150,11 +150,11 @@ struct MainView: View {
         let loss = viewModel.packetLossPercent ?? 0
 
         if ping <= 40 && jitter <= 20 && loss < 1 {
-            return ("Bom", .statusGood)
+            return (LinkaCopy.value("home.verdict.good"), .statusGood)
         } else if ping <= 90 && loss < 3 {
-            return ("Regular", .statusAttention)
+            return (LinkaCopy.value("home.verdict.fair"), .statusAttention)
         } else {
-            return ("Ruim", .statusCritical)
+            return (LinkaCopy.value("home.verdict.poor"), .statusCritical)
         }
     }
 
@@ -163,11 +163,11 @@ struct MainView: View {
         let loss = viewModel.packetLossPercent ?? 0
 
         if dl >= 25 && loss < 2 {
-            return ("4K", .statusGood)
+            return (LinkaCopy.value("home.verdict.4k"), .statusGood)
         } else if dl >= 10 {
-            return ("HD", .statusGood)
+            return (LinkaCopy.value("home.verdict.hd"), .statusGood)
         } else {
-            return ("SD", .statusAttention)
+            return (LinkaCopy.value("home.verdict.sd"), .statusAttention)
         }
     }
 
@@ -194,7 +194,7 @@ struct MainView: View {
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.textPrimary)
                         }
-                        .accessibilityLabel("Voltar para o início")
+                        .accessibilityLabel(LinkaCopy.value("home.accessibility.back"))
                     }
                 }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
@@ -204,7 +204,7 @@ struct MainView: View {
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.textPrimary)
                         }
-                        .accessibilityLabel("Histórico")
+                        .accessibilityLabel(LinkaCopy.value("home.accessibility.history"))
                     }
                     if viewModel.uiPhase == .done {
                         Button {
@@ -214,7 +214,7 @@ struct MainView: View {
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.textPrimary)
                         }
-                        .accessibilityLabel("Compartilhar resultado")
+                        .accessibilityLabel(LinkaCopy.value("home.accessibility.share"))
                     }
                     if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
                         Button { navPath.append(AppRoute.settings) } label: {
@@ -222,7 +222,7 @@ struct MainView: View {
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.textPrimary)
                         }
-                        .accessibilityLabel("Ajustes")
+                        .accessibilityLabel(LinkaCopy.value("home.accessibility.settings"))
                     }
                 }
             }
@@ -289,12 +289,12 @@ struct MainView: View {
         .sheet(isPresented: $showConnectivityTriage) {
             ConnectivityTriageView(onRetry: { viewModel.startTest() })
         }
-        .confirmationDialog("Não recebemos os dados do Wi-Fi", isPresented: $showAdvancedWiFiRecovery, titleVisibility: .visible) {
-            Button("Tentar novamente") { startSpeedTest() }
-            Button("Medir sem dados avançados") { beginSpeedTest() }
-            Button("Cancelar", role: .cancel) {}
+        .confirmationDialog(LinkaCopy.value("home.advancedWiFiRecovery.title"), isPresented: $showAdvancedWiFiRecovery, titleVisibility: .visible) {
+            Button(LinkaCopy.value("common.tryAgain")) { startSpeedTest() }
+            Button(LinkaCopy.value("home.advancedWiFiRecovery.measureWithout")) { beginSpeedTest() }
+            Button(LinkaCopy.value("common.cancel"), role: .cancel) {}
         } message: {
-            Text("O atalho pode ter sido cancelado ou precisa ser configurado no Atalhos.")
+            Text(LinkaCopy.value("home.advancedWiFiRecovery.message"))
         }
         .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
         .onChange(of: showShareSheet) { isPresented in
@@ -306,7 +306,7 @@ struct MainView: View {
                     .environmentObject(entitlements)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Voltar") {
+                            Button(LinkaCopy.value("common.back")) {
                                 showDetails = false
                             }
                         }
@@ -514,7 +514,7 @@ struct MainView: View {
                         Button(action: {
                             startSpeedTest()
                         }) {
-                            Text("Testar velocidade")
+                            Text(LinkaCopy.value("home.testSpeed"))
                                 .multilineTextAlignment(.center)
                         }
                         .buttonStyle(.linkaPrimary)
@@ -526,10 +526,10 @@ struct MainView: View {
                             } label: {
                                 HStack(alignment: .center, spacing: 10) {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("Último teste")
+                                        Text(LinkaCopy.value("home.lastTest"))
                                             .font(.bodySmallStrong)
                                             .foregroundColor(.textPrimary)
-                                        Text("\(formatted(latest.downloadMbps ?? 0)) Mbps · \(formatRelativeTime(latest.measuredAt))")
+                                        Text(LinkaCopy.format("home.lastTest.value", formatted(latest.downloadMbps ?? 0), formatRelativeTime(latest.measuredAt)))
                                             .font(.monoCaption)
                                             .foregroundColor(.textSecondary)
                                             .fixedSize(horizontal: false, vertical: true)
@@ -557,7 +557,7 @@ struct MainView: View {
                                     .font(.monoCaption)
                                     .textCase(.uppercase)
                                     .foregroundColor(.brandAccentWarm)
-                                Text("Analisar minha conexão agora")
+                                Text(LinkaCopy.value("home.assist.cta"))
                                     .font(.captionSmall)
                                     .foregroundColor(.textPrimary)
                                     .multilineTextAlignment(.leading)
@@ -602,8 +602,8 @@ struct MainView: View {
 
             PhaseDots(
                 phases: [
-                    (key: "downloading", label: "Download"),
-                    (key: "uploading", label: "Upload")
+                    (key: "downloading", label: LinkaCopy.value("metric.download")),
+                    (key: "uploading", label: LinkaCopy.value("metric.upload"))
                 ],
                 activeKey: activePhaseKey
             )
@@ -611,7 +611,7 @@ struct MainView: View {
             Button(action: {
                 viewModel.skipOrCancel()
             }) {
-                Text("Cancelar")
+                Text(LinkaCopy.value("common.cancel"))
                     .font(.bodySmall)
                     .foregroundColor(.textSecondary)
                     .frame(minWidth: 44, minHeight: 44)
@@ -639,7 +639,7 @@ struct MainView: View {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity)
 
-                    Text("Mbps download")
+                    Text(LinkaCopy.value("home.downloadUnit"))
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(.textSecondary)
                 }
@@ -654,7 +654,7 @@ struct MainView: View {
                     if showMoreMetrics { requestAppStoreReviewAfterResultInteraction() }
                 } label: {
                     HStack(spacing: 5) {
-                        Text("Mais")
+                        Text(LinkaCopy.value("common.more"))
                             .font(.bodySmallStrong)
                         Image(systemName: showMoreMetrics ? "chevron.up" : "chevron.down")
                             .font(.system(size: 12, weight: .semibold))
@@ -670,11 +670,11 @@ struct MainView: View {
                 // Demais métricas reveladas: Upload, Ping e Perdas lado a lado
                 if showMoreMetrics {
                     HStack(spacing: 0) {
-                        metricColumn(title: "Upload", value: metricValue(viewModel.uploadSpeed, isMeasured: viewModel.hasMeasuredUpload), unit: viewModel.hasMeasuredUpload ? "Mbps" : nil)
+                        metricColumn(title: LinkaCopy.value("metric.upload"), value: metricValue(viewModel.uploadSpeed, isMeasured: viewModel.hasMeasuredUpload), unit: viewModel.hasMeasuredUpload ? "Mbps" : nil)
                         Divider().frame(height: 32)
-                        metricColumn(title: "Ping", value: metricValue(Double(viewModel.ping), isMeasured: viewModel.hasMeasuredPing), unit: viewModel.hasMeasuredPing ? "ms" : nil)
+                        metricColumn(title: LinkaCopy.value("metric.ping"), value: metricValue(Double(viewModel.ping), isMeasured: viewModel.hasMeasuredPing), unit: viewModel.hasMeasuredPing ? "ms" : nil)
                         Divider().frame(height: 32)
-                        metricColumn(title: "Perdas", value: viewModel.packetLossPercent.map { "\(Int(round($0)))" } ?? "Não medido", unit: viewModel.packetLossPercent == nil ? nil : "%")
+                        metricColumn(title: LinkaCopy.value("metric.loss"), value: viewModel.packetLossPercent.map { "\(Int(round($0)))" } ?? LinkaCopy.value("metric.notMeasured"), unit: viewModel.packetLossPercent == nil ? nil : "%")
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
@@ -699,10 +699,10 @@ struct MainView: View {
                 } label: {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Analisar minha conexão agora")
+                            Text(LinkaCopy.value("home.assist.cta"))
                                 .font(.bodyRegularStrong)
                                 .foregroundColor(.textPrimary)
-                            Text("Vamos analisar os dados desta medição.")
+                            Text(LinkaCopy.value("home.assist.resultMessage"))
                                 .font(.captionSmall)
                                 .foregroundColor(.textSecondary)
                         }
@@ -725,7 +725,7 @@ struct MainView: View {
                 Button(action: {
                     startSpeedTest()
                 }) {
-                    Text("Testar novamente")
+                    Text(LinkaCopy.value("common.testAgain"))
                 }
                 .buttonStyle(.linkaPrimary)
                 .padding(.horizontal, 24)
@@ -754,7 +754,7 @@ struct MainView: View {
     }
 
     private func metricValue(_ value: Double, isMeasured: Bool) -> String {
-        isMeasured ? "\(Int(round(value)))" : "Não medido"
+        isMeasured ? "\(Int(round(value)))" : LinkaCopy.value("metric.notMeasured")
     }
 
     // 4. Erro (Error)
@@ -781,17 +781,17 @@ struct MainView: View {
             Button(action: {
                 startSpeedTest()
             }) {
-                Text("Tentar novamente")
+                Text(LinkaCopy.value("common.tryAgain"))
             }
             .buttonStyle(.linkaPrimary)
             .padding(.horizontal, 24)
             .padding(.top, 4)
 
-            Button("Verificar conexão") {
+            Button(LinkaCopy.value("home.checkConnection")) {
                 showConnectivityTriage = true
             }
             .buttonStyle(.linkaSecondary)
-            .accessibilityHint("Mostra os fatos de conexão observados neste aparelho")
+            .accessibilityHint(LinkaCopy.value("home.checkConnection.hint"))
 
             Spacer()
         }
@@ -803,17 +803,17 @@ struct MainView: View {
             LiveConnectionPathView(kind: viewModel.liveConnectionKind, label: viewModel.liveNetworkLabel)
                 .padding(.horizontal, 24)
             VStack(spacing: 8) {
-                Text("Conexão alterada")
+                Text(LinkaCopy.value("home.connectionChanged.title"))
                     .font(.displayMedium)
                     .foregroundColor(.textPrimary)
-                Text("A rede mudou durante a medição. Conecte-se à rede desejada e inicie um novo teste.")
+                Text(LinkaCopy.value("home.connectionChanged.message"))
                     .font(.bodyRegular)
                     .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, 32)
             Button { startSpeedTest() } label: {
-                Text("Testar conexão")
+                Text(LinkaCopy.value("home.connectionChanged.cta"))
             }
             .buttonStyle(.linkaPrimary)
             .padding(.horizontal, 24)
@@ -863,23 +863,23 @@ struct MainView: View {
 
     private var heroStateTitle: String {
         switch idleConnectionQuality {
-        case .unknown:  return viewModel.liveConnectionKind == nil ? "Sem conexão" : "Verificando..."
-        case .offline:  return "Sem conexão"
-        case .good:     return "Tudo parece normal"
-        case .fair:     return "Atenção na conexão"
-        case .poor:     return "Conexão instável"
+        case .unknown:  return viewModel.liveConnectionKind == nil ? LinkaCopy.value("home.offline") : LinkaCopy.value("home.checking")
+        case .offline:  return LinkaCopy.value("home.offline")
+        case .good:     return LinkaCopy.value("home.hero.good.title")
+        case .fair:     return LinkaCopy.value("home.hero.fair.title")
+        case .poor:     return LinkaCopy.value("home.hero.poor.title")
         }
     }
 
     private var heroStateSubtitle: String {
         switch idleConnectionQuality {
         case .unknown:  return viewModel.liveConnectionKind == nil
-            ? "Conecte-se a uma rede para analisar"
-            : "Medindo qualidade da conexão..."
-        case .offline:  return "Conecte-se a uma rede para analisar"
-        case .good:     return "Nenhum problema detectado"
-        case .fair:     return "Latência um pouco elevada"
-        case .poor:     return "Latência muito alta detectada"
+            ? LinkaCopy.value("home.hero.connectToAnalyze")
+            : LinkaCopy.value("home.hero.measuringQuality")
+        case .offline:  return LinkaCopy.value("home.hero.connectToAnalyze")
+        case .good:     return LinkaCopy.value("home.hero.good.subtitle")
+        case .fair:     return LinkaCopy.value("home.hero.fair.subtitle")
+        case .poor:     return LinkaCopy.value("home.hero.poor.subtitle")
         }
     }
 
@@ -890,13 +890,13 @@ struct MainView: View {
         var parts: [String] = []
 
         if let ping = healthCheck.pingMs, ping > 0 {
-            parts.append("Ping de \(Int(ping)) ms")
+            parts.append(LinkaCopy.format("home.health.ping", Int(ping)))
         }
         if let jitter = healthCheck.jitterMs, jitter > 0 {
-            parts.append("variação de \(Int(jitter)) ms")
+            parts.append(LinkaCopy.format("home.health.jitter", Int(jitter)))
         }
         if let dns = healthCheck.dnsMs, dns > 0 {
-            parts.append("DNS em \(Int(dns)) ms")
+            parts.append(LinkaCopy.format("home.health.dns", Int(dns)))
         }
 
         guard !parts.isEmpty else { return nil }
@@ -919,30 +919,30 @@ struct MainView: View {
                 }
                 return ssid
             }
-            return "Wi-Fi"
+            return LinkaCopy.value("network.wifi")
         } else if viewModel.connectionKind == .cellular {
-            if !viewModel.liveNetworkLabel.isEmpty && viewModel.liveNetworkLabel != "Rede móvel" {
+            if !viewModel.liveNetworkLabel.isEmpty {
                 return viewModel.liveNetworkLabel
             }
-            return "Rede móvel"
+            return LinkaCopy.value("network.cellular")
         } else if viewModel.connectionKind == .ethernet {
-            return "Ethernet"
+            return LinkaCopy.value("network.ethernet")
         }
         return nil
     }
 
     private var liveConnectionType: String {
         switch viewModel.liveConnectionKind {
-        case .wifi: return "Wi-Fi"
-        case .cellular: return "Rede móvel"
-        case .ethernet: return "Ethernet"
-        case .other: return "Conexão de rede"
-        case nil: return "Sem conexão"
+        case .wifi: return LinkaCopy.value("network.wifi")
+        case .cellular: return LinkaCopy.value("network.cellular")
+        case .ethernet: return LinkaCopy.value("network.ethernet")
+        case .other: return LinkaCopy.value("network.other")
+        case nil: return LinkaCopy.value("home.offline")
         }
     }
 
     private var liveConnectionName: String {
-        viewModel.liveNetworkLabel.isEmpty ? "Conexão atual" : viewModel.liveNetworkLabel
+        viewModel.liveNetworkLabel.isEmpty ? LinkaCopy.value("home.currentConnection") : viewModel.liveNetworkLabel
     }
 
     private var liveConnectionIcon: String {
@@ -958,28 +958,28 @@ struct MainView: View {
     private var ringValue: String {
         switch viewModel.uiPhase {
         case .idle, .connecting:
-            return "Preparando"
+            return LinkaCopy.value("home.preparing")
         case .downloading:
-            return String(format: "%.1f", viewModel.downloadSpeed).replacingOccurrences(of: ".", with: ",")
+            return formatted(viewModel.downloadSpeed)
         case .uploading, .done:
-            return String(format: "%.1f", viewModel.uploadSpeed).replacingOccurrences(of: ".", with: ",")
+            return formatted(viewModel.uploadSpeed)
         case .error, .connectionChanged:
             return ""
         }
     }
 
     private func formatted(_ value: Double) -> String {
-        String(format: "%.1f", value).replacingOccurrences(of: ".", with: ",")
+        value.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale))
     }
 
     private var phaseLabel: String {
         switch viewModel.uiPhase {
         case .idle, .connecting:
-            return "Conectando ao servidor mais próximo…"
+            return LinkaCopy.value("home.phase.connecting")
         case .downloading:
-            return "Medindo velocidade de download…"
+            return LinkaCopy.value("home.phase.downloading")
         case .uploading, .done:
-            return "Medindo velocidade de upload…"
+            return LinkaCopy.value("home.phase.uploading")
         case .error, .connectionChanged:
             return ""
         }
@@ -1001,22 +1001,22 @@ struct MainView: View {
     private var errorTitle: String {
         switch viewModel.failureReason {
         case .offline:
-            return "Sem conexão"
+            return LinkaCopy.value("home.offline")
         case .connectionLost:
-            return "Conexão perdida"
+            return LinkaCopy.value("home.error.connectionLost.title")
         case nil:
-            return "Não foi possível medir"
+            return LinkaCopy.value("home.error.generic.title")
         }
     }
 
     private var errorMessage: String {
         switch viewModel.failureReason {
         case .offline:
-            return "Verifique sua conexão com a internet e tente novamente."
+            return LinkaCopy.value("home.error.offline.message")
         case .connectionLost:
-            return "A conexão foi interrompida durante o teste."
+            return LinkaCopy.value("home.error.connectionLost.message")
         case nil:
-            return "Algo interrompeu a medição. Tente novamente."
+            return LinkaCopy.value("home.error.generic.message")
         }
     }
 
@@ -1026,10 +1026,10 @@ struct MainView: View {
         let calendar = Calendar.current
         if calendar.isDateInToday(date) {
             formatter.dateFormat = "HH:mm"
-            return "Hoje, \(formatter.string(from: date))"
+            return LinkaCopy.format("home.relative.today", formatter.string(from: date))
         } else if calendar.isDateInYesterday(date) {
             formatter.dateFormat = "HH:mm"
-            return "Ontem, \(formatter.string(from: date))"
+            return LinkaCopy.format("home.relative.yesterday", formatter.string(from: date))
         } else {
             formatter.dateFormat = "d MMM, HH:mm"
             return formatter.string(from: date)
@@ -1172,19 +1172,19 @@ private struct ResultUsageCasesView: View {
     var body: some View {
         HStack(spacing: 12) {
             usageNode(
-                title: "Chamadas de vídeo",
+                title: LinkaCopy.value("home.usage.videoCalls"),
                 icon: "video",
                 result: videoCall.label,
                 color: videoCall.color
             )
             usageNode(
-                title: "Jogo online",
+                title: LinkaCopy.value("home.usage.onlineGaming"),
                 icon: "gamecontroller",
                 result: gaming.label,
                 color: gaming.color
             )
             usageNode(
-                title: "Streaming",
+                title: LinkaCopy.value("home.usage.streaming"),
                 icon: "play.tv",
                 result: streaming.label,
                 color: streaming.color
