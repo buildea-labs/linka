@@ -489,13 +489,19 @@ Os dois compartilham o nome Linka, mas não devem ser confundidos.
 
 # Acesso ao roteador
 
-O Linka nasceu porque Giam não lembrava a senha do próprio modem. Essa origem voltou a fazer parte do escopo oficial do produto: o Linka pode localizar o gateway da rede atual e abrir o painel de administração dele dentro do app, guardando a senha informada pelo usuário no Keychain do dispositivo para a próxima vez.
+O Linka nasceu porque Giam não lembrava a senha do próprio modem. Essa origem voltou a fazer parte do escopo oficial do produto: o Linka pode localizar o gateway da rota ativa e confirmar o painel de administração antes de abri-lo no navegador, guardando a senha informada pelo usuário no Keychain do dispositivo para a próxima vez.
 
 Isso não é um scanner de dispositivos nem uma central de ferramentas de rede. É uma conveniência pontual e estritamente vinculada à rede que o usuário acabou de medir:
 
 * encontrar o gateway atual (não inventariar a rede inteira);
 * abrir a página de administração desse gateway;
 * guardar a credencial localmente para poupar o usuário de decorá-la de novo.
+
+A descoberta canônica usa apenas a rota ativa exposta pela plataforma e aceita
+somente um endereço local que responda por HTTP ou HTTPS. Não há palpite de
+endereço terminado em `.1`, inventário Bonjour, associação arbitrária de
+serviço a gateway ou identificação de fabricante pelo nome anunciado. Quando a
+plataforma não expõe a rota, o resultado é simplesmente “não identificado”.
 
 O Linka não interpreta o que existe dentro do painel do roteador, não lista os dispositivos conectados a ele e não usa esse acesso como insumo para diagnóstico ou Assist — isso continua sendo território do SignallQ. Fica só o gesto que deu origem ao produto: abrir o roteador quando o usuário precisa.
 

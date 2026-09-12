@@ -273,6 +273,7 @@ final class SpeedTestViewModelResultTimingTests: XCTestCase {
         let advanced = AdvancedWiFiDiagnostics(
             capturedAt: Date(),
             ssid: "Casa",
+            accessPointIdentifier: "ap-1",
             rssiDbm: -54,
             noiseDbm: -92,
             snrDb: 38
@@ -282,8 +283,8 @@ final class SpeedTestViewModelResultTimingTests: XCTestCase {
             resultState(),
             startingKind: .wifi,
             endingKind: .wifi,
-            startingWiFiContext: WiFiNetworkContext(ssid: "Casa"),
-            endingWiFiContext: WiFiNetworkContext(ssid: "Casa"),
+            startingWiFiContext: WiFiNetworkContext(ssid: "Casa", accessPointIdentifier: "ap-1"),
+            endingWiFiContext: WiFiNetworkContext(ssid: "Casa", accessPointIdentifier: "ap-1"),
             advancedWiFiDiagnostics: advanced,
             generation: 0
         )
@@ -306,6 +307,36 @@ final class SpeedTestViewModelResultTimingTests: XCTestCase {
         )
 
         XCTAssertNil(viewModel.advancedWiFiDiagnostics)
+    }
+
+    func test_nativeAdvancedWiFiDiagnosticsRejectsCaptureWithoutMatchingAccessPoint() {
+        let viewModel = SpeedTestViewModel()
+        let advanced = AdvancedWiFiDiagnostics(
+            capturedAt: Date(),
+            accessPointIdentifier: "captured-ap",
+            rssiDbm: -54
+        )
+
+        viewModel.processResultState(
+            resultState(),
+            startingKind: .wifi,
+            endingKind: .wifi,
+            startingWiFiContext: WiFiNetworkContext(accessPointIdentifier: "measured-ap"),
+            endingWiFiContext: WiFiNetworkContext(accessPointIdentifier: "measured-ap"),
+            advancedWiFiDiagnostics: advanced,
+            generation: 0
+        )
+
+        XCTAssertNil(viewModel.advancedWiFiDiagnostics)
+    }
+
+    func test_nativeAdvancedWiFiDiagnosticsRequiresBSSIDForAPVerification() {
+        let diagnostics = AdvancedWiFiDiagnosticsInbox.makeNativeDiagnostics(
+            entitlement: .plus(status: .active, source: .promotion),
+            rssiDbm: -54
+        )
+
+        XCTAssertNil(diagnostics)
     }
 
     /// Rede não-Wi-Fi nunca carrega banda (aceite #1: `nil` é resultado

@@ -389,6 +389,7 @@ struct MainView: View {
             return AnyView(
                 HistoricalMeasurementDetailView(
                     measurement: measurement,
+                    onStartNewMeasurement: startNewMeasurementFromHistory,
                     onStartNewMeasurementWithAdvancedWiFi: startNewMeasurementFromHistory
                 )
                 .environmentObject(entitlements)

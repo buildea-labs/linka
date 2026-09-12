@@ -5,6 +5,7 @@ public enum LinkaSystemAction: String, Codable, CaseIterable, Hashable, Sendable
     case startSpeedTest
     case openLatestMeasurement
     case openHistory
+    case openPurchase
     case getLatestResult
     case measureNetworkSilently
 }

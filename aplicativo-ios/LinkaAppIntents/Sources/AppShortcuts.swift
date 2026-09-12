@@ -24,5 +24,35 @@ public struct LinkaAppShortcutsProvider: AppShortcutsProvider {
             shortTitle: "Último resultado",
             systemImageName: "clock"
         )
+
+        AppShortcut(
+            intent: OpenHistoryIntent(),
+            phrases: [
+                "Abrir histórico do \(.applicationName)",
+                "Ver medições no \(.applicationName)"
+            ],
+            shortTitle: "Abrir histórico",
+            systemImageName: "clock.arrow.circlepath"
+        )
+
+        AppShortcut(
+            intent: OpenLatestMeasurementIntent(),
+            phrases: [
+                "Abrir última medição do \(.applicationName)",
+                "Ver última medição no \(.applicationName)"
+            ],
+            shortTitle: "Abrir última medição",
+            systemImageName: "chart.bar"
+        )
+
+        AppShortcut(
+            intent: OpenPurchaseIntent(),
+            phrases: [
+                "Conhecer Linka Plus no \(.applicationName)",
+                "Abrir Linka Plus no \(.applicationName)"
+            ],
+            shortTitle: "Linka Plus",
+            systemImageName: "sparkles"
+        )
     }
 }

@@ -5,6 +5,10 @@ import NetworkCore
 import UIKit
 #endif
 
+#if canImport(AppKit)
+import AppKit
+#endif
+
 /// Cartão compartilhável de uma única medição (issue #54).
 ///
 /// Renderiza uma imagem própria do Linka — nunca screenshot bruto — a
@@ -184,6 +188,20 @@ enum ShareCardRenderer {
 
         guard let uiImage = renderer.uiImage else { return nil }
         return uiImage.pngData()
+        #elseif canImport(AppKit)
+        let card = ShareCardView(measurement: measurement)
+            .environment(\.colorScheme, colorScheme)
+
+        let renderer = ImageRenderer(content: card)
+        renderer.scale = exportScale
+        renderer.isOpaque = true
+
+        guard let image = renderer.nsImage,
+              let tiff = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiff) else {
+            return nil
+        }
+        return bitmap.representation(using: .png, properties: [:])
         #else
         return nil
         #endif
@@ -237,13 +255,73 @@ extension View {
 }
 #endif
 
-#if !canImport(UIKit)
+#if canImport(AppKit)
+/// Apresenta o seletor de compartilhamento nativo do macOS a partir do
+/// cartão já renderizado. O picker recebe só a imagem, nunca a janela nem
+/// metadados de rede do usuário.
+private struct MacShareMeasurementPresenter: NSViewRepresentable {
+    @Binding var isPresented: Bool
+    let measurement: NetworkMeasurement?
+    let colorScheme: ColorScheme
+
+    final class Coordinator {
+        var isPresenting = false
+        var picker: NSSharingServicePicker?
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeNSView(context: Context) -> NSView {
+        NSView(frame: .zero)
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        guard isPresented, !context.coordinator.isPresenting else { return }
+        context.coordinator.isPresenting = true
+
+        DispatchQueue.main.async {
+            defer {
+                isPresented = false
+                context.coordinator.isPresenting = false
+            }
+            guard let measurement,
+                  let data = ShareCardRenderer.renderPNGData(for: measurement, colorScheme: colorScheme),
+                  let image = NSImage(data: data) else {
+                return
+            }
+
+            let picker = NSSharingServicePicker(items: [image])
+            context.coordinator.picker = picker
+            picker.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
+        }
+    }
+}
+
+private struct MacShareMeasurementModifier: ViewModifier {
+    @Binding var isPresented: Bool
+    let measurement: NetworkMeasurement?
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content.background(
+            MacShareMeasurementPresenter(
+                isPresented: $isPresented,
+                measurement: measurement,
+                colorScheme: colorScheme
+            )
+            .frame(width: 1, height: 1)
+        )
+    }
+}
+
 extension View {
-    /// No-op fora do UIKit (ex.: macOS) — mantém os call sites de
-    /// `MainView`/`HistoryRow` livres de `#if` espalhado. O
-    /// `UIActivityViewController` é exclusivo de UIKit; compartilhar
-    /// resultado nessas plataformas fica fora de escopo até existir um
-    /// caminho nativo equivalente (AGENTS.md §2).
+    func shareMeasurementSheet(isPresented: Binding<Bool>, measurement: NetworkMeasurement?) -> some View {
+        modifier(MacShareMeasurementModifier(isPresented: isPresented, measurement: measurement))
+    }
+}
+#elseif !canImport(UIKit)
+extension View {
+    /// Sem interface nativa de compartilhamento nesta plataforma.
     func shareMeasurementSheet(isPresented: Binding<Bool>, measurement: NetworkMeasurement?) -> some View {
         self
     }

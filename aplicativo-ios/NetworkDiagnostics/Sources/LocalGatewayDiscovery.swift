@@ -1,4 +1,5 @@
 import Foundation
+import Network
 #if canImport(Darwin)
 import Darwin
 #endif
@@ -197,5 +198,56 @@ public struct LocalGatewayDiscovery: LocalGatewayDiscovering {
         if (host & 0xFFFF0000) == 0xA9FE0000 { return true }
 
         return false
+    }
+}
+
+/// Fonte canônica do gateway da rota ativa. No Mac, prioriza a tabela de
+/// rotas pública; no iPhone/iPad usa apenas os gateways expostos por
+/// `NWPath`. Em ambos os casos um endereço ausente é "não identificado":
+/// o Linka não presume `.1`, não faz inventário Bonjour e não deduz marca.
+public struct ActiveGatewayDiscovery: Sendable {
+    public init() {}
+
+    public func discoverGateway(timeout: TimeInterval = 3) async -> String? {
+        #if os(macOS)
+        if let gateway = LocalGatewayDiscovery().discoverPrimaryInterface()?.gatewayCandidate {
+            return gateway
+        }
+        #endif
+        return await discoverFromActivePath(timeout: timeout)
+    }
+
+    public static func firstValidGateway(in candidates: [String]) -> String? {
+        candidates.first(where: LocalGatewayDiscovery.isPrivateIPv4)
+    }
+
+    private func discoverFromActivePath(timeout: TimeInterval) async -> String? {
+        await withCheckedContinuation { continuation in
+            let monitor = NWPathMonitor(requiredInterfaceType: .wifi)
+            let lock = NSLock()
+            var resumed = false
+            let finish: (String?) -> Void = { result in
+                lock.lock()
+                defer { lock.unlock() }
+                guard !resumed else { return }
+                resumed = true
+                monitor.cancel()
+                continuation.resume(returning: result)
+            }
+            monitor.pathUpdateHandler = { path in
+                let candidates = path.gateways.compactMap(Self.ipv4Address(from:))
+                finish(Self.firstValidGateway(in: candidates))
+            }
+            monitor.start(queue: DispatchQueue.global(qos: .utility))
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
+                finish(nil)
+            }
+        }
+    }
+
+    private static func ipv4Address(from endpoint: NWEndpoint) -> String? {
+        guard case .hostPort(let host, _) = endpoint else { return nil }
+        guard case .ipv4(let address) = host else { return nil }
+        return address.rawValue.map(String.init).joined(separator: ".")
     }
 }

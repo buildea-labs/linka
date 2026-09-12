@@ -54,6 +54,23 @@ public struct OpenHistoryIntent: AppIntent {
     }
 }
 
+public struct OpenPurchaseIntent: AppIntent {
+    public static var title: LocalizedStringResource { "Conhecer Linka Plus" }
+    public static let description = IntentDescription("Abre as opções do Linka Plus.")
+    public static var openAppWhenRun: Bool { true }
+    public static var isHidden: Bool { false }
+
+    @Dependency
+    private var executor: LinkaAppIntentExecutor
+
+    public init() {}
+
+    public func perform() async throws -> some IntentResult {
+        _ = try await executor.execute(.openPurchase)
+        return .result()
+    }
+}
+
 public struct GetLatestResultIntent: AppIntent {
     public static var title: LocalizedStringResource { "Último resultado do Linka" }
     public static let description = IntentDescription("Retorna o resumo da medição mais recente do Linka.")

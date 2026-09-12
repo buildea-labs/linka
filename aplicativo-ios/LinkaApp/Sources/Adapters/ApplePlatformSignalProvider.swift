@@ -1,6 +1,7 @@
 import Foundation
 import NetworkDiagnostics
 import NetworkCore
+import LinkaEntitlements
 import CryptoKit
 
 #if canImport(CoreTelephony) && os(iOS)
@@ -31,21 +32,14 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
     }
 
     private func currentWifi() async -> PlatformHints.Wifi? {
-        // Identificação desligada significa não iniciar sondagem do roteador
-        // nem coletar contexto Wi-Fi para envio ao diagnóstico remoto.
+        // Identificação desligada significa não coletar contexto Wi-Fi para
+        // envio ao diagnóstico remoto. Descoberta/probe do roteador é uma
+        // ação separada e explícita no painel correspondente: nunca pode
+        // atrasar a publicação de uma medição.
         guard LinkaWiFiPreferences.isIdentificationEnabled else { return nil }
-        var gatewayInfo: GatewayInfo? = nil
-        let discovery = LocalGatewayDiscovery()
-        if let iface = discovery.discoverPrimaryInterface(), let gw = iface.gatewayCandidate {
-            let prober = GatewayProber()
-            gatewayInfo = await prober.probe(gatewayIP: gw)
-        }
 
         #if canImport(CoreWLAN) && os(macOS)
         guard let iface = CWWiFiClient.shared().interface() else {
-            if let gatewayInfo {
-                return PlatformHints.Wifi(gateway: gatewayInfo)
-            }
             return nil
         }
         let ssid = iface.ssid()
@@ -70,30 +64,21 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
             rssiDbm: rssi,
             band: band,
             linkSpeedMbps: linkSpeed,
-            securityType: nil,
-            gateway: gatewayInfo
+            securityType: nil
         )
         let anySet = wifi.ssid != nil || wifi.bssid != nil || wifi.rssiDbm != nil
-            || wifi.band != nil || wifi.linkSpeedMbps != nil || wifi.gateway != nil
+            || wifi.band != nil || wifi.linkSpeedMbps != nil
         return anySet ? wifi : nil
         #elseif canImport(NetworkExtension) && os(iOS)
         if #available(iOS 14.0, *), let network = await NEHotspotNetwork.fetchCurrent() {
             return PlatformHints.Wifi(
                 ssid: network.ssid.nilIfEmpty,
                 bssid: network.bssid.nilIfEmpty,
-                securityType: Self.mapSecurityType(network.securityType),
-                gateway: gatewayInfo
-            )
-        } else if let gatewayInfo {
-            return PlatformHints.Wifi(
-                gateway: gatewayInfo
+                securityType: Self.mapSecurityType(network.securityType)
             )
         }
         return nil
         #else
-        if let gatewayInfo {
-            return PlatformHints.Wifi(gateway: gatewayInfo)
-        }
         return nil
         #endif
     }
@@ -216,3 +201,27 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
 private extension String {
     var nilIfEmpty: String? { isEmpty ? nil : self }
 }
+
+#if os(macOS) && canImport(CoreWLAN)
+/// Captura local e pontual dos dados que o CoreWLAN informou ao Mac.
+/// BSSID só atravessa esta fronteira para virar um identificador com hash
+/// local; nunca entra cru no resultado, histórico ou cartão compartilhado.
+struct MacAdvancedWiFiDiagnosticsProvider {
+    func capture(entitlement: LinkaEntitlementSnapshot) -> AdvancedWiFiDiagnostics? {
+        guard let interface = CWWiFiClient.shared().interface() else { return nil }
+        let channel = interface.wlanChannel()?.channelNumber
+        let rssi = interface.rssiValue()
+        let txRate = interface.transmitRate()
+        guard rssi != 0 || txRate > 0 || channel != nil else { return nil }
+
+        return AdvancedWiFiDiagnosticsInbox.makeNativeDiagnostics(
+            entitlement: entitlement,
+            ssid: interface.ssid(),
+            bssid: interface.bssid(),
+            txRateMbps: txRate > 0 ? txRate : nil,
+            rssiDbm: rssi == 0 ? nil : Double(rssi),
+            channelNumber: channel
+        )
+    }
+}
+#endif

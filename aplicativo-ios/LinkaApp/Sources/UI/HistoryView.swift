@@ -60,7 +60,7 @@ struct HistoryView: View {
                     Section {
                         VStack(spacing: 12) {
                             Picker("Filtro", selection: $filter) {
-                                ForEach(HistoryFilter.allCases, id: \.self) { option in
+                                ForEach(availableFilters, id: \.self) { option in
                                     Text(option.rawValue).tag(option)
                                 }
                             }
@@ -183,6 +183,16 @@ struct HistoryView: View {
         case .fastest: return scoped.sorted { ($0.downloadMbps ?? 0) > ($1.downloadMbps ?? 0) }
         case .slowest: return scoped.sorted { ($0.downloadMbps ?? 0) < ($1.downloadMbps ?? 0) }
         }
+    }
+
+    private var availableFilters: [HistoryFilter] {
+        #if os(macOS)
+        // Um Mac não mede rede celular. Não oferecemos um filtro que nunca
+        // pode ter dado real, mas preservamos a mesma consulta de histórico.
+        return [.all, .wifi]
+        #else
+        return HistoryFilter.allCases
+        #endif
     }
 
     private func loadData() {

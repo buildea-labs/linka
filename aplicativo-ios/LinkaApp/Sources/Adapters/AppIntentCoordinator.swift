@@ -44,6 +44,9 @@ public final class AppIntentCoordinator: ObservableObject {
     @Published public private(set) var pendingAdvancedWiFiDiagnosticsImport: Bool = false
     @Published public private(set) var pendingOpenHistory: Bool = false
     @Published public private(set) var pendingOpenLatestMeasurement: Bool = false
+    @Published public private(set) var pendingCancelMeasurement: Bool = false
+    @Published public private(set) var pendingOpenSettings: Bool = false
+    @Published public private(set) var isMeasurementActive: Bool = false
 
     private init() {}
 
@@ -86,6 +89,12 @@ public final class AppIntentCoordinator: ObservableObject {
     public func consumeOpenLatestMeasurement() {
         pendingOpenLatestMeasurement = false
     }
+
+    public func requestCancelMeasurement() { pendingCancelMeasurement = true }
+    public func consumeCancelMeasurement() { pendingCancelMeasurement = false }
+    public func requestOpenSettings() { pendingOpenSettings = true }
+    public func consumeOpenSettings() { pendingOpenSettings = false }
+    public func setMeasurementActive(_ isActive: Bool) { isMeasurementActive = isActive }
 }
 
 /// Caixa local e efêmera entre o App Intent/URL e a próxima atualização do
@@ -94,7 +103,9 @@ public final class AppIntentCoordinator: ObservableObject {
 enum AdvancedWiFiDiagnosticsInbox {
     private static let pendingKey = "linka.advanced-wifi.pending.v1"
     private static let handledIdentifiersKey = "linka.advanced-wifi.handled.v1"
-    private static let accessPointSaltKey = "linka.advanced-wifi.access-point-salt.v1"
+    // Compartilhado com `SpeedTestViewModel`: a captura nativa só é aceita
+    // quando seu AP anonimizado coincide com o AP da própria medição.
+    private static let accessPointSaltKey = "linka.wifi.access-point-salt.v1"
     static let maximumPayloadBytes = 4_096
     static let pendingLifetime: TimeInterval = 180
 
@@ -271,6 +282,41 @@ enum AdvancedWiFiDiagnosticsInbox {
 
     static func removePending(defaults: UserDefaults = .standard) {
         defaults.removeObject(forKey: pendingKey)
+    }
+
+    /// Constrói uma captura nativa já sanitizada. Diferente do caminho de
+    /// Atalhos, não grava inbox nem altera preferência: o chamador associa o
+    /// objeto diretamente à medição que a pessoa acabou de iniciar.
+    static func makeNativeDiagnostics(
+        entitlement: LinkaEntitlementSnapshot,
+        capturedAt: Date = Date(),
+        ssid: String? = nil,
+        bssid: String? = nil,
+        txRateMbps: Double? = nil,
+        rssiDbm: Double? = nil,
+        channelNumber: Int? = nil,
+        defaults: UserDefaults = .standard
+    ) -> AdvancedWiFiDiagnostics? {
+        guard LinkaWiFiPreferences.isAdvancedDiagnosticsEnabled,
+              LinkaEntitlementPolicy.decision(
+                for: .advancedWiFiDiagnostics,
+                snapshot: entitlement,
+                at: capturedAt
+              ).isGranted else { return nil }
+
+        guard let accessPointIdentifier = localAccessPointIdentifier(for: bssid, defaults: defaults) else {
+            return nil
+        }
+        let validChannel = positive(channelNumber)
+        return AdvancedWiFiDiagnostics(
+            capturedAt: capturedAt,
+            ssid: normalized(ssid, maximumLength: 64),
+            accessPointIdentifier: accessPointIdentifier,
+            txRateMbps: nonNegativeFinite(txRateMbps),
+            rssiDbm: finite(rssiDbm),
+            channelNumber: validChannel,
+            bandGHz: AdvancedWiFiDiagnostics.bandGHz(forChannel: validChannel)
+        )
     }
 
     private static func normalized(_ value: String?, maximumLength: Int) -> String? {
