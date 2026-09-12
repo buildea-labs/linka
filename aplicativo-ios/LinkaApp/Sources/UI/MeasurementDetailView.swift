@@ -63,15 +63,15 @@ struct MeasurementDetailView: View {
         List {
             // SEÇÃO VELOCIDADES
             if let measurement {
-                Section("Velocidade") {
+                Section(LinkaCopy.value("detail.speed")) {
                     if let dl = measurement.downloadMbps {
-                        LabeledContent("Download", value: String(format: "%.1f Mbps", dl).replacingOccurrences(of: ".", with: ","))
+                        LabeledContent(LinkaCopy.value("detail.download"), value: speed(dl))
                     }
                     if let ul = measurement.uploadMbps {
-                        LabeledContent("Upload", value: String(format: "%.1f Mbps", ul).replacingOccurrences(of: ".", with: ","))
+                        LabeledContent(LinkaCopy.value("detail.upload"), value: speed(ul))
                     }
                     if let ping = measurement.latencyMs {
-                        LabeledContent("Ping", value: String(format: "%.0f ms", ping))
+                        LabeledContent(LinkaCopy.value("detail.ping"), value: milliseconds(ping))
                     }
                 }
             }
@@ -85,26 +85,26 @@ struct MeasurementDetailView: View {
             }
 
             // SEÇÃO CONEXÃO
-            Section("Conexão") {
+            Section(LinkaCopy.value("detail.connection")) {
                 if let measurement {
                     if measurement.connectionKind == .wifi {
                         if let ssid = measurement.wifiContext?.ssid {
-                            LabeledContent("Rede Wi-Fi", value: ssid)
+                            LabeledContent(LinkaCopy.value("detail.wifiNetwork"), value: ssid)
                             if let security = measurement.wifiContext?.securityType {
-                                LabeledContent("Segurança", value: security.displayLabel)
+                                LabeledContent(LinkaCopy.value("detail.security"), value: security.displayLabel)
                             }
                         } else {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Rede Wi-Fi")
+                                    Text(LinkaCopy.value("detail.wifiNetwork"))
                                         .font(.bodyRegular)
                                         .foregroundColor(.textPrimary)
-                                    Text("Não identificada")
+                                    Text(LinkaCopy.value("detail.unidentified"))
                                         .font(.bodySmall)
                                         .foregroundColor(.textSecondary)
                                 }
                                 Spacer()
-                                Button("Identificar") {
+                                Button(LinkaCopy.value("detail.identify")) {
                                     WiFiNetworkPermission.requestIdentification()
                                 }
                                 .font(.bodySmallStrong)
@@ -113,37 +113,37 @@ struct MeasurementDetailView: View {
                         }
                     }
 
-                    LabeledContent("Data e hora", value: formattedDateTime(measurement.measuredAt))
+                    LabeledContent(LinkaCopy.value("detail.dateTime"), value: formattedDateTime(measurement.measuredAt))
 
-                    LabeledContent("Tipo de rede", value: networkKindLabel(measurement))
+                    LabeledContent(LinkaCopy.value("detail.networkType"), value: networkKindLabel(measurement))
 
                     if let provider = measurement.networkIdentifier, !provider.isEmpty {
-                        LabeledContent("Provedor", value: provider)
+                        LabeledContent(LinkaCopy.value("detail.provider"), value: provider)
                     }
 
                     if let duration, !duration.isEmpty {
-                        LabeledContent("Duração", value: duration)
+                        LabeledContent(LinkaCopy.value("detail.duration"), value: duration)
                     } else if let durationMs = measurement.durationMs {
-                        LabeledContent("Duração", value: String(format: "%.1fs", Double(durationMs) / 1000.0).replacingOccurrences(of: ".", with: ","))
+                        LabeledContent(LinkaCopy.value("detail.duration"), value: seconds(Double(durationMs) / 1000.0))
                     }
                 } else {
-                    Text("Nenhuma medição selecionada.")
+                    Text(LinkaCopy.value("detail.noMeasurement"))
                         .foregroundColor(.textSecondary)
                 }
             }
 
             // SEÇÃO QUALIDADE AVANÇADA
             if let measurement {
-                Section("Qualidade") {
+                Section(LinkaCopy.value("detail.quality")) {
                     if canUseExpertMode {
                         if let jitter = measurement.jitterMs {
                             LabeledContent("Jitter", value: String(format: "%.0f ms", jitter))
                         }
                         if let packetLoss = measurement.packetLossPercent {
-                            LabeledContent("Perda de pacotes", value: "\(Int(packetLoss))%")
+                            LabeledContent(LinkaCopy.value("detail.packetLoss"), value: "\(Int(packetLoss))%")
                         }
                         if let dns = measurement.dnsResolutionMs {
-                            LabeledContent("Resolução DNS", value: String(format: "%.0f ms", dns))
+                            LabeledContent(LinkaCopy.value("detail.dns"), value: milliseconds(dns))
                         }
                     } else {
                         Button {
@@ -151,7 +151,7 @@ struct MeasurementDetailView: View {
                             showPurchase = true
                         } label: {
                             HStack {
-                                Text("Qualidade avançada")
+                                Text(LinkaCopy.value("detail.advancedQuality"))
                                     .foregroundColor(.textPrimary)
                                 Spacer()
                                 LinkaPlusBadge()
@@ -166,9 +166,9 @@ struct MeasurementDetailView: View {
 
             // SEÇÃO WI-FI
             if let measurement, measurement.connectionKind == .wifi {
-                Section("Wi-Fi") {
+                Section(LinkaCopy.value("network.wifi")) {
                     if let gatewayIP = measurement.wifiContext?.gatewayIP {
-                        let vendor = measurement.wifiContext?.gatewayVendor ?? "Roteador"
+                        let vendor = measurement.wifiContext?.gatewayVendor ?? LinkaCopy.value("router.defaultName")
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(vendor)
@@ -182,11 +182,11 @@ struct MeasurementDetailView: View {
                             if let adminURLString = measurement.wifiContext?.gatewayAdminURL,
                                let url = URL(string: adminURLString) {
                                 #if os(macOS)
-                                Text("Confirme o painel atual em Ajustes")
+                                Text(LinkaCopy.value("detail.routerConfirmation"))
                                     .font(.bodySmall)
                                     .foregroundColor(.textSecondary)
                                 #else
-                                Button("Abrir painel do roteador") {
+                                Button(LinkaCopy.value("detail.openRouter")) {
                                     openURL(url)
                                 }
                                 .font(.bodySmallStrong)
@@ -303,7 +303,7 @@ struct MeasurementDetailView: View {
                 }
             }
         }
-        .navigationTitle("Detalhes da medição")
+        .navigationTitle(LinkaCopy.value("detail.title"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -332,6 +332,10 @@ struct MeasurementDetailView: View {
         formatter.locale = LinkaLanguagePreference.currentLocale
         return formatter.string(from: date)
     }
+
+    private func speed(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale)) + " Mbps" }
+    private func milliseconds(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale)) + " ms" }
+    private func seconds(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale)) + " s" }
 
     private func networkKindLabel(_ m: NetworkMeasurement) -> String {
         var base: String
