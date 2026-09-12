@@ -20,6 +20,27 @@ struct LinkaAppShortcuts: AppShortcutsProvider {
             systemImageName: "gauge.with.dots.needle.50percent"
         )
 
+        AppShortcut(
+            intent: OpenHistoryIntent(),
+            phrases: ["Abrir histórico do \(.applicationName)"],
+            shortTitle: "Histórico",
+            systemImageName: "clock.arrow.circlepath"
+        )
+
+        AppShortcut(
+            intent: OpenLatestMeasurementIntent(),
+            phrases: ["Abrir última medição do \(.applicationName)"],
+            shortTitle: "Última medição",
+            systemImageName: "chart.bar"
+        )
+
+        AppShortcut(
+            intent: OpenPurchaseIntent(),
+            phrases: ["Conhecer Linka Plus no \(.applicationName)"],
+            shortTitle: "Linka Plus",
+            systemImageName: "sparkles"
+        )
+
         #if os(iOS)
         AppShortcut(
             intent: RegisterAdvancedWiFiDiagnosticsIntent(),

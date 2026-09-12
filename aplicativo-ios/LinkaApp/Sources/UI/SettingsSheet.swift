@@ -3,6 +3,7 @@ import StoreKit
 import AppIntents
 import LinkaEntitlements
 import LinkaModules
+import NetworkDiagnostics
 #if canImport(CoreLocation) && os(iOS)
 import CoreLocation
 #endif
@@ -251,6 +252,36 @@ struct SettingsView: View {
                     }
                 }
 
+                macSection(title: "Rede e diagnóstico") {
+                    Toggle(isOn: Binding(
+                        get: { advancedWiFiEnabled },
+                        set: { enabled in
+                            guard macAdvancedWiFiAllowed else {
+                                purchaseEntryPoint = .advancedWiFi
+                                showPurchase = true
+                                return
+                            }
+                            advancedWiFiEnabled = enabled
+                        }
+                    )) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Wi-Fi avançado")
+                                .foregroundColor(.textPrimary)
+                            Text(macAdvancedWiFiAllowed ? "Coleta detalhes nativos somente quando você iniciar uma medição com detalhes." : "Disponível no Linka Plus.")
+                                .font(.bodySmall)
+                                .foregroundColor(.textSecondary)
+                        }
+                    }
+                    .tint(.brandAccentWarm)
+                }
+
+                macSection(title: "Ferramentas") {
+                    NavigationLink(destination: MacRouterPanelView()) {
+                        macRow("Painel do roteador", systemImage: "router", showsChevron: true)
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 macSection(title: "Ajuda") {
                     macLinkRow("Como medimos", systemImage: "speedometer", destination: LinkaExternalLinks.howWeMeasure)
                     Divider()
@@ -317,6 +348,13 @@ struct SettingsView: View {
         }
         .frame(minHeight: 44)
         .contentShape(Rectangle())
+    }
+
+    private var macAdvancedWiFiAllowed: Bool {
+        LinkaEntitlementPolicy.decision(
+            for: .advancedWiFiDiagnostics,
+            snapshot: entitlements.snapshot
+        ).isGranted
     }
     #endif
 
@@ -445,6 +483,97 @@ struct SettingsView: View {
 }
 
 typealias SettingsSheet = SettingsView
+
+#if os(macOS)
+private enum MacRouterPanelState: Equatable {
+    case idle
+    case locating
+    case found(GatewayInfo)
+    case unavailable
+}
+
+/// Localiza somente o gateway da rota ativa. A descoberta canônica vive em
+/// `NetworkDiagnostics`: não faz inventário Bonjour, não deduz fabricante e
+/// não guarda credenciais.
+private struct MacRouterPanelView: View {
+    @Environment(\.openURL) private var openURL
+    @State private var state: MacRouterPanelState = .idle
+    @State private var showOpenConfirmation = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Painel do roteador")
+                .font(.title2.weight(.semibold))
+
+            Group {
+                switch state {
+                case .idle, .locating:
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text("Procurando o roteador nesta rede…")
+                    }
+                    .foregroundColor(.textSecondary)
+                case .found(let gateway):
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Painel encontrado", systemImage: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text(gateway.ip)
+                            .font(.bodySmallStrong)
+                            .foregroundColor(.textPrimary)
+                        if gateway.adminURL?.scheme?.lowercased() == "http" {
+                            Text("Esta página não usa conexão segura.")
+                                .font(.bodySmall)
+                                .foregroundColor(.textSecondary)
+                        }
+                        Button("Abrir painel no navegador") { showOpenConfirmation = true }
+                            .buttonStyle(.linkaPrimary)
+                    }
+                case .unavailable:
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Não foi possível localizar um painel nesta rede.")
+                            .foregroundColor(.textPrimary)
+                        Text("O Linka confirma o painel antes de oferecer a abertura.")
+                            .font(.bodySmall)
+                            .foregroundColor(.textSecondary)
+                    }
+                }
+            }
+
+            Spacer()
+            Button(state == .locating ? "Procurando…" : "Localizar painel") {
+                Task { await locatePanel() }
+            }
+            .buttonStyle(.linkaSecondary)
+            .disabled(state == .locating)
+        }
+        .padding(24)
+        .frame(minWidth: 480, minHeight: 300, alignment: .topLeading)
+        .navigationTitle("Painel do roteador")
+        .task { await locatePanel() }
+        .confirmationDialog("Abrir o painel do roteador?", isPresented: $showOpenConfirmation, titleVisibility: .visible) {
+            if case .found(let gateway) = state, let url = gateway.adminURL {
+                Button("Abrir no navegador") { openURL(url) }
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            if case .found(let gateway) = state {
+                Text("Você vai abrir a página de administração da sua rede em \(gateway.ip) no navegador. O Linka não acessa nem guarda suas credenciais.")
+            }
+        }
+    }
+
+    @MainActor
+    private func locatePanel() async {
+        state = .locating
+        guard let gatewayIP = await ActiveGatewayDiscovery().discoverGateway() else {
+            state = .unavailable
+            return
+        }
+        let gateway = await GatewayProber().probe(gatewayIP: gatewayIP)
+        state = gateway.isAccessible && gateway.adminURL != nil ? .found(gateway) : .unavailable
+    }
+}
+#endif
 
 struct SubscriptionManagementSheet: View {
     @Environment(\.dismiss) private var dismiss

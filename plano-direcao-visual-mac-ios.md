@@ -126,7 +126,7 @@ Deployment target atual (iOS 16 / macOS 13) suporta tudo que este plano precisa 
 
 ## 13. Não-objetivos
 
-- **Não altera `MainView.swift`, `HistoryView.swift` ou qualquer arquivo/layout usado pelo iOS ou iPad.** Esse é o requisito mais rígido desta entrega.
+- **Não altera o comportamento/layout do `MainView.swift` no iOS ou iPad.** O Mac tem sua própria camada de apresentação; integrações compartilhadas podem receber os ajustes necessários de paridade.
 - Não altera `LinkaEngine`, metodologia de medição ou métricas coletadas.
 - Não adiciona Assist/Router/Usage/Settings/Purchase como pill de nav no Mac (D2).
 - Não reabre o Mapa de Infraestrutura Wi-Fi (já avaliado e descartado em análise anterior).
@@ -139,8 +139,8 @@ Implementado:
 
 - `LinkaApp/Sources/UI/MacMainView.swift` (novo, todo o arquivo dentro de `#if os(macOS)`) — nav de 2 pills, painel-card único do Velocímetro cobrindo idle/connecting/downloading/uploading/done/error/connectionChanged, gauge semicircular próprio (`SemicircularGauge`, privado ao arquivo), coluna de Detalhes técnicos + Últimas medições, painel de Histórico embutido, Ajustes/Assist/Purchase/ConnectivityTriage em sheet. Reaproveita `SpeedTestViewModel`, `StoreKitEntitlementProvider`, `AppIntentCoordinator` sem duplicar lógica de motor.
 - `LinkaApp/Sources/LinkaApp.swift`: única mudança, uma `@ViewBuilder private var rootView` que bifurca `MacMainView()`/`MainView()` por `#if os(macOS)`.
-- `LinkaApp.xcodeproj/project.pbxproj`: `MacMainView.swift` registrado **só** no target `LinkaApp_macOS` (confirmado por diff automatizado contra a árvore de arquivos em disco — não aparece na lista de Sources do target iOS).
-- Botão de compartilhar **não** foi incluído na tela de resultado do Mac: `ShareCardView.swift` já tem um branch `#else` (não-UIKit) que é no-op — incluir o botão criaria uma ação que não faz nada. Fora do escopo deste plano implementar compartilhamento nativo no Mac.
+- `LinkaApp_macOS` agora é declarado no `project.yml` e o `.pbxproj` é gerado por XcodeGen; `MacMainView.swift` segue exclusivo do target Mac e `MainView.swift` fica explicitamente excluído dele.
+- O botão de compartilhar foi incluído no menu “Mais” do resultado do Mac. `ShareCardView.swift` tem implementação AppKit que gera o cartão e abre o seletor nativo `NSSharingServicePicker`; a divergência é intencional: no iOS o compartilhar pode ficar direto na ação contextual, enquanto no Mac ele vive com os demais detalhes secundários para preservar o resultado como protagonista.
 
 Achados durante a implementação (não previstos no plano original):
 
@@ -157,5 +157,5 @@ Resultado: `xcodebuild -scheme LinkaApp_macOS` → **BUILD SUCCEEDED**. `xcodebu
 Pendente para alguém decidir (fora do escopo desta entrega, que era só a UI do Mac):
 
 - Provisionar o container CloudKit (issue #71, já documentada) para o histórico sincronizar entre iPhone e Mac.
-- App Sandbox/entitlements para distribuição na Mac App Store.
-- Decidir se o target `LinkaApp_macOS` deve ser formalizado em `project.yml` (XcodeGen) — hoje ele só sobrevive por edição manual acumulada no `.pbxproj`; qualquer `xcodegen generate` futuro sem essa formalização apaga o target Mac inteiro.
+- Distribuição na Mac App Store/notarização, incluindo os requisitos de infraestrutura e assinatura correspondentes.
+- Decidir se o Linka terá Widget no macOS; esta entrega só cobre o widget iOS existente.

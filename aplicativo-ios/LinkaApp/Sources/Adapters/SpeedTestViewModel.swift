@@ -340,7 +340,7 @@ public class SpeedTestViewModel: ObservableObject {
     }
 
     
-    public func startTest() {
+    public func startTest(advancedWiFiDiagnostics: AdvancedWiFiDiagnostics? = nil) {
         guard !isTesting else { return }
         isTesting = true
         progress = 0.0
@@ -359,7 +359,7 @@ public class SpeedTestViewModel: ObservableObject {
         connectionKind = nil
         wifiBandGHz = nil
         wifiContext = nil
-        advancedWiFiDiagnostics = nil
+        self.advancedWiFiDiagnostics = nil
         measurementStartedAt = Date()
         measurementConnectionKind = liveConnectionKind
         uiPhase = .connecting
@@ -420,6 +420,7 @@ public class SpeedTestViewModel: ObservableObject {
                                 endingKind: endingKind,
                                 startingWiFiContext: startingWiFiContext,
                                 endingWiFiContext: endingWiFiContext,
+                                advancedWiFiDiagnostics: advancedWiFiDiagnostics,
                                 generation: myGeneration
                             )
                         } else {
@@ -707,6 +708,11 @@ public class SpeedTestViewModel: ObservableObject {
                         endedAt: endedAt,
                         nativeSSID: self.wifiContext?.ssid
                       ) else { return nil }
+                if advancedWiFiDiagnostics != nil {
+                    guard let capturedAP = diagnostics.accessPointIdentifier,
+                          let measuredAP = self.wifiContext?.accessPointIdentifier,
+                          capturedAP == measuredAP else { return nil }
+                }
                 return diagnostics
             }
         }
@@ -860,7 +866,7 @@ public class SpeedTestViewModel: ObservableObject {
         guard LinkaWiFiPreferences.isIdentificationEnabled else { return nil }
         let hints = await ApplePlatformSignalProvider().currentHints()
         guard let wifi = hints.wifi else { return nil }
-        guard wifi.ssid != nil || wifi.gateway != nil else { return nil }
+        guard wifi.ssid != nil || wifi.bssid != nil || wifi.gateway != nil else { return nil }
 
         let vendorStr = wifi.gateway?.displayName
 

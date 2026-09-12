@@ -75,7 +75,8 @@ final class LinkaAppIntentsTests: XCTestCase {
         for action in [
             LinkaSystemAction.startSpeedTest,
             .openLatestMeasurement,
-            .openHistory
+            .openHistory,
+            .openPurchase
         ] {
             let response = try await executor.execute(action)
             XCTAssertEqual(response.action, action)
@@ -97,6 +98,7 @@ final class LinkaAppIntentsTests: XCTestCase {
         XCTAssertTrue(StartSpeedTestIntent.openAppWhenRun)
         XCTAssertTrue(OpenLatestMeasurementIntent.openAppWhenRun)
         XCTAssertTrue(OpenHistoryIntent.openAppWhenRun)
+        XCTAssertTrue(OpenPurchaseIntent.openAppWhenRun)
         XCTAssertFalse(GetLatestResultIntent.openAppWhenRun)
         XCTAssertFalse(MeasureNetworkSilentlyIntent.openAppWhenRun)
     }

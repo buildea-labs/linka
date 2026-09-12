@@ -2,6 +2,19 @@
 
 Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 
+## [Em desenvolvimento]
+
+### macOS
+
+- Formalizado o target `LinkaApp_macOS` no XcodeGen, com entitlements, Info.plist e dependências preservados.
+- Adicionados comandos nativos de medição/Ajustes, atalhos de teclado, affordances discretas de hover e comportamento de janela responsivo.
+- Histórico, compartilhar, painel do roteador, Wi-Fi avançado e App Intents receberam a paridade prevista para o Mac sem transformar a tela em dashboard. A interface é intencionalmente diferente: no iOS a ação de compartilhar fica no contexto da tela; no Mac ela está no menu “Mais” do resultado.
+
+### Geral
+
+- A descoberta de gateway passou a usar uma única fonte canônica baseada na rota ativa, sem varredura Bonjour, associação por nome ou palpite de endereço.
+- Adicionados testes do provider de timeline do widget e da leitura do App Group; artefatos locais de build passaram a ser ignorados.
+
 ## [v1.1.0] - 2026-09-01
 ### Melhorias
 - Padronização do processo de release e versionamento (Issue #150).

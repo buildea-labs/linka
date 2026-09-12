@@ -6,6 +6,7 @@ import NetworkCore
 import LinkaEntitlements
 import LinkaModules
 import NetworkConnectivityTriage
+import NetworkInsights
 
 /// Shell de navegação exclusivo do Mac (plano `plano-direcao-visual-mac-ios.md`).
 ///
@@ -71,6 +72,15 @@ struct MacMainView: View {
     @State private var pendingAssistSubcategory: String?
     @State private var pendingAssistReportedProblem: String?
     @State private var showConnectivityTriage = false
+    @State private var speedGaugeUpperBound = 1.0
+    @State private var selectedHistoricalMeasurement: NetworkMeasurement?
+    @State private var showCurrentMeasurementDetails = false
+    @State private var showUsageDiagnostics = false
+    @State private var showConnectionPath = false
+    @State private var showShareSheet = false
+    @State private var showAdvancedWiFiUnavailable = false
+    @State private var isSettingsHovered = false
+    @State private var isMoreHovered = false
 
     private var isPlusActive: Bool {
         LinkaEntitlementPolicy.decision(for: .assist, snapshot: entitlements.snapshot, at: Date()).isGranted
@@ -79,6 +89,15 @@ struct MacMainView: View {
     private var currentMeasurement: NetworkMeasurement? {
         guard viewModel.uiPhase == .done else { return nil }
         return viewModel.latestFinishedMeasurement
+    }
+
+    private var latestMeasurementForIntent: NetworkMeasurement? {
+        viewModel.latestFinishedMeasurement ?? viewModel.recentMeasurements.first
+    }
+
+    private var connectionPathReport: ConnectionPathReport? {
+        guard let currentMeasurement else { return nil }
+        return ConnectionPathEvaluator().evaluate(currentMeasurement)
     }
 
     private var assistMeasurement: NetworkMeasurement? {
@@ -97,6 +116,16 @@ struct MacMainView: View {
         default:
             return false
         }
+    }
+
+    private var canStartAdvancedWiFiMeasurement: Bool {
+        guard viewModel.liveConnectionKind == .wifi,
+              LinkaWiFiPreferences.isAdvancedDiagnosticsEnabled else { return false }
+        return LinkaEntitlementPolicy.decision(
+            for: .advancedWiFiDiagnostics,
+            snapshot: entitlements.snapshot,
+            at: Date()
+        ).isGranted
     }
 
     var body: some View {
@@ -167,13 +196,62 @@ struct MacMainView: View {
         .sheet(isPresented: $showConnectivityTriage) {
             ConnectivityTriageView(onRetry: { viewModel.startTest() })
         }
+        .sheet(item: $selectedHistoricalMeasurement) { measurement in
+            NavigationStack {
+                HistoricalMeasurementDetailView(
+                    measurement: measurement,
+                    onStartNewMeasurement: startMeasurementFromHistory,
+                    onStartNewMeasurementWithAdvancedWiFi: startMeasurementWithAdvancedWiFi
+                )
+            }
+            .environmentObject(entitlements)
+            .frame(minWidth: 620, minHeight: 680)
+        }
+        .sheet(isPresented: $showCurrentMeasurementDetails) {
+            NavigationStack {
+                MeasurementDetailView(
+                    measurement: currentMeasurement,
+                    duration: viewModel.testDuration
+                )
+                .environmentObject(entitlements)
+            }
+            .frame(minWidth: 620, minHeight: 680)
+        }
+        .sheet(isPresented: $showUsageDiagnostics) {
+            UsageDiagnosticsView(measurement: currentMeasurement)
+                .frame(minWidth: 560, minHeight: 580)
+        }
+        .sheet(isPresented: $showConnectionPath) {
+            if let connectionPathReport {
+                ConnectionPathDetailView(report: connectionPathReport)
+                    .frame(minWidth: 560, minHeight: 580)
+            }
+        }
+        .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
+        .alert("Detalhes de Wi-Fi indisponíveis", isPresented: $showAdvancedWiFiUnavailable) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("O Mac não informou detalhes suficientes do Wi-Fi agora. Nenhuma medição foi iniciada.")
+        }
+        .onChange(of: viewModel.downloadSpeed) { speed in
+            guard viewModel.uiPhase == .downloading, speed > speedGaugeUpperBound else { return }
+            speedGaugeUpperBound = Self.speedGaugeScale(for: speed)
+        }
         .onChange(of: viewModel.uiPhase) { phase in
+            intentCoordinator.setMeasurementActive(isMeasuring)
+            if phase == .connecting {
+                speedGaugeUpperBound = 1
+            }
             guard phase == .done, pendingAssistMeasurement else { return }
             pendingAssistMeasurement = false
             showAssistResult = true
         }
         .onChange(of: intentCoordinator.pendingStartSpeedTest) { pending in
             guard pending else { return }
+            guard !isMeasuring else {
+                intentCoordinator.consumeStartSpeedTestRequest()
+                return
+            }
             destination = .speedTest
             if showSettings {
                 pendingMeasurementStartAfterSettings = true
@@ -186,9 +264,34 @@ struct MacMainView: View {
         .onChange(of: intentCoordinator.pendingOpenHistory) { pending in
             handleOpenHistoryRequest(pending)
         }
+        .onChange(of: intentCoordinator.pendingPurchasePrompt) { pending in
+            guard pending else { return }
+            guard !isMeasuring else {
+                intentCoordinator.consumePurchasePrompt()
+                return
+            }
+            purchaseEntryPoint = .shortcut
+            showPurchase = true
+            intentCoordinator.consumePurchasePrompt()
+        }
+        .onChange(of: intentCoordinator.pendingOpenLatestMeasurement) { pending in
+            handleOpenLatestMeasurementRequest(pending)
+        }
+        .onChange(of: intentCoordinator.pendingCancelMeasurement) { pending in
+            guard pending else { return }
+            if isMeasuring { viewModel.skipOrCancel() }
+            intentCoordinator.consumeCancelMeasurement()
+        }
+        .onChange(of: intentCoordinator.pendingOpenSettings) { pending in
+            guard pending else { return }
+            if !isMeasuring { showSettings = true }
+            intentCoordinator.consumeOpenSettings()
+        }
         .onAppear {
+            intentCoordinator.setMeasurementActive(isMeasuring)
             viewModel.refreshLiveNetwork()
         }
+        .onDisappear { intentCoordinator.setMeasurementActive(false) }
     }
 
     // MARK: - Header (D2, D4)
@@ -219,6 +322,9 @@ struct MacMainView: View {
                 .buttonStyle(.plain)
                 .disabled(isMeasuring)
                 .opacity(isMeasuring ? 0.4 : 1)
+                .background(isSettingsHovered ? Color.brandSurface.opacity(0.55) : .clear, in: RoundedRectangle(cornerRadius: 8))
+                .onHover { isSettingsHovered = $0 }
+                .help("Ajustes")
                 .accessibilityLabel("Ajustes")
                 .accessibilityHint(isMeasuring ? "Indisponível durante a medição" : "")
             }
@@ -264,17 +370,21 @@ struct MacMainView: View {
             HStack(alignment: .top, spacing: 32) {
                 measurementContent
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Divider()
-                supplementalContent
-                    .frame(width: 280, alignment: .leading)
+                if isFinalResult {
+                    Divider()
+                    supplementalContent
+                        .frame(width: 280, alignment: .leading)
+                }
             }
             .padding(28)
             .linkaCard(cornerRadius: LinkaRadius.lg)
         } else {
             VStack(alignment: .leading, spacing: 24) {
                 measurementContent
-                Divider()
-                supplementalContent
+                if isFinalResult {
+                    Divider()
+                    supplementalContent
+                }
             }
             .padding(24)
             .linkaCard(cornerRadius: LinkaRadius.lg)
@@ -283,14 +393,30 @@ struct MacMainView: View {
 
     private var measurementContent: some View {
         VStack(spacing: 0) {
-            cardHeaderRow
-
             VStack(spacing: 8) {
-                SemicircularGauge(fraction: gaugeFraction)
-                    .frame(width: 240, height: 120)
+                SemicircularGauge(
+                    fraction: gaugeFraction,
+                    centerLabel: gaugeCenterLabel,
+                    centerValue: gaugeCenterValue,
+                    centerUnit: gaugeCenterUnit,
+                    isActive: isDownloading
+                )
+                    .frame(width: 280, height: 220)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Progresso da medição")
+                    .accessibilityLabel("Velocímetro de download")
                     .accessibilityValue(gaugeAccessibilityValue)
+                if isUploading {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(Color.brandAccentWarm)
+                        Text("Medindo upload")
+                            .font(.bodySmallStrong)
+                            .foregroundColor(.textPrimary)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Upload em andamento")
+                }
                 Text(phaseMessage)
                     .font(.bodySmall)
                     .foregroundColor(.textSecondary)
@@ -300,52 +426,21 @@ struct MacMainView: View {
             .padding(.top, 8)
             .padding(.bottom, 4)
 
-            statsRow
-                .padding(.vertical, 14)
-                .overlay(
-                    VStack {
-                        Divider()
-                        Spacer()
-                        Divider()
-                    }
-                )
+            if showsFinalStats {
+                statsRow
+                    .padding(.vertical, 14)
+                    .overlay(
+                        VStack {
+                            Divider()
+                            Spacer()
+                            Divider()
+                        }
+                    )
+            }
 
             actionRow
                 .padding(.top, 16)
                 .frame(maxWidth: .infinity, alignment: .center)
-        }
-    }
-
-    private var cardHeaderRow: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(alignment: .lastTextBaseline, spacing: 6) {
-                    Text(activeMetricValue)
-                        .font(.heroValueHuge)
-                        .foregroundColor(.textPrimary)
-                    Text("Mbps")
-                        .font(.captionMedium)
-                        .foregroundColor(.textSecondary)
-                }
-                Text(activeMetricTitle)
-                    .font(.monoCaption)
-                    .textCase(.uppercase)
-                    .foregroundColor(.textSecondary)
-            }
-            Spacer()
-            if let serverLabel {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("Servidor")
-                        .font(.captionSmall)
-                        .foregroundColor(.textSecondary)
-                    Text(serverLabel)
-                        .font(.captionStrong)
-                        .foregroundColor(.textPrimary)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.surfacePage, in: Capsule())
-            }
         }
     }
 
@@ -380,44 +475,73 @@ struct MacMainView: View {
         switch viewModel.uiPhase {
         case .idle:
             return AnyView(
-                Button("Testar velocidade") { viewModel.startTest() }
-                    .buttonStyle(.linkaPrimary)
-                    .frame(maxWidth: 280)
+                VStack(spacing: 10) {
+                    Button("Testar velocidade") { startMeasurement() }
+                        .buttonStyle(.linkaPrimary)
+                        .frame(maxWidth: 280)
+                        .keyboardShortcut("r", modifiers: .command)
+                }
             )
         case .connecting, .downloading, .uploading:
             return AnyView(
                 Button("Cancelar") { viewModel.skipOrCancel() }
                     .buttonStyle(.linkaSecondary)
+                    .keyboardShortcut(".", modifiers: .command)
             )
         case .done:
             return AnyView(
                 HStack(spacing: 10) {
-                    Button("Testar novamente") { viewModel.startTest() }
+                    Button("Testar novamente") { startMeasurement() }
                         .buttonStyle(.linkaPrimary)
                         .frame(maxWidth: 280)
+                        .keyboardShortcut("r", modifiers: .command)
                     Button {
                         requestAssistFromResult()
                     } label: {
                         Label("Assist", systemImage: "sparkles")
                     }
                     .buttonStyle(.linkaSecondary)
+                    Menu {
+                        Button("Detalhes da medição") {
+                            showCurrentMeasurementDetails = true
+                        }
+                        Button("Qualidade de uso") {
+                            showUsageDiagnostics = true
+                        }
+                        if connectionPathReport != nil {
+                            Button("Caminho da conexão") {
+                                showConnectionPath = true
+                            }
+                        }
+                        Button("Compartilhar resultado") {
+                            showShareSheet = true
+                        }
+                    } label: {
+                        Label("Mais", systemImage: "ellipsis.circle")
+                    }
+                    .menuStyle(.borderlessButton)
+                    .onHover { isMoreHovered = $0 }
+                    .help("Mais ações para este resultado")
+                    .background(isMoreHovered ? Color.brandSurface.opacity(0.55) : .clear, in: RoundedRectangle(cornerRadius: 8))
                 }
             )
         case .error:
             return AnyView(
                 HStack(spacing: 10) {
-                    Button("Tentar novamente") { viewModel.startTest() }
+                    Button("Tentar novamente") { startMeasurement() }
                         .buttonStyle(.linkaPrimary)
                         .frame(maxWidth: 280)
+                        .keyboardShortcut("r", modifiers: .command)
                     Button("Verificar conexão") { showConnectivityTriage = true }
                         .buttonStyle(.linkaSecondary)
                 }
             )
         case .connectionChanged:
             return AnyView(
-                Button("Testar conexão") { viewModel.startTest() }
+                Button("Testar conexão") { startMeasurement() }
                     .buttonStyle(.linkaPrimary)
                     .frame(maxWidth: 280)
+                    .keyboardShortcut("r", modifiers: .command)
             )
         }
     }
@@ -495,32 +619,19 @@ struct MacMainView: View {
         }
         .padding(.vertical, 8)
         .overlay(alignment: .top) { Divider() }
+        .contextMenu {
+            Button("Abrir detalhes") { selectedHistoricalMeasurement = measurement }
+            Button("Testar novamente") { startMeasurement() }
+        }
     }
 
     // MARK: - Painel Histórico (D2)
 
     private var historyPane: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                if viewModel.recentMeasurements.isEmpty {
-                    LinkaUnavailableState(
-                        title: "Nenhuma medição ainda",
-                        message: "Teste sua velocidade para ver o histórico aqui.",
-                        systemImage: "clock"
-                    )
-                    .padding(.top, 40)
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(viewModel.recentMeasurements) { measurement in
-                            recentMeasurementRow(measurement)
-                        }
-                    }
-                    .padding(20)
-                    .linkaCard()
-                }
+        NavigationStack {
+            HistoryView { measurement in
+                selectedHistoricalMeasurement = measurement
             }
-            .padding(28)
-            .frame(maxWidth: 760)
         }
     }
 
@@ -539,6 +650,37 @@ struct MacMainView: View {
     private func requestAssistFromResult() {
         guard let measurement = currentMeasurement else { return }
         requestAssist(from: .result(measurement))
+    }
+
+    private func startMeasurementFromHistory() {
+        selectedHistoricalMeasurement = nil
+        destination = .speedTest
+        DispatchQueue.main.async {
+            startMeasurement()
+        }
+    }
+
+    /// A coleta avançada é uma preferência de Ajustes, não um segundo modo
+    /// de teste. Quando elegível, ela apenas acompanha a medição única.
+    private func startMeasurement() {
+        guard !isMeasuring else { return }
+        let diagnostics = canStartAdvancedWiFiMeasurement
+            ? MacAdvancedWiFiDiagnosticsProvider().capture(entitlement: entitlements.snapshot)
+            : nil
+        viewModel.startTest(advancedWiFiDiagnostics: diagnostics)
+    }
+
+    private func startMeasurementWithAdvancedWiFi() {
+        guard !isMeasuring else { return }
+        selectedHistoricalMeasurement = nil
+        destination = .speedTest
+        guard let diagnostics = MacAdvancedWiFiDiagnosticsProvider().capture(entitlement: entitlements.snapshot) else {
+            showAdvancedWiFiUnavailable = true
+            return
+        }
+        DispatchQueue.main.async {
+            viewModel.startTest(advancedWiFiDiagnostics: diagnostics)
+        }
     }
 
     private func presentPurchaseFromSettings(_ entryPoint: PurchaseEntryPoint) {
@@ -589,6 +731,19 @@ struct MacMainView: View {
         intentCoordinator.consumeOpenHistory()
     }
 
+    private func handleOpenLatestMeasurementRequest(_ pending: Bool) {
+        guard pending else { return }
+        defer { intentCoordinator.consumeOpenLatestMeasurement() }
+        guard !isMeasuring else { return }
+        guard isPlusActive else {
+            purchaseEntryPoint = .shortcut
+            showPurchase = true
+            return
+        }
+        guard let latest = latestMeasurementForIntent else { return }
+        selectedHistoricalMeasurement = latest
+    }
+
     private func beginPendingAssistCollection() {
         guard pendingAssistMeasurement, !showAssistResult else { return }
         showAssistResult = true
@@ -621,14 +776,6 @@ struct MacMainView: View {
         }
     }
 
-    private var serverLabel: String? {
-        guard isFinalResult else { return nil }
-        if let identifier = currentMeasurement?.serverIdentifier, !identifier.isEmpty {
-            return identifier
-        }
-        return nil
-    }
-
     private var wifiBandLabel: String? {
         guard isFinalResult, let band = currentMeasurement?.wifiBandGHz else { return nil }
         let formatted = band.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", band) : String(format: "%.1f", band)
@@ -637,6 +784,10 @@ struct MacMainView: View {
 
     private var isFinalResult: Bool {
         viewModel.uiPhase == .done
+    }
+
+    private var showsFinalStats: Bool {
+        isFinalResult
     }
 
     private func finalStatValue(_ value: Double, measured: Bool) -> String {
@@ -648,52 +799,86 @@ struct MacMainView: View {
         return "\(Int(round(packetLoss)))"
     }
 
-    private var activeMetricTitle: String {
-        switch viewModel.uiPhase {
-        case .uploading:
-            return "Upload"
-        default:
-            return "Download"
-        }
-    }
-
-    private var activeMetricValue: String {
-        switch viewModel.uiPhase {
-        case .idle, .connecting, .error, .connectionChanged:
-            return "—"
-        case .downloading:
-            return String(format: "%.1f", viewModel.downloadSpeed).replacingOccurrences(of: ".", with: ",")
-        case .uploading:
-            return String(format: "%.1f", viewModel.uploadSpeed).replacingOccurrences(of: ".", with: ",")
-        case .done:
-            return String(format: "%.1f", viewModel.downloadSpeed).replacingOccurrences(of: ".", with: ",")
-        }
-    }
-
     private var gaugeFraction: Double {
-        switch viewModel.uiPhase {
-        case .idle, .error, .connectionChanged:
-            return 0
-        case .connecting, .downloading, .uploading, .done:
-            return max(0, min(1, viewModel.progress))
-        }
+        guard let value = downloadGaugeValue else { return 0 }
+        let currentScale = max(speedGaugeUpperBound, Self.speedGaugeScale(for: value))
+        return max(0, min(1, value / currentScale))
     }
 
     private var gaugeAccessibilityValue: String {
         switch viewModel.uiPhase {
         case .idle:
-            return "Medição pronta para iniciar"
+            return "Pronto para medir"
         case .connecting:
             return "Conectando ao servidor"
-        case .downloading, .uploading:
-            return "\(activeMetricTitle), \(Int(round(gaugeFraction * 100))) por cento concluído"
+        case .downloading:
+            return "Download: \(gaugeCenterValue) megabits por segundo, medição em andamento"
+        case .uploading:
+            return "Download medido: \(gaugeCenterValue) megabits por segundo. Medindo upload"
         case .done:
-            return "Medição concluída"
+            return "Download: \(gaugeCenterValue) megabits por segundo. Medição concluída"
         case .error:
             return "Medição indisponível"
         case .connectionChanged:
             return "Medição interrompida porque a rede mudou"
         }
+    }
+
+    private var isDownloading: Bool {
+        viewModel.uiPhase == .downloading
+    }
+
+    private var isUploading: Bool {
+        viewModel.uiPhase == .uploading
+    }
+
+    private var downloadGaugeValue: Double? {
+        switch viewModel.uiPhase {
+        case .downloading:
+            return viewModel.downloadSpeed
+        case .uploading, .done:
+            return viewModel.downloadSpeed
+        case .idle, .connecting, .error, .connectionChanged:
+            return nil
+        }
+    }
+
+    private var gaugeCenterLabel: String? {
+        downloadGaugeValue == nil ? nil : "DOWNLOAD"
+    }
+
+    private var gaugeCenterValue: String {
+        guard let value = downloadGaugeValue else {
+            switch viewModel.uiPhase {
+            case .idle:
+                return "Pronto para medir"
+            case .connecting:
+                return "Conectando…"
+            case .error:
+                return "Indisponível"
+            case .connectionChanged:
+                return "Rede alterada"
+            case .downloading, .uploading, .done:
+                return ""
+            }
+        }
+        return String(format: "%.1f", value).replacingOccurrences(of: ".", with: ",")
+    }
+
+    private var gaugeCenterUnit: String? {
+        downloadGaugeValue == nil ? nil : "Mbps"
+    }
+
+    private static func speedGaugeScale(for value: Double) -> Double {
+        guard value > 0 else { return 1 }
+        let magnitude = pow(10, floor(log10(value)))
+        for multiplier in [1.0, 2.0, 5.0, 10.0] {
+            let candidate = multiplier * magnitude
+            if value <= candidate {
+                return candidate
+            }
+        }
+        return 10 * magnitude
     }
 
     private var phaseMessage: String {
@@ -705,7 +890,7 @@ struct MacMainView: View {
         case .downloading:
             return "Medindo velocidade de download…"
         case .uploading:
-            return "Medindo velocidade de upload…"
+            return "Download concluído. Medindo velocidade de upload…"
         case .done:
             return "Sua conexão está pronta."
         case .error:
@@ -716,10 +901,14 @@ struct MacMainView: View {
     }
 }
 
-/// Gauge semicircular de progresso: a extensão do arco representa apenas a
-/// fase atual da medição, nunca uma escala de Mbps.
+/// Velocímetro de download. O arco usa apenas a maior amostra real da rodada
+/// como escala dinâmica; não comunica capacidade contratada nem progresso.
 private struct SemicircularGauge: View {
     var fraction: Double
+    var centerLabel: String?
+    var centerValue: String
+    var centerUnit: String?
+    var isActive: Bool
 
     private var clamped: Double { max(0, min(1, fraction)) }
 
@@ -739,7 +928,28 @@ private struct SemicircularGauge: View {
                     .stroke(Color.brandAccentWarm, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                     .rotationEffect(.degrees(180))
                     .frame(width: diameter, height: diameter)
+                    .opacity(isActive || clamped > 0 ? 1 : 0)
 
+                VStack(spacing: 2) {
+                    if let centerLabel {
+                        Text(centerLabel)
+                            .font(.monoCaption)
+                            .foregroundColor(.textSecondary)
+                    }
+                    Text(centerValue)
+                        .font(centerUnit == nil ? .captionStrong : .heroValueHuge)
+                        .foregroundColor(.textPrimary)
+                        .lineLimit(1)
+                    if let centerUnit {
+                        Text(centerUnit)
+                            .font(.captionMedium)
+                            .foregroundColor(.textSecondary)
+                    }
+                }
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: diameter * 0.8)
+                .padding(.top, diameter * 0.28)
+                .frame(width: diameter, alignment: .top)
             }
             .frame(width: diameter, height: diameter, alignment: .top)
         }

@@ -53,6 +53,9 @@ xcuserdata/
 
 # Build Derived
 build_derived/
+build_fresh/
+build_output.log
+firebase-debug.log
 
 
 # SwiftPM
@@ -61,6 +64,7 @@ build_derived/
 
 # Xcode build directories
 build/
+aplicativo-ios/build*/
 
 build_output/
 build_device_output/

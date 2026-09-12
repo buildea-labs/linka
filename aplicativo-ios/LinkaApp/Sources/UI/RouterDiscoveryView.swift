@@ -1,155 +1,97 @@
 import SwiftUI
-import WebKit
+import NetworkDiagnostics
 
 #if os(iOS)
-struct WebView: UIViewRepresentable {
-    let url: URL
-    
-    func makeUIView(context: Context) -> WKWebView {
-        let prefs = WKWebpagePreferences()
-        prefs.allowsContentJavaScript = true
-        let config = WKWebViewConfiguration()
-        config.defaultWebpagePreferences = prefs
-        return WKWebView(frame: .zero, configuration: config)
-    }
-    
-    func updateUIView(_ uiView: WKWebView, context: Context) {
-        let request = URLRequest(url: url)
-        uiView.load(request)
-    }
+private enum RouterPanelState: Equatable {
+    case idle
+    case locating
+    case found(GatewayInfo)
+    case unavailable
 }
 
-struct RouterWebView: View {
-    let ipAddress: String
-    @State private var url: URL?
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Label("Página do fabricante do roteador — fora do controle do Linka", systemImage: "exclamationmark.triangle")
-                .font(.footnote)
-                .foregroundColor(.secondary)
-                .padding(.horizontal)
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.yellow.opacity(0.15))
-
-            Group {
-                if let url = url {
-                    WebView(url: url)
-                } else {
-                    ProgressView("Carregando...")
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .navigationTitle("Acesso ao Roteador")
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            if let parsedURL = URL(string: "http://\(ipAddress)") {
-                url = parsedURL
-            }
-        }
-    }
-}
-
+/// Acesso ao roteador, não scanner de rede: há no máximo o gateway da rota
+/// ativa, confirmado por HTTP/HTTPS antes de ser oferecido ao usuário.
 struct RouterDiscoveryView: View {
-    @StateObject private var scanner = GatewayScanner()
+    @Environment(\.openURL) private var openURL
+    @State private var state: RouterPanelState = .idle
+    @State private var showOpenConfirmation = false
     @State private var savedPassword = ""
     @State private var hasSavedPassword = false
-    @State private var gatewayPendingConfirmation: DiscoveredGateway?
-    @State private var confirmedGateway: DiscoveredGateway?
     private let service = "com.linka.router"
 
     var body: some View {
         List {
-            Section(header: Text("Gateways Encontrados")) {
-                if scanner.isScanning {
-                    HStack {
-                        ProgressView()
-                            .padding(.trailing, 8)
-                        Text("Buscando roteadores...")
-                    }
-                } else if scanner.gateways.isEmpty {
-                    Text("Nenhum roteador encontrado na rede local.")
+            Section("Painel do roteador") {
+                switch state {
+                case .idle:
+                    Text("Localize o painel da rede Wi-Fi atual antes de abri-lo.")
                         .foregroundColor(.secondary)
-                } else {
-                    ForEach(scanner.gateways) { gateway in
-                        Button {
-                            gatewayPendingConfirmation = gateway
-                        } label: {
-                            VStack(alignment: .leading) {
-                                Text(gateway.manufacturer ?? gateway.hostname ?? "Roteador")
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                Text(gateway.ipAddress)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
+                case .locating:
+                    HStack { ProgressView(); Text("Procurando o painel nesta rede…") }
+                case .found(let gateway):
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Painel encontrado", systemImage: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text(gateway.ip).font(.footnote).foregroundColor(.secondary)
+                        Button("Abrir no navegador") { showOpenConfirmation = true }
                     }
+                case .unavailable:
+                    Text("Não foi possível localizar um painel nesta rede.")
+                        .foregroundColor(.secondary)
                 }
+
+                Button(state == .locating ? "Procurando…" : "Localizar painel") {
+                    Task { await locatePanel() }
+                }
+                .disabled(state == .locating)
             }
 
-            Section(header: Text("Acesso Rápido")) {
-                Button(action: {
-                    scanner.startScan()
-                }) {
-                    Text(scanner.isScanning ? "Buscando..." : "Buscar Novamente")
-                }
-                .disabled(scanner.isScanning)
-            }
-
-            Section(header: Text("Gerenciador de Senha do Roteador (Opcional)"), footer: Text("Senha salva de forma segura usando o Keychain do dispositivo.")) {
-                SecureField("Senha do Roteador", text: $savedPassword)
-                Button("Salvar Senha") {
+            Section(header: Text("Senha do roteador (opcional)"), footer: Text("A senha fica somente no Keychain deste dispositivo.")) {
+                SecureField("Senha do roteador", text: $savedPassword)
+                Button("Salvar senha") {
                     if let data = savedPassword.data(using: .utf8) {
                         KeychainHelper.shared.save(data, service: service, account: "router_admin")
                         hasSavedPassword = true
                     }
                 }
                 if hasSavedPassword {
-                    Button("Remover Senha Salva", role: .destructive) {
+                    Button("Remover senha salva", role: .destructive) {
                         KeychainHelper.shared.delete(service: service, account: "router_admin")
                         savedPassword = ""
                         hasSavedPassword = false
                     }
                 }
             }
-
-            NavigationLink(
-                destination: RouterWebView(ipAddress: confirmedGateway?.ipAddress ?? ""),
-                isActive: Binding(
-                    get: { confirmedGateway != nil },
-                    set: { isActive in
-                        if !isActive {
-                            confirmedGateway = nil
-                        }
-                    }
-                )
-            ) {
-                EmptyView()
-            }
-            .hidden()
         }
-        .navigationTitle("Acesso ao Roteador")
+        .navigationTitle("Acesso ao roteador")
         .onAppear {
-            scanner.startScan()
             if let data = KeychainHelper.shared.read(service: service, account: "router_admin"),
-               let pwd = String(data: data, encoding: .utf8) {
-                savedPassword = pwd
+               let password = String(data: data, encoding: .utf8) {
+                savedPassword = password
                 hasSavedPassword = true
             }
         }
-        .alert(item: $gatewayPendingConfirmation) { gateway in
-            Alert(
-                title: Text("Você vai sair do Linka"),
-                message: Text("Isto abre a página de administração do roteador (\(gateway.ipAddress)) fora do controle do Linka, normalmente por uma conexão sem criptografia (HTTP). O Linka não lê nem guarda o conteúdo dessa página."),
-                primaryButton: .default(Text("Abrir mesmo assim")) {
-                    confirmedGateway = gateway
-                },
-                secondaryButton: .cancel(Text("Cancelar"))
-            )
+        .confirmationDialog("Abrir o painel do roteador?", isPresented: $showOpenConfirmation, titleVisibility: .visible) {
+            if case .found(let gateway) = state, let url = gateway.adminURL {
+                Button("Abrir no navegador") { openURL(url) }
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            if case .found(let gateway) = state {
+                Text("Você vai abrir a página de administração em \(gateway.ip). O Linka não acessa nem guarda as credenciais inseridas nela.")
+            }
         }
+    }
+
+    @MainActor
+    private func locatePanel() async {
+        state = .locating
+        guard let ip = await ActiveGatewayDiscovery().discoverGateway() else {
+            state = .unavailable
+            return
+        }
+        let gateway = await GatewayProber().probe(gatewayIP: ip)
+        state = gateway.isAccessible && gateway.adminURL != nil ? .found(gateway) : .unavailable
     }
 }
 #endif

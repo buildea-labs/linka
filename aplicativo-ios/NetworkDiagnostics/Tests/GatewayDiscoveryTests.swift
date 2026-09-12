@@ -32,6 +32,14 @@ final class GatewayDiscoveryTests: XCTestCase {
         XCTAssertFalse(LocalGatewayDiscovery.isPrivateIPv4("invalido"), "Deve rejeitar IP inválido")
     }
 
+    func testActiveDiscoveryChoosesOnlyAPrivateGatewayWithoutGuessingSuffix() {
+        XCTAssertEqual(
+            ActiveGatewayDiscovery.firstValidGateway(in: ["8.8.8.8", "10.42.0.254", "192.168.1.1"]),
+            "10.42.0.254"
+        )
+        XCTAssertNil(ActiveGatewayDiscovery.firstValidGateway(in: ["1.1.1.1", "127.0.0.1"]))
+    }
+
     func testGatewayInfoDisplayName() {
         let info = GatewayInfo(ip: "192.168.1.1", isAccessible: false)
         XCTAssertEqual(info.displayName, "Roteador")

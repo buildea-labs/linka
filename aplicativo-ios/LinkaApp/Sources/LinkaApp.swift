@@ -53,6 +53,12 @@ struct LinkaApp: App {
                     AppIntentCoordinator.shared.requestOpenHistory()
                 }
                 return LinkaSystemActionResponse(action: .openHistory)
+
+            case .openPurchase:
+                await MainActor.run {
+                    AppIntentCoordinator.shared.requestPurchasePrompt()
+                }
+                return LinkaSystemActionResponse(action: .openPurchase)
                 
             default:
                 let decision = LinkaEntitlementPolicy.decision(
@@ -98,6 +104,10 @@ struct LinkaApp: App {
                 await entitlements.refreshSnapshot()
             }
         }
+        #if os(macOS)
+        .defaultSize(width: 980, height: 680)
+        .commands { LinkaMacCommands() }
+        #endif
     }
 
     private var preferredColorScheme: ColorScheme? {
@@ -116,3 +126,26 @@ struct LinkaApp: App {
         #endif
     }
 }
+
+#if os(macOS)
+private struct LinkaMacCommands: Commands {
+    @ObservedObject private var coordinator = AppIntentCoordinator.shared
+
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            if coordinator.isMeasurementActive {
+                Button("Cancelar medição") { coordinator.requestCancelMeasurement() }
+                    .keyboardShortcut(".", modifiers: .command)
+            } else {
+                Button("Testar velocidade") { coordinator.requestStartSpeedTest() }
+                    .keyboardShortcut("r", modifiers: .command)
+            }
+        }
+        CommandGroup(after: .appSettings) {
+            Button("Ajustes…") { coordinator.requestOpenSettings() }
+                .keyboardShortcut(",", modifiers: .command)
+                .disabled(coordinator.isMeasurementActive)
+        }
+    }
+}
+#endif

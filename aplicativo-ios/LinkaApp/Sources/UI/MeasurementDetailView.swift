@@ -12,6 +12,9 @@ struct MeasurementDetailView: View {
     /// Um registro histórico não é alterado por telemetria posterior. Esta
     /// ação retorna à jornada que coleta os detalhes antes de uma nova medida.
     let onStartNewMeasurementWithAdvancedWiFi: (() -> Void)?
+    /// Reteste parte do registro selecionado, sem depender do tipo de rede
+    /// ou do plano. Diagnósticos avançados continuam uma ação adicional.
+    let onStartNewMeasurement: (() -> Void)?
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
@@ -23,10 +26,12 @@ struct MeasurementDetailView: View {
     init(
         measurement: NetworkMeasurement?,
         duration: String?,
+        onStartNewMeasurement: (() -> Void)? = nil,
         onStartNewMeasurementWithAdvancedWiFi: (() -> Void)? = nil
     ) {
         self.measurement = measurement
         self.duration = duration
+        self.onStartNewMeasurement = onStartNewMeasurement
         self.onStartNewMeasurementWithAdvancedWiFi = onStartNewMeasurementWithAdvancedWiFi
     }
 
@@ -67,6 +72,14 @@ struct MeasurementDetailView: View {
                     }
                     if let ping = measurement.latencyMs {
                         LabeledContent("Ping", value: String(format: "%.0f ms", ping))
+                    }
+                }
+            }
+
+            if let onStartNewMeasurement {
+                Section {
+                    Button("Testar novamente") {
+                        onStartNewMeasurement()
                     }
                 }
             }
@@ -168,11 +181,17 @@ struct MeasurementDetailView: View {
                             Spacer()
                             if let adminURLString = measurement.wifiContext?.gatewayAdminURL,
                                let url = URL(string: adminURLString) {
+                                #if os(macOS)
+                                Text("Confirme o painel atual em Ajustes")
+                                    .font(.bodySmall)
+                                    .foregroundColor(.textSecondary)
+                                #else
                                 Button("Abrir painel do roteador") {
                                     openURL(url)
                                 }
                                 .font(.bodySmallStrong)
                                 .foregroundColor(.brandAccentWarm)
+                                #endif
                             }
                         }
                     }
@@ -193,6 +212,9 @@ struct MeasurementDetailView: View {
                             }
                             if let channel = advanced.channelNumber {
                                 LabeledContent("Canal", value: "\(channel)")
+                            }
+                            if let band = advanced.bandGHz {
+                                LabeledContent("Banda", value: band == floor(band) ? String(format: "%.0f GHz", band) : String(format: "%.1f GHz", band))
                             }
                             if advanced.txRateMbps != nil || advanced.rxRateMbps != nil {
                                 let tx = advanced.txRateMbps.map { String(format: "TX %.0f Mbps", $0) }

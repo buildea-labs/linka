@@ -18,17 +18,32 @@ struct LinkaWidgetEntry: TimelineEntry {
 /// cada teste concluído em vez desta extensão ficar consultando por
 /// tempo.
 struct LinkaWidgetTimelineProvider: TimelineProvider {
+    private let summaryReader: () -> LinkaWidgetShared.LatestMeasurementSummary?
+
+    init(summaryReader: @escaping () -> LinkaWidgetShared.LatestMeasurementSummary? = { LinkaWidgetShared.readLatestSummary() }) {
+        self.summaryReader = summaryReader
+    }
+
     func placeholder(in context: Context) -> LinkaWidgetEntry {
         LinkaWidgetEntry(date: Date(), summary: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (LinkaWidgetEntry) -> Void) {
-        let summary = context.isPreview ? nil : LinkaWidgetShared.readLatestSummary()
-        completion(LinkaWidgetEntry(date: Date(), summary: summary))
+        completion(snapshotEntry(isPreview: context.isPreview))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<LinkaWidgetEntry>) -> Void) {
-        let entry = LinkaWidgetEntry(date: Date(), summary: LinkaWidgetShared.readLatestSummary())
-        completion(Timeline(entries: [entry], policy: .never))
+        completion(timeline())
+    }
+
+    /// Mantido separado para cobrir o contrato de timeline sem precisar
+    /// fabricar um `TimelineProviderContext`, que WidgetKit não expõe em
+    /// testes unitários.
+    func snapshotEntry(isPreview: Bool) -> LinkaWidgetEntry {
+        LinkaWidgetEntry(date: Date(), summary: isPreview ? nil : summaryReader())
+    }
+
+    func timeline() -> Timeline<LinkaWidgetEntry> {
+        Timeline(entries: [LinkaWidgetEntry(date: Date(), summary: summaryReader())], policy: .never)
     }
 }
