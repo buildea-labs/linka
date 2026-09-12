@@ -82,7 +82,7 @@ struct LinkaApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainView()
+            rootView
                 .environmentObject(entitlements)
                 .preferredColorScheme(preferredColorScheme)
             .onOpenURL { url in
@@ -102,5 +102,17 @@ struct LinkaApp: App {
 
     private var preferredColorScheme: ColorScheme? {
         LinkaAppearancePreference(rawValue: appAppearance)?.colorScheme
+    }
+
+    /// Único ponto de bifurcação por plataforma (plano
+    /// `plano-direcao-visual-mac-ios.md`): o Mac usa a nova direção visual
+    /// em `MacMainView`; o iOS continua com `MainView`, inalterado.
+    @ViewBuilder
+    private var rootView: some View {
+        #if os(macOS)
+        MacMainView()
+        #else
+        MainView()
+        #endif
     }
 }
