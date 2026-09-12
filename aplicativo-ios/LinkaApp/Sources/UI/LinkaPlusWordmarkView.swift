@@ -8,6 +8,6 @@ struct LinkaPlusWordmarkView: View {
             .resizable()
             .scaledToFit()
             .frame(height: height)
-            .accessibilityLabel("Linka Plus")
+            .accessibilityLabel(LinkaCopy.value("linka.plus"))
     }
 }

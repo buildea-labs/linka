@@ -13,7 +13,7 @@ struct ExpertModeMigrationBanner: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Novidade no Linka")
+                Text("expert.banner.title")
                     .font(.bodySmallStrong)
                     .foregroundColor(.textPrimary)
                 Spacer()
@@ -26,11 +26,11 @@ struct ExpertModeMigrationBanner: View {
                         .clipShape(Circle())
                         .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
-                        .accessibilityLabel("Fechar aviso")
+                        .accessibilityLabel("expert.banner.close")
                 }
             }
 
-            Text("Resultado, ping e histórico básico continuam grátis, como sempre. Reunimos jitter, perda de pacotes e a nova métrica de resolução DNS no Modo Expert, parte do Linka Plus.")
+            Text("expert.banner.message")
                 .font(.bodySmall)
                 .foregroundColor(.textSecondary)
 

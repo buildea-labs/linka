@@ -56,6 +56,6 @@ struct MetricRing: View {
         .frame(width: size, height: size)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(connecting ? value : "\(value) \(unit ?? "")")
-        .accessibilityValue(String(format: "%.0f por cento", progress * 100))
+        .accessibilityValue(LinkaCopy.format("accessibility.percent", progress * 100))
     }
 }
