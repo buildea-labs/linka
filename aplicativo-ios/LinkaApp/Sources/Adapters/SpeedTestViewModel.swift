@@ -264,6 +264,23 @@ public class SpeedTestViewModel: ObservableObject {
         }
     }
 
+    /// Consulta somente as três medições completas mais antigas. A tela usa
+    /// isso para decidir um convite de avaliação sem guardar um segundo
+    /// contador e sem considerar resultados parciais ou não persistidos.
+    func appStoreReviewHistory() async -> (completedCount: Int, firstCompletedAt: Date)? {
+        let repository = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
+        let query = MeasurementQuery(
+            outcomes: [.complete],
+            limit: AppStoreReviewPolicy.minimumCompletedMeasurements,
+            sortOrder: .oldestFirst
+        )
+        guard let measurements = try? await repository.measurements(matching: query),
+              let first = measurements.first else {
+            return nil
+        }
+        return (measurements.count, first.measuredAt)
+    }
+
     public func loadHistoricalResult(_ measurement: NetworkMeasurement) {
         latestFinishedMeasurement = measurement
         if let kind = measurement.connectionKind {
@@ -320,22 +337,6 @@ public class SpeedTestViewModel: ObservableObject {
         self.progress = 1.0
         self.uiPhase = .idle
         self.isTesting = false
-    }
-
-    /// Consulta somente medições completas já persistidas para que o convite
-    /// de avaliação nunca conte resultado parcial, cancelado ou recente.
-    func appStoreReviewHistory() async -> (completedCount: Int, firstCompletedAt: Date)? {
-        let repository = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
-        let query = MeasurementQuery(
-            outcomes: [.complete],
-            limit: AppStoreReviewPolicy.minimumCompletedMeasurements,
-            sortOrder: .oldestFirst
-        )
-        guard let measurements = try? await repository.measurements(matching: query),
-              let first = measurements.first else {
-            return nil
-        }
-        return (measurements.count, first.measuredAt)
     }
 
     
