@@ -151,7 +151,7 @@ export function InfoScreen({ pathname }: { pathname: string }) {
         .section-block { padding: clamp(40px, 8vw, 60px) 0 0; text-align: left; }
       `}</style>
 
-      <Header />
+      <Header activeHref={pathname} />
 
       <main className="centered-container">
         <section className="hero-block">
