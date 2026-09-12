@@ -18,25 +18,25 @@ struct PurchaseSheet: View {
 
     private var plusBenefits: [String] {
         var benefits = [
-            "Assist explica o resultado",
-            "Identifica problemas recorrentes",
-            "Compara seu histórico",
-            "Diagnóstico avançado de Wi-Fi"
+            copy("purchase.benefit.assist", "Assist explains your result"),
+            copy("purchase.benefit.recurring", "Identifies recurring issues"),
+            copy("purchase.benefit.history", "Compares your history"),
+            copy("purchase.benefit.wifi", "Advanced Wi-Fi diagnostics")
         ]
 
         switch entryPoint {
         case .assist:
-            benefits.removeAll { $0 == "Assist explica o resultado" }
-            benefits.insert("Assist explica o resultado", at: 0)
+            benefits.removeAll { $0 == copy("purchase.benefit.assist", "Assist explains your result") }
+            benefits.insert(copy("purchase.benefit.assist", "Assist explains your result"), at: 0)
         case .historyInsights:
-            benefits.removeAll { $0 == "Compara seu histórico" || $0 == "Identifica problemas recorrentes" }
-            benefits.insert("Identifica problemas recorrentes", at: 0)
-            benefits.insert("Compara seu histórico", at: 1)
+            benefits.removeAll { $0 == copy("purchase.benefit.history", "Compares your history") || $0 == copy("purchase.benefit.recurring", "Identifies recurring issues") }
+            benefits.insert(copy("purchase.benefit.recurring", "Identifies recurring issues"), at: 0)
+            benefits.insert(copy("purchase.benefit.history", "Compares your history"), at: 1)
         case .advancedWiFi:
-            benefits.removeAll { $0 == "Diagnóstico avançado de Wi-Fi" }
-            benefits.insert("Diagnóstico avançado de Wi-Fi", at: 0)
+            benefits.removeAll { $0 == copy("purchase.benefit.wifi", "Advanced Wi-Fi diagnostics") }
+            benefits.insert(copy("purchase.benefit.wifi", "Advanced Wi-Fi diagnostics"), at: 0)
         case .shortcut, .appIntent:
-            benefits.insert("Automação com Siri e Atalhos", at: 0)
+            benefits.insert(copy("purchase.benefit.shortcuts", "Siri and Shortcuts automation"), at: 0)
         case .settings:
             break
         }
@@ -50,11 +50,11 @@ struct PurchaseSheet: View {
             VStack(spacing: 0) {
                 HStack {
                     Spacer()
-                    Button("Fechar", systemImage: "xmark") { dismiss() }
+                    Button(copy("common.close", "Close"), systemImage: "xmark") { dismiss() }
                         .labelStyle(.iconOnly)
                         .foregroundColor(.textSecondary)
                         .frame(minWidth: 44, minHeight: 44)
-                        .accessibilityLabel("Fechar")
+                        .accessibilityLabel(copy("common.close", "Close"))
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
@@ -118,11 +118,11 @@ struct PurchaseSheet: View {
                         } else {
                             switch entitlements.productState {
                             case .loaded(let product):
-                                Text("Assinar por \(product.displayPrice)/ano")
+                                Text(copy("purchase.subscribe.price", "Subscribe for %@/year", product.displayPrice))
                             case .loading:
-                                Text("Carregando preço…")
+                                Text(copy("purchase.loading.price", "Loading price…"))
                             case .unavailable, .error:
-                                Text("Assinar")
+                                Text(copy("purchase.subscribe", "Subscribe"))
                             }
                         }
                     }
@@ -134,7 +134,7 @@ struct PurchaseSheet: View {
                         if isRestoring {
                             ProgressView()
                         } else {
-                            Text("Restaurar compra")
+                            Text(copy("purchase.restore", "Restore purchase"))
                         }
                     }
                     .buttonStyle(.linkaSecondary)
@@ -149,9 +149,9 @@ struct PurchaseSheet: View {
                         .padding(.horizontal, 28)
 
                     HStack(spacing: 4) {
-                        Link("Termos de Uso", destination: LinkaExternalLinks.terms)
+                        Link(copy("legal.terms", "Terms of Use"), destination: LinkaExternalLinks.terms)
                         Text("·").foregroundColor(.textSecondary)
-                        Link("Privacidade", destination: LinkaExternalLinks.privacy)
+                        Link(copy("legal.privacy", "Privacy"), destination: LinkaExternalLinks.privacy)
                     }
                     .font(.captionSmall)
                     .foregroundColor(.brandSurface)
@@ -169,22 +169,22 @@ struct PurchaseSheet: View {
                 Text(product.displayPrice)
                     .font(.displayLarge)
                     .foregroundColor(.textPrimary)
-                Text("Cobrado anualmente · Cancele quando quiser")
+                Text(copy("purchase.annual.cancel", "Billed annually · Cancel anytime"))
                     .font(.captionMedium)
                     .foregroundColor(.textSecondary)
             case .loading:
                 ProgressView().padding(.vertical, 6)
             case .unavailable:
-                Text("Plano não disponível no momento")
+                Text(copy("purchase.unavailable", "Plan is not available right now"))
                     .font(.bodySmallMedium)
                     .foregroundColor(.textSecondary)
-                Button("Tentar novamente") {
+                Button(copy("common.tryAgain", "Try again")) {
                     Task { await entitlements.loadProduct() }
                 }
                 .font(.bodySmallStrong)
                 .foregroundColor(.textPrimary)
             case .error(let message):
-                Text("Não foi possível carregar o preço agora")
+                Text(copy("purchase.price.error", "We couldn't load the price right now"))
                     .font(.bodySmallMedium)
                     .foregroundColor(.textSecondary)
                 #if DEBUG
@@ -192,7 +192,7 @@ struct PurchaseSheet: View {
                     .font(.captionSmall)
                     .foregroundColor(.statusAttention)
                 #endif
-                Button("Tentar novamente") {
+                Button(copy("common.tryAgain", "Try again")) {
                     Task { await entitlements.loadProduct() }
                 }
                 .font(.bodySmallStrong)
@@ -210,9 +210,9 @@ struct PurchaseSheet: View {
 
     private var disclaimerText: String {
         if case .loaded(let product) = entitlements.productState {
-            return "Valor de \(product.displayPrice)/ano com renovação automática pela Apple."
+            return copy("purchase.disclaimer.price", "%@ per year, automatically renewed by Apple.", product.displayPrice)
         }
-        return "Assinatura anual com renovação automática pela Apple."
+        return copy("purchase.disclaimer", "Annual subscription automatically renewed by Apple.")
     }
 
     private func purchase() {
@@ -230,11 +230,11 @@ struct PurchaseSheet: View {
                 case .userCancelled:
                     break
                 case .pending:
-                    errorMessage = "A compra está pendente de aprovação."
+                    errorMessage = copy("purchase.pending", "Your purchase is awaiting approval.")
                 }
             } catch {
                 isPurchasing = false
-                errorMessage = "Não foi possível concluir a compra agora. Tente novamente."
+                errorMessage = copy("purchase.error", "We couldn't complete your purchase right now. Try again.")
             }
         }
     }
@@ -251,12 +251,19 @@ struct PurchaseSheet: View {
                     dismiss()
                     onPurchaseCompleted?()
                 } else {
-                    errorMessage = "Nenhuma compra ativa foi encontrada."
+                    errorMessage = copy("purchase.restore.none", "No active purchase was found.")
                 }
             } catch {
                 isRestoring = false
-                errorMessage = "Não foi possível restaurar a compra agora. Tente novamente."
+                errorMessage = copy("purchase.restore.error", "We couldn't restore your purchase right now. Try again.")
             }
         }
+    }
+
+    private func copy(_ key: String, _ fallback: String, _ arguments: CVarArg...) -> String {
+        let locale = LinkaLanguagePreference.currentLocale
+        let bundle = Bundle(path: Bundle.main.path(forResource: locale.identifier, ofType: "lproj") ?? "") ?? .main
+        let format = bundle.localizedString(forKey: key, value: fallback, table: nil)
+        return arguments.isEmpty ? format : String(format: format, locale: locale, arguments: arguments)
     }
 }

@@ -31,7 +31,7 @@ struct ShareCardView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("LINKA SPEEDTEST")
+            Text(copy("share.title", "LINKA SPEEDTEST"))
                 .font(.monoEyebrow)
                 .foregroundColor(.textSecondary)
                 .padding(.top, 40)
@@ -45,18 +45,18 @@ struct ShareCardView: View {
             )
             .padding(.top, 24)
 
-            Text("DOWNLOAD")
+            Text(copy("metric.download", "DOWNLOAD"))
                 .font(.monoEyebrow)
                 .foregroundColor(.textSecondary)
                 .padding(.top, 20)
                 .padding(.bottom, 10)
 
             HStack(spacing: 6) {
-                statFragment(value: formattedUpload, unit: "Mbps upload")
+                statFragment(value: formattedUpload, unit: copy("share.unit.upload", "Mbps upload"))
 
                 if let formattedPing {
                     dot
-                    statFragment(value: formattedPing, unit: "ms ping")
+                    statFragment(value: formattedPing, unit: copy("share.unit.ping", "ms ping"))
                 }
             }
 
@@ -121,7 +121,7 @@ struct ShareCardView: View {
 
     private func formattedSpeed(_ value: Double?) -> String {
         guard let value else { return "--" }
-        return String(format: "%.1f", value).replacingOccurrences(of: ".", with: ",")
+        return value.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale))
     }
 
     private var formattedPing: String? {
@@ -138,10 +138,10 @@ struct ShareCardView: View {
 
         let kindLabel: String
         switch kind {
-        case .wifi: kindLabel = "Wi-Fi"
-        case .cellular: kindLabel = "Rede móvel"
+        case .wifi: kindLabel = copy("network.wifi", "Wi-Fi")
+        case .cellular: kindLabel = copy("network.cellular", "Mobile network")
         case .ethernet: kindLabel = "Ethernet"
-        case .other: kindLabel = "Outra rede"
+        case .other: kindLabel = copy("network.other", "Other network")
         }
 
         guard kind == .wifi, let wifiBandGHz = measurement.wifiBandGHz else {
@@ -160,6 +160,12 @@ struct ShareCardView: View {
         formatter.timeStyle = .short
         formatter.locale = LinkaLanguagePreference.currentLocale
         return formatter.string(from: measurement.measuredAt)
+    }
+
+    private func copy(_ key: String, _ fallback: String) -> String {
+        let locale = LinkaLanguagePreference.currentLocale
+        let bundle = Bundle(path: Bundle.main.path(forResource: locale.identifier, ofType: "lproj") ?? "") ?? .main
+        return bundle.localizedString(forKey: key, value: fallback, table: nil)
     }
 }
 
