@@ -33,6 +33,8 @@
 	<array>
 		<string>shortcuts</string>
 	</array>
+	<key>LinkaServiceStatusEndpoint</key>
+	<string>https://linka-assist-relay.buildealabs.workers.dev/v1/service-status</string>
 	<key>NDAssistRelayEndpoint</key>
 	<string>https://linka-assist-relay.buildealabs.workers.dev/v2/assist</string>
 	<key>NSAppTransportSecurity</key>

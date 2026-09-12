@@ -85,6 +85,12 @@ struct SettingsView: View {
                 }
             }
 
+            Section("Status de serviços") {
+                NavigationLink(destination: ServiceStatusView()) {
+                    Label("Acompanhar serviços", systemImage: "dot.radiowaves.left.and.right")
+                }
+            }
+
             Section("Sobre o Linka") {
                 Link(destination: LinkaExternalLinks.about) {
                     Label("Sobre o Linka", systemImage: "info.circle")
@@ -250,6 +256,13 @@ struct SettingsView: View {
                         .pickerStyle(.segmented)
                         .frame(width: 220)
                     }
+                }
+
+                macSection(title: "Status de serviços") {
+                    NavigationLink(destination: ServiceStatusView()) {
+                        macRow("Acompanhar serviços", systemImage: "dot.radiowaves.left.and.right", showsChevron: true)
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 macSection(title: "Rede e diagnóstico") {

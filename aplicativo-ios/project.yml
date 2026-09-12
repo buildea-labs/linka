@@ -31,6 +31,7 @@ targets:
         LSApplicationQueriesSchemes:
           - shortcuts
         NDAssistRelayEndpoint: "https://linka-assist-relay.buildealabs.workers.dev/v2/assist"
+        LinkaServiceStatusEndpoint: "https://linka-assist-relay.buildealabs.workers.dev/v1/service-status"
         NSLocationWhenInUseUsageDescription: "O Linka usa a localização apenas porque o iPhone exige essa autorização para informar o nome da rede Wi-Fi atual. Sua localização não é salva para identificar a rede."
         NSLocalNetworkUsageDescription: "O Linka consulta o roteador da rede local para identificar o equipamento e diagnosticar a qualidade da conexão Wi-Fi."
         NSAppTransportSecurity:
@@ -80,6 +81,7 @@ targets:
         LSApplicationQueriesSchemes:
           - shortcuts
         NDAssistRelayEndpoint: "https://linka-assist-relay.buildealabs.workers.dev/v2/assist"
+        LinkaServiceStatusEndpoint: "https://linka-assist-relay.buildealabs.workers.dev/v1/service-status"
         NSLocalNetworkUsageDescription: "O Linka consulta o roteador da rede local para identificar o equipamento e diagnosticar a qualidade da conexão Wi-Fi."
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true

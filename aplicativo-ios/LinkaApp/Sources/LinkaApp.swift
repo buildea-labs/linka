@@ -10,6 +10,7 @@ import LinkaAppIntents
 @main
 struct LinkaApp: App {
     @StateObject private var entitlements: StoreKitEntitlementProvider
+    @StateObject private var serviceStatus = ServiceStatusStore()
     @AppStorage("appAppearance") private var appAppearance = "system"
 
     init() {
@@ -90,6 +91,7 @@ struct LinkaApp: App {
         WindowGroup {
             rootView
                 .environmentObject(entitlements)
+                .environmentObject(serviceStatus)
                 .preferredColorScheme(preferredColorScheme)
             .onOpenURL { url in
                 guard url.scheme?.lowercased() == "linka",
