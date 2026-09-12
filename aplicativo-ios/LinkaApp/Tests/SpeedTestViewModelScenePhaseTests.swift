@@ -208,8 +208,8 @@ final class SpeedTestViewModelScenePhaseTests: XCTestCase {
     }
 
     /// Retorno a `.active` quando o resultado já foi restaurado (`.done`)
-    /// NÃO deve reiniciar sozinho — só o branch "sem snapshot" (`.idle`)
-    /// reinicia automaticamente.
+    /// NÃO deve reiniciar sozinho; o estado `.idle` também permanece pronto
+    /// para uma ação explícita da pessoa.
     func test_active_afterDoneFromBackground_doesNotRestart() {
         let viewModel = SpeedTestViewModel()
         let snapshot = makeSnapshot()

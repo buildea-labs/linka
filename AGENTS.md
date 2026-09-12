@@ -228,7 +228,7 @@ Por padrão:
 - sem formulário;
 - sem seleção de modo;
 - sem seleção manual de servidor para usuário comum;
-- início automático da medição no fluxo principal.
+- início da medição por ação explícita da pessoa no fluxo principal.
 
 ### Precisão antes de espetáculo
 
