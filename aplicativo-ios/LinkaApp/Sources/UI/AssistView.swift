@@ -527,7 +527,7 @@ struct AssistView: View {
         if isGoodStatus(headerStatus) { return true }
         if recommendation == nil { return true }
         let t = title.lowercased()
-        if t.contains("sem causa") || t.contains("saudável") || t.contains("tudo certo") || t.contains("normal") {
+        if t.contains("sem causa") || t.contains("saudável") || t.contains("tudo certo") || t.contains("normal") || t.contains("no specific cause") || t.contains("no se identificó") {
             return true
         }
         return false
@@ -535,7 +535,7 @@ struct AssistView: View {
 
     private func isGoodStatus(_ status: String) -> Bool {
         let s = status.uppercased()
-        return s.contains("TUDO CERTO") || s.contains("BOM") || s.contains("EXCELENTE") || s.contains("SAUDÁVEL") || s.contains("CONCLUÍDO")
+        return s.contains("TUDO CERTO") || s.contains("BOM") || s.contains("EXCELENTE") || s.contains("SAUDÁVEL") || s.contains("CONCLUÍDO") || s.contains("ALL GOOD") || s.contains("TODO BIEN")
     }
 
     private func measurementEvidenceRow(title: String, value: String, isWarning: Bool = false) -> some View {

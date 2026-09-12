@@ -61,6 +61,23 @@ final class SettingsProductionStateTests: XCTestCase {
         )
     }
 
+    func testLanguageTagUsesTheEffectiveAppLanguageForRemoteContracts() {
+        XCTAssertEqual(
+            LinkaLanguagePreference.system.languageTag(systemLocale: Locale(identifier: "pt-BR")),
+            "pt-BR"
+        )
+        XCTAssertEqual(
+            LinkaLanguagePreference.system.languageTag(systemLocale: Locale(identifier: "es-MX")),
+            "es-419"
+        )
+        XCTAssertEqual(
+            LinkaLanguagePreference.system.languageTag(systemLocale: Locale(identifier: "fr-FR")),
+            "en"
+        )
+        XCTAssertEqual(LinkaLanguagePreference.english.languageTag(systemLocale: Locale(identifier: "pt-BR")), "en")
+        XCTAssertEqual(LinkaLanguagePreference.spanishLatinAmerica.languageTag(systemLocale: Locale(identifier: "en-US")), "es-419")
+    }
+
     func testDynamicCopyUsesTheManualLanguageChoiceForPortugueseEnglishAndSpanish() {
         let defaults = UserDefaults.standard
         let previousValue = defaults.object(forKey: LinkaLanguagePreference.storageKey)

@@ -20,6 +20,7 @@ public struct BuildeaDiagnosticAPI: Sendable {
     public func evaluate(
         _ measurement: NetworkMeasurement,
         requestAI: Bool,
+        locale: String? = nil,
         diagnosticContext: NDSRequest.DiagnosticContext? = nil,
         historical: NDSRequest.Historical? = nil
     ) async throws -> NDSResponse {
@@ -34,6 +35,7 @@ public struct BuildeaDiagnosticAPI: Sendable {
             appVersion: configuration.appVersion,
             platformIdentifier: configuration.platformIdentifier,
             requestAI: requestAI,
+            locale: locale,
             diagnosticContext: diagnosticContext,
             historical: historical
         )

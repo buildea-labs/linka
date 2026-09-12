@@ -55,6 +55,16 @@ final class AssistViewModelTests: XCTestCase {
         XCTAssertNil(context.reportedProblem)
     }
 
+    func test_makeContext_propagatesEffectiveLanguageTagToTheAssistRequest() {
+        let context = AssistViewModel.makeContext(
+            currentMeasurement: measurement(id: UUID()),
+            recentMeasurements: [],
+            locale: "es-419"
+        )
+
+        XCTAssertEqual(context.locale, "es-419")
+    }
+
     /// "Pular" a etapa 1 ou a etapa 2 (`AssistProblemSelectionView`) deve
     /// produzir o mesmo contrato observacional de sempre: sem
     /// objective/subcategory/reportedProblem, sem quebrar o fluxo.

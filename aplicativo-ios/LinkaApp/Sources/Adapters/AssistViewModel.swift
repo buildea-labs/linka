@@ -23,9 +23,14 @@ final class AssistViewModel: ObservableObject {
 
     @Published private(set) var state: State = .idle
     private let assistProvider: any NetworkAssistProviding
+    private let languageTag: String
 
-    init(assistProvider: any NetworkAssistProviding) {
+    init(
+        assistProvider: any NetworkAssistProviding,
+        languageTag: String = LinkaLanguagePreference.currentLanguageTag
+    ) {
         self.assistProvider = assistProvider
+        self.languageTag = languageTag
     }
 
     func load(
@@ -52,7 +57,8 @@ final class AssistViewModel: ObservableObject {
             usageContext: usageContext,
             objective: objective,
             subcategory: subcategory,
-            reportedProblem: reportedProblem
+            reportedProblem: reportedProblem,
+            locale: languageTag
         )
 
         do {
@@ -143,7 +149,8 @@ final class AssistViewModel: ObservableObject {
         usageContext: String? = nil,
         objective: String? = nil,
         subcategory: String? = nil,
-        reportedProblem: String? = nil
+        reportedProblem: String? = nil,
+        locale: String = LinkaLanguagePreference.currentLanguageTag
     ) -> NetworkAssistContext {
         // O Assist é uma leitura do que está acontecendo agora. Histórico é
         // uma superfície própria do produto e não entra como evidência nem
@@ -208,6 +215,7 @@ final class AssistViewModel: ObservableObject {
             recentMeasurements: Array(recent),
             evidence: allEvidence,
             usageContext: usageContext?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            locale: locale,
             objective: objective,
             subcategory: subcategory,
             reportedProblem: reportedProblem?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty

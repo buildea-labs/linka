@@ -102,6 +102,13 @@ enum LinkaLanguagePreference: String, CaseIterable, Identifiable {
         fromStoredValue(UserDefaults.standard.string(forKey: storageKey) ?? system.rawValue).locale
     }
 
+    /// BCP-47 tag used by remote copy contracts. It deliberately mirrors the
+    /// app's effective locale instead of `Locale.current`, so a manual choice
+    /// is honored even when the iPhone itself uses another language.
+    static var currentLanguageTag: String {
+        fromStoredValue(UserDefaults.standard.string(forKey: storageKey) ?? system.rawValue).languageTag
+    }
+
     static func fromStoredValue(_ value: String) -> LinkaLanguagePreference {
         LinkaLanguagePreference(rawValue: value) ?? .system
     }
@@ -112,6 +119,23 @@ enum LinkaLanguagePreference: String, CaseIterable, Identifiable {
         case .portugueseBrazil: return "Português (Brasil)"
         case .english: return "English"
         case .spanishLatinAmerica: return "Español (Latinoamérica)"
+        }
+    }
+
+    var languageTag: String {
+        languageTag(systemLocale: .autoupdatingCurrent)
+    }
+
+    func languageTag(systemLocale: Locale) -> String {
+        switch self {
+        case .system:
+            switch systemLocale.language.languageCode?.identifier.lowercased() {
+            case "pt": return "pt-BR"
+            case "es": return "es-419"
+            default: return "en"
+            }
+        case .portugueseBrazil, .english, .spanishLatinAmerica:
+            return rawValue
         }
     }
 }

@@ -121,7 +121,11 @@ enum AssistContainer {
         struct RulesTransport: NetworkAssistTransport {
             let api: BuildeaDiagnosticAPI
             func answer(_ request: NetworkAssistRequest) async throws -> NetworkAssistResponse {
-                let ndsResponse = try await api.evaluate(request.currentMeasurement, requestAI: false)
+                let ndsResponse = try await api.evaluate(
+                    request.currentMeasurement,
+                    requestAI: false,
+                    locale: request.locale
+                )
                 guard let rec = ndsResponse.recommendation else {
                     return NetworkAssistResponse(text: String(localized: "assist.inconclusive", defaultValue: "Diagnóstico inconclusivo."), disposition: .insufficientEvidence, evidenceIDs: [])
                 }
