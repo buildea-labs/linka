@@ -14,6 +14,7 @@ import AppKit
 
 struct SettingsView: View {
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(\.requestReview) private var requestReview
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
@@ -25,8 +26,22 @@ struct SettingsView: View {
     @AppStorage(LinkaWiFiPreferences.identificationEnabledKey) private var networkIdentificationEnabled = true
     @AppStorage(LinkaWiFiPreferences.advancedConfiguredKey) private var advancedWiFiConfigured = false
     @AppStorage(LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) private var advancedWiFiEnabled = true
+    private let onPurchaseRequest: ((PurchaseEntryPoint) -> Void)?
+    private let onSubscriptionManagementRequest: (() -> Void)?
+
+    init(
+        onPurchaseRequest: ((PurchaseEntryPoint) -> Void)? = nil,
+        onSubscriptionManagementRequest: (() -> Void)? = nil
+    ) {
+        self.onPurchaseRequest = onPurchaseRequest
+        self.onSubscriptionManagementRequest = onSubscriptionManagementRequest
+    }
 
     var body: some View {
+        Group {
+        #if os(macOS)
+        macOSContent
+        #else
         Form {
             Section {
                 Button(action: openSubscription) {
@@ -117,9 +132,18 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
         }
+        #endif
+        }
         .navigationTitle("Ajustes")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
+        #endif
+        #if os(macOS)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Fechar") { dismiss() }
+            }
+        }
         #endif
         .sheet(isPresented: $showPurchase) { 
             PurchaseSheet(entryPoint: purchaseEntryPoint) {
@@ -187,6 +211,114 @@ struct SettingsView: View {
             Text(advancedWiFiMessage)
         }
     }
+
+    #if os(macOS)
+    private var macOSContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                macSection {
+                    Button(action: openSubscription) {
+                        HStack(spacing: 12) {
+                            LinkaPlusWordmarkView(height: 20)
+                            Spacer()
+                            Text(subscriptionStatusText)
+                                .font(.bodySmall)
+                                .foregroundColor(.textSecondary)
+                                .multilineTextAlignment(.trailing)
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.textSecondary)
+                        }
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Linka Plus, \(subscriptionStatusText)")
+                }
+
+                macSection(title: "Preferências") {
+                    HStack {
+                        Label("Aparência", systemImage: "circle.lefthalf.filled")
+                        Spacer()
+                        Picker("Aparência", selection: $appAppearance) {
+                            Text("Sistema").tag("system")
+                            Text("Claro").tag("light")
+                            Text("Escuro").tag("dark")
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 220)
+                    }
+                }
+
+                macSection(title: "Ajuda") {
+                    macLinkRow("Como medimos", systemImage: "speedometer", destination: LinkaExternalLinks.howWeMeasure)
+                    Divider()
+                    macLinkRow("Suporte", systemImage: "questionmark.circle", destination: LinkaExternalLinks.support)
+                    Divider()
+                    macLinkRow("Enviar feedback", systemImage: "text.bubble", destination: LinkaExternalLinks.support)
+                    Divider()
+                    Button { requestReview() } label: {
+                        macRow("Avaliar o Linka", systemImage: "star", showsChevron: false)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                macSection(title: "Sobre e legal") {
+                    macLinkRow("Privacidade", systemImage: "hand.raised", destination: LinkaExternalLinks.privacy)
+                    Divider()
+                    macLinkRow("Termos de Uso", systemImage: "doc.text", destination: LinkaExternalLinks.terms)
+                    Divider()
+                    macLinkRow("Sobre o Linka", systemImage: "info.circle", destination: LinkaExternalLinks.about)
+                    Divider()
+                    Text("Versão \(appVersion)")
+                        .font(.captionMedium)
+                        .foregroundColor(.textSecondary)
+                }
+            }
+            .frame(maxWidth: 500, alignment: .leading)
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .center)
+        }
+        .background(Color.surfacePage)
+    }
+
+    private func macSection<Content: View>(title: String? = nil, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let title {
+                Text(title)
+                    .font(.monoCaption)
+                    .textCase(.uppercase)
+                    .foregroundColor(.textSecondary)
+            }
+            VStack(alignment: .leading, spacing: 12, content: content)
+                .padding(18)
+                .linkaCard()
+        }
+    }
+
+    private func macLinkRow(_ title: String, systemImage: String, destination: URL) -> some View {
+        Link(destination: destination) {
+            macRow(title, systemImage: systemImage, showsChevron: true)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func macRow(_ title: String, systemImage: String, showsChevron: Bool) -> some View {
+        HStack(spacing: 10) {
+            Label(title, systemImage: systemImage)
+                .foregroundColor(.textPrimary)
+            Spacer()
+            if showsChevron {
+                Image(systemName: "arrow.up.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.textSecondary)
+            }
+        }
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+    }
+    #endif
 
     private func settingsRow(title: String, value: String, systemImage: String) -> some View {
         HStack {
@@ -257,10 +389,18 @@ struct SettingsView: View {
     }
 
     private func openSubscription() {
-        guard entitlements.snapshot.plan == .plus, entitlements.snapshot.status == .active else {
-            purchaseEntryPoint = .settings; showPurchase = true; return
+        if entitlements.snapshot.plan == .plus, entitlements.snapshot.status == .active {
+            if let onSubscriptionManagementRequest {
+                onSubscriptionManagementRequest()
+            } else {
+                showSubscriptionManagement = true
+            }
+        } else if let onPurchaseRequest {
+            onPurchaseRequest(.settings)
+        } else {
+            purchaseEntryPoint = .settings
+            showPurchase = true
         }
-        showSubscriptionManagement = true
     }
 
     private func openNetworkIdentification() {
