@@ -324,6 +324,14 @@ public extension View {
 enum LinkaCopy {
     static func value(_ key: String, defaultValue: String? = nil) -> String {
         let preference = UserDefaults.standard.string(forKey: LinkaWidgetShared.languagePreferenceKey) ?? "system"
+        return value(key, locale: preference, defaultValue: defaultValue)
+    }
+
+    /// Usa a tag BCP-47 que já acompanha uma operação remota. Isso evita que
+    /// um fallback de transporte volte ao idioma do sistema depois que o
+    /// Linka recebeu uma escolha explícita de idioma.
+    static func value(_ key: String, locale: String?, defaultValue: String? = nil) -> String {
+        let preference = locale ?? UserDefaults.standard.string(forKey: LinkaWidgetShared.languagePreferenceKey) ?? "system"
         let bundle: Bundle
         if preference == "system" {
             bundle = .main

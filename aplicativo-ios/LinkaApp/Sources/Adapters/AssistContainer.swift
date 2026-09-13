@@ -127,7 +127,11 @@ enum AssistContainer {
                     locale: request.locale
                 )
                 guard let rec = ndsResponse.recommendation else {
-                    return NetworkAssistResponse(text: String(localized: "assist.inconclusive", defaultValue: "Diagnóstico inconclusivo."), disposition: .insufficientEvidence, evidenceIDs: [])
+                    return NetworkAssistResponse(
+                        text: AssistContainer.inconclusiveMessage(locale: request.locale),
+                        disposition: .insufficientEvidence,
+                        evidenceIDs: []
+                    )
                 }
                 return NetworkAssistResponse(
                     text: rec.title,
@@ -144,6 +148,14 @@ enum AssistContainer {
         }
         
         return NetworkAssistService(transport: RulesTransport(api: api))
+    }
+
+    static func inconclusiveMessage(locale: String?) -> String {
+        LinkaCopy.value(
+            "assist.inconclusive",
+            locale: locale,
+            defaultValue: "Diagnóstico inconclusivo."
+        )
     }
 
     /// Constrói a investigação local determinística (issue #56) a partir do

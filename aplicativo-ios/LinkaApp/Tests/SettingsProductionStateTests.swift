@@ -105,6 +105,36 @@ final class SettingsProductionStateTests: XCTestCase {
         }
     }
 
+    func testAssistFallbackUsesTheRequestLanguageInsteadOfTheSystemLanguage() {
+        XCTAssertEqual(AssistContainer.inconclusiveMessage(locale: "pt-BR"), "Diagnóstico inconclusivo.")
+        XCTAssertEqual(AssistContainer.inconclusiveMessage(locale: "en"), "Diagnosis inconclusive.")
+        XCTAssertEqual(AssistContainer.inconclusiveMessage(locale: "es-419"), "Diagnóstico no concluyente.")
+    }
+
+    func testAssistPaywallUsesTheManualLanguageChoice() {
+        let defaults = UserDefaults.standard
+        let previousValue = defaults.object(forKey: LinkaLanguagePreference.storageKey)
+        defer {
+            if let previousValue {
+                defaults.set(previousValue, forKey: LinkaLanguagePreference.storageKey)
+            } else {
+                defaults.removeObject(forKey: LinkaLanguagePreference.storageKey)
+            }
+        }
+
+        let expectations: [(String, String, String)] = [
+            ("pt-BR", "Entenda esta medição", "O Linka Plus interpreta o resultado e mostra o que merece atenção."),
+            ("en", "Understand this measurement", "Linka Plus interprets the result and shows what needs attention."),
+            ("es-419", "Entiende esta medición", "Linka Plus interpreta el resultado y muestra lo que requiere atención.")
+        ]
+
+        for (language, title, subtitle) in expectations {
+            defaults.set(language, forKey: LinkaLanguagePreference.storageKey)
+            XCTAssertEqual(PurchaseEntryPoint.assist.title, title, "language: \(language)")
+            XCTAssertEqual(PurchaseEntryPoint.assist.subtitle, subtitle, "language: \(language)")
+        }
+    }
+
     func testPermissionPromptsRemainBoundToSystemLanguageResources() throws {
         // iOS owns permission prompts. The in-app language picker must not
         // override the device language used by InfoPlist.strings.
