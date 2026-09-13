@@ -354,8 +354,6 @@ struct MacMainView: View {
             }
             .frame(maxHeight: .infinity)
             
-            Divider()
-            
             // "Sua rede agora" Footer + Wi-Fi Metadata
             macContextFooter
         }
@@ -455,11 +453,10 @@ struct MacMainView: View {
     // MARK: - Sua rede agora (Live Footer)
     
     private var macContextFooter: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 16) {
             liveMetricsFooter
             
             if viewModel.liveConnectionKind == .wifi, let ctx = viewModel.liveWiFiContext {
-                Divider()
                 HStack(spacing: 24) {
                     wifiDetail(label: "SSID", value: ctx.ssid ?? "Desconhecido")
                     if let band = ctx.bandGHz {
@@ -469,13 +466,16 @@ struct MacMainView: View {
                     if let phy = ctx.linkSpeedMbps {
                         wifiDetail(label: "PHY (TX)", value: "\(Int(phy)) Mbps")
                     }
-                    Spacer()
+                    Spacer(minLength: 0)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
                 .padding(.horizontal, 40)
-                .padding(.vertical, 16)
-                .background(Color.surfacePage)
+                .padding(.bottom, 24)
             }
         }
+        .background(Color.surfacePage)
     }
     
     private var liveMetricsFooter: some View {
@@ -507,10 +507,9 @@ struct MacMainView: View {
                 )
             }
             .padding(.horizontal, 40)
-            .padding(.bottom, 32)
+            .padding(.bottom, viewModel.liveConnectionKind == .wifi ? 0 : 32)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.surfacePage)
     }
     
     private func liveMetricCard(title: String, value: String, icon: String? = nil, statusColor: Color) -> some View {
