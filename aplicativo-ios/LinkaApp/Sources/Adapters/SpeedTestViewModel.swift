@@ -86,7 +86,11 @@ public class SpeedTestViewModel: ObservableObject {
     /// Fatos avançados importados explicitamente pelo app Atalhos. São
     /// secundários ao resultado e só existem quando a janela de associação
     /// temporal da issue #134 é satisfeita.
-    @Published public var advancedWiFiDiagnostics: AdvancedWiFiDiagnostics? = nil
+    @Published public private(set) var advancedWiFiDiagnostics: AdvancedWiFiDiagnostics?
+
+    @Published public private(set) var liveDnsLatencyMs: Double?
+    @Published public private(set) var livePacketLossPercent: Double?
+    @Published public private(set) var liveWifiRSSI: Double?
 
     /// Latência sob carga (issue #52). Não é `@Published` de propósito: não
     /// deve disparar re-render nenhum, para não competir com o resultado
@@ -595,6 +599,8 @@ public class SpeedTestViewModel: ObservableObject {
     public func handleScenePhaseChange(_ phase: ScenePhase) {
         switch phase {
         case .background:
+            stopLivePolling()
+
             // Só age em cima de uma medição em andamento — `.done`/`.error`
             // já são estados terminais e não têm nada pra cancelar; agir
             // ali arriscaria sobrescrever um resultado que já passou por
@@ -629,6 +635,8 @@ public class SpeedTestViewModel: ObservableObject {
             }
 
         case .active:
+            startLivePolling()
+
             refreshLiveNetwork()
 
         case .inactive:
@@ -1012,5 +1020,59 @@ public class SpeedTestViewModel: ObservableObject {
             self.liveWiFiContext = nil
             self.liveNetworkLabel = "Conexão de rede"
         }
+    }
+    
+    private var livePollingTask: Task<Void, Never>?
+    
+    public func startLivePolling() {
+        stopLivePolling()
+        livePollingTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self = self else { break }
+                
+                // Só coleta métricas ao vivo se NÃO estiver testando
+                if !self.isTesting {
+                    await self.performLivePing()
+                    await self.updateLiveRSSI()
+                }
+                
+                // Polling a cada 3 segundos
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+            }
+        }
+    }
+    
+    public func stopLivePolling() {
+        livePollingTask?.cancel()
+        livePollingTask = nil
+    }
+    
+    private func performLivePing() async {
+        // Um ping HTTP leve para estimar latência
+        guard let url = URL(string: "https://www.apple.com/library/test/success.html") else { return }
+        let start = Date()
+        do {
+            let _ = try await URLSession.shared.data(from: url)
+            let ms = Date().timeIntervalSince(start) * 1000
+            await MainActor.run {
+                self.liveDnsLatencyMs = ms
+                self.livePacketLossPercent = 0
+            }
+        } catch {
+            await MainActor.run {
+                self.liveDnsLatencyMs = nil
+                self.livePacketLossPercent = 100
+            }
+        }
+    }
+    
+    private func updateLiveRSSI() async {
+        #if os(macOS)
+        if let rssi = self.advancedWiFiDiagnostics?.rssiDbm {
+            await MainActor.run {
+                self.liveWifiRSSI = rssi
+            }
+        }
+        #endif
     }
 }

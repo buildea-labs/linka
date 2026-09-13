@@ -317,50 +317,272 @@ struct MacMainView: View {
 
     private var mainStage: some View {
         VStack(spacing: 0) {
-            // Network info header
-            HStack {
-                Text(liveConnectionName)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.textPrimary)
+            VStack(spacing: 0) {
+                // Header (Network name)
+                HStack {
+                    Text(liveConnectionName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.textPrimary)
+                    Spacer()
+                    statusPill
+                }
+                .padding(.horizontal, 40)
+                .padding(.top, 40)
+
                 Spacer()
+
+                // Hero: Horizontal Down/Up
+                horizontalHero
+                    .padding(.bottom, 32)
+
+                if isFinalResult, let m = currentMeasurement {
+                    VStack(spacing: 24) {
+                        advancedMetricsRow(for: m)
+                        usageSuitabilityRow(for: m)
+                    }
+                } else {
+                    // Placeholder for spacing when not finished
+                    Color.clear.frame(height: 96)
+                }
+
+                Spacer()
+
+                // Actions
+                actionRow
+                    .padding(.bottom, 40)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .frame(maxHeight: .infinity)
+            
+            Divider()
+            
+            // "Sua rede agora" Footer + Wi-Fi Metadata
+            macContextFooter
+        }
+    }
+    
+    private var horizontalHero: some View {
+        HStack(spacing: 80) {
+            heroBlock(label: "Download", value: downloadFooterValue, unit: "Mbps", isActive: downloadDotState == .active)
+            heroBlock(label: "Upload", value: uploadFooterValue, unit: "Mbps", isActive: uploadDotState == .active)
+        }
+    }
+    
+    private func heroBlock(label: String, value: String, unit: String, isActive: Bool) -> some View {
+        VStack(spacing: 8) {
+            Text(label.uppercased())
+                .font(.system(size: 13, weight: .bold, design: .default))
+                .foregroundColor(isActive ? .brandAccentWarm : .textSecondary)
+                .tracking(1.1)
+            
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(value)
+                    .font(.system(size: 64, weight: .heavy, design: .rounded))
+                    .foregroundColor(isActive ? .brandAccentWarm : .textPrimary)
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: value)
+                
+                Text(unit)
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(.textSecondary)
+            }
+        }
+    }
+    
+    private func advancedMetricsRow(for measurement: NetworkMeasurement) -> some View {
+        HStack(spacing: 48) {
+            if let ping = measurement.latencyMs {
+                miniDetailCell(label: "Ping", value: String(format: "%.0f", ping), unit: "ms")
+            }
+            if let jitter = measurement.jitterMs {
+                miniDetailCell(label: "Jitter", value: String(format: "%.0f", jitter), unit: "ms")
+            }
+            if let loss = measurement.packetLossPercent {
+                let formattedLoss = loss == 0 ? "0" : String(format: "%.1f", loss)
+                miniDetailCell(label: "Perda", value: formattedLoss, unit: "%")
+            }
+            if let dns = measurement.dnsResolutionMs {
+                miniDetailCell(label: "DNS", value: String(format: "%.0f", dns), unit: "ms")
+            }
+        }
+    }
+    
+    private func miniDetailCell(label: String, value: String, unit: String) -> some View {
+        VStack(spacing: 2) {
+            Text(label.uppercased())
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.textSecondary)
+                .tracking(0.5)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    .foregroundColor(.textPrimary)
+                Text(unit)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundColor(.textSecondary)
+            }
+        }
+    }
+    
+    private func usageSuitabilityRow(for measurement: NetworkMeasurement) -> some View {
+        let report = UsageSuitabilityEvaluator().evaluate(measurement)
+        return HStack(spacing: 24) {
+            suitabilityBadge(for: .videoCall, in: report, icon: "video.fill", title: "Videochamada")
+            suitabilityBadge(for: .streaming4K, in: report, icon: "play.tv.fill", title: "Streaming 4K")
+            suitabilityBadge(for: .onlineGaming, in: report, icon: "gamecontroller.fill", title: "Jogos Online")
+        }
+    }
+
+    private func suitabilityBadge(for usage: UsageCase, in report: UsageSuitabilityReport, icon: String, title: String) -> some View {
+        let verdict = report.verdict(for: usage)
+        let isAdequate = verdict?.level == .adequate
+        let color: Color = isAdequate ? .statusGood : (verdict?.level == .limited ? .statusAttention : .textSecondary)
+        
+        return HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(color)
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.textPrimary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color.surfaceCard, in: Capsule())
+        .overlay(Capsule().stroke(Color.borderDefault, lineWidth: 0.5))
+    }
+
+    // MARK: - Sua rede agora (Live Footer)
+    
+    private var macContextFooter: some View {
+        VStack(spacing: 0) {
+            liveMetricsFooter
+            
+            if viewModel.liveConnectionKind == .wifi, let ctx = viewModel.liveWiFiContext {
+                Divider()
+                HStack(spacing: 24) {
+                    wifiDetail(label: "SSID", value: ctx.ssid ?? "Desconhecido")
+                    if let band = ctx.bandGHz {
+                        let bandStr = band.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", band) : String(format: "%.1f", band)
+                        wifiDetail(label: "Banda", value: "\(bandStr) GHz")
+                    }
+                    if let phy = ctx.linkSpeedMbps {
+                        wifiDetail(label: "PHY (TX)", value: "\(Int(phy)) Mbps")
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 40)
+                .padding(.vertical, 16)
+                .background(Color.surfacePage)
+            }
+        }
+    }
+    
+    private var liveMetricsFooter: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Sua rede agora")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.textPrimary)
+                .padding(.horizontal, 40)
+                .padding(.top, 24)
+            
+            HStack(spacing: 20) {
+                liveMetricCard(
+                    title: "Latência (Ao vivo)",
+                    value: viewModel.liveDnsLatencyMs.map { "\(Int($0)) ms" } ?? "—",
+                    statusColor: liveLatencyColor
+                )
+                
+                liveMetricCard(
+                    title: "Estabilidade (Ao vivo)",
+                    value: viewModel.livePacketLossPercent.map { "\(Int($0))% perda" } ?? "—",
+                    statusColor: liveStabilityColor
+                )
+                
+                liveMetricCard(
+                    title: "Sinal Wi-Fi",
+                    value: wifiSignalLabel,
+                    icon: "wifi",
+                    statusColor: liveWifiColor
+                )
             }
             .padding(.horizontal, 40)
-            .padding(.top, 40)
-
-            Spacer()
-
-            // Hero: phase dots + ring + status
-            VStack(spacing: 40) {
-                phaseDots
-
-                MacMetricRing(
-                    isConnecting: viewModel.uiPhase == .connecting,
-                    progress: gaugeFraction,
-                    value: macRingValue,
-                    unit: macRingUnit
-                )
-                .frame(width: 220, height: 220)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Velocímetro de download")
-                .accessibilityValue(gaugeAccessibilityValue)
-
-                statusPill
+            .padding(.bottom, 32)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.surfacePage)
+    }
+    
+    private func liveMetricCard(title: String, value: String, icon: String? = nil, statusColor: Color) -> some View {
+        HStack(spacing: 12) {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundColor(statusColor)
+                    .frame(width: 24)
+            } else {
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 8, height: 8)
+                    .frame(width: 24)
             }
-
-            Spacer()
-
-            // Metrics footer
-            HStack(spacing: 48) {
-                footerStatBlock(label: "Ping",     value: pingFooterValue,     unit: "ms")
-                footerStatBlock(label: "Download", value: downloadFooterValue, unit: "Mbps")
-                footerStatBlock(label: "Upload",   value: uploadFooterValue,   unit: "Mbps")
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.textSecondary)
+                Text(value)
+                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.textPrimary)
             }
-            .padding(.bottom, 28)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity)
+        .background(Color.surfacePage, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
+                .stroke(Color.borderDefault, lineWidth: 0.5)
+        )
+    }
+    
+    private var liveLatencyColor: Color {
+        guard let latency = viewModel.liveDnsLatencyMs else { return .textSecondary }
+        if latency <= 40 { return .statusGood }
+        if latency <= 100 { return .statusAttention }
+        return .statusCritical
+    }
+    
+    private var liveStabilityColor: Color {
+        guard let loss = viewModel.livePacketLossPercent else { return .textSecondary }
+        if loss < 1.0 { return .statusGood }
+        if loss < 5.0 { return .statusAttention }
+        return .statusCritical
+    }
+    
+    private var liveWifiColor: Color {
+        guard let rssi = viewModel.liveWifiRSSI else { return .textSecondary }
+        if rssi >= -60 { return .statusGood }
+        if rssi >= -75 { return .statusAttention }
+        return .statusCritical
+    }
+    
+    private var wifiSignalLabel: String {
+        guard let rssi = viewModel.liveWifiRSSI else { return "—" }
+        if rssi >= -60 { return "Forte (\(Int(rssi))dBm)" }
+        if rssi >= -75 { return "Médio (\(Int(rssi))dBm)" }
+        return "Fraco (\(Int(rssi))dBm)"
+    }
 
-            // Actions
-            actionRow
-                .padding(.bottom, 40)
-                .frame(maxWidth: .infinity, alignment: .center)
+    private func wifiDetail(label: String, value: String) -> some View {
+        HStack(spacing: 6) {
+            Text(label + ":")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.textSecondary)
+            Text(value)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.textPrimary)
         }
     }
 
@@ -669,6 +891,14 @@ struct MacMainView: View {
                 Text(Self.dateFormatter.string(from: m.measuredAt))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.textSecondary)
+                
+                if let platform = m.devicePlatform {
+                    Image(systemName: platform == "macOS" ? "macbook.and.iphone" : "iphone")
+                        .font(.system(size: 12))
+                        .foregroundColor(.textSecondary)
+                        .padding(.leading, 4)
+                }
+
                 Spacer()
                 Text(networkLabel(for: m))
                     .font(.system(size: 13, weight: .semibold))
