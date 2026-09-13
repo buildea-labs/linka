@@ -112,13 +112,11 @@ struct MacMainView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar
-            Divider()
             Group {
                 switch destination {
                 case .speedTest:
                     HStack(spacing: 0) {
                         mainStage
-                        Divider()
                         rightPanel
                             .frame(width: 320)
                     }
@@ -388,35 +386,47 @@ struct MacMainView: View {
     }
     
     private func advancedMetricsRow(for measurement: NetworkMeasurement) -> some View {
-        HStack(spacing: 48) {
+        HStack(spacing: 0) {
             if let ping = measurement.latencyMs {
                 miniDetailCell(label: "Ping", value: String(format: "%.0f", ping), unit: "ms")
+                    .frame(maxWidth: .infinity)
             }
             if let jitter = measurement.jitterMs {
                 miniDetailCell(label: "Jitter", value: String(format: "%.0f", jitter), unit: "ms")
+                    .frame(maxWidth: .infinity)
             }
             if let loss = measurement.packetLossPercent {
                 let formattedLoss = loss == 0 ? "0" : String(format: "%.1f", loss)
                 miniDetailCell(label: "Perda", value: formattedLoss, unit: "%")
+                    .frame(maxWidth: .infinity)
             }
             if let dns = measurement.dnsResolutionMs {
                 miniDetailCell(label: "DNS", value: String(format: "%.0f", dns), unit: "ms")
+                    .frame(maxWidth: .infinity)
             }
         }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 20)
+        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
+                .stroke(Color.borderDefault.opacity(0.35), lineWidth: 0.6)
+        )
+        .padding(.horizontal, 40)
     }
     
     private func miniDetailCell(label: String, value: String, unit: String) -> some View {
         VStack(spacing: 2) {
             Text(label.uppercased())
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: 10, weight: .bold))
                 .foregroundColor(.textSecondary)
                 .tracking(0.5)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(value)
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundColor(.textPrimary)
                 Text(unit)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundColor(.textSecondary)
             }
         }
@@ -424,7 +434,7 @@ struct MacMainView: View {
     
     private func usageSuitabilityRow(for measurement: NetworkMeasurement) -> some View {
         let report = UsageSuitabilityEvaluator().evaluate(measurement)
-        return HStack(spacing: 24) {
+        return HStack(spacing: 16) {
             suitabilityBadge(for: .videoCall, in: report, icon: "video.fill", title: "Videochamada")
             suitabilityBadge(for: .streaming4K, in: report, icon: "play.tv.fill", title: "Streaming 4K")
             suitabilityBadge(for: .onlineGaming, in: report, icon: "gamecontroller.fill", title: "Jogos Online")
@@ -438,7 +448,7 @@ struct MacMainView: View {
         
         return HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(.system(size: 15))
                 .foregroundColor(color)
             Text(title)
                 .font(.system(size: 13, weight: .medium))
@@ -447,102 +457,122 @@ struct MacMainView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(Color.surfaceCard, in: Capsule())
-        .overlay(Capsule().stroke(Color.borderDefault, lineWidth: 0.5))
+        .overlay(Capsule().stroke(Color.borderDefault.opacity(0.35), lineWidth: 0.6))
     }
 
-    // MARK: - Sua rede agora (Live Footer)
+    // MARK: - Sua rede agora (Bloco Temático de Telemetria e Hardware)
     
     private var macContextFooter: some View {
-        VStack(spacing: 16) {
-            liveMetricsFooter
-            
-            if viewModel.liveConnectionKind == .wifi, let ctx = viewModel.liveWiFiContext {
-                HStack(spacing: 24) {
-                    wifiDetail(label: "SSID", value: ctx.ssid ?? "Desconhecido")
-                    if let band = ctx.bandGHz {
-                        let bandStr = band.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", band) : String(format: "%.1f", band)
-                        wifiDetail(label: "Banda", value: "\(bandStr) GHz")
-                    }
-                    if let phy = ctx.linkSpeedMbps {
-                        wifiDetail(label: "PHY (TX)", value: "\(Int(phy)) Mbps")
-                    }
-                    Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: 14) {
+            // Cabeçalho do Bloco Temático
+            HStack {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.statusGood)
+                        .frame(width: 7, height: 7)
+                    Text("Sua Rede Agora")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.textPrimary)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
-                .padding(.horizontal, 40)
-                .padding(.bottom, 24)
+                
+                Spacer()
+                
+                if let rssi = viewModel.liveWifiRSSI {
+                    HStack(spacing: 4) {
+                        Image(systemName: "wifi")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(wifiSignalLabel)
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    }
+                    .foregroundColor(liveWifiColor)
+                }
             }
-        }
-        .background(Color.surfacePage)
-    }
-    
-    private var liveMetricsFooter: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Sua rede agora")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.textPrimary)
-                .padding(.horizontal, 40)
-                .padding(.top, 24)
-            
-            HStack(spacing: 20) {
+
+            // Métricas em Tempo Real
+            HStack(spacing: 12) {
                 liveMetricCard(
-                    title: "Latência (Ao vivo)",
+                    title: "Latência contínua",
                     value: viewModel.liveDnsLatencyMs.map { "\(Int($0)) ms" } ?? "—",
                     statusColor: liveLatencyColor
                 )
                 
                 liveMetricCard(
-                    title: "Estabilidade (Ao vivo)",
+                    title: "Estabilidade de pacotes",
                     value: viewModel.livePacketLossPercent.map { "\(Int($0))% perda" } ?? "—",
                     statusColor: liveStabilityColor
                 )
                 
-                liveMetricCard(
-                    title: "Sinal Wi-Fi",
-                    value: wifiSignalLabel,
-                    icon: "wifi",
-                    statusColor: liveWifiColor
-                )
+                if viewModel.liveConnectionKind == .wifi, let ctx = viewModel.liveWiFiContext {
+                    liveMetricCard(
+                        title: "Link PHY (TX)",
+                        value: ctx.linkSpeedMbps.map { "\(Int($0)) Mbps" } ?? "—",
+                        icon: "speedometer",
+                        statusColor: .brandAccentWarm
+                    )
+                }
             }
-            .padding(.horizontal, 40)
-            .padding(.bottom, viewModel.liveConnectionKind == .wifi ? 0 : 32)
+
+            // Metadados Físicos de Wi-Fi
+            if viewModel.liveConnectionKind == .wifi, let ctx = viewModel.liveWiFiContext {
+                HStack(spacing: 20) {
+                    wifiDetail(label: "SSID", value: ctx.ssid ?? "Desconhecido")
+                    if let band = ctx.bandGHz {
+                        let bandStr = band.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", band) : String(format: "%.1f", band)
+                        wifiDetail(label: "Banda", value: "\(bandStr) GHz")
+                    }
+                    if let std = viewModel.advancedWiFiDiagnostics?.wifiStandard {
+                        wifiDetail(label: "Padrão", value: std)
+                    }
+                    if let ch = viewModel.advancedWiFiDiagnostics?.channelNumber {
+                        wifiDetail(label: "Canal", value: "\(ch)")
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 4)
+                .padding(.top, 2)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.lg, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: LinkaRadius.lg, style: .continuous)
+                .stroke(Color.borderDefault.opacity(0.35), lineWidth: 0.6)
+        )
+        .padding(.horizontal, 40)
+        .padding(.bottom, 28)
     }
     
     private func liveMetricCard(title: String, value: String, icon: String? = nil, statusColor: Color) -> some View {
         HStack(spacing: 12) {
             if let icon = icon {
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .regular))
+                    .font(.system(size: 16, weight: .regular))
                     .foregroundColor(statusColor)
-                    .frame(width: 24)
+                    .frame(width: 20)
             } else {
                 Circle()
                     .fill(statusColor)
                     .frame(width: 8, height: 8)
-                    .frame(width: 24)
+                    .frame(width: 20)
             }
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.textSecondary)
                 Text(value)
-                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
                     .foregroundColor(.textPrimary)
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 14)
         .frame(maxWidth: .infinity)
         .background(Color.surfacePage, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
-                .stroke(Color.borderDefault, lineWidth: 0.5)
+                .stroke(Color.borderDefault.opacity(0.25), lineWidth: 0.5)
         )
     }
     
@@ -777,65 +807,80 @@ struct MacMainView: View {
 
     private var rightPanel: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Qualidade")
-                    .font(.system(size: 19, weight: .bold))
-                    .foregroundColor(.textPrimary)
-                    .padding(.bottom, 16)
+            VStack(alignment: .leading, spacing: 28) {
+                // Bloco Temático 1: Qualidade da Conexão
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Qualidade")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.textPrimary)
 
-                qualityCard
-                    .padding(.bottom, 40)
+                    qualityCard
+                }
 
-                Text("Últimas Medições")
-                    .font(.system(size: 19, weight: .bold))
-                    .foregroundColor(.textPrimary)
-                    .padding(.bottom, 12)
+                // Bloco Temático 2: Histórico Recente
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Últimas Medições")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.textPrimary)
 
-                recentMeasurementsList
+                    recentMeasurementsList
+                }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 40)
+            .padding(24)
         }
         .background(Color.surfaceCard)
     }
 
     private var qualityCard: some View {
-        VStack(spacing: 0) {
-            qualityRow(key: "Latência Média", value: latencyQualityValue)
-            Divider().padding(.horizontal, 16)
-            qualityRow(key: "Jitter", value: jitterQualityValue)
-            Divider().padding(.horizontal, 16)
-            qualityRow(key: "Perda de Pacotes", value: lossQualityValue)
-            Divider().padding(.horizontal, 16)
-            HStack {
-                Text("Estabilidade")
-                    .font(.captionMedium)
-                    .foregroundColor(.textSecondary)
-                Spacer()
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+            qualityGridCell(label: "Latência", value: latencyQualityValue, icon: "clock")
+            qualityGridCell(label: "Jitter", value: jitterQualityValue, icon: "waveform")
+            qualityGridCell(label: "Perda", value: lossQualityValue, icon: "exclamationmark.triangle")
+            
+            // Célula de Estabilidade com Badge
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    Image(systemName: "shield.checkerboard")
+                        .font(.system(size: 11))
+                        .foregroundColor(.textSecondary)
+                    Text("Estabilidade")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.textSecondary)
+                }
+                Spacer(minLength: 0)
                 stabilityBadge
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.surfacePage, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
+                    .stroke(Color.borderDefault.opacity(0.3), lineWidth: 0.5)
+            )
         }
+    }
+
+    private func qualityGridCell(label: String, value: String, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+                    .foregroundColor(.textSecondary)
+                Text(label)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.textSecondary)
+            }
+            Text(value)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .foregroundColor(.textPrimary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.surfacePage, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
-                .stroke(Color.borderDefault, lineWidth: 0.5)
+                .stroke(Color.borderDefault.opacity(0.3), lineWidth: 0.5)
         )
-    }
-
-    private func qualityRow(key: String, value: String) -> some View {
-        HStack {
-            Text(key)
-                .font(.captionMedium)
-                .foregroundColor(.textSecondary)
-            Spacer()
-            Text(value)
-                .font(.system(.footnote, design: .monospaced).weight(.semibold))
-                .foregroundColor(.textPrimary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
     }
 
     private var latencyQualityValue: String {
@@ -866,7 +911,7 @@ struct MacMainView: View {
     }
 
     private var recentMeasurementsList: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 8) {
             if viewModel.recentMeasurements.isEmpty {
                 Text("Ainda sem medições.")
                     .font(.captionSmall)
@@ -880,7 +925,7 @@ struct MacMainView: View {
             Button("Ver histórico completo") { destination = .history }
                 .buttonStyle(.linkaSecondary)
                 .disabled(isMeasuring)
-                .padding(.top, 12)
+                .padding(.top, 4)
         }
     }
 
@@ -888,29 +933,35 @@ struct MacMainView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(Self.dateFormatter.string(from: m.measuredAt))
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.textSecondary)
                 
                 if let platform = m.devicePlatform {
-                    Image(systemName: platform == "macOS" ? "macbook.and.iphone" : "iphone")
-                        .font(.system(size: 12))
+                    Image(systemName: platform == "macOS" ? "macbook" : "iphone")
+                        .font(.system(size: 10))
                         .foregroundColor(.textSecondary)
-                        .padding(.leading, 4)
+                        .padding(.leading, 2)
                 }
 
                 Spacer()
                 Text(networkLabel(for: m))
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.textPrimary)
+                    .lineLimit(1)
             }
-            HStack(spacing: 16) {
-                miniStatCell(label: "Down", value: m.downloadMbps.map { "\(Int(round($0)))" } ?? "—")
-                miniStatCell(label: "Up",   value: m.uploadMbps.map   { "\(Int(round($0)))" } ?? "—")
-                miniStatCell(label: "Ping", value: m.latencyMs.map    { "\(Int(round($0)))ms" } ?? "—")
+            HStack(spacing: 12) {
+                miniStatCell(label: "Down", value: m.downloadMbps.map { "\(Int(round($0))) Mbps" } ?? "—")
+                miniStatCell(label: "Up",   value: m.uploadMbps.map   { "\(Int(round($0))) Mbps" } ?? "—")
+                miniStatCell(label: "Ping", value: m.latencyMs.map    { "\(Int(round($0))) ms" } ?? "—")
             }
         }
-        .padding(.vertical, 16)
-        .overlay(alignment: .bottom) { Divider() }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.surfacePage, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
+                .stroke(Color.borderDefault.opacity(0.25), lineWidth: 0.5)
+        )
         .contextMenu {
             Button("Abrir detalhes")   { selectedHistoricalMeasurement = m }
             Button("Testar novamente") { startMeasurement() }
