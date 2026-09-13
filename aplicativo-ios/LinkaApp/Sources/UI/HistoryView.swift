@@ -820,7 +820,15 @@ struct HistoryRow: View {
     private func formatSpeed(_ speed: Double?) -> String {
         guard let speed = speed else { return "--" }
         return speed.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale))
->>>>>>> origin/main
+    }
+
+    private func connectionIconName(for kind: NetworkConnectionKind?) -> String {
+        switch kind {
+        case .wifi: return "wifi"
+        case .cellular: return "cellularbars"
+        case .ethernet: return "cable.connector"
+        case .other, .none: return "network"
+        }
     }
 }
 
