@@ -155,8 +155,10 @@ struct SettingsView: View {
         #endif
         #if os(macOS)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Fechar") { dismiss() }
+            if onPurchaseRequest == nil {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Fechar") { dismiss() }
+                }
             }
         }
         #endif
@@ -230,7 +232,12 @@ struct SettingsView: View {
     #if os(macOS)
     private var macOSContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Ajustes")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.textPrimary)
+                    .padding(.bottom, 4)
+
                 macSection {
                     Button(action: openSubscription) {
                         HStack(spacing: 12) {
@@ -244,7 +251,7 @@ struct SettingsView: View {
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(.textSecondary)
                         }
-                        .frame(minHeight: 44)
+                        .frame(minHeight: 38)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -304,33 +311,33 @@ struct SettingsView: View {
                 }
 
                 macSection(title: "Ajuda") {
-                    macLinkRow("Como medimos", systemImage: "speedometer", destination: LinkaExternalLinks.howWeMeasure)
-                    Divider()
-                    macLinkRow("Suporte", systemImage: "questionmark.circle", destination: LinkaExternalLinks.support)
-                    Divider()
-                    macLinkRow("Enviar feedback", systemImage: "text.bubble", destination: LinkaExternalLinks.support)
-                    Divider()
-                    Button { requestReview() } label: {
-                        macRow("Avaliar o Linka", systemImage: "star", showsChevron: false)
+                    VStack(alignment: .leading, spacing: 10) {
+                        macLinkRow("Como medimos", systemImage: "speedometer", destination: LinkaExternalLinks.howWeMeasure)
+                        macLinkRow("Suporte", systemImage: "questionmark.circle", destination: LinkaExternalLinks.support)
+                        macLinkRow("Enviar feedback", systemImage: "text.bubble", destination: LinkaExternalLinks.support)
+                        Button { requestReview() } label: {
+                            macRow("Avaliar o Linka", systemImage: "star", showsChevron: false)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
 
                 macSection(title: "Sobre e legal") {
-                    macLinkRow("Privacidade", systemImage: "hand.raised", destination: LinkaExternalLinks.privacy)
-                    Divider()
-                    macLinkRow("Termos de Uso", systemImage: "doc.text", destination: LinkaExternalLinks.terms)
-                    Divider()
-                    macLinkRow("Sobre o Linka", systemImage: "info.circle", destination: LinkaExternalLinks.about)
-                    Divider()
-                    Text("Versão \(appVersion)")
-                        .font(.captionMedium)
-                        .foregroundColor(.textSecondary)
+                    VStack(alignment: .leading, spacing: 10) {
+                        macLinkRow("Privacidade", systemImage: "hand.raised", destination: LinkaExternalLinks.privacy)
+                        macLinkRow("Termos de Uso", systemImage: "doc.text", destination: LinkaExternalLinks.terms)
+                        macLinkRow("Sobre o Linka", systemImage: "info.circle", destination: LinkaExternalLinks.about)
+                        Text("Versão \(appVersion)")
+                            .font(.captionMedium)
+                            .foregroundColor(.textSecondary)
+                            .padding(.top, 4)
+                    }
                 }
             }
-            .frame(maxWidth: 500, alignment: .leading)
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(maxWidth: 620, alignment: .leading)
+            .padding(.horizontal, 40)
+            .padding(.vertical, 32)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .background(Color.surfacePage)
     }
@@ -339,13 +346,18 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             if let title {
                 Text(title)
-                    .font(.monoCaption)
+                    .font(.system(size: 11, weight: .bold))
                     .textCase(.uppercase)
                     .foregroundColor(.textSecondary)
+                    .tracking(0.6)
             }
             VStack(alignment: .leading, spacing: 12, content: content)
-                .padding(18)
-                .linkaCard()
+                .padding(16)
+                .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
+                        .stroke(Color.borderDefault.opacity(0.3), lineWidth: 0.5)
+                )
         }
     }
 
@@ -363,11 +375,11 @@ struct SettingsView: View {
             Spacer()
             if showsChevron {
                 Image(systemName: "arrow.up.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.textSecondary)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.textSecondary.opacity(0.6))
             }
         }
-        .frame(minHeight: 44)
+        .frame(minHeight: 34)
         .contentShape(Rectangle())
     }
 

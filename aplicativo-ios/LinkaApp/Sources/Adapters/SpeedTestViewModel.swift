@@ -86,7 +86,11 @@ public class SpeedTestViewModel: ObservableObject {
     /// Fatos avançados importados explicitamente pelo app Atalhos. São
     /// secundários ao resultado e só existem quando a janela de associação
     /// temporal da issue #134 é satisfeita.
-    @Published public var advancedWiFiDiagnostics: AdvancedWiFiDiagnostics? = nil
+    @Published public private(set) var advancedWiFiDiagnostics: AdvancedWiFiDiagnostics?
+
+    @Published public private(set) var liveDnsLatencyMs: Double?
+    @Published public private(set) var livePacketLossPercent: Double?
+    @Published public private(set) var liveWifiRSSI: Double?
 
     /// Latência sob carga (issue #52). Não é `@Published` de propósito: não
     /// deve disparar re-render nenhum, para não competir com o resultado
@@ -235,10 +239,19 @@ public class SpeedTestViewModel: ObservableObject {
     public init() {
         startLiveNetworkMonitoring()
         loadLastTest()
+        // O polling ao vivo precisa começar aqui, não só em
+        // `handleScenePhaseChange(.active)`: no macOS, `MacMainView` nunca
+        // observa `scenePhase` (não tem `.onChange(of: scenePhase)`), então
+        // esse gatilho nunca disparava e "Sua Rede Agora" ficava sempre em
+        // "—". No iOS, `.onChange` também não dispara para o valor inicial
+        // de `scenePhase` na primeira aparição da view — só em transições
+        // subsequentes — então o cold start tinha o mesmo problema.
+        startLivePolling()
     }
 
     deinit {
         livePathMonitor?.cancel()
+        livePollingTask?.cancel()
     }
 
     public func loadLastTest() {
@@ -595,6 +608,8 @@ public class SpeedTestViewModel: ObservableObject {
     public func handleScenePhaseChange(_ phase: ScenePhase) {
         switch phase {
         case .background:
+            stopLivePolling()
+
             // Só age em cima de uma medição em andamento — `.done`/`.error`
             // já são estados terminais e não têm nada pra cancelar; agir
             // ali arriscaria sobrescrever um resultado que já passou por
@@ -629,6 +644,8 @@ public class SpeedTestViewModel: ObservableObject {
             }
 
         case .active:
+            startLivePolling()
+
             refreshLiveNetwork()
 
         case .inactive:
@@ -1020,5 +1037,87 @@ public class SpeedTestViewModel: ObservableObject {
             self.liveWiFiContext = nil
             self.liveNetworkLabel = LinkaCopy.value("network.connection")
         }
+    }
+    
+    private var livePollingTask: Task<Void, Never>?
+
+    /// Sessão dedicada e efêmera para o ping ao vivo — nunca compartilha
+    /// cache/cookies com o motor de medição nem com `URLSession.shared`, e
+    /// usa timeout curto para não deixar uma rede degradada travar o loop de
+    /// polling por até 60s (default de `URLSession.shared`). Uma rede ruim
+    /// deve virar "perda de pacotes" rapidamente, não uma UI congelada.
+    private lazy var livePingSession: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForRequest = 4
+        configuration.timeoutIntervalForResource = 4
+        configuration.waitsForConnectivity = false
+        return URLSession(configuration: configuration)
+    }()
+
+    public func startLivePolling() {
+        stopLivePolling()
+        livePollingTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self = self else { break }
+
+                // Só coleta métricas ao vivo se NÃO estiver testando — o
+                // polling nunca deve concorrer com a medição ativa.
+                if !self.isTesting {
+                    await self.performLivePing()
+                    await self.updateLiveRSSI()
+                }
+
+                // Polling a cada 3 segundos
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+            }
+        }
+    }
+
+    public func stopLivePolling() {
+        livePollingTask?.cancel()
+        livePollingTask = nil
+    }
+
+    private func performLivePing() async {
+        // Um ping HTTP leve para estimar latência
+        guard let url = URL(string: "https://www.apple.com/library/test/success.html") else { return }
+        let start = Date()
+        do {
+            let _ = try await livePingSession.data(from: url)
+            // Uma medição em `isTesting` pode ter começado enquanto este
+            // request estava em voo (até 4s de timeout) — não sobrescreve o
+            // resultado do teste real com um valor de polling atrasado.
+            guard !self.isTesting else { return }
+            let ms = Date().timeIntervalSince(start) * 1000
+            self.liveDnsLatencyMs = ms
+            self.livePacketLossPercent = 0
+        } catch {
+            guard !self.isTesting else { return }
+            self.liveDnsLatencyMs = nil
+            self.livePacketLossPercent = 100
+        }
+    }
+
+    /// Sinal Wi-Fi ao vivo, atualizado a cada ciclo de polling independente
+    /// de mudança de rota (`NWPathMonitor` só dispara em troca de
+    /// interface/SSID, não quando o RSSI varia com a pessoa andando pela
+    /// casa). No macOS lê `CoreWLAN` diretamente — nunca depende de
+    /// `advancedWiFiDiagnostics`, que só existe quando importado
+    /// manualmente via Atalhos e por isso fica `nil` na grande maioria das
+    /// sessões, deixando "Sinal Wi-Fi" preso em "—" indefinidamente.
+    private func updateLiveRSSI() async {
+        guard liveConnectionKind == .wifi else {
+            if liveWifiRSSI != nil { liveWifiRSSI = nil }
+            return
+        }
+        #if os(macOS)
+        liveWifiRSSI = ApplePlatformSignalProvider.currentWifiRSSIDbm()
+        #else
+        // iPhone/iPad não expõem RSSI por API pública fora de
+        // `NEHotspotHelper` (entitlement dedicado). `liveWiFiContext`, que
+        // já é amostrado via `sampleWiFiContext()`, é a única fonte
+        // possível aqui.
+        liveWifiRSSI = liveWiFiContext?.rssiDbm
+        #endif
     }
 }

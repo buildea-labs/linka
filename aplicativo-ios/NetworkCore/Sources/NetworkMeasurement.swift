@@ -57,6 +57,9 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
     public let serverIdentifier: String?
     public let engineVersion: String?
     public let location: MeasurementLocation?
+    /// Origem do dispositivo que efetuou a medição (ex.: "macOS", "iOS").
+    /// Campo aditivo: opcional, `nil` por padrão, não muda `schemaVersion`.
+    public let devicePlatform: String?
 
     public init(
         schemaVersion: Int = NetworkMeasurementContract.currentSchemaVersion,
@@ -79,7 +82,8 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         networkIdentifier: String? = nil,
         serverIdentifier: String? = nil,
         engineVersion: String? = nil,
-        location: MeasurementLocation? = nil
+        location: MeasurementLocation? = nil,
+        devicePlatform: String? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.id = id
@@ -102,6 +106,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         self.serverIdentifier = serverIdentifier
         self.engineVersion = engineVersion
         self.location = location
+        self.devicePlatform = devicePlatform
     }
 }
 

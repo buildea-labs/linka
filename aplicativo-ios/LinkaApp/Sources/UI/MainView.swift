@@ -667,18 +667,23 @@ struct MainView: View {
                 .buttonStyle(.plain)
                 .padding(.bottom, showMoreMetrics ? 14 : 22)
 
-                // Demais métricas reveladas: Upload, Ping e Perdas lado a lado
+                // Demais métricas reveladas: Upload, Ping e Perdas organizadas por tema
                 if showMoreMetrics {
-                    HStack(spacing: 0) {
+                    HStack(spacing: 8) {
                         metricColumn(title: LinkaCopy.value("metric.upload"), value: metricValue(viewModel.uploadSpeed, isMeasured: viewModel.hasMeasuredUpload), unit: viewModel.hasMeasuredUpload ? "Mbps" : nil)
-                        Divider().frame(height: 32)
+                            .frame(maxWidth: .infinity)
                         metricColumn(title: LinkaCopy.value("metric.ping"), value: metricValue(Double(viewModel.ping), isMeasured: viewModel.hasMeasuredPing), unit: viewModel.hasMeasuredPing ? "ms" : nil)
-                        Divider().frame(height: 32)
+                            .frame(maxWidth: .infinity)
                         metricColumn(title: LinkaCopy.value("metric.loss"), value: viewModel.packetLossPercent.map { "\(Int(round($0)))" } ?? LinkaCopy.value("metric.notMeasured"), unit: viewModel.packetLossPercent == nil ? nil : "%")
+                            .frame(maxWidth: .infinity)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
-                    .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
+                    .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
+                            .stroke(Color.borderDefault.opacity(0.3), lineWidth: 0.5)
+                    )
                     .padding(.horizontal, 24)
                     .padding(.bottom, 22)
                     .transition(.opacity.combined(with: .move(edge: .top)))
