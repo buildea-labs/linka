@@ -982,30 +982,26 @@ struct MacMainView: View {
     // MARK: - History View (full width)
 
     private var historyView: some View {
-        NavigationStack {
-            HistoryView { measurement in
-                selectedHistoricalMeasurement = measurement
-            }
+        HistoryView { measurement in
+            selectedHistoricalMeasurement = measurement
         }
     }
 
     // MARK: - Settings View (full width, inline)
 
     private var settingsView: some View {
-        NavigationStack {
-            SettingsView(
-                onPurchaseRequest: { entryPoint in
-                    destination = .speedTest
-                    purchaseEntryPoint = entryPoint
-                    showPurchase = true
-                },
-                onSubscriptionManagementRequest: {
-                    destination = .speedTest
-                    showSubscriptionManagement = true
-                }
-            )
-            .environmentObject(entitlements)
-        }
+        SettingsView(
+            onPurchaseRequest: { entryPoint in
+                destination = .speedTest
+                purchaseEntryPoint = entryPoint
+                showPurchase = true
+            },
+            onSubscriptionManagementRequest: {
+                destination = .speedTest
+                showSubscriptionManagement = true
+            }
+        )
+        .environmentObject(entitlements)
     }
 
     // MARK: - Assist
