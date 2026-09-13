@@ -89,16 +89,19 @@ final class SettingsProductionStateTests: XCTestCase {
             }
         }
 
-        let expectations: [(String, String, String)] = [
-            ("pt-BR", "Nenhuma medição encontrada para diagnóstico.", "Sua conexão sustenta bem chamada em vídeo agora."),
-            ("en", "No measurement found for diagnosis.", "Your connection supports video calls well right now."),
-            ("es-419", "No se encontró ninguna medición para el diagnóstico.", "Tu conexión admite bien las videollamadas ahora.")
+        let expectations: [(String, String, String, String, String, String)] = [
+            ("pt-BR", "Nenhuma medição encontrada para diagnóstico.", "Sua conexão sustenta bem chamada em vídeo agora.", "Interprete esta medição com os dados disponíveis.", "Ainda não há dados suficientes para uma interpretação confiável.", "Rede móvel"),
+            ("en", "No measurement found for diagnosis.", "Your connection supports video calls well right now.", "Interpret this measurement using the available data.", "There is not enough data yet for a reliable interpretation.", "Mobile network"),
+            ("es-419", "No se encontró ninguna medición para el diagnóstico.", "Tu conexión admite bien las videollamadas ahora.", "Interpreta esta medición con los datos disponibles.", "Aún no hay datos suficientes para una interpretación confiable.", "Red móvil")
         ]
 
-        for (language, assistMessage, usageMessage) in expectations {
+        for (language, assistMessage, usageMessage, defaultQuestion, insufficientMessage, cellularNetwork) in expectations {
             defaults.set(language, forKey: LinkaLanguagePreference.storageKey)
             XCTAssertEqual(LinkaCopy.value("assist.noMeasurement"), assistMessage, "language: \(language)")
             XCTAssertEqual(LinkaCopy.value("usage.case.videoCall.positive"), usageMessage, "language: \(language)")
+            XCTAssertEqual(LinkaCopy.value("assist.defaultQuestion"), defaultQuestion, "language: \(language)")
+            XCTAssertEqual(LinkaCopy.value("assist.insufficient"), insufficientMessage, "language: \(language)")
+            XCTAssertEqual(LinkaCopy.value("network.cellular"), cellularNetwork, "language: \(language)")
         }
     }
 

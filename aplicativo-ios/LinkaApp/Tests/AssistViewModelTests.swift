@@ -14,7 +14,7 @@ final class AssistViewModelTests: XCTestCase {
             recentMeasurements: recent
         )
 
-        XCTAssertEqual(context.question, "Interprete esta medição com os dados disponíveis.")
+        XCTAssertEqual(context.question, LinkaCopy.value("assist.defaultQuestion"))
         XCTAssertEqual(context.currentMeasurement.id, current.id)
         XCTAssertTrue(context.recentMeasurements.isEmpty)
         XCTAssertNil(context.usageContext)
@@ -126,7 +126,7 @@ final class AssistViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.state,
-            .error("Ainda não há dados suficientes para uma interpretação confiável.")
+            .error(LinkaCopy.value("assist.insufficient"))
         )
     }
 
