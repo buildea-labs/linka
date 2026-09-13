@@ -22,7 +22,7 @@ struct ServiceStatusView: View {
             }
             ForEach(visibleServices) { service in
                 HStack(spacing: 12) {
-                    Image(systemName: service.icon).frame(width: 24).accessibilityHidden(true)
+                    Image(systemName: service.sfSymbolName).frame(width: 24).accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(service.name)
                         Text(statusText(for: service)).font(.footnote).foregroundStyle(.secondary)
@@ -31,7 +31,7 @@ struct ServiceStatusView: View {
                     Toggle("Receber alertas de \(service.name)", isOn: Binding(
                         get: { store.isFollowing(service) },
                         set: { enabled in Task { await store.setFollowing(service, enabled: enabled) } }
-                    )).labelsHidden().disabled(!service.notificationEligible)
+                    )).labelsHidden().disabled(!service.notificationEligible || !service.monitoringEnabled)
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -43,6 +43,7 @@ struct ServiceStatusView: View {
     }
 
     private func statusText(for service: LinkaService) -> String {
+        guard service.monitoringEnabled else { return "Monitoramento ainda não disponível" }
         guard let incident = store.incident(for: service) else { return "Operando normalmente" }
         switch incident.confidence {
         case "high": return incident.summary

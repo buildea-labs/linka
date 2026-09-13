@@ -19,6 +19,11 @@ targets:
         DEVELOPMENT_TEAM: "2Z4T8228GR"
         PRODUCT_BUNDLE_IDENTIFIER: com.linka.assist
         TARGETED_DEVICE_FAMILY: "1"
+      configs:
+        Debug:
+          APS_ENVIRONMENT: development
+        Release:
+          APS_ENVIRONMENT: production
     info:
       path: LinkaApp/Info.plist
       properties:
@@ -69,6 +74,11 @@ targets:
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         PRODUCT_BUNDLE_IDENTIFIER: com.linka.assist
         PRODUCT_NAME: LinkaApp
+      configs:
+        Debug:
+          APS_ENVIRONMENT: development
+        Release:
+          APS_ENVIRONMENT: production
     info:
       path: LinkaApp/Info-macOS.plist
       properties:

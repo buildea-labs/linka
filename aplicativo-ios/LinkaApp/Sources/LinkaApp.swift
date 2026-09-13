@@ -6,9 +6,19 @@ import MeasurementHistory
 import NetworkCore
 import LinkaModules
 import LinkaAppIntents
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 @main
 struct LinkaApp: App {
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(LinkaPushRegistrationDelegate.self) private var pushRegistrationDelegate
+    #elseif os(macOS)
+    @NSApplicationDelegateAdaptor(LinkaPushRegistrationDelegate.self) private var pushRegistrationDelegate
+    #endif
     @StateObject private var entitlements: StoreKitEntitlementProvider
     @StateObject private var serviceStatus = ServiceStatusStore()
     @AppStorage("appAppearance") private var appAppearance = "system"
@@ -93,6 +103,14 @@ struct LinkaApp: App {
                 .environmentObject(entitlements)
                 .environmentObject(serviceStatus)
                 .preferredColorScheme(preferredColorScheme)
+            .alert("Instabilidade em serviço", isPresented: Binding(
+                get: { serviceStatus.popupIncident != nil },
+                set: { if !$0 { serviceStatus.popupIncident = nil } }
+            ), presenting: serviceStatus.popupIncident) { _ in
+                Button("Entendi", role: .cancel) {}
+            } message: { incident in
+                Text(incident.title)
+            }
             .onOpenURL { url in
                 guard url.scheme?.lowercased() == "linka",
                       url.host == "wifi-advanced",
@@ -104,6 +122,7 @@ struct LinkaApp: App {
             }
             .task {
                 await entitlements.refreshSnapshot()
+                await serviceStatus.refresh()
             }
         }
         #if os(macOS)
