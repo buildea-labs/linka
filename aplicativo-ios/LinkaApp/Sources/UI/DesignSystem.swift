@@ -1,4 +1,5 @@
 import SwiftUI
+import LinkaWidgetShared
 
 #if canImport(UIKit)
 import UIKit
@@ -314,5 +315,41 @@ public extension View {
 
     func linkaCard(cornerRadius: CGFloat = LinkaRadius.md) -> some View {
         background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    }
+}
+
+/// Resolves copy through the language chosen in Linka's Settings. SwiftUI's
+/// environment handles `Text` literals, while copy produced by view models and
+/// helpers needs this explicit lookup to follow the same preference.
+enum LinkaCopy {
+    static func value(_ key: String, defaultValue: String? = nil) -> String {
+        let preference = UserDefaults.standard.string(forKey: LinkaWidgetShared.languagePreferenceKey) ?? "system"
+        return value(key, locale: preference, defaultValue: defaultValue)
+    }
+
+    /// Usa a tag BCP-47 que já acompanha uma operação remota. Isso evita que
+    /// um fallback de transporte volte ao idioma do sistema depois que o
+    /// Linka recebeu uma escolha explícita de idioma.
+    static func value(_ key: String, locale: String?, defaultValue: String? = nil) -> String {
+        let preference = locale ?? UserDefaults.standard.string(forKey: LinkaWidgetShared.languagePreferenceKey) ?? "system"
+        let bundle: Bundle
+        if preference == "system" {
+            bundle = .main
+        } else if let path = Bundle.main.path(forResource: preference, ofType: "lproj"),
+                  let localizedBundle = Bundle(path: path) {
+            bundle = localizedBundle
+        } else {
+            bundle = .main
+        }
+        return bundle.localizedString(forKey: key, value: defaultValue ?? key, table: "Localizable")
+    }
+
+    static func format(_ key: String, _ arguments: CVarArg...) -> String {
+        let preference = UserDefaults.standard.string(forKey: LinkaWidgetShared.languagePreferenceKey) ?? "system"
+        return String(
+            format: value(key),
+            locale: LinkaWidgetShared.effectiveLocale(preference: preference),
+            arguments: arguments
+        )
     }
 }

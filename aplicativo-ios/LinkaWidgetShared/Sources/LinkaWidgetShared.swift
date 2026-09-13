@@ -4,6 +4,47 @@ public enum LinkaWidgetShared {
     public static let appGroupIdentifier = "group.com.linka.assist"
     public static let widgetKind = "LinkaSpeedTestWidget"
     private static let latestSummaryKey = "com.linka.speedtest.widget.latestSummary"
+    public static let languagePreferenceKey = "linka.language.preference.v1"
+
+    /// Persists the app language choice where the app and widget can both read it.
+    /// `system` deliberately means the device's current language, not Portuguese.
+    public static func writeLanguagePreference(
+        _ preference: String,
+        userDefaults: UserDefaults? = UserDefaults(suiteName: appGroupIdentifier)
+    ) {
+        userDefaults?.set(preference, forKey: languagePreferenceKey)
+    }
+
+    public static func languagePreference(
+        userDefaults: UserDefaults? = UserDefaults(suiteName: appGroupIdentifier)
+    ) -> String {
+        guard let value = userDefaults?.string(forKey: languagePreferenceKey),
+              ["system", "pt-BR", "en", "es-419"].contains(value) else {
+            return "system"
+        }
+        return value
+    }
+
+    public static func effectiveLocale(
+        preference: String,
+        systemLocale: Locale = .autoupdatingCurrent
+    ) -> Locale {
+        switch preference {
+        case "pt-BR": return Locale(identifier: "pt-BR")
+        case "en": return Locale(identifier: "en")
+        case "es-419": return Locale(identifier: "es-419")
+        default:
+            // Linka currently ships these three localizations. Keep System
+            // faithful whenever it is supported, and use English as the
+            // predictable international fallback until another catalog lands.
+            switch systemLocale.language.languageCode?.identifier.lowercased() {
+            case "pt": return Locale(identifier: "pt-BR")
+            case "es": return Locale(identifier: "es-419")
+            case "en": return Locale(identifier: "en")
+            default: return Locale(identifier: "en")
+            }
+        }
+    }
 
     public struct LatestMeasurementSummary: Codable, Equatable, Sendable {
         public let downloadMbps: Double

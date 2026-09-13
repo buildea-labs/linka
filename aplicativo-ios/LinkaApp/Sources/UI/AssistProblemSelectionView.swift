@@ -17,13 +17,13 @@ enum AssistProblemObjective: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .jogosComLag: return "Jogos com lag"
-        case .videosTravam: return "Vídeos travando"
-        case .chamadasCongelam: return "Chamadas congelando"
-        case .sitesDemoram: return "Sites demoram para carregar"
-        case .internetCaiOscila: return "Internet cai ou oscila"
-        case .velocidadeNaoChega: return "Velocidade abaixo do esperado"
-        case .wifiVsOperadora: return "Wi-Fi ou operadora"
+        case .jogosComLag: return LinkaCopy.value("assist.problem.games")
+        case .videosTravam: return LinkaCopy.value("assist.problem.video")
+        case .chamadasCongelam: return LinkaCopy.value("assist.problem.calls")
+        case .sitesDemoram: return LinkaCopy.value("assist.problem.sites")
+        case .internetCaiOscila: return LinkaCopy.value("assist.problem.outages")
+        case .velocidadeNaoChega: return LinkaCopy.value("assist.problem.speed")
+        case .wifiVsOperadora: return LinkaCopy.value("assist.problem.wifiOrCarrier")
         }
     }
 
@@ -43,45 +43,45 @@ enum AssistProblemObjective: String, CaseIterable, Identifiable {
         switch self {
         case .jogosComLag:
             return [
-                AssistProblemSubcategory(key: "PING_ALTO", label: "Ping alto o tempo todo"),
-                AssistProblemSubcategory(key: "LAG_INTERMITENTE", label: "Trava de vez em quando"),
-                AssistProblemSubcategory(key: "DESCONECTA_DA_PARTIDA", label: "Cai da partida/sala")
+                AssistProblemSubcategory(key: "PING_ALTO", label: LinkaCopy.value("assist.subcategory.highPing")),
+                AssistProblemSubcategory(key: "LAG_INTERMITENTE", label: LinkaCopy.value("assist.subcategory.intermittentLag")),
+                AssistProblemSubcategory(key: "DESCONECTA_DA_PARTIDA", label: LinkaCopy.value("assist.subcategory.gameDisconnect"))
             ]
         case .videosTravam:
             return [
-                AssistProblemSubcategory(key: "BUFFERING_FREQUENTE", label: "Fica carregando direto"),
-                AssistProblemSubcategory(key: "QUALIDADE_CAI_SOZINHA", label: "Qualidade cai sozinha"),
-                AssistProblemSubcategory(key: "SO_EM_HORARIO_DE_PICO", label: "Piora em horário de pico")
+                AssistProblemSubcategory(key: "BUFFERING_FREQUENTE", label: LinkaCopy.value("assist.subcategory.buffering")),
+                AssistProblemSubcategory(key: "QUALIDADE_CAI_SOZINHA", label: LinkaCopy.value("assist.subcategory.qualityDrops")),
+                AssistProblemSubcategory(key: "SO_EM_HORARIO_DE_PICO", label: LinkaCopy.value("assist.subcategory.peakHours"))
             ]
         case .chamadasCongelam:
             return [
-                AssistProblemSubcategory(key: "IMAGEM_CONGELA", label: "Imagem congela"),
-                AssistProblemSubcategory(key: "AUDIO_CORTA", label: "Áudio corta ou fica robótico"),
-                AssistProblemSubcategory(key: "CHAMADA_CAI", label: "Chamada cai sozinha")
+                AssistProblemSubcategory(key: "IMAGEM_CONGELA", label: LinkaCopy.value("assist.subcategory.videoFreezes")),
+                AssistProblemSubcategory(key: "AUDIO_CORTA", label: LinkaCopy.value("assist.subcategory.audioCuts")),
+                AssistProblemSubcategory(key: "CHAMADA_CAI", label: LinkaCopy.value("assist.subcategory.callDrops"))
             ]
         case .sitesDemoram:
             return [
-                AssistProblemSubcategory(key: "PRIMEIRO_CARREGAMENTO_LENTO", label: "Demora para abrir páginas"),
-                AssistProblemSubcategory(key: "LENTO_O_TEMPO_TODO", label: "Lento o tempo todo"),
-                AssistProblemSubcategory(key: "LENTO_SO_EM_ALGUNS_SITES", label: "Apenas em sites específicos")
+                AssistProblemSubcategory(key: "PRIMEIRO_CARREGAMENTO_LENTO", label: LinkaCopy.value("assist.subcategory.pagesSlow")),
+                AssistProblemSubcategory(key: "LENTO_O_TEMPO_TODO", label: LinkaCopy.value("assist.subcategory.alwaysSlow")),
+                AssistProblemSubcategory(key: "LENTO_SO_EM_ALGUNS_SITES", label: LinkaCopy.value("assist.subcategory.someSites"))
             ]
         case .internetCaiOscila:
             return [
-                AssistProblemSubcategory(key: "QUEDA_TOTAL_ESPORADICA", label: "Cai de vez, sem sinal"),
-                AssistProblemSubcategory(key: "OSCILACAO_SEM_QUEDA_TOTAL", label: "Oscila sem queda total"),
-                AssistProblemSubcategory(key: "PIORA_EM_HORARIO_FIXO", label: "Piora sempre no mesmo horário")
+                AssistProblemSubcategory(key: "QUEDA_TOTAL_ESPORADICA", label: LinkaCopy.value("assist.subcategory.noSignal")),
+                AssistProblemSubcategory(key: "OSCILACAO_SEM_QUEDA_TOTAL", label: LinkaCopy.value("assist.subcategory.unstable")),
+                AssistProblemSubcategory(key: "PIORA_EM_HORARIO_FIXO", label: LinkaCopy.value("assist.subcategory.sameTime"))
             ]
         case .velocidadeNaoChega:
             return [
-                AssistProblemSubcategory(key: "DOWNLOAD_ABAIXO_DO_PLANO", label: "Download abaixo do contratado"),
-                AssistProblemSubcategory(key: "UPLOAD_ABAIXO_DO_PLANO", label: "Upload abaixo do contratado"),
-                AssistProblemSubcategory(key: "SO_NO_WIFI_A_CABO_OK", label: "Só no Wi-Fi")
+                AssistProblemSubcategory(key: "DOWNLOAD_ABAIXO_DO_PLANO", label: LinkaCopy.value("assist.subcategory.downloadBelowPlan")),
+                AssistProblemSubcategory(key: "UPLOAD_ABAIXO_DO_PLANO", label: LinkaCopy.value("assist.subcategory.uploadBelowPlan")),
+                AssistProblemSubcategory(key: "SO_NO_WIFI_A_CABO_OK", label: LinkaCopy.value("assist.subcategory.wifiOnly"))
             ]
         case .wifiVsOperadora:
             return [
-                AssistProblemSubcategory(key: "WIFI_PIOR_QUE_DADOS_MOVEIS", label: "Wi-Fi pior que dados móveis"),
-                AssistProblemSubcategory(key: "DADOS_MOVEIS_PIOR_QUE_WIFI", label: "Dados móveis piores que Wi-Fi"),
-                AssistProblemSubcategory(key: "AMBOS_RUINS", label: "Ambos parecem ruins")
+                AssistProblemSubcategory(key: "WIFI_PIOR_QUE_DADOS_MOVEIS", label: LinkaCopy.value("assist.subcategory.wifiWorse")),
+                AssistProblemSubcategory(key: "DADOS_MOVEIS_PIOR_QUE_WIFI", label: LinkaCopy.value("assist.subcategory.mobileWorse")),
+                AssistProblemSubcategory(key: "AMBOS_RUINS", label: LinkaCopy.value("assist.subcategory.bothBad"))
             ]
         }
     }
@@ -142,7 +142,7 @@ struct AssistProblemSelectionView: View {
                 else if showingReportedProblem { reportedProblemStep }
                 else { objectiveStep }
             }
-            .linkaSheetToolbar(title: "Assist", dismissTitle: navigationActionTitle, onDismiss: handleNavigationAction)
+            .linkaSheetToolbar(title: LinkaCopy.value("assist.title"), dismissTitle: navigationActionTitle, onDismiss: handleNavigationAction)
         }
         .sheet(isPresented: $showAssist) {
             assistDestination(objective: assistObjective, subcategory: assistSubcategory, reportedProblem: assistReportedProblem)
@@ -150,7 +150,7 @@ struct AssistProblemSelectionView: View {
     }
 
     private var navigationActionTitle: String {
-        selectedObjective == nil && !showingReportedProblem ? "Fechar" : "Voltar"
+        selectedObjective == nil && !showingReportedProblem ? LinkaCopy.value("common.close") : LinkaCopy.value("common.back")
     }
 
     private func handleNavigationAction() {
@@ -166,7 +166,7 @@ struct AssistProblemSelectionView: View {
     // MARK: - Etapa 1 — macro-grupo
     private var objectiveStep: some View {
         List {
-            Section("O que está acontecendo?") {
+            Section(LinkaCopy.value("assist.problem.question")) {
                 ForEach(AssistProblemObjective.allCases) { objective in
                     Button { selectedObjective = objective } label: {
                         Label(objective.label, systemImage: objective.systemImage)
@@ -176,7 +176,7 @@ struct AssistProblemSelectionView: View {
                 }
 
                 Button { showingReportedProblem = true } label: {
-                    Label("Outro problema", systemImage: "ellipsis.bubble")
+                    Label(LinkaCopy.value("assist.problem.other"), systemImage: "ellipsis.bubble")
                         .font(.bodyRegular)
                         .foregroundColor(.textPrimary)
                 }
@@ -184,7 +184,7 @@ struct AssistProblemSelectionView: View {
 
             Section {
                 Button { presentAssist(objective: nil, subcategory: nil, reportedProblem: nil) } label: {
-                    Text("Pular e ver o diagnóstico geral")
+                    Text(LinkaCopy.value("assist.problem.skipToGeneral"))
                         .font(.bodySmallMedium)
                         .foregroundColor(.brandAccentWarm)
                 }
@@ -195,7 +195,7 @@ struct AssistProblemSelectionView: View {
     // MARK: - Etapa 2 — subcategoria
     private func subcategoryStep(for objective: AssistProblemObjective) -> some View {
         List {
-            Section(header: Text(objective.label), footer: Text("Selecione a opção que melhor descreve o que você percebeu.")) {
+            Section(header: Text(objective.label), footer: Text(LinkaCopy.value("assist.problem.subcategoryHint"))) {
                 ForEach(objective.subcategories) { subcategory in
                     Button { presentAssist(objective: objective.rawValue, subcategory: subcategory.key, reportedProblem: nil) } label: {
                         Text(subcategory.label)
@@ -207,7 +207,7 @@ struct AssistProblemSelectionView: View {
 
             Section {
                 Button { presentAssist(objective: objective.rawValue, subcategory: nil, reportedProblem: nil) } label: {
-                    Text("Pular esta pergunta")
+                    Text(LinkaCopy.value("assist.problem.skipQuestion"))
                         .font(.bodySmallMedium)
                         .foregroundColor(.brandAccentWarm)
                 }
@@ -218,7 +218,7 @@ struct AssistProblemSelectionView: View {
     // MARK: - Etapa alternativa — "Outro problema"
     private var reportedProblemStep: some View {
         Form {
-            Section(header: Text("Descreva o que está acontecendo"), footer: Text("Isso ajuda o Assist a explicar melhor o resultado, sem alterar os dados técnicos.")) {
+            Section(header: Text(LinkaCopy.value("assist.problem.describeTitle")), footer: Text(LinkaCopy.value("assist.problem.describeHint"))) {
                 TextEditor(text: $reportedProblemText)
                     .frame(minHeight: 100)
                     .onChange(of: reportedProblemText) { newValue in
@@ -237,7 +237,7 @@ struct AssistProblemSelectionView: View {
 
             Section {
                 Button { presentAssist(objective: nil, subcategory: nil, reportedProblem: String(reportedProblemText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.reportedProblemMaxLength))) } label: {
-                    Text("Continuar")
+                    Text(LinkaCopy.value("common.continue"))
                         .font(.bodyRegularStrong)
                         .foregroundColor(.brandAccentWarm)
                 }

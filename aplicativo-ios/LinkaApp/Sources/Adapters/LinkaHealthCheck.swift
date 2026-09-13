@@ -30,10 +30,10 @@ public final class LinkaHealthCheck: ObservableObject {
                     self.statusText = ""
                     self.runMetrics()
                 } else if path.status == .requiresConnection {
-                    self.statusText = "Requer conexão"
+                    self.statusText = String(localized: "health.requiresConnection", defaultValue: "Requer conexão")
                     self.clearMetrics()
                 } else {
-                    self.statusText = "Sem internet"
+                    self.statusText = String(localized: "health.offline", defaultValue: "Sem internet")
                     self.clearMetrics()
                 }
             }
@@ -72,7 +72,7 @@ public final class LinkaHealthCheck: ObservableObject {
                 self.jitterMs = jitter
             }
 
-            self.statusText = "Conectado"
+            self.statusText = String(localized: "health.connected", defaultValue: "Conectado")
         }
     }
 }

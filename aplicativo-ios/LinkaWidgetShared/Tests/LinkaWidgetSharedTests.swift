@@ -71,6 +71,35 @@ final class LinkaWidgetSharedTests: XCTestCase {
         XCTAssertEqual(LinkaWidgetShared.widgetKind, "LinkaSpeedTestWidget")
     }
 
+    func testLanguagePreferenceDefaultsToSystemAndRoundTripsSupportedValues() {
+        XCTAssertEqual(LinkaWidgetShared.languagePreference(userDefaults: testDefaults), "system")
+
+        LinkaWidgetShared.writeLanguagePreference("es-419", userDefaults: testDefaults)
+
+        XCTAssertEqual(LinkaWidgetShared.languagePreference(userDefaults: testDefaults), "es-419")
+    }
+
+    func testLanguagePreferenceRejectsUnknownStoredValues() {
+        testDefaults.set("fr", forKey: LinkaWidgetShared.languagePreferenceKey)
+
+        XCTAssertEqual(LinkaWidgetShared.languagePreference(userDefaults: testDefaults), "system")
+    }
+
+    func testEffectiveLocaleUsesManualChoiceOrSupportedSystemLanguage() {
+        XCTAssertEqual(
+            LinkaWidgetShared.effectiveLocale(preference: "pt-BR").identifier,
+            "pt-BR"
+        )
+        XCTAssertEqual(
+            LinkaWidgetShared.effectiveLocale(preference: "system", systemLocale: Locale(identifier: "es-MX")).identifier,
+            "es-419"
+        )
+        XCTAssertEqual(
+            LinkaWidgetShared.effectiveLocale(preference: "system", systemLocale: Locale(identifier: "de-DE")).identifier,
+            "en"
+        )
+    }
+
     func testDifferentSummariesAreNotEqual() {
         let a = LinkaWidgetShared.LatestMeasurementSummary(
             downloadMbps: 100,

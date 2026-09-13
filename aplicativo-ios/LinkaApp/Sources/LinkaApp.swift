@@ -6,10 +6,14 @@ import MeasurementHistory
 import NetworkCore
 import LinkaModules
 import LinkaAppIntents
+import LinkaWidgetShared
 #if os(iOS)
 import UIKit
 #elseif os(macOS)
 import AppKit
+#endif
+#if canImport(WidgetKit)
+import WidgetKit
 #endif
 
 @main
@@ -22,6 +26,7 @@ struct LinkaApp: App {
     @StateObject private var entitlements: StoreKitEntitlementProvider
     @StateObject private var serviceStatus = ServiceStatusStore()
     @AppStorage("appAppearance") private var appAppearance = "system"
+    @AppStorage(LinkaLanguagePreference.storageKey) private var languagePreference = LinkaLanguagePreference.system.rawValue
 
     init() {
         let entitlementProvider = StoreKitEntitlementProvider()
@@ -42,20 +47,33 @@ struct LinkaApp: App {
                 let query = MeasurementQuery(limit: 1, sortOrder: .newestFirst)
                 if let latest = try? await repository.measurements(matching: query).first {
                     var parts: [String] = []
+                    let locale = LinkaLanguagePreference.currentLocale
                     if let down = latest.downloadMbps {
-                        parts.append("\(Int(round(down))) Mbps de download")
+                        parts.append(LinkaCopy.format(
+                            "appIntent.latestResult.download",
+                            down.formatted(.number.precision(.fractionLength(0)).locale(locale))
+                        ))
                     }
                     if let up = latest.uploadMbps {
-                        parts.append("\(Int(round(up))) Mbps de upload")
+                        parts.append(LinkaCopy.format(
+                            "appIntent.latestResult.upload",
+                            up.formatted(.number.precision(.fractionLength(0)).locale(locale))
+                        ))
                     }
                     if let ping = latest.latencyMs {
-                        parts.append("ping \(Int(round(ping))) ms")
+                        parts.append(LinkaCopy.format(
+                            "appIntent.latestResult.ping",
+                            ping.formatted(.number.precision(.fractionLength(0)).locale(locale))
+                        ))
                     }
                     
                     let resultString = parts.joined(separator: ", ")
                     return LinkaSystemActionResponse(action: .getLatestResult, value: resultString)
                 }
-                return LinkaSystemActionResponse(action: .getLatestResult, value: "Você ainda não tem uma medição no Linka.")
+                return LinkaSystemActionResponse(
+                    action: .getLatestResult,
+                    value: LinkaCopy.value("appIntent.latestResult.empty")
+                )
 
             case .openHistory:
                 // Histórico básico é Free; só insights e automações premium
@@ -103,6 +121,7 @@ struct LinkaApp: App {
                 .environmentObject(entitlements)
                 .environmentObject(serviceStatus)
                 .preferredColorScheme(preferredColorScheme)
+                .environment(\.locale, effectiveLocale)
             .alert("Instabilidade em serviço", isPresented: Binding(
                 get: { serviceStatus.popupIncident != nil },
                 set: { if !$0 { serviceStatus.popupIncident = nil } }
@@ -123,7 +142,9 @@ struct LinkaApp: App {
             .task {
                 await entitlements.refreshSnapshot()
                 await serviceStatus.refresh()
+                syncWidgetLanguagePreference()
             }
+            .onChange(of: languagePreference) { _ in syncWidgetLanguagePreference() }
         }
         #if os(macOS)
         .defaultSize(width: 980, height: 680)
@@ -144,6 +165,19 @@ struct LinkaApp: App {
         MacMainView()
         #else
         MainView()
+        #endif
+    }
+
+    private var effectiveLocale: Locale {
+        LinkaLanguagePreference.fromStoredValue(languagePreference).locale
+    }
+
+    private func syncWidgetLanguagePreference() {
+        LinkaWidgetShared.writeLanguagePreference(
+            LinkaLanguagePreference.fromStoredValue(languagePreference).rawValue
+        )
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: LinkaWidgetShared.widgetKind)
         #endif
     }
 }

@@ -24,6 +24,7 @@ struct SettingsView: View {
     @State private var showWiFiExplanation = false
     @State private var showAdvancedActions = false
     @AppStorage("appAppearance") private var appAppearance = "system"
+    @AppStorage(LinkaLanguagePreference.storageKey) private var languagePreference = LinkaLanguagePreference.system.rawValue
     @AppStorage(LinkaWiFiPreferences.identificationEnabledKey) private var networkIdentificationEnabled = true
     @AppStorage(LinkaWiFiPreferences.advancedConfiguredKey) private var advancedWiFiConfigured = false
     @AppStorage(LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) private var advancedWiFiEnabled = true
@@ -61,59 +62,66 @@ struct SettingsView: View {
             }
 
             #if os(iOS)
-            Section("Rede e diagnóstico") {
+            Section(LinkaCopy.value("settings.section.network")) {
                 Button(action: openNetworkIdentification) {
-                    settingsRow(title: "Identificação da rede Wi-Fi", value: WiFiNetworkPermission.statusText(enabled: networkIdentificationEnabled), systemImage: "wifi")
+                    settingsRow(title: LinkaCopy.value("settings.wifiIdentification.title"), value: networkIdentificationStatusText, systemImage: "wifi")
                 }
                 Button(action: openAdvancedWiFi) {
-                    settingsRow(title: "Diagnóstico Wi-Fi avançado", value: advancedWiFiStatusText, systemImage: "waveform.path.ecg")
+                    settingsRow(title: LinkaCopy.value("settings.advancedWiFi.title"), value: advancedWiFiStatusText, systemImage: "waveform.path.ecg")
                 }
             }
 
-            Section("Ferramentas") {
+            Section(LinkaCopy.value("settings.section.tools")) {
                 NavigationLink(destination: RouterDiscoveryView()) {
-                    Label("Acesso ao Roteador", systemImage: "router")
+                    Label(LinkaCopy.value("settings.routerAccess"), systemImage: "router")
                 }
             }
             #endif
 
-            Section("Preferências") {
-                Picker("Aparência", selection: $appAppearance) {
-                    Text("Sistema").tag("system")
-                    Text("Claro").tag("light")
-                    Text("Escuro").tag("dark")
+            Section(LinkaCopy.value("settings.section.preferences")) {
+                Picker(LinkaCopy.value("settings.appearance.title"), selection: $appAppearance) {
+                    Text(LinkaCopy.value("settings.appearance.system")).tag("system")
+                    Text(LinkaCopy.value("settings.appearance.light")).tag("light")
+                    Text(LinkaCopy.value("settings.appearance.dark")).tag("dark")
                 }
+
+                Picker(LinkaCopy.value("settings.language.title"), selection: $languagePreference) {
+                    ForEach(LinkaLanguagePreference.allCases) { language in
+                        Text(language.displayName).tag(language.rawValue)
+                    }
+                }
+                .accessibilityHint(LinkaCopy.value("settings.language.hint"))
             }
 
-            Section("Status de serviços") {
+            Section(LinkaCopy.value("settings.section.serviceStatus")) {
                 NavigationLink(destination: ServiceStatusView()) {
-                    Label("Acompanhar serviços", systemImage: "dot.radiowaves.left.and.right")
+                    Label(LinkaCopy.value("settings.serviceStatus"), systemImage: "dot.radiowaves.left.and.right")
                 }
             }
 
-            Section("Sobre o Linka") {
+            Section(LinkaCopy.value("settings.section.about")) {
                 Link(destination: LinkaExternalLinks.about) {
-                    Label("Sobre o Linka", systemImage: "info.circle")
+                    Label(LinkaCopy.value("settings.about"), systemImage: "info.circle")
                 }
                 Link(destination: LinkaExternalLinks.howWeMeasure) {
-                    Label("Como medimos", systemImage: "speedometer")
+                    Label(LinkaCopy.value("settings.howWeMeasure"), systemImage: "speedometer")
                 }
                 Link(destination: LinkaExternalLinks.privacy) {
-                    Label("Privacidade", systemImage: "hand.raised")
+                    Label(LinkaCopy.value("settings.privacy"), systemImage: "hand.raised")
                 }
                 Link(destination: LinkaExternalLinks.terms) {
-                    Label("Termos de Uso", systemImage: "doc.text")
+                    Label(LinkaCopy.value("settings.terms"), systemImage: "doc.text")
                 }
                 Link(destination: LinkaExternalLinks.support) {
-                    Label("Suporte", systemImage: "questionmark.circle")
+                    Label(LinkaCopy.value("settings.support"), systemImage: "questionmark.circle")
                 }
                 Button {
                     requestReview()
                 } label: {
-                    Label("Avaliar o Linka", systemImage: "star")
+                    Label(LinkaCopy.value("settings.rate"), systemImage: "star")
                 }
                 Link(destination: LinkaExternalLinks.support) {
-                    Label("Enviar feedback", systemImage: "text.bubble")
+                    Label(LinkaCopy.value("settings.feedback"), systemImage: "text.bubble")
                 }
             }
 
@@ -123,25 +131,25 @@ struct SettingsView: View {
                     get: { UserDefaults.standard.bool(forKey: StoreKitEntitlementProvider.forcePlusKey) },
                     set: { entitlements.setForcePlus($0) }
                 )) {
-                    Label("Linka Plus (teste interno)", systemImage: "flask")
+                    Label(LinkaCopy.value("settings.debug.plus"), systemImage: "flask")
                 }
                 .tint(.brandAccentWarm)
             } header: {
-                Text("Ferramentas de teste").foregroundColor(.brandAccentWarm)
+                Text(LinkaCopy.value("settings.debug.title")).foregroundColor(.brandAccentWarm)
             } footer: {
-                Text("Ativa o Linka Plus sem compra. Use apenas para validar funcionalidades em desenvolvimento.")
+                Text(LinkaCopy.value("settings.debug.footer"))
             }
             #endif
 
             Section {
-                Text("Versão \(appVersion)")
+                Text(LinkaCopy.format("settings.version", appVersion))
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
         }
         #endif
         }
-        .navigationTitle("Ajustes")
+        .navigationTitle(LinkaCopy.value("settings.title"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
@@ -166,54 +174,54 @@ struct SettingsView: View {
             await entitlements.refreshSnapshot()
             await entitlements.loadProduct()
         }
-        .confirmationDialog("Identificação da rede Wi-Fi", isPresented: $showWiFiExplanation, titleVisibility: .visible) {
+        .confirmationDialog(LinkaCopy.value("settings.wifiIdentification.title"), isPresented: $showWiFiExplanation, titleVisibility: .visible) {
             switch WiFiNetworkPermission.state(enabled: networkIdentificationEnabled) {
             case .permissionDenied:
-                Button("Abrir Ajustes do iPhone") {
+                Button(LinkaCopy.value("settings.wifiIdentification.openSystemSettings")) {
                     networkIdentificationEnabled = true
                     WiFiNetworkPermission.openSystemSettings()
                 }
             case .active:
-                Button("Desativar identificação", role: .destructive) {
+                Button(LinkaCopy.value("settings.wifiIdentification.disable"), role: .destructive) {
                     networkIdentificationEnabled = false
                 }
             case .disabledByUser, .permissionRequired:
-                Button("Ativar identificação") {
+                Button(LinkaCopy.value("settings.wifiIdentification.enable")) {
                     networkIdentificationEnabled = true
                     WiFiNetworkPermission.requestIdentification()
                 }
             case .unavailable:
                 EmptyView()
             }
-            Button("Cancelar", role: .cancel) {}
+            Button(LinkaCopy.value("common.cancel"), role: .cancel) {}
         } message: {
             Text(networkIdentificationMessage)
         }
-        .confirmationDialog("Diagnóstico Wi-Fi avançado", isPresented: $showAdvancedActions, titleVisibility: .visible) {
+        .confirmationDialog(LinkaCopy.value("settings.advancedWiFi.title"), isPresented: $showAdvancedActions, titleVisibility: .visible) {
             switch advancedWiFiState {
             case .requiresPlus:
-                Button("Conhecer Linka Plus") {
+                Button(LinkaCopy.value("settings.advancedWiFi.learnPlus")) {
                     purchaseEntryPoint = .advancedWiFi
                     showPurchase = true
                 }
             case .needsConfiguration:
-                Button("Adicionar atalho Wi-Fi avançado") {
+                Button(LinkaCopy.value("settings.advancedWiFi.addShortcut")) {
                     importAdvancedWiFiShortcut()
                     advancedWiFiEnabled = true
                 }
             case .active:
-                Button("Executar diagnóstico Wi-Fi") { runAdvancedWiFiShortcut() }
-                Button("Atualizar atalho Wi-Fi avançado") {
+                Button(LinkaCopy.value("settings.advancedWiFi.run")) { runAdvancedWiFiShortcut() }
+                Button(LinkaCopy.value("settings.advancedWiFi.updateShortcut")) {
                     importAdvancedWiFiShortcut()
                 }
-                Button("Desativar integração", role: .destructive) { advancedWiFiEnabled = false }
+                Button(LinkaCopy.value("settings.advancedWiFi.disable"), role: .destructive) { advancedWiFiEnabled = false }
             case .disabled:
-                Button("Ativar integração") { advancedWiFiEnabled = true }
-                Button("Atualizar atalho Wi-Fi avançado") {
+                Button(LinkaCopy.value("settings.advancedWiFi.enable")) { advancedWiFiEnabled = true }
+                Button(LinkaCopy.value("settings.advancedWiFi.updateShortcut")) {
                     importAdvancedWiFiShortcut()
                 }
             }
-            Button("Cancelar", role: .cancel) {}
+            Button(LinkaCopy.value("common.cancel"), role: .cancel) {}
         } message: {
             Text(advancedWiFiMessage)
         }
@@ -391,12 +399,12 @@ struct SettingsView: View {
     }
 
     private var subscriptionStatusText: String {
-        if entitlements.isRefreshingSnapshot { return "Verificando" }
+        if entitlements.isRefreshingSnapshot { return LinkaCopy.value("settings.subscription.checking") }
         switch entitlements.snapshot.plan {
         case .free:
-            return "Conhecer o Linka Plus"
+            return LinkaCopy.value("settings.subscription.learnPlus")
         case .plus:
-            return entitlements.snapshot.status == .active ? "Ativo" : "Assinatura inativa"
+            return entitlements.snapshot.status == .active ? LinkaCopy.value("settings.subscription.active") : LinkaCopy.value("settings.subscription.inactive")
         }
     }
 
@@ -410,32 +418,47 @@ struct SettingsView: View {
     }
 
     private var advancedWiFiStatusText: String {
-        advancedWiFiState.statusText
+        switch advancedWiFiState {
+        case .requiresPlus: return LinkaCopy.value("settings.advancedWiFi.status.requiresPlus")
+        case .needsConfiguration: return LinkaCopy.value("settings.advancedWiFi.status.needsConfiguration")
+        case .active: return LinkaCopy.value("settings.advancedWiFi.status.active")
+        case .disabled: return LinkaCopy.value("settings.advancedWiFi.status.disabled")
+        }
+    }
+
+    private var networkIdentificationStatusText: String {
+        switch WiFiNetworkPermission.state(enabled: networkIdentificationEnabled) {
+        case .active: return LinkaCopy.value("wifi.identification.active")
+        case .disabledByUser: return LinkaCopy.value("wifi.identification.disabled")
+        case .permissionRequired: return LinkaCopy.value("wifi.identification.permissionRequired")
+        case .permissionDenied: return LinkaCopy.value("wifi.identification.permissionDenied")
+        case .unavailable: return LinkaCopy.value("common.unavailable")
+        }
     }
 
     private var networkIdentificationMessage: String {
         switch WiFiNetworkPermission.state(enabled: networkIdentificationEnabled) {
         case .active:
-            return "O Linka pode mostrar o nome da rede usada nas medições. Você pode desativar isso aqui."
+            return LinkaCopy.value("settings.wifiIdentification.message.active")
         case .disabledByUser, .permissionRequired:
-            return "O Linka usa essa permissão apenas para mostrar o nome da rede Wi-Fi nas medições e no histórico."
+            return LinkaCopy.value("settings.wifiIdentification.message.permissionRequired")
         case .permissionDenied:
-            return "A permissão foi negada no iPhone. Para identificar a rede, abra Ajustes e permita localização para o Linka."
+            return LinkaCopy.value("settings.wifiIdentification.message.permissionDenied")
         case .unavailable:
-            return "A identificação da rede Wi-Fi não está disponível nesta plataforma."
+            return LinkaCopy.value("settings.wifiIdentification.message.unavailable")
         }
     }
 
     private var advancedWiFiMessage: String {
         switch advancedWiFiState {
         case .requiresPlus:
-            return "O diagnóstico Wi-Fi avançado faz parte do Linka Plus."
+            return LinkaCopy.value("settings.advancedWiFi.message.requiresPlus")
         case .needsConfiguration:
-            return "No Atalhos, crie “Linka Wi-Fi Advanced”: obtenha os detalhes da rede e depois adicione a ação “Registrar diagnóstico Wi-Fi avançado” do Linka."
+            return LinkaCopy.value("settings.advancedWiFi.message.needsConfiguration")
         case .active:
-            return "O Atalhos fornece dados extras quando você executa a integração."
+            return LinkaCopy.value("settings.advancedWiFi.message.active")
         case .disabled:
-            return "A integração está configurada, mas não roda antes das medições."
+            return LinkaCopy.value("settings.advancedWiFi.message.disabled")
         }
     }
 
@@ -598,18 +621,18 @@ struct SubscriptionManagementSheet: View {
             List {
                 Section {
                     #if canImport(UIKit)
-                    Button("Gerenciar assinatura", action: manageSubscription)
+                    Button(LinkaCopy.value("settings.subscription.manage"), action: manageSubscription)
                     #else
-                    Link("Gerenciar assinatura", destination: LinkaExternalLinks.subscriptionManagement)
+                    Link(LinkaCopy.value("settings.subscription.manage"), destination: LinkaExternalLinks.subscriptionManagement)
                     #endif
-                    Button(isRestoring ? "Restaurando…" : "Restaurar compra", action: restore)
+                    Button(isRestoring ? LinkaCopy.value("settings.subscription.restoring") : LinkaCopy.value("settings.subscription.restore"), action: restore)
                         .disabled(isRestoring)
                 } footer: {
-                    Text("A renovação e o cancelamento são gerenciados pela Apple.")
+                    Text(LinkaCopy.value("settings.subscription.footer"))
                 }
                 if let message { Section { Text(message).foregroundColor(.textSecondary) } }
             }
-            .linkaSheetToolbar(title: "Linka Plus") { dismiss() }
+            .linkaSheetToolbar(title: LinkaCopy.value("linka.plus")) { dismiss() }
         }
     }
 
@@ -626,9 +649,9 @@ struct SubscriptionManagementSheet: View {
             do {
                 let restored = try await entitlements.restore()
                 isRestoring = false
-                message = restored ? "Compra restaurada." : "Nenhuma compra ativa foi encontrada."
+                message = restored ? LinkaCopy.value("settings.subscription.restored") : LinkaCopy.value("settings.subscription.noPurchase")
             } catch {
-                isRestoring = false; message = "Não foi possível restaurar a compra agora."
+                isRestoring = false; message = LinkaCopy.value("settings.subscription.restoreError")
             }
         }
     }

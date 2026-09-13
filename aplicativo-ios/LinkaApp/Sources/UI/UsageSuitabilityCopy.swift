@@ -8,13 +8,13 @@ import NetworkInsights
 /// é diagnóstico nem tutorial de rede, só o que a métrica significa. Não
 /// repete o número que já está na tela.
 enum MetricExplanation {
-    static let ping = "Tempo de resposta entre o aparelho e o servidor."
-    static let jitter = "Variação no tempo de resposta de uma medição para outra."
-    static let packetLoss = "Parte dos dados que não chegou ao destino."
-    static let loadedLatency = "Quanto o tempo de resposta piora com a conexão ocupada."
+    static var ping: String { LinkaCopy.value("metric.explanation.ping") }
+    static var jitter: String { LinkaCopy.value("metric.explanation.jitter") }
+    static var packetLoss: String { LinkaCopy.value("metric.explanation.packetLoss") }
+    static var loadedLatency: String { LinkaCopy.value("metric.explanation.loadedLatency") }
     /// issue #128 — paridade de `loadedLatency` para a fase de upload.
-    static let loadedLatencyUpload = "Quanto o tempo de resposta piora com a conexão ocupada enviando dados."
-    static let dnsResolution = "Tempo para traduzir o endereço do servidor em um número de IP."
+    static var loadedLatencyUpload: String { LinkaCopy.value("metric.explanation.loadedLatencyUpload") }
+    static var dnsResolution: String { LinkaCopy.value("metric.explanation.dns") }
 }
 
 /// Copy da categoria de responsividade sob carga (issue #128) — vive na UI,
@@ -25,21 +25,21 @@ enum MetricExplanation {
 enum LoadResponsivenessCopy {
     static func label(for category: LoadResponsivenessCategory) -> String {
         switch category {
-        case .high: return "Alta"
-        case .medium: return "Média"
-        case .low: return "Baixa"
-        case .notAssessed: return "Não avaliada"
+        case .high: return LinkaCopy.value("loadResponsiveness.high")
+        case .medium: return LinkaCopy.value("loadResponsiveness.medium")
+        case .low: return LinkaCopy.value("loadResponsiveness.low")
+        case .notAssessed: return LinkaCopy.value("loadResponsiveness.notAssessed")
         }
     }
 
     static func explanation(for category: LoadResponsivenessCategory) -> String {
         switch category {
         case .high:
-            return "A conexão continua respondendo bem mesmo durante uso intenso."
+            return LinkaCopy.value("loadResponsiveness.high.explanation")
         case .medium, .low:
-            return "A conexão demora mais para responder quando está ocupada."
+            return LinkaCopy.value("loadResponsiveness.limited.explanation")
         case .notAssessed:
-            return "Não foi possível avaliar a responsividade nesta medição."
+            return LinkaCopy.value("loadResponsiveness.notAssessed.explanation")
         }
     }
 }
@@ -59,22 +59,27 @@ enum UsageSuitabilityCopy {
     /// do mais ao menos exigente aos olhos de quem está lendo o resultado.
     private static let priorityOrder: [UsageCase] = [.streaming4K, .onlineGaming, .streamingHD, .videoCall]
 
-    private static let positiveSentences: [UsageCase: String] = [
-        .videoCall: "Sua conexão sustenta bem chamada em vídeo agora.",
-        .streamingHD: "Sua conexão sustenta bem streaming de vídeo agora.",
-        .streaming4K: "Sua conexão sustenta bem streaming em 4K agora.",
-        .onlineGaming: "Sua conexão sustenta bem jogo online agora.",
-        .workUpload: "Sua conexão sustenta bem envio de arquivos e trabalho agora."
-    ]
+    private static func positiveSentence(for usageCase: UsageCase) -> String {
+        switch usageCase {
+        case .videoCall: return LinkaCopy.value("usage.case.videoCall.positive")
+        case .streamingHD: return LinkaCopy.value("usage.case.streamingHD.positive")
+        case .streaming4K: return LinkaCopy.value("usage.case.streaming4K.positive")
+        case .onlineGaming: return LinkaCopy.value("usage.case.onlineGaming.positive")
+        case .workUpload: return LinkaCopy.value("usage.case.workUpload.positive")
+        }
+    }
 
-    private static let limitingMetricLabels: [NetworkMetric: String] = [
-        .downloadMbps: "a velocidade de download",
-        .uploadMbps: "a velocidade de upload",
-        .latencyMs: "o tempo de resposta",
-        .jitterMs: "a variação no tempo de resposta",
-        .packetLossPercent: "a perda de pacotes",
-        .loadedLatencyMs: "o tempo de resposta com a conexão ocupada"
-    ]
+    private static func limitingMetricLabel(_ metric: NetworkMetric) -> String {
+        switch metric {
+        case .downloadMbps: return LinkaCopy.value("usage.metric.download")
+        case .uploadMbps: return LinkaCopy.value("usage.metric.upload")
+        case .latencyMs: return LinkaCopy.value("usage.metric.latency")
+        case .jitterMs: return LinkaCopy.value("usage.metric.jitter")
+        case .packetLossPercent: return LinkaCopy.value("usage.metric.packetLoss")
+        case .loadedLatencyMs: return LinkaCopy.value("usage.metric.loadedLatency")
+        case .loadedLatencyUploadMs: return LinkaCopy.value("usage.metric.loadedLatencyUpload")
+        }
+    }
 
     /// Escolhe uma única frase: o caso de uso mais exigente com veredito
     /// `.adequate` (o "teto real" da conexão hoje). Quando nenhum caso
@@ -84,32 +89,30 @@ enum UsageSuitabilityCopy {
     static func sentence(for report: UsageSuitabilityReport) -> String {
         for usageCase in priorityOrder {
             guard let verdict = report.verdict(for: usageCase), verdict.level == .adequate else { continue }
-            return positiveSentences[usageCase] ?? ""
+            return positiveSentence(for: usageCase)
         }
 
         for usageCase in priorityOrder {
             guard let verdict = report.verdict(for: usageCase),
-                  let limitingMetric = verdict.limitingMetric,
-                  let label = limitingMetricLabels[limitingMetric] else { continue }
-            return "Hoje, \(label) é o que mais limita o uso desta conexão."
+                  let limitingMetric = verdict.limitingMetric else { continue }
+            let label = limitingMetricLabel(limitingMetric)
+            return LinkaCopy.format("usage.limiting.sentence", label)
         }
 
-        return "Ainda não há dados suficientes para avaliar o uso desta conexão."
+        return LinkaCopy.value("usage.insufficient")
     }
 
     /// Título curto de cada `UsageCase`, para a listagem completa de
     /// veredictos (`UsageDiagnosticsView`) — distinto de `positiveSentences`,
     /// que é a frase única de resultado.
-    private static let caseTitles: [UsageCase: String] = [
-        .videoCall: "Chamada em vídeo",
-        .streamingHD: "Streaming em HD",
-        .streaming4K: "Streaming em 4K",
-        .onlineGaming: "Jogo online",
-        .workUpload: "Envio de arquivos e trabalho"
-    ]
-
     static func title(for usageCase: UsageCase) -> String {
-        caseTitles[usageCase] ?? ""
+        switch usageCase {
+        case .videoCall: return LinkaCopy.value("usage.case.videoCall.title")
+        case .streamingHD: return LinkaCopy.value("usage.case.streamingHD.title")
+        case .streaming4K: return LinkaCopy.value("usage.case.streaming4K.title")
+        case .onlineGaming: return LinkaCopy.value("usage.case.onlineGaming.title")
+        case .workUpload: return LinkaCopy.value("usage.case.workUpload.title")
+        }
     }
 
     /// Descrição curta de um veredito individual — usada quando cada
@@ -118,15 +121,15 @@ enum UsageSuitabilityCopy {
     static func detail(for verdict: UsageCaseVerdict) -> String {
         switch verdict.level {
         case .adequate:
-            return positiveSentences[verdict.usageCase] ?? "Sua conexão sustenta bem esse uso agora."
+            return positiveSentence(for: verdict.usageCase)
         case .limited:
-            if let limitingMetric = verdict.limitingMetric,
-               let label = limitingMetricLabels[limitingMetric] {
-                return "Hoje, \(label) é o que mais limita esse uso."
+            if let limitingMetric = verdict.limitingMetric {
+                let label = limitingMetricLabel(limitingMetric)
+                return LinkaCopy.format("usage.limiting.detail", label)
             }
-            return "Sua conexão está limitada para esse uso agora."
+            return LinkaCopy.value("usage.limited")
         case .notAssessed:
-            return "Ainda não há dados suficientes para avaliar esse uso."
+            return LinkaCopy.value("usage.insufficient.case")
         }
     }
 
@@ -159,9 +162,9 @@ enum UsageQualityLevel: Equatable {
 
     var label: String {
         switch self {
-        case .good: return "Boa"
-        case .medium: return "Média"
-        case .poor: return "Ruim"
+        case .good: return LinkaCopy.value("usage.quality.good")
+        case .medium: return LinkaCopy.value("usage.quality.medium")
+        case .poor: return LinkaCopy.value("usage.quality.poor")
         }
     }
 

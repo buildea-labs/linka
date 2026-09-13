@@ -23,11 +23,11 @@ struct LiveConnectionPathView: View {
     private var interfaceLabel: String {
         if !label.isEmpty { return label }
         switch kind {
-        case .wifi: return "Wi-Fi"
-        case .cellular: return "Rede móvel"
-        case .ethernet: return "Ethernet"
-        case .other: return "Conexão de rede"
-        case nil: return "Sem conexão"
+        case .wifi: return LinkaCopy.value("network.wifi")
+        case .cellular: return LinkaCopy.value("network.cellular")
+        case .ethernet: return LinkaCopy.value("network.ethernet")
+        case .other: return LinkaCopy.value("network.connection")
+        case nil: return LinkaCopy.value("network.offline")
         }
     }
 
@@ -35,17 +35,17 @@ struct LiveConnectionPathView: View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 12) {
-                    pathRow(icon: "iphone", label: "Este iPhone")
+                    pathRow(icon: "iphone", label: LinkaCopy.value("connectionPath.thisDevice"))
                     pathRow(icon: interfaceIcon, label: interfaceLabel)
-                    pathRow(icon: "globe", label: "Internet", muted: kind == nil)
+                    pathRow(icon: "globe", label: LinkaCopy.value("connectionPath.internet"), muted: kind == nil)
                 }
             } else {
                 HStack(spacing: 0) {
-                    pathItem(icon: "iphone", label: "Este iPhone")
+                    pathItem(icon: "iphone", label: LinkaCopy.value("connectionPath.thisDevice"))
                     pathArrow
                     pathItem(icon: interfaceIcon, label: interfaceLabel)
                     pathArrow
-                    pathItem(icon: "globe", label: "Internet", muted: kind == nil)
+                    pathItem(icon: "globe", label: LinkaCopy.value("connectionPath.internet"), muted: kind == nil)
                 }
             }
         }
@@ -54,7 +54,7 @@ struct LiveConnectionPathView: View {
         .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Caminho da conexão: iPhone, \(interfaceLabel), Internet")
+        .accessibilityLabel(LinkaCopy.format("connectionPath.live.accessibility", interfaceLabel))
     }
 
     private var pathArrow: some View {
@@ -131,7 +131,7 @@ struct ConnectionPathView: View {
         .disabled(onOpen == nil)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(ConnectionPathCopy.accessibilitySummary(for: report))
-        .accessibilityHint("Toque para ver o caminho da conexão em detalhes")
+        .accessibilityHint(LinkaCopy.value("connectionPath.open.hint"))
     }
 
     @ViewBuilder
@@ -167,11 +167,11 @@ enum ConnectionPathCopy {
 
     static func title(for stage: ConnectionPathStage) -> String {
         switch stage {
-        case .device: return "iPhone"
-        case .wifi: return "Wi-Fi"
-        case .router: return "Roteador"
-        case .carrier: return "Operadora"
-        case .internet: return "Internet"
+        case .device: return LinkaCopy.value("connectionPath.stage.device")
+        case .wifi: return LinkaCopy.value("connectionPath.stage.wifi")
+        case .router: return LinkaCopy.value("connectionPath.stage.router")
+        case .carrier: return LinkaCopy.value("connectionPath.stage.carrier")
+        case .internet: return LinkaCopy.value("connectionPath.stage.internet")
         }
     }
 
@@ -196,64 +196,65 @@ enum ConnectionPathCopy {
 
     static func statusAccessibilityLabel(_ status: ConnectionPathStageStatus) -> String {
         switch status {
-        case .normal: return "normal"
-        case .attention: return "atenção"
-        case .likelyProblem: return "problema provável"
-        case .unavailable: return "não verificado"
+        case .normal: return LinkaCopy.value("connectionPath.status.normal")
+        case .attention: return LinkaCopy.value("connectionPath.status.attention")
+        case .likelyProblem: return LinkaCopy.value("connectionPath.status.problem")
+        case .unavailable: return LinkaCopy.value("connectionPath.status.unavailable")
         }
     }
 
-    private static let explanations: [ConnectionPathStage: [ConnectionPathStageStatus: String]] = [
+    private static let explanationKeys: [ConnectionPathStage: [ConnectionPathStageStatus: String]] = [
         .device: [
-            .normal: "Seu aparelho está conectado normalmente."
+            .normal: "connectionPath.explanation.device.normal"
         ],
         .wifi: [
-            .normal: "Sinal bom e conexão estável.",
-            .attention: "O sinal do Wi-Fi está fraco neste local.",
-            .likelyProblem: "O sinal do Wi-Fi está muito fraco — isso costuma explicar lentidão e travamentos.",
-            .unavailable: "Não foi possível verificar esta etapa."
+            .normal: "connectionPath.explanation.wifi.normal",
+            .attention: "connectionPath.explanation.wifi.attention",
+            .likelyProblem: "connectionPath.explanation.wifi.problem",
+            .unavailable: "connectionPath.explanation.unavailable"
         ],
         .router: [
-            .normal: "A resposta do roteador está normal.",
-            .attention: "A resposta do roteador está um pouco mais lenta que o esperado.",
-            .likelyProblem: "A resposta do roteador está bem mais lenta que o esperado.",
-            .unavailable: "Não foi possível verificar esta etapa."
+            .normal: "connectionPath.explanation.router.normal",
+            .attention: "connectionPath.explanation.router.attention",
+            .likelyProblem: "connectionPath.explanation.router.problem",
+            .unavailable: "connectionPath.explanation.unavailable"
         ],
         .carrier: [
-            .normal: "A rede da operadora respondeu normalmente.",
-            .attention: "A rede da operadora está com resposta um pouco mais lenta que o esperado.",
-            .likelyProblem: "A rede da operadora está com resposta bem mais lenta ou perdendo dados.",
-            .unavailable: "Não foi possível verificar esta etapa."
+            .normal: "connectionPath.explanation.carrier.normal",
+            .attention: "connectionPath.explanation.carrier.attention",
+            .likelyProblem: "connectionPath.explanation.carrier.problem",
+            .unavailable: "connectionPath.explanation.unavailable"
         ],
         .internet: [
-            .normal: "Os serviços externos estão acessíveis.",
-            .attention: "O acesso a serviços externos está mais lento que o esperado.",
-            .likelyProblem: "O acesso a serviços externos está bem mais lento que o esperado.",
-            .unavailable: "Não foi possível verificar esta etapa."
+            .normal: "connectionPath.explanation.internet.normal",
+            .attention: "connectionPath.explanation.internet.attention",
+            .likelyProblem: "connectionPath.explanation.internet.problem",
+            .unavailable: "connectionPath.explanation.unavailable"
         ]
     ]
 
     static func explanation(for verdict: ConnectionPathStageVerdict) -> String {
-        explanations[verdict.stage]?[verdict.status]
-            ?? explanations[verdict.stage]?[.unavailable]
-            ?? "Não foi possível verificar esta etapa."
+        let key = explanationKeys[verdict.stage]?[verdict.status]
+            ?? explanationKeys[verdict.stage]?[.unavailable]
+            ?? "connectionPath.explanation.unavailable"
+        return LinkaCopy.value(key)
     }
 
     /// Diagnóstico curto para a tela principal (Apple-style)
     static func shortConclusion(for report: ConnectionPathReport) -> String {
         switch report.category {
         case .healthy:
-            return "Tudo parece normal"
+            return LinkaCopy.value("connectionPath.shortConclusion.healthy")
         case .inconclusive:
-            return "Sinais de instabilidade"
+            return LinkaCopy.value("connectionPath.shortConclusion.inconclusive")
         case .local:
-            return "Possível problema no aparelho"
+            return LinkaCopy.value("connectionPath.shortConclusion.local")
         case .wifi:
-            return "Possível problema no Wi-Fi"
+            return LinkaCopy.value("connectionPath.shortConclusion.wifi")
         case .carrier:
-            return "Possível problema na operadora"
+            return LinkaCopy.value("connectionPath.shortConclusion.carrier")
         case .external:
-            return "Possível instabilidade na internet"
+            return LinkaCopy.value("connectionPath.shortConclusion.external")
         }
     }
 
@@ -261,20 +262,20 @@ enum ConnectionPathCopy {
     static func conclusion(for report: ConnectionPathReport) -> String {
         switch report.category {
         case .healthy:
-            return "Tudo parece normal."
+            return LinkaCopy.value("connectionPath.conclusion.healthy")
         case .inconclusive:
-            return "Encontramos sinais de instabilidade, mas não foi possível identificar uma única causa."
+            return LinkaCopy.value("connectionPath.conclusion.inconclusive")
         case .local:
-            return "O possível problema está no seu aparelho."
+            return LinkaCopy.value("connectionPath.conclusion.local")
         case .wifi:
             if report.highlightedStage == .router {
-                return "O problema provavelmente está entre o Wi-Fi e o roteador."
+                return LinkaCopy.value("connectionPath.conclusion.wifi.router")
             }
-            return "O possível problema está no seu Wi-Fi."
+            return LinkaCopy.value("connectionPath.conclusion.wifi")
         case .carrier:
-            return "O problema parece acontecer depois que a conexão sai da sua casa."
+            return LinkaCopy.value("connectionPath.conclusion.carrier")
         case .external:
-            return "A conexão e a operadora parecem normais — o problema parece estar em um serviço externo."
+            return LinkaCopy.value("connectionPath.conclusion.external")
         }
     }
 
@@ -284,6 +285,6 @@ enum ConnectionPathCopy {
             guard let verdict = report.verdict(for: stage) else { return nil }
             return "\(title(for: stage)): \(statusAccessibilityLabel(verdict.status))"
         }.joined(separator: ". ")
-        return "Caminho da conexão. \(stagesText). \(conclusion(for: report))"
+        return LinkaCopy.format("connectionPath.accessibility.summary", stagesText, conclusion(for: report))
     }
 }
