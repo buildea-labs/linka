@@ -75,6 +75,31 @@ final class NDSRequestBuilderTests: XCTestCase {
         XCTAssertEqual(request.context, context)
     }
 
+    func testBuildRequest_usesEffectiveLinkaLanguageTagInsteadOfDeviceLocale() throws {
+        let request = NDSRequestBuilder().buildRequest(
+            current: NetworkMeasurement(outcome: .complete, latencyMs: 20),
+            platformHints: PlatformHints(),
+            appVersion: nil,
+            platformIdentifier: "ios",
+            requestAI: true,
+            locale: "es-419"
+        )
+
+        XCTAssertEqual(request.locale, "es-419")
+    }
+
+    func testBuildRequest_defaultsLegacyCallersToPortugueseBrazil() throws {
+        let request = NDSRequestBuilder().buildRequest(
+            current: NetworkMeasurement(outcome: .complete, latencyMs: 20),
+            platformHints: PlatformHints(),
+            appVersion: nil,
+            platformIdentifier: "ios",
+            requestAI: true
+        )
+
+        XCTAssertEqual(request.locale, "pt-BR")
+    }
+
     /// `subcategory` (issue objective+subcategory guiado) só existe quando
     /// o app coletou a seleção guiada — precisa aparecer no JSON quando
     /// fornecido e ficar totalmente ausente (não `null`) quando não.

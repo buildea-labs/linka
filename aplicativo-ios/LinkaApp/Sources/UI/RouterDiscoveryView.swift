@@ -21,41 +21,41 @@ struct RouterDiscoveryView: View {
 
     var body: some View {
         List {
-            Section("Painel do roteador") {
+            Section(LinkaCopy.value("router.panel.title")) {
                 switch state {
                 case .idle:
-                    Text("Localize o painel da rede Wi-Fi atual antes de abri-lo.")
+                    Text(LinkaCopy.value("router.panel.idle"))
                         .foregroundColor(.secondary)
                 case .locating:
-                    HStack { ProgressView(); Text("Procurando o painel nesta rede…") }
+                    HStack { ProgressView(); Text(LinkaCopy.value("router.panel.locating")) }
                 case .found(let gateway):
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("Painel encontrado", systemImage: "checkmark.circle.fill")
+                        Label(LinkaCopy.value("router.panel.found"), systemImage: "checkmark.circle.fill")
                             .foregroundColor(.green)
                         Text(gateway.ip).font(.footnote).foregroundColor(.secondary)
-                        Button("Abrir no navegador") { showOpenConfirmation = true }
+                        Button(LinkaCopy.value("router.panel.open")) { showOpenConfirmation = true }
                     }
                 case .unavailable:
-                    Text("Não foi possível localizar um painel nesta rede.")
+                    Text(LinkaCopy.value("router.panel.unavailable"))
                         .foregroundColor(.secondary)
                 }
 
-                Button(state == .locating ? "Procurando…" : "Localizar painel") {
+                Button(state == .locating ? LinkaCopy.value("router.panel.locating") : LinkaCopy.value("router.panel.locate")) {
                     Task { await locatePanel() }
                 }
                 .disabled(state == .locating)
             }
 
-            Section(header: Text("Senha do roteador (opcional)"), footer: Text("A senha fica somente no Keychain deste dispositivo.")) {
-                SecureField("Senha do roteador", text: $savedPassword)
-                Button("Salvar senha") {
+            Section(header: Text(LinkaCopy.value("router.password.title")), footer: Text(LinkaCopy.value("router.password.footer"))) {
+                SecureField(LinkaCopy.value("router.password.field"), text: $savedPassword)
+                Button(LinkaCopy.value("common.savePassword")) {
                     if let data = savedPassword.data(using: .utf8) {
                         KeychainHelper.shared.save(data, service: service, account: "router_admin")
                         hasSavedPassword = true
                     }
                 }
                 if hasSavedPassword {
-                    Button("Remover senha salva", role: .destructive) {
+                    Button(LinkaCopy.value("router.password.remove"), role: .destructive) {
                         KeychainHelper.shared.delete(service: service, account: "router_admin")
                         savedPassword = ""
                         hasSavedPassword = false
@@ -63,7 +63,7 @@ struct RouterDiscoveryView: View {
                 }
             }
         }
-        .navigationTitle("Acesso ao roteador")
+        .navigationTitle(LinkaCopy.value("router.title"))
         .onAppear {
             if let data = KeychainHelper.shared.read(service: service, account: "router_admin"),
                let password = String(data: data, encoding: .utf8) {
@@ -71,14 +71,14 @@ struct RouterDiscoveryView: View {
                 hasSavedPassword = true
             }
         }
-        .confirmationDialog("Abrir o painel do roteador?", isPresented: $showOpenConfirmation, titleVisibility: .visible) {
+        .confirmationDialog(LinkaCopy.value("router.panel.confirmation.title"), isPresented: $showOpenConfirmation, titleVisibility: .visible) {
             if case .found(let gateway) = state, let url = gateway.adminURL {
-                Button("Abrir no navegador") { openURL(url) }
+                Button(LinkaCopy.value("router.panel.open")) { openURL(url) }
             }
-            Button("Cancelar", role: .cancel) {}
+            Button(LinkaCopy.value("common.cancel"), role: .cancel) {}
         } message: {
             if case .found(let gateway) = state {
-                Text("Você vai abrir a página de administração em \(gateway.ip). O Linka não acessa nem guarda as credenciais inseridas nela.")
+                Text(String(format: LinkaCopy.value("router.panel.confirmation.message"), locale: LinkaLanguagePreference.currentLocale, gateway.ip))
             }
         }
     }

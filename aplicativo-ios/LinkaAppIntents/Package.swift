@@ -22,7 +22,8 @@ let package = Package(
             dependencies: [
                 .product(name: "LinkaEntitlements", package: "LinkaEntitlements")
             ],
-            path: "Sources"
+            path: "Sources",
+            resources: [.process("../Resources")]
         ),
         .testTarget(
             name: "LinkaAppIntentsTests",

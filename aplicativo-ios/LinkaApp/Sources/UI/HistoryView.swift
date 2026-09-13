@@ -11,10 +11,9 @@ enum HistoryDisplayMode {
     case map
 }
 
-private enum HistoryFilter: String, CaseIterable {
-    case all = "Todos"
-    case wifi = "Wi-Fi"
-    case mobile = "Móvel"
+private enum HistoryFilter: CaseIterable {
+    case all, wifi, mobile
+    var label: String { switch self { case .all: return LinkaCopy.value("history.filter.all"); case .wifi: return LinkaCopy.value("network.wifi"); case .mobile: return LinkaCopy.value("history.filter.mobile") } }
 }
 
 private enum HistorySort: CaseIterable, Hashable {
@@ -24,9 +23,9 @@ private enum HistorySort: CaseIterable, Hashable {
 
     var label: String {
         switch self {
-        case .recent: return "Recentes"
-        case .fastest: return "Mais rápido"
-        case .slowest: return "Mais lento"
+        case .recent: return LinkaCopy.value("history.sort.recent")
+        case .fastest: return LinkaCopy.value("history.sort.fastest")
+        case .slowest: return LinkaCopy.value("history.sort.slowest")
         }
     }
 }
@@ -59,9 +58,9 @@ struct HistoryView: View {
                 List {
                     Section {
                         VStack(spacing: 12) {
-                            Picker("Filtro", selection: $filter) {
+                            Picker(LinkaCopy.value("history.filter.title"), selection: $filter) {
                                 ForEach(availableFilters, id: \.self) { option in
-                                    Text(option.rawValue).tag(option)
+                                    Text(option.label).tag(option)
                                 }
                             }
                             .pickerStyle(.segmented)
@@ -89,7 +88,7 @@ struct HistoryView: View {
 
                     if hasPlus {
                         if let insightText = insightText {
-                            Section("Insights") {
+                            Section(LinkaCopy.value("history.insights")) {
                                 HStack(alignment: .top, spacing: 12) {
                                     Image(systemName: "sparkles")
                                         .foregroundColor(.brandAccentWarm)
@@ -102,7 +101,7 @@ struct HistoryView: View {
                             }
                         }
                     } else if !filteredMeasurements.isEmpty {
-                        Section("Insights") {
+                        Section(LinkaCopy.value("history.insights")) {
                             Button {
                                 purchaseEntryPoint = .historyInsights
                                 showPurchase = true
@@ -111,7 +110,7 @@ struct HistoryView: View {
                                     Image(systemName: "lock.fill")
                                         .foregroundColor(.textSecondary)
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("Descubra padrões por rede e horário")
+                                        Text(LinkaCopy.value("history.plus.prompt"))
                                             .font(.bodyRegular)
                                             .foregroundColor(.textPrimary)
                                         LinkaPlusWordmarkView(height: 14)
@@ -138,14 +137,14 @@ struct HistoryView: View {
                     if filteredMeasurements.isEmpty {
                         Section {
                             LinkaUnavailableState(
-                                title: "Nenhuma medição",
-                                message: "Faça uma medição para vê-la aqui.",
+                                title: LinkaCopy.value("history.empty.title"),
+                                message: LinkaCopy.value("history.empty.message"),
                                 systemImage: "clock"
                             )
                             .frame(maxWidth: .infinity)
                         }
                     } else {
-                        Section("Medições (\(filteredMeasurements.count))") {
+                        Section("\(LinkaCopy.value("history.measurements")) (\(filteredMeasurements.count))") {
                             ForEach(filteredMeasurements, id: \.id) { measurement in
                                 Button {
                                     onSelectMeasurement?(measurement)
@@ -160,7 +159,7 @@ struct HistoryView: View {
                 .scrollContentBackground(.hidden)
             }
         }
-        .navigationTitle("Histórico")
+        .navigationTitle(LinkaCopy.value("history.title"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
@@ -249,12 +248,12 @@ struct HistoryView: View {
             return nil
         }
 
-        let deltaStr = String(format: "%.0f", abs(percentDelta))
+        let deltaStr = abs(percentDelta).formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale))
         switch download.direction {
         case .improved:
-            return "Sua velocidade de download está cerca de \(deltaStr)% melhor esta semana em comparação à semana anterior."
+            return LinkaCopy.format("history.insight.improved", deltaStr)
         case .worsened:
-            return "Sua velocidade de download está cerca de \(deltaStr)% pior esta semana em comparação à semana anterior."
+            return LinkaCopy.format("history.insight.worsened", deltaStr)
         case .stable, .unavailable:
             return nil
         }
@@ -706,14 +705,10 @@ struct AppleStyleHistoryRow: View {
 
     private var networkTitle: String {
         switch measurement.connectionKind {
-        case .wifi:
-            return measurement.wifiContext?.ssid ?? "Wi-Fi"
-        case .cellular:
-            return measurement.networkIdentifier ?? "Rede móvel"
-        case .ethernet:
-            return "Ethernet"
-        default:
-            return "Medição"
+        case .wifi: return measurement.wifiContext?.ssid ?? LinkaCopy.value("network.wifi")
+        case .cellular: return measurement.networkIdentifier ?? LinkaCopy.value("network.cellular")
+        case .ethernet: return "Ethernet"
+        default: return LinkaCopy.value("history.measurement")
         }
     }
 
@@ -740,28 +735,92 @@ struct AppleStyleHistoryRow: View {
     }
 
     private var formattedDate: String {
-        let calendar = Calendar.current
-        let date = measurement.measuredAt
-        let timeFormatter = DateFormatter()
-        timeFormatter.locale = Locale(identifier: "pt_BR")
-        timeFormatter.dateFormat = "HH:mm"
-        let timeString = timeFormatter.string(from: date)
-
-        if calendar.isDateInToday(date) {
-            return "Hoje, \(timeString)"
-        } else if calendar.isDateInYesterday(date) {
-            return "Ontem, \(timeString)"
-        } else {
-            let dateFormatter = DateFormatter()
-            dateFormatter.locale = Locale(identifier: "pt_BR")
-            dateFormatter.dateFormat = "d 'de' MMM"
-            return "\(dateFormatter.string(from: date)), \(timeString)"
-        }
+        let formatter = DateFormatter()
+        formatter.locale = LinkaLanguagePreference.currentLocale
+        formatter.setLocalizedDateFormatFromTemplate("dMMMjm")
+        return formatter.string(from: measurement.measuredAt)
     }
 
     private func formatSpeed(_ speed: Double?) -> String {
         guard let speed = speed else { return "—" }
-        return String(format: "%.0f", speed)
+        return speed.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale))
+    }
+}
+
+struct HistoryRow: View {
+    let measurement: NetworkMeasurement
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(networkTitle)
+                    .font(.bodyRegularStrong)
+                    .foregroundColor(.textPrimary)
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Text(formatDate(measurement.measuredAt))
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
+
+                    Text("·")
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
+
+                    Image(systemName: connectionIconName(for: measurement.connectionKind))
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 2) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.down")
+                        .font(.captionSmallStrong)
+                        .foregroundColor(.brandAccentWarm)
+                    Text("\(formatSpeed(measurement.downloadMbps)) Mbps")
+                        .font(.bodySmallStrong)
+                        .foregroundColor(.textPrimary)
+                }
+
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.up")
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
+                    Text("\(formatSpeed(measurement.uploadMbps)) Mbps")
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var networkTitle: String {
+        if measurement.connectionKind == .wifi {
+            return measurement.wifiContext?.ssid ?? LinkaCopy.value("network.wifi")
+        } else if measurement.connectionKind == .cellular {
+            return measurement.networkIdentifier ?? LinkaCopy.value("network.cellular")
+        } else if measurement.connectionKind == .ethernet {
+            return "Ethernet"
+        }
+        return LinkaCopy.value("history.measurement")
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        formatter.locale = LinkaLanguagePreference.currentLocale
+        return formatter.string(from: date)
+    }
+
+    private func formatSpeed(_ speed: Double?) -> String {
+        guard let speed = speed else { return "--" }
+        return speed.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale))
+>>>>>>> origin/main
     }
 }
 
@@ -782,7 +841,7 @@ struct MapHistoryView: View {
     var locationItems: [MapLocationItem] {
         measurements.compactMap { m in
             if let loc = m.location {
-                return MapLocationItem(id: m.id, coordinate: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude), title: m.serverIdentifier ?? "Medição")
+                return MapLocationItem(id: m.id, coordinate: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude), title: m.serverIdentifier ?? LinkaCopy.value("history.measurement"))
             }
             return nil
         }

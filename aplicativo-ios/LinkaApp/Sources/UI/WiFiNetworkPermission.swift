@@ -18,11 +18,11 @@ enum WiFiNetworkIdentificationState: Equatable {
 
     var statusText: String {
         switch self {
-        case .active: return "Ativada"
-        case .disabledByUser: return "Desativada"
-        case .permissionRequired: return "Permissão necessária"
-        case .permissionDenied: return "Negada no sistema"
-        case .unavailable: return "Não disponível"
+        case .active: return LinkaCopy.value("wifi.identification.active")
+        case .disabledByUser: return LinkaCopy.value("wifi.identification.disabled")
+        case .permissionRequired: return LinkaCopy.value("wifi.identification.permissionRequired")
+        case .permissionDenied: return LinkaCopy.value("wifi.identification.permissionDenied")
+        case .unavailable: return LinkaCopy.value("common.unavailable")
         }
     }
 }
@@ -95,11 +95,11 @@ enum WiFiNetworkPermission {
 extension WiFiSecurityType {
     var displayLabel: String {
         switch self {
-        case .open: return "Aberta"
+        case .open: return LinkaCopy.value("wifi.security.open")
         case .wep: return "WEP"
-        case .personal: return "Rede pessoal protegida"
-        case .enterprise: return "Rede corporativa"
-        case .unknown: return "Não informada"
+        case .personal: return LinkaCopy.value("wifi.security.personal")
+        case .enterprise: return LinkaCopy.value("wifi.security.enterprise")
+        case .unknown: return LinkaCopy.value("wifi.security.unknown")
         }
     }
 }

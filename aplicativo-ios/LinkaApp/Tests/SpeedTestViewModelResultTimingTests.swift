@@ -33,7 +33,7 @@ final class SpeedTestViewModelResultTimingTests: XCTestCase {
         )
         XCTAssertEqual(
             SpeedTestViewModel.liveCellularNetworkLabel(operatorName: "—", technology: nil),
-            "Rede móvel"
+            LinkaCopy.value("network.cellular")
         )
     }
 

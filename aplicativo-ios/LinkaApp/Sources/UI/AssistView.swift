@@ -120,7 +120,7 @@ struct AssistView: View {
                     .ignoresSafeArea()
                 contentView
             }
-            .linkaSheetToolbar(title: "Assist", onDismiss: closeSheet)
+            .linkaSheetToolbar(title: LinkaCopy.value("assist.title"), onDismiss: closeSheet)
             // Uma única tarefa coordena análise e estabilidade para a mesma
             // identidade de medição. Duas `.task(id:)` paralelas reagem ao
             // mesmo redraw e deixam o ciclo de análise suscetível a repetição.
@@ -175,14 +175,14 @@ struct AssistView: View {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 40))
                     .foregroundColor(.statusAttention)
-                Text("Não foi possível concluir")
+                Text(LinkaCopy.value("assist.error.title"))
                     .font(.displayTitle)
                 Text(message)
                     .font(.bodyRegular)
                     .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-                Button("Tentar novamente") {
+                Button(LinkaCopy.value("common.tryAgain")) {
                     Task {
                         await viewModel.retry(
                             currentMeasurement: currentMeasurement,
@@ -197,7 +197,7 @@ struct AssistView: View {
                 }
                 .buttonStyle(.linkaPrimary)
                 .padding(.horizontal, 24)
-                Button("Voltar") { closeSheet() }
+                Button(LinkaCopy.value("common.back")) { closeSheet() }
                     .buttonStyle(.plain)
                     .foregroundColor(.brandAccentWarm)
             }
@@ -213,7 +213,7 @@ struct AssistView: View {
                             Circle()
                                 .fill(isHealthy ? Color.statusGood : Color.statusAttention)
                                 .frame(width: 9, height: 9)
-                            Text(isHealthy ? "Conexão Saudável" : "Problema Identificado")
+                            Text(isHealthy ? LinkaCopy.value("assist.status.healthy") : LinkaCopy.value("assist.status.problem"))
                                 .font(.captionStrong)
                                 .foregroundColor(.textSecondary)
                                 .textCase(.uppercase)
@@ -235,7 +235,7 @@ struct AssistView: View {
 
                     // ─── 2. O QUE FAZER PARA RESOLVER OU MELHORAR ───
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("O que fazer para resolver ou melhorar")
+                        Text(LinkaCopy.value("assist.recommendations.title"))
                             .font(.bodyRegularStrong)
                             .foregroundColor(.textPrimary)
 
@@ -270,7 +270,7 @@ struct AssistView: View {
 
                                         if let actionURL = rec.actionURL ?? currentMeasurement?.wifiContext?.gatewayAdminURL.flatMap(URL.init),
                                            (rec.actionLabel != nil || rec.title.lowercased().contains("roteador") || rec.title.lowercased().contains("wi-fi") || rec.title.lowercased().contains("canal")) {
-                                            let label = rec.actionLabel ?? "Abrir configurações do roteador"
+                                            let label = rec.actionLabel ?? LinkaCopy.value("assist.openRouterSettings")
                                             Button(action: {
                                                 openURL(actionURL)
                                             }) {
@@ -299,7 +299,7 @@ struct AssistView: View {
                                     .font(.title2)
                                     .foregroundColor(.statusGood)
 
-                                Text("Nenhuma ação necessária. Sua conexão está operando nos parâmetros ideais para qualquer uso.")
+                                Text(LinkaCopy.value("assist.noAction"))
                                     .font(.bodyRegular)
                                     .foregroundColor(.textSecondary)
                             }
@@ -311,7 +311,7 @@ struct AssistView: View {
 
                     // ─── 3. COMO CHEGOU À CONCLUSÃO ───
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Como chegou à conclusão")
+                        Text(LinkaCopy.value("assist.evidence.title"))
                             .font(.bodyRegularStrong)
                             .foregroundColor(.textPrimary)
 
@@ -325,25 +325,25 @@ struct AssistView: View {
                                 }
                             } else if let measurement = currentMeasurement {
                                 measurementEvidenceRow(
-                                    title: "Download",
-                                    value: measurement.downloadMbps.map { String(format: "%.1f Mbps", $0) } ?? "--"
+                                    title: LinkaCopy.value("detail.download"),
+                                    value: measurement.downloadMbps.map(formattedSpeed) ?? LinkaCopy.value("common.unavailable")
                                 )
                                 if let upload = measurement.uploadMbps, upload > 0 {
                                     Divider()
                                     measurementEvidenceRow(
-                                        title: "Upload",
-                                        value: String(format: "%.1f Mbps", upload)
+                                        title: LinkaCopy.value("detail.upload"),
+                                        value: formattedSpeed(upload)
                                     )
                                 }
                                 Divider()
                                 measurementEvidenceRow(
-                                    title: "Latência (Ping)",
-                                    value: measurement.latencyMs.map { "\(Int($0.rounded())) ms" } ?? "--"
+                                    title: LinkaCopy.value("assist.latency"),
+                                    value: measurement.latencyMs.map(formattedMilliseconds) ?? LinkaCopy.value("common.unavailable")
                                 )
                                 Divider()
                                 measurementEvidenceRow(
-                                    title: "Rede",
-                                    value: measurement.connectionKind.map { connectionLabel($0) } ?? "--"
+                                    title: LinkaCopy.value("assist.network"),
+                                    value: measurement.connectionKind.map { connectionLabel($0) } ?? LinkaCopy.value("common.unavailable")
                                 )
                             }
                         }
@@ -361,7 +361,7 @@ struct AssistView: View {
                                 closeSheet()
                                 retry()
                             }) {
-                                Text("Testar novamente")
+                                Text(LinkaCopy.value("common.retry"))
                             }
                             .buttonStyle(.linkaPrimary)
                         }
@@ -372,7 +372,7 @@ struct AssistView: View {
                                 onShowDetails()
                             }) {
                                 HStack(spacing: 6) {
-                                    Text("Ver detalhes técnicos")
+                                    Text(LinkaCopy.value("assist.technicalDetails"))
                                     Image(systemName: "chevron.right")
                                         .font(.system(size: 12, weight: .semibold))
                                 }
@@ -403,13 +403,13 @@ struct AssistView: View {
             EmptyView()
         case .insufficientHistory:
             stabilityPatternsContainer {
-                Text("Ainda não há histórico suficiente para apontar um padrão de horário nesta rede.")
+                Text(LinkaCopy.value("assist.history.insufficient"))
                     .font(.bodyRegular)
                     .foregroundColor(.textSecondary)
             }
         case .noPatternDetected:
             stabilityPatternsContainer {
-                Text("Nenhum horário de instabilidade recorrente identificado até agora.")
+                Text(LinkaCopy.value("assist.history.noPattern"))
                     .font(.bodyRegular)
                     .foregroundColor(.textSecondary)
             }
@@ -434,7 +434,7 @@ struct AssistView: View {
     @ViewBuilder
     private func stabilityPatternsContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Padrões no seu histórico")
+            Text(LinkaCopy.value("assist.history.title"))
                 .font(.bodyRegularStrong)
                 .foregroundColor(.textPrimary)
             content()
@@ -477,10 +477,10 @@ struct AssistView: View {
     
     private func labelForDimension(_ name: String) -> String {
         switch name.lowercased() {
-        case "download": return "Download"
-        case "upload": return "Upload"
-        case "latency": return "Latência"
-        case "stability", "packet_loss", "perda": return "Estabilidade"
+        case "download": return LinkaCopy.value("detail.download")
+        case "upload": return LinkaCopy.value("detail.upload")
+        case "latency": return LinkaCopy.value("assist.latency")
+        case "stability", "packet_loss", "perda": return LinkaCopy.value("assist.dimension.stability")
         default: return name.capitalized
         }
     }
@@ -489,19 +489,19 @@ struct AssistView: View {
         let metricLower = metric.lowercased()
         switch status.lowercased() {
         case "excellent":
-            if metricLower == "latency" { return "Muito boa" }
-            if metricLower == "stability" || metricLower == "packet_loss" || metricLower == "perda" { return "Sem perda relevante" }
-            return "Muito bom"
+            if metricLower == "latency" { return LinkaCopy.value("assist.status.excellent.feminine") }
+            if metricLower == "stability" || metricLower == "packet_loss" || metricLower == "perda" { return LinkaCopy.value("assist.status.noLoss") }
+            return LinkaCopy.value("assist.status.excellent")
         case "good":
-            if metricLower == "latency" { return "Boa" }
-            if metricLower == "stability" || metricLower == "packet_loss" || metricLower == "perda" { return "Estável" }
-            return "Bom"
+            if metricLower == "latency" { return LinkaCopy.value("assist.status.good.feminine") }
+            if metricLower == "stability" || metricLower == "packet_loss" || metricLower == "perda" { return LinkaCopy.value("assist.status.stable") }
+            return LinkaCopy.value("assist.status.good")
         case "attention":
-            return "Atenção"
+            return LinkaCopy.value("assist.status.attention")
         case "critical":
-            return "Ruim"
+            return LinkaCopy.value("assist.status.poor")
         case "unknown":
-            return "Não avaliado"
+            return LinkaCopy.value("assist.status.notAssessed")
         default:
             return status.capitalized
         }
@@ -527,7 +527,7 @@ struct AssistView: View {
         if isGoodStatus(headerStatus) { return true }
         if recommendation == nil { return true }
         let t = title.lowercased()
-        if t.contains("sem causa") || t.contains("saudável") || t.contains("tudo certo") || t.contains("normal") {
+        if t.contains("sem causa") || t.contains("saudável") || t.contains("tudo certo") || t.contains("normal") || t.contains("no specific cause") || t.contains("no se identificó") {
             return true
         }
         return false
@@ -535,7 +535,7 @@ struct AssistView: View {
 
     private func isGoodStatus(_ status: String) -> Bool {
         let s = status.uppercased()
-        return s.contains("TUDO CERTO") || s.contains("BOM") || s.contains("EXCELENTE") || s.contains("SAUDÁVEL") || s.contains("CONCLUÍDO")
+        return s.contains("TUDO CERTO") || s.contains("BOM") || s.contains("EXCELENTE") || s.contains("SAUDÁVEL") || s.contains("CONCLUÍDO") || s.contains("ALL GOOD") || s.contains("TODO BIEN")
     }
 
     private func measurementEvidenceRow(title: String, value: String, isWarning: Bool = false) -> some View {
@@ -571,25 +571,33 @@ struct AssistView: View {
             Image(systemName: "chart.line.uptrend.xyaxis")
                 .font(.system(size: 40))
                 .foregroundColor(.textSecondary)
-            Text("Faça uma medição primeiro")
+            Text(LinkaCopy.value("assist.unavailable.title"))
                 .font(.displayTitle)
-            Text("O Assist interpreta uma medição concluída. Volte, teste sua conexão e tente novamente.")
+            Text(LinkaCopy.value("assist.unavailable.message"))
                 .font(.bodyRegular)
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
-            Button("Voltar", action: closeSheet)
+            Button(LinkaCopy.value("common.back"), action: closeSheet)
                 .font(.bodySmallStrong)
         }
         .frame(maxHeight: .infinity)
     }
 
+    private func formattedSpeed(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale)) + " Mbps"
+    }
+
+    private func formattedMilliseconds(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale)) + " ms"
+    }
+
     private func connectionLabel(_ kind: NetworkConnectionKind) -> String {
         switch kind {
-        case .wifi: return "Wi-Fi"
-        case .cellular: return "Rede móvel"
-        case .ethernet: return "Ethernet"
-        case .other: return "Outra rede"
+        case .wifi: return LinkaCopy.value("network.wifi")
+        case .cellular: return LinkaCopy.value("network.cellular")
+        case .ethernet: return LinkaCopy.value("network.ethernet")
+        case .other: return LinkaCopy.value("network.other")
         }
     }
 }
@@ -599,9 +607,9 @@ private struct AssistCollectingMeasurementView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .controlSize(.large)
-            Text("Atualizando a medição")
+            Text(LinkaCopy.value("assist.collecting.title"))
                 .font(.displayTitle)
-            Text("O Assist está coletando uma amostra nova para analisar sua conexão. Você continua nesta tela.")
+            Text(LinkaCopy.value("assist.collecting.message"))
                 .font(.bodyRegular)
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
@@ -624,28 +632,27 @@ private struct AssistWaitingAnalysisView: View {
     private var facts: [FactItem] {
         var list: [FactItem] = []
         if let dl = measurement.downloadMbps {
-            list.append(FactItem(id: "dl", title: "Download medido", value: String(format: "%.1f Mbps", dl).replacingOccurrences(of: ".", with: ",")))
+            list.append(FactItem(id: "dl", title: LinkaCopy.value("assist.fact.download"), value: formattedSpeed(dl)))
         }
         if let ul = measurement.uploadMbps {
-            list.append(FactItem(id: "ul", title: "Upload medido", value: String(format: "%.1f Mbps", ul).replacingOccurrences(of: ".", with: ",")))
+            list.append(FactItem(id: "ul", title: LinkaCopy.value("assist.fact.upload"), value: formattedSpeed(ul)))
         }
         if let ping = measurement.latencyMs {
-            list.append(FactItem(id: "ping", title: "Latência (Ping)", value: "\(Int(ping.rounded())) ms"))
+            list.append(FactItem(id: "ping", title: LinkaCopy.value("assist.latency"), value: formattedMilliseconds(ping)))
         }
         if let kind = measurement.connectionKind {
-            list.append(FactItem(id: "kind", title: "Tipo de rede", value: connectionLabel(kind)))
+            list.append(FactItem(id: "kind", title: LinkaCopy.value("assist.fact.networkType"), value: connectionLabel(kind)))
         }
         if let adv = measurement.advancedWiFiDiagnostics {
             if let band = adv.bandGHz {
-                list.append(FactItem(id: "band", title: "Frequência Wi-Fi", value: "\(band) GHz"))
+                list.append(FactItem(id: "band", title: LinkaCopy.value("assist.fact.wifiFrequency"), value: formattedGigahertz(band)))
             } else if let channel = adv.channelNumber {
-                list.append(FactItem(id: "chan", title: "Canal Wi-Fi", value: "Canal \(channel)"))
+                list.append(FactItem(id: "chan", title: LinkaCopy.value("assist.fact.wifiChannel"), value: String(format: LinkaCopy.value("assist.fact.wifiChannel.value"), locale: LinkaLanguagePreference.currentLocale, channel)))
             }
         } else if let band = measurement.wifiBandGHz {
-            let bandStr = band.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", band) : String(format: "%.1f", band)
-            list.append(FactItem(id: "band", title: "Frequência Wi-Fi", value: "\(bandStr) GHz"))
+            list.append(FactItem(id: "band", title: LinkaCopy.value("assist.fact.wifiFrequency"), value: formattedGigahertz(band)))
         } else if let jitter = measurement.jitterMs {
-            list.append(FactItem(id: "jitter", title: "Estabilidade (Jitter)", value: String(format: "%.0f ms", jitter)))
+            list.append(FactItem(id: "jitter", title: LinkaCopy.value("assist.fact.stability"), value: formattedMilliseconds(jitter)))
         }
         return list
     }
@@ -662,10 +669,10 @@ private struct AssistWaitingAnalysisView: View {
                 .padding(.horizontal, 40)
 
             VStack(spacing: 8) {
-                Text("Analisando sua conexão...")
+                Text(LinkaCopy.value("assist.analyzing.title"))
                     .font(.displayMedium)
                     .foregroundColor(.textPrimary)
-                Text("A inteligência artificial está examinando os dados medidos disponíveis.")
+                Text(LinkaCopy.value("assist.analyzing.message"))
                     .font(.bodyRegular)
                     .foregroundColor(.textSecondary)
                     .multilineTextAlignment(.center)
@@ -710,7 +717,7 @@ private struct AssistWaitingAnalysisView: View {
 
             HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
-                Text("Sintetizando diagnóstico...")
+                Text(LinkaCopy.value("assist.analyzing.synthesizing"))
                     .font(.bodySmall)
                     .foregroundColor(.textSecondary)
             }
@@ -735,12 +742,25 @@ private struct AssistWaitingAnalysisView: View {
         }
     }
 
+    private func formattedSpeed(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(1)).locale(LinkaLanguagePreference.currentLocale)) + " Mbps"
+    }
+
+    private func formattedMilliseconds(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0)).locale(LinkaLanguagePreference.currentLocale)) + " ms"
+    }
+
+    private func formattedGigahertz(_ value: Double) -> String {
+        let precision = value.truncatingRemainder(dividingBy: 1) == 0 ? 0 : 1
+        return value.formatted(.number.precision(.fractionLength(precision)).locale(LinkaLanguagePreference.currentLocale)) + " GHz"
+    }
+
     private func connectionLabel(_ kind: NetworkConnectionKind) -> String {
         switch kind {
-        case .wifi: return "Wi-Fi"
-        case .cellular: return "Rede móvel"
-        case .ethernet: return "Ethernet"
-        case .other: return "Outra rede"
+        case .wifi: return LinkaCopy.value("network.wifi")
+        case .cellular: return LinkaCopy.value("network.cellular")
+        case .ethernet: return LinkaCopy.value("network.ethernet")
+        case .other: return LinkaCopy.value("network.other")
         }
     }
 }

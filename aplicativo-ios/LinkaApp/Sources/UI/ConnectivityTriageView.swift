@@ -22,9 +22,9 @@ struct ConnectivityTriageView: View {
         NavigationStack {
             Group {
                 if isLoading {
-                    ProgressView("Verificando conexão…")
+                    ProgressView("triage.checking")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .accessibilityLabel("Verificando a conexão deste aparelho")
+                        .accessibilityLabel("triage.checking.accessibility")
                 } else if let report {
                     VStack(alignment: .leading, spacing: 20) {
                         Text(eyebrow(for: report))
@@ -42,10 +42,10 @@ struct ConnectivityTriageView: View {
                             dismiss()
                             onRetry()
                         } label: {
-                            Text("Testar novamente")
+                            Text("common.retry")
                         }
                         .buttonStyle(.linkaPrimary)
-                        .accessibilityHint("Inicia uma nova medição")
+                        .accessibilityHint("triage.retry.hint")
 
                     }
                     .padding(24)
@@ -53,15 +53,15 @@ struct ConnectivityTriageView: View {
                     .accessibilityElement(children: .contain)
                 } else {
                     LinkaUnavailableState(
-                        title: "Verificação indisponível",
-                        message: "Não foi possível verificar a conexão agora.",
+                        title: "triage.unavailable.title",
+                        message: "triage.unavailable.message",
                         systemImage: "wifi.exclamationmark"
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .background(Color.surfacePage.ignoresSafeArea())
-            .linkaSheetToolbar(title: "Verificar conexão") { dismiss() }
+            .linkaSheetToolbar(title: LinkaCopy.value("triage.title")) { dismiss() }
             .task {
                 do {
                     let result = try await service.run()
@@ -84,36 +84,36 @@ struct ConnectivityTriageView: View {
 
     private func eyebrow(for report: ConnectivityTriageReport) -> String {
         switch report.outcome {
-        case .noNetworkPath: return "CONEXÃO INDISPONÍVEL"
-        case .internetReachable: return "CONEXÃO DISPONÍVEL AGORA"
-        case .dnsResolutionUnavailable: return "ENDEREÇOS NÃO RESOLVIDOS"
-        case .captivePortalSuspected: return "ACESSO PODE SER NECESSÁRIO"
-        case .inconclusive: return "VERIFICAÇÃO INCONCLUSIVA"
+        case .noNetworkPath: return LinkaCopy.value("triage.eyebrow.noPath")
+        case .internetReachable: return LinkaCopy.value("triage.eyebrow.reachable")
+        case .dnsResolutionUnavailable: return LinkaCopy.value("triage.eyebrow.dns")
+        case .captivePortalSuspected: return LinkaCopy.value("triage.eyebrow.portal")
+        case .inconclusive: return LinkaCopy.value("triage.eyebrow.inconclusive")
         }
     }
 
     private func title(for report: ConnectivityTriageReport) -> String {
         switch report.outcome {
-        case .noNetworkPath: return "Não há conexão disponível"
-        case .internetReachable: return "A conexão está disponível agora"
-        case .dnsResolutionUnavailable: return "Não foi possível resolver os endereços de teste"
-        case .captivePortalSuspected: return "Esta rede pode exigir acesso antes de usar a internet"
-        case .inconclusive: return "Ainda não foi possível concluir"
+        case .noNetworkPath: return LinkaCopy.value("triage.outcome.noPath")
+        case .internetReachable: return LinkaCopy.value("triage.outcome.reachable")
+        case .dnsResolutionUnavailable: return LinkaCopy.value("triage.outcome.dns")
+        case .captivePortalSuspected: return LinkaCopy.value("triage.outcome.portal")
+        case .inconclusive: return LinkaCopy.value("triage.outcome.inconclusive")
         }
     }
 
     private func message(for report: ConnectivityTriageReport) -> String {
         switch report.outcome {
         case .noNetworkPath:
-            return "O Linka não encontrou um caminho de rede neste aparelho agora. Ative uma conexão e tente novamente."
+            return LinkaCopy.value("triage.message.noPath")
         case .internetReachable:
-            return "O Linka encontrou uma conexão agora, mas não consegue identificar por que o teste anterior foi interrompido. Tente novamente."
+            return LinkaCopy.value("triage.message.reachable")
         case .dnsResolutionUnavailable:
-            return "O aparelho tem um caminho de rede, mas não conseguiu resolver os endereços de teste. Aguarde um instante e tente novamente."
+            return LinkaCopy.value("triage.message.dns")
         case .captivePortalSuspected:
-            return "A resposta da rede foi diferente do esperado. Se esta for uma rede pública, abra o acesso dela e tente novamente."
+            return LinkaCopy.value("triage.message.portal")
         case .inconclusive:
-            return "O aparelho ainda está tentando estabelecer uma conexão. Aguarde um instante e tente novamente."
+            return LinkaCopy.value("triage.message.inconclusive")
         }
     }
 }

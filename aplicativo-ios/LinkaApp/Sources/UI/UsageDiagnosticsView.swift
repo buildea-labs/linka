@@ -14,17 +14,17 @@ struct UsageDiagnosticsView: View {
     }
 
     private var summarySubtitle: String {
-        guard let report else { return "Faça uma medição para avaliar o uso." }
+        guard let report else { return LinkaCopy.value("usage.summary.noMeasurement") }
         let quality = UsageSuitabilityCopy.qualityLevel(for: report)
         switch quality {
         case .good:
-            return "Sua conexão está boa para a maioria dos usos."
+            return LinkaCopy.value("usage.summary.good")
         case .medium:
-            return "Sua conexão é suficiente para usos básicos, mas pode oscilar sob demanda."
+            return LinkaCopy.value("usage.summary.medium")
         case .poor:
-            return "Sua conexão apresenta limitações perceptíveis para usos exigentes."
+            return LinkaCopy.value("usage.summary.poor")
         case nil:
-            return "Avaliação dos principais casos de uso da sua rede."
+            return LinkaCopy.value("usage.summary.default")
         }
     }
 
@@ -33,7 +33,7 @@ struct UsageDiagnosticsView: View {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Resumo")
+                        Text("usage.summary.title")
                             .font(.captionSmallStrong)
                             .foregroundColor(.textSecondary)
                             .textCase(.uppercase)
@@ -47,7 +47,7 @@ struct UsageDiagnosticsView: View {
                 }
 
                 if let report {
-                    Section("Casos de uso") {
+                    Section("usage.cases") {
                         ForEach(UsageCase.allCases, id: \.self) { usageCase in
                             if let verdict = report.verdict(for: usageCase) {
                                 UsageVerdictRow(usageCase: usageCase, verdict: verdict)
@@ -57,15 +57,15 @@ struct UsageDiagnosticsView: View {
                 } else {
                     Section {
                         LinkaUnavailableState(
-                            title: "Nenhuma medição",
-                            message: "Faça uma medição para avaliar os casos de uso.",
+                            title: "usage.noMeasurement.title",
+                            message: "usage.noMeasurement.message",
                             systemImage: "speedometer"
                         )
                         .frame(maxWidth: .infinity)
                     }
                 }
             }
-            .linkaSheetToolbar(title: "Qualidade de uso") { dismiss() }
+            .linkaSheetToolbar(title: LinkaCopy.value("usage.title")) { dismiss() }
         }
     }
 }
@@ -92,9 +92,9 @@ private struct UsageVerdictRow: View {
 
     private var badgeLabel: String {
         switch verdict.level {
-        case .adequate: return "Adequada"
-        case .limited: return "Limitada"
-        case .notAssessed: return "Não avaliada"
+        case .adequate: return LinkaCopy.value("usage.status.adequate")
+        case .limited: return LinkaCopy.value("usage.status.limited")
+        case .notAssessed: return LinkaCopy.value("usage.status.notAssessed")
         }
     }
 

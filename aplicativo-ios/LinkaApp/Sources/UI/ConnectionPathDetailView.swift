@@ -16,7 +16,7 @@ struct ConnectionPathDetailView: View {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Diagnóstico da rota")
+                        Text("connectionPath.diagnosis")
                             .font(.captionSmallStrong)
                             .foregroundColor(.textSecondary)
                             .textCase(.uppercase)
@@ -29,7 +29,7 @@ struct ConnectionPathDetailView: View {
                     .padding(.vertical, 4)
                 }
 
-                Section("Etapas da conexão") {
+                Section("connectionPath.stages") {
                     ForEach(visibleStages, id: \.self) { stage in
                         if let verdict = report.verdict(for: stage) {
                             stageRow(verdict: verdict, isHighlighted: report.highlightedStage == stage)
@@ -37,7 +37,7 @@ struct ConnectionPathDetailView: View {
                     }
                 }
             }
-            .linkaSheetToolbar(title: "Caminho da conexão") { dismiss() }
+            .linkaSheetToolbar(title: LinkaCopy.value("connectionPath.title")) { dismiss() }
         }
     }
 

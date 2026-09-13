@@ -41,6 +41,7 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         let ndsResponse = try await api.evaluate(
             request.currentMeasurement,
             requestAI: true,
+            locale: request.locale,
             diagnosticContext: diagnosticContext
         )
         
@@ -62,7 +63,7 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
             // "AI" nem "determinístico" no sentido do v1 — já chega
             // pronto). `sem_causa_identificada == true` é tratado à parte
             // (AGENTS.md §9 — nunca inventar causa sem lastro).
-            copy = Self.copy(fromV2Explanation: v2Explanation)
+            copy = Self.copy(fromV2Explanation: v2Explanation, locale: request.locale)
         } else {
             let aiResult = results?.first(where: { $0.module == "ai" })?.result
             let aiExplanation = aiResult?.explanation
@@ -90,7 +91,10 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         let hasProblemCards = findings.contains { $0.status == "attention" || $0.status == "critical" }
         let isHealthyVerdict = veredicto == "bom" || veredicto == "excelente" || (veredicto == nil && !hasProblemCards)
         let isSemCausa = ndsResponse.explanation?.semCausaIdentificada == true
-        let headerStatus = (isSemCausa || (!hasProblemCards && isHealthyVerdict)) ? "✓ TUDO CERTO" : "⚠ PRECISA DE ATENÇÃO"
+        let headerStatus = Self.headerStatus(
+            isHealthy: isSemCausa || (!hasProblemCards && isHealthyVerdict),
+            locale: request.locale
+        )
         
         var parsedRecommendation: NetworkAssistRecommendation? = nil
         if let v2Explanation = ndsResponse.explanation {
@@ -146,37 +150,80 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
     /// inventa uma causa que os dados não sustentam (AGENTS.md §9), só
     /// afirma a ausência de problema, que é exatamente o que os dados
     /// mostram.
-    static let semCausaIdentificadaSummary = "Não há problemas identificados na sua conexão. Tudo parece normal."
-
     /// Fallback para quando o NDS retorna `explanation` sem
     /// `sem_causa_identificada` mas também sem `titulo`/`descricao` (rollout
     /// parcial do contrato v2). Diferente do caso acima, aqui não há
     /// garantia de que a conexão está saudável — só que o servidor não
     /// mandou texto pronto — então mantém o tom transparente de
     /// indisponibilidade em vez do texto positivo.
-    static let missingExplanationSummary = "Não encontramos uma causa específica — os dados da sua conexão parecem normais."
-
     /// Constrói o `DiagnosticCopy` a partir do bloco `explanation` do
     /// contrato v2. `titulo`/`descricao` podem faltar mesmo sem
     /// `sem_causa_identificada` (o NDS ainda está em implementação em
     /// paralelo) — nesse caso caímos no texto de fallback em vez de
     /// apresentar título/resumo vazios.
-    static func copy(fromV2Explanation explanation: NDSV2Explanation) -> DiagnosticCopy {
+    static func copy(fromV2Explanation explanation: NDSV2Explanation, locale: String?) -> DiagnosticCopy {
         if explanation.semCausaIdentificada == true {
+            let fallback = localFallback(.noProblemFound, locale: locale)
             return DiagnosticCopy(
-                title: "Tudo funcionando normalmente",
-                summary: semCausaIdentificadaSummary,
+                title: fallback.title,
+                summary: fallback.summary,
                 source: .deterministic
             )
         }
         guard let titulo = explanation.titulo, let descricao = explanation.descricao else {
+            let fallback = localFallback(.missingExplanation, locale: locale)
             return DiagnosticCopy(
-                title: "Sem causa específica identificada",
-                summary: missingExplanationSummary,
+                title: fallback.title,
+                summary: fallback.summary,
                 source: .deterministic
             )
         }
         return DiagnosticCopy(title: titulo, summary: descricao, source: .deterministic)
+    }
+
+    /// The server remains authoritative whenever it supplies an explanation.
+    /// These are only semantic, client-local fallbacks for incomplete V2
+    /// responses, selected with the same BCP-47 tag sent to the relay.
+    private enum LocalFallback {
+        case noProblemFound
+        case missingExplanation
+    }
+
+    private static func localFallback(_ fallback: LocalFallback, locale: String?) -> (title: String, summary: String) {
+        switch (locale ?? "pt-BR").lowercased() {
+        case let tag where tag.hasPrefix("es"):
+            switch fallback {
+            case .noProblemFound:
+                return ("Todo funciona normalmente", "No identificamos problemas en tu conexión. Todo parece normal.")
+            case .missingExplanation:
+                return ("No se identificó una causa específica", "No encontramos una causa específica. Inténtalo de nuevo más tarde.")
+            }
+        case let tag where tag.hasPrefix("en"):
+            switch fallback {
+            case .noProblemFound:
+                return ("Everything is working normally", "We found no problems with your connection. Everything looks normal.")
+            case .missingExplanation:
+                return ("No specific cause identified", "We couldn't identify a specific cause. Please try again later.")
+            }
+        default:
+            switch fallback {
+            case .noProblemFound:
+                return ("Tudo funcionando normalmente", "Não há problemas identificados na sua conexão. Tudo parece normal.")
+            case .missingExplanation:
+                return ("Sem causa específica identificada", "Não foi possível identificar uma causa específica. Tente novamente mais tarde.")
+            }
+        }
+    }
+
+    private static func headerStatus(isHealthy: Bool, locale: String?) -> String {
+        switch (locale ?? "pt-BR").lowercased() {
+        case let tag where tag.hasPrefix("es"):
+            return isHealthy ? "✓ TODO BIEN" : "⚠ REQUIERE ATENCIÓN"
+        case let tag where tag.hasPrefix("en"):
+            return isHealthy ? "✓ ALL GOOD" : "⚠ NEEDS ATTENTION"
+        default:
+            return isHealthy ? "✓ TUDO CERTO" : "⚠ PRECISA DE ATENÇÃO"
+        }
     }
 
 }

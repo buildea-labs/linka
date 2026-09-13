@@ -5,6 +5,7 @@ settings:
   base:
     MARKETING_VERSION: "1.1.2"
     CURRENT_PROJECT_VERSION: "46"
+    DEVELOPMENT_LANGUAGE: pt-BR
 targets:
   LinkaApp:
     type: application
@@ -29,6 +30,10 @@ targets:
       properties:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleLocalizations:
+          - pt-BR
+          - en
+          - es-419
         CFBundleURLTypes:
           - CFBundleURLName: com.linka.wifi-advanced
             CFBundleURLSchemes:
@@ -46,6 +51,8 @@ targets:
           - UIInterfaceOrientationPortrait
     sources:
       - path: LinkaApp/Sources
+      - path: LinkaApp/Resources
+        buildPhase: resources
     dependencies:
       - package: LinkaEngine
       - package: LinkaModules
@@ -158,6 +165,8 @@ targets:
     sources:
       - path: LinkaWidget/Sources
       - path: LinkaApp/Sources/UI/DesignSystem.swift
+      - path: LinkaWidget/Resources
+        buildPhase: resources
     dependencies:
       - package: LinkaAppIntents
       - package: LinkaWidgetShared

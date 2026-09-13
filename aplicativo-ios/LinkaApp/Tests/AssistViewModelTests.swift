@@ -14,7 +14,7 @@ final class AssistViewModelTests: XCTestCase {
             recentMeasurements: recent
         )
 
-        XCTAssertEqual(context.question, "Interprete esta medição com os dados disponíveis.")
+        XCTAssertEqual(context.question, LinkaCopy.value("assist.defaultQuestion"))
         XCTAssertEqual(context.currentMeasurement.id, current.id)
         XCTAssertTrue(context.recentMeasurements.isEmpty)
         XCTAssertNil(context.usageContext)
@@ -53,6 +53,16 @@ final class AssistViewModelTests: XCTestCase {
         XCTAssertEqual(context.objective, "JOGOS_COM_LAG")
         XCTAssertEqual(context.subcategory, "PING_ALTO")
         XCTAssertNil(context.reportedProblem)
+    }
+
+    func test_makeContext_propagatesEffectiveLanguageTagToTheAssistRequest() {
+        let context = AssistViewModel.makeContext(
+            currentMeasurement: measurement(id: UUID()),
+            recentMeasurements: [],
+            locale: "es-419"
+        )
+
+        XCTAssertEqual(context.locale, "es-419")
     }
 
     /// "Pular" a etapa 1 ou a etapa 2 (`AssistProblemSelectionView`) deve
@@ -116,7 +126,7 @@ final class AssistViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.state,
-            .error("Ainda não há dados suficientes para uma interpretação confiável.")
+            .error(LinkaCopy.value("assist.insufficient"))
         )
     }
 

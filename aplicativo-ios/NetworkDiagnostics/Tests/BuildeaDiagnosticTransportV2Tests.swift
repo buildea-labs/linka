@@ -15,7 +15,8 @@ final class BuildeaDiagnosticTransportV2Tests: XCTestCase {
     private func makeRequest(
         objective: String? = nil,
         subcategory: String? = nil,
-        reportedProblem: String? = nil
+        reportedProblem: String? = nil,
+        locale: String? = nil
     ) throws -> NetworkAssistRequest {
         let measurement = NetworkMeasurement(
             id: UUID(), outcome: .complete, downloadMbps: 100, uploadMbps: 50,
@@ -32,7 +33,7 @@ final class BuildeaDiagnosticTransportV2Tests: XCTestCase {
             recentMeasurements: [],
             evidence: [evidence],
             usageContext: nil,
-            locale: nil,
+            locale: locale,
             policy: .measurementUnderstanding,
             objective: objective,
             subcategory: subcategory,
@@ -173,7 +174,10 @@ final class BuildeaDiagnosticTransportV2Tests: XCTestCase {
         let api = BuildeaDiagnosticAPI(configuration: configuration, httpClient: client)
         let transport = BuildeaDiagnosticTransport(api: api)
 
-        let request = try makeRequest(reportedProblem: "Minha internet cai só quando chove.")
+        let request = try makeRequest(
+            reportedProblem: "Minha internet cai só quando chove.",
+            locale: "en"
+        )
         _ = try await transport.answer(request)
 
         let capturedURL = await client.capturedURL
@@ -186,6 +190,28 @@ final class BuildeaDiagnosticTransportV2Tests: XCTestCase {
         XCTAssertNil(context?["objective"])
         XCTAssertNil(context?["subcategory"])
         XCTAssertNil(payload?["historical"])
+        XCTAssertEqual(payload?["locale"] as? String, "en")
+    }
+
+    func testAnswerUsesLocalSpanishFallbackOnlyWhenV2ExplanationIsIncomplete() async throws {
+        let json = """
+        { "raw": { "results": [] }, "explanation": {} }
+        """.data(using: .utf8)!
+        let api = BuildeaDiagnosticAPI(
+            configuration: NetworkDiagnosticsConfiguration(
+                rulesEndpoint: URL(string: "https://example.com/v1/diagnostics/evaluate")!,
+                transportAuth: .relay,
+                platformIdentifier: "ios"
+            ),
+            httpClient: StubHTTPClient(data: json, status: 200)
+        )
+
+        let response = try await BuildeaDiagnosticTransport(api: api).answer(
+            try makeRequest(locale: "es-419")
+        )
+
+        XCTAssertEqual(response.title, "No se identificó una causa específica")
+        XCTAssertEqual(response.summary, "No encontramos una causa específica. Inténtalo de nuevo más tarde.")
     }
 }
 

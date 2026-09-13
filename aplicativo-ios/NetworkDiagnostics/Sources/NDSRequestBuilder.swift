@@ -10,6 +10,7 @@ public struct NDSRequestBuilder: Sendable {
         appVersion: String?,
         platformIdentifier: String,
         requestAI: Bool,
+        locale: String? = nil,
         diagnosticContext: NDSRequest.DiagnosticContext? = nil,
         historical: NDSRequest.Historical? = nil
     ) -> NDSRequest {
@@ -55,7 +56,10 @@ public struct NDSRequestBuilder: Sendable {
             request_id: UUID().uuidString,
             sessionId: current.id.uuidString,
             platform: platformIdentifier,
-            locale: Locale.current.language.languageCode?.identifier ?? "pt",
+            // The presentation language is selected by Linka, not inferred
+            // from the device here. This keeps a manual override consistent
+            // all the way to the relay. Existing API callers retain pt-BR.
+            locale: locale ?? "pt-BR",
             app: NDSRequest.AppInfo(id: "linka", version: appVersion ?? "1.0.0"),
             capabilities: capabilities,
             requestedOutputs: requestAI ? ["scoring", "ai"] : ["scoring"],

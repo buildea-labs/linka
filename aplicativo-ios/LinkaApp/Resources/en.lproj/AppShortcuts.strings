@@ -1,0 +1,4 @@
+"Testar internet com ${applicationName}" = "Test internet with ${applicationName}";
+"Medir minha conexão com ${applicationName}" = "Measure my connection with ${applicationName}";
+"Registrar diagnóstico Wi-Fi com ${applicationName}" = "Log Wi-Fi diagnostics with ${applicationName}";
+"Importar dados Wi-Fi no ${applicationName}" = "Import Wi-Fi data into ${applicationName}";

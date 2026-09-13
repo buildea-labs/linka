@@ -23,9 +23,14 @@ final class AssistViewModel: ObservableObject {
 
     @Published private(set) var state: State = .idle
     private let assistProvider: any NetworkAssistProviding
+    private let languageTag: String
 
-    init(assistProvider: any NetworkAssistProviding) {
+    init(
+        assistProvider: any NetworkAssistProviding,
+        languageTag: String = LinkaLanguagePreference.currentLanguageTag
+    ) {
         self.assistProvider = assistProvider
+        self.languageTag = languageTag
     }
 
     func load(
@@ -40,7 +45,7 @@ final class AssistViewModel: ObservableObject {
         guard case .idle = state else { return }
 
         guard let current = currentMeasurement else {
-            state = .error("Nenhuma medição encontrada para diagnóstico.")
+            state = .error(LinkaCopy.value("assist.noMeasurement"))
             return
         }
 
@@ -52,7 +57,8 @@ final class AssistViewModel: ObservableObject {
             usageContext: usageContext,
             objective: objective,
             subcategory: subcategory,
-            reportedProblem: reportedProblem
+            reportedProblem: reportedProblem,
+            locale: languageTag
         )
 
         do {
@@ -72,7 +78,7 @@ final class AssistViewModel: ObservableObject {
 
                 if let title = response.title, let summary = response.summary {
                     let data = DiagnosticData(
-                        headerStatus: response.headerStatus ?? "DIAGNÓSTICO CONCLUÍDO",
+                        headerStatus: response.headerStatus ?? LinkaCopy.value("assist.completed"),
                         title: title,
                         summary: summary,
                         recommendation: response.recommendation,
@@ -83,7 +89,7 @@ final class AssistViewModel: ObservableObject {
                 } else {
                     let data = DiagnosticData(
                         headerStatus: "Assist",
-                        title: "Conclusão",
+                        title: LinkaCopy.value("assist.conclusion"),
                         summary: response.text,
                         recommendation: response.recommendation,
                         dimensions: response.dimensions ?? [],
@@ -92,20 +98,20 @@ final class AssistViewModel: ObservableObject {
                     state = .success(data)
                 }
             } else {
-                state = .error("O Assist não retornou um diagnóstico.")
+                state = .error(LinkaCopy.value("assist.empty"))
             }
         } catch {
             let errorText: String
             switch error {
             case NetworkAssistError.notConfigured:
-                errorText = "O Assist ainda não está configurado neste build."
+                errorText = LinkaCopy.value("assist.notConfigured")
             case NetworkAssistError.notEntitled:
-                errorText = "O Assist faz parte do Linka Plus. Assine para conversar sobre seus testes."
+                errorText = LinkaCopy.value("assist.notEntitled")
             default:
                 #if DEBUG
                 errorText = "Erro (\(error)): \(error.localizedDescription)"
                 #else
-                errorText = "Não foi possível consultar o Assist agora. Tente novamente em instantes."
+                errorText = LinkaCopy.value("assist.error")
                 #endif
             }
             state = .error(errorText)
@@ -143,7 +149,8 @@ final class AssistViewModel: ObservableObject {
         usageContext: String? = nil,
         objective: String? = nil,
         subcategory: String? = nil,
-        reportedProblem: String? = nil
+        reportedProblem: String? = nil,
+        locale: String = LinkaLanguagePreference.currentLanguageTag
     ) -> NetworkAssistContext {
         // O Assist é uma leitura do que está acontecendo agora. Histórico é
         // uma superfície própria do produto e não entra como evidência nem
@@ -203,11 +210,12 @@ final class AssistViewModel: ObservableObject {
         }
 
         return NetworkAssistContext(
-            question: "Interprete esta medição com os dados disponíveis.",
+            question: LinkaCopy.value("assist.defaultQuestion"),
             currentMeasurement: currentMeasurement,
             recentMeasurements: Array(recent),
             evidence: allEvidence,
             usageContext: usageContext?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
+            locale: locale,
             objective: objective,
             subcategory: subcategory,
             reportedProblem: reportedProblem?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
@@ -217,11 +225,11 @@ final class AssistViewModel: ObservableObject {
     private static func message(for disposition: NetworkAssistDisposition) -> String {
         switch disposition {
         case .insufficientEvidence:
-            return "Ainda não há dados suficientes para uma interpretação confiável."
+            return LinkaCopy.value("assist.insufficient")
         case .requiresDiagnosis:
-            return "Esta pergunta exige uma investigação que o Linka não pode concluir só com esta medição."
+            return LinkaCopy.value("assist.requiresDiagnosis")
         case .unsupported:
-            return "O Assist não consegue responder a esse tipo de solicitação."
+            return LinkaCopy.value("assist.unsupported")
         case .answered:
             return ""
         }

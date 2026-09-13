@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import LinkaWidgetShared
 
 /// Destinos públicos do Linka. A base é única para que Ajustes, paywall e
 /// futuras superfícies legais não divirjam silenciosamente.
@@ -76,6 +77,65 @@ enum LinkaAppearancePreference: String, CaseIterable {
         case .system: return nil
         case .light: return .light
         case .dark: return .dark
+        }
+    }
+}
+
+/// Supported presentation languages. This is intentionally independent from
+/// the device locale: selecting a language changes Linka only, while `system`
+/// keeps following iOS as the user changes it.
+enum LinkaLanguagePreference: String, CaseIterable, Identifiable {
+    static let storageKey = "linka.language.preference.v1"
+
+    case system
+    case portugueseBrazil = "pt-BR"
+    case english = "en"
+    case spanishLatinAmerica = "es-419"
+
+    var id: String { rawValue }
+
+    var locale: Locale {
+        LinkaWidgetShared.effectiveLocale(preference: rawValue)
+    }
+
+    static var currentLocale: Locale {
+        fromStoredValue(UserDefaults.standard.string(forKey: storageKey) ?? system.rawValue).locale
+    }
+
+    /// BCP-47 tag used by remote copy contracts. It deliberately mirrors the
+    /// app's effective locale instead of `Locale.current`, so a manual choice
+    /// is honored even when the iPhone itself uses another language.
+    static var currentLanguageTag: String {
+        fromStoredValue(UserDefaults.standard.string(forKey: storageKey) ?? system.rawValue).languageTag
+    }
+
+    static func fromStoredValue(_ value: String) -> LinkaLanguagePreference {
+        LinkaLanguagePreference(rawValue: value) ?? .system
+    }
+
+    var displayName: String {
+        switch self {
+        case .system: return String(localized: "settings.language.option.system", defaultValue: "Sistema")
+        case .portugueseBrazil: return "Português (Brasil)"
+        case .english: return "English"
+        case .spanishLatinAmerica: return "Español (Latinoamérica)"
+        }
+    }
+
+    var languageTag: String {
+        languageTag(systemLocale: .autoupdatingCurrent)
+    }
+
+    func languageTag(systemLocale: Locale) -> String {
+        switch self {
+        case .system:
+            switch systemLocale.language.languageCode?.identifier.lowercased() {
+            case "pt": return "pt-BR"
+            case "es": return "es-419"
+            default: return "en"
+            }
+        case .portugueseBrazil, .english, .spanishLatinAmerica:
+            return rawValue
         }
     }
 }
