@@ -149,6 +149,22 @@ struct ApplePlatformSignalProvider: PlatformSignalProviding {
         #endif
     }
 
+    /// RSSI Wi-Fi ao vivo, em dBm, direto do `CoreWLAN` — só macOS. Fonte
+    /// para o polling contínuo de "Sua Rede Agora": diferente de
+    /// `AdvancedWiFiDiagnostics` (que só existe quando importado
+    /// manualmente via Atalhos), esta leitura é síncrona e sempre
+    /// disponível quando há interface Wi-Fi conectada, sem depender de
+    /// nenhuma ação explícita da pessoa.
+    static func currentWifiRSSIDbm() -> Double? {
+        #if canImport(CoreWLAN) && os(macOS)
+        guard let iface = CWWiFiClient.shared().interface() else { return nil }
+        let value = iface.rssiValue()
+        return value == 0 ? nil : Double(value)
+        #else
+        return nil
+        #endif
+    }
+
     #if canImport(CoreWLAN) && os(macOS)
     /// Única tradução de `CWChannelBand` do arquivo — issue #89. Antes,
     /// `currentWifi()` (produzindo `String?`) e `currentWifiBandGHz()`
