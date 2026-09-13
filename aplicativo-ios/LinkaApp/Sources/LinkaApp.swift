@@ -6,11 +6,12 @@ import MeasurementHistory
 import NetworkCore
 import LinkaModules
 import LinkaAppIntents
+import LinkaWidgetShared
 #if os(iOS)
 import UIKit
 #elseif os(macOS)
 import AppKit
-import LinkaWidgetShared
+#endif
 #if canImport(WidgetKit)
 import WidgetKit
 #endif
