@@ -13,13 +13,14 @@ struct LiveUsageCasesView: View {
     var onSelect: ((UsageCase) -> Void)? = nil
 
     var body: some View {
-        let content = HStack(spacing: 12) {
+        let content = VStack(spacing: 0) {
             ForEach(cases, id: \.self) { usageCase in
                 node(for: usageCase)
+                if usageCase != cases.last {
+                    Divider().overlay(Color.borderDefault.opacity(0.55))
+                }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
 
         if isEmbedded {
             content
@@ -41,32 +42,48 @@ struct LiveUsageCasesView: View {
             }
         }()
 
-        let content = VStack(spacing: 6) {
+        let content = HStack(spacing: 14) {
             Image(systemName: UsageSuitabilityCopy.iconName(for: usageCase))
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: 20, weight: .medium))
                 .foregroundColor(.textPrimary)
-                .frame(width: 38, height: 38)
+                .frame(width: 48, height: 48)
                 .background(Color.surfacePage, in: Circle())
 
-            Text(UsageSuitabilityCopy.title(for: usageCase))
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.textSecondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(UsageSuitabilityCopy.title(for: usageCase))
+                    .font(.bodyRegular)
+                    .foregroundColor(.textPrimary)
 
-            LinkaStatusBadge(badge.label, color: badge.color)
+                if let verdict, verdict.confidence == .historicalBaselineInferred {
+                    Text(UsageSuitabilityCopy.liveDetail(for: verdict))
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
+                        .lineLimit(2)
+                } else {
+                    Text(badge.label)
+                        .font(.captionSmall)
+                        .foregroundColor(badge.color)
+                }
+            }
+            Spacer(minLength: 8)
 
-            if let verdict, verdict.confidence == .historicalBaselineInferred {
-                Text(UsageSuitabilityCopy.liveDetail(for: verdict))
-                    .font(.system(size: 10, weight: .regular))
+            if verdict?.level == .adequate {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundColor(.statusGood)
+            } else if isActionable {
+                Image(systemName: "chevron.right")
+                    .font(.captionSmallStrong)
                     .foregroundColor(.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Image(systemName: "minus.circle")
+                    .font(.bodyRegular)
+                    .foregroundColor(.textSecondary)
             }
         }
         .frame(maxWidth: .infinity)
+        .frame(minHeight: 64)
+        .padding(.horizontal, 4)
 
         if isActionable {
             Button { onSelect?(usageCase) } label: { content }

@@ -312,6 +312,7 @@
 "settings.subscription.noPurchase" = "Nenhuma compra ativa foi encontrada.";
 "settings.subscription.restoreError" = "Não foi possível restaurar a compra agora.";
 "home.title" = "Início";
+"home.now" = "Agora";
 "home.testing" = "Testando...";
 "home.speed" = "Velocidade";
 "home.offline" = "Sem conexão";
@@ -416,6 +417,8 @@
 "history.empty.message" = "Faça uma medição para vê-la aqui.";
 "history.measurements" = "Medições";
 "history.measurement" = "Medição";
+"history.single.title" = "Sua primeira medição";
+"history.single.message" = "Faça mais uma medição para começar a acompanhar a tendência.";
 "history.insight.improved" = "Sua velocidade de download está cerca de %@%% melhor esta semana em comparação à semana anterior.";
 "history.insight.worsened" = "Sua velocidade de download está cerca de %@%% pior esta semana em comparação à semana anterior.";
 "detail.title" = "Detalhes da medição";

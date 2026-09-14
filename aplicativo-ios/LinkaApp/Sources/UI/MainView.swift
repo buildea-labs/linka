@@ -13,6 +13,32 @@ enum AppRoute: Hashable {
     case measurementDetail(NetworkMeasurement)
 }
 
+/// Sinal visual de liveness da Home. Não representa velocidade, ping ou uma
+/// série histórica; por isso fica fora da árvore de acessibilidade.
+private struct HomeLiveSignalView: View {
+    let isActive: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: reduceMotion ? 60 : 1.0 / 24)) { timeline in
+            let phase = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
+            Canvas { context, size in
+                var path = Path()
+                let amplitude = size.height * 0.22
+                let centerY = size.height * 0.54
+                let color: Color = isActive ? .statusGood : .textSecondary.opacity(0.35)
+                for x in stride(from: 0.0, through: size.width, by: 2.0) {
+                    let y = centerY + sin((x / size.width * .pi * 4) + phase * 1.4) * amplitude
+                    if x == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
+                }
+                context.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            }
+        }
+        .frame(height: 54)
+        .accessibilityHidden(true)
+    }
+}
+
 private enum AssistEntryPoint {
     case fresh
     case result(NetworkMeasurement)
@@ -169,6 +195,9 @@ struct MainView: View {
                 activeMeasurementView
             }
             .navigationTitle(mainTitle)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.large)
+            #endif
             .navigationDestination(for: AppRoute.self) { route in
                 destinationView(for: route)
             }
@@ -462,23 +491,28 @@ struct MainView: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    // Título será fornecido via navigationTitle no NavigationStack
-                    VStack(spacing: 8) {
-                        LiveConnectionPathView(
-                            kind: viewModel.liveConnectionKind,
-                            label: viewModel.liveNetworkLabel
-                        )
+                    HStack(spacing: 9) {
+                        Circle().fill(viewModel.liveConnectionKind == nil ? Color.textSecondary : Color.statusGood)
+                            .frame(width: 11, height: 11)
+                        Text(LinkaCopy.value("home.now"))
+                            .font(.bodyRegular)
+                            .foregroundColor(.textSecondary)
+                        Spacer()
                     }
-                    .padding(.top, 24)
+                    .padding(.top, 8)
                     .padding(.horizontal, 24)
 
-                    Spacer(minLength: 34)
+                    HomeLiveSignalView(isActive: viewModel.liveConnectionKind != nil)
+                        .padding(.top, 30)
+                        .padding(.horizontal, 24)
+
+                    homeConnectionTrail
+                        .padding(.horizontal, 28)
+                        .padding(.top, 6)
+
+                    Spacer(minLength: 66)
 
                     VStack(spacing: 8) {
-                        Image(systemName: heroStateIcon)
-                            .font(.system(size: 40))
-                            .foregroundColor(heroStateIconColor)
-
                         Text(heroStateTitle)
                             .font(.displayMedium)
                             .foregroundColor(.textPrimary)
@@ -488,26 +522,28 @@ struct MainView: View {
                             .foregroundColor(.textSecondary)
                             .multilineTextAlignment(.center)
                     }
-                    Spacer(minLength: 24)
+                    Spacer(minLength: 54)
 
-                    // Casos de Uso ao Vivo (Tempo Real)
-                    LiveUsageCasesView(
-                        report: viewModel.liveUsageReport,
-                        cases: [.videoCall, .onlineGaming],
-                        onSelect: selectLiveUsageCase
-                    )
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(LinkaCopy.value("home.now"))
+                            .font(.title2.weight(.bold))
+                            .foregroundColor(.textPrimary)
+                        LiveUsageCasesView(
+                            report: viewModel.liveUsageReport,
+                            cases: [.videoCall, .onlineGaming],
+                            onSelect: selectLiveUsageCase
+                        )
+                    }
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 16)
+                    .padding(.bottom, 28)
 
                     VStack(spacing: 12) {
-                        // Botão Primário Analisar Rede
                         Button(action: {
                             startSpeedTest()
                         }) {
-                            Text(speedTestCTALabel)
-                                .multilineTextAlignment(.center)
+                            actionRow(icon: "speedometer", title: speedTestCTALabel)
                         }
-                        .buttonStyle(.linkaPrimary)
+                        .buttonStyle(.plain)
 
                         // Card do Último Teste
                         if let latest = viewModel.latestFinishedMeasurement {
@@ -538,25 +574,10 @@ struct MainView: View {
                             .buttonStyle(.plain)
                         }
 
-                        // Card Assist
                         Button {
                             requestAssist(from: .fresh)
                         } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Assist ✦")
-                                    .font(.monoCaption)
-                                    .textCase(.uppercase)
-                                    .foregroundColor(.brandAccentWarm)
-                                Text(LinkaCopy.value("home.assist.cta"))
-                                    .font(.captionSmall)
-                                    .foregroundColor(.textPrimary)
-                                    .multilineTextAlignment(.leading)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .linkaCard()
+                            actionRow(icon: "sparkles", title: LinkaCopy.value("home.assist.cta"), accent: true)
                         }
                         .buttonStyle(.plain)
                     }
@@ -566,6 +587,37 @@ struct MainView: View {
                 .frame(minHeight: proxy.size.height)
             }
         }
+    }
+
+    private var homeConnectionTrail: some View {
+        HStack(spacing: 10) {
+            trailItem(icon: "iphone", label: LinkaCopy.value("connectionPath.thisDevice"))
+            Image(systemName: "arrow.right").foregroundColor(.textSecondary).font(.captionSmall)
+            trailItem(icon: viewModel.liveConnectionKind == .wifi ? "wifi" : "network", label: viewModel.liveNetworkLabel.isEmpty ? LinkaCopy.value("network.connection") : viewModel.liveNetworkLabel)
+            Image(systemName: "arrow.right").foregroundColor(.textSecondary).font(.captionSmall)
+            trailItem(icon: "globe", label: LinkaCopy.value("connectionPath.internet"))
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func trailItem(icon: String, label: String) -> some View {
+        VStack(spacing: 7) {
+            Image(systemName: icon).font(.system(size: 19, weight: .medium))
+                .frame(width: 42, height: 42).overlay(Circle().stroke(Color.borderDefault, lineWidth: 1))
+            Text(label).font(.captionSmall).foregroundColor(.textSecondary).lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func actionRow(icon: String, title: String, accent: Bool = false) -> some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon).font(.system(size: 23, weight: .medium)).foregroundColor(accent ? .brandAccentWarm : .textPrimary)
+                .frame(width: 42)
+            Text(title).font(.bodyRegularStrong).foregroundColor(.textPrimary)
+            Spacer()
+            Image(systemName: "chevron.right").font(.bodySmallStrong).foregroundColor(.textSecondary)
+        }
+        .padding(.horizontal, 18).frame(minHeight: 62).frame(maxWidth: .infinity).linkaCard()
     }
 
     // 2. Medindo (Connecting / Downloading / Uploading)
