@@ -33,7 +33,7 @@ struct LiveUsageCasesView: View {
     @ViewBuilder
     private func node(for usageCase: UsageCase) -> some View {
         let verdict = report?.verdict(for: usageCase)
-        let isActionable = verdict?.reason == .missingThroughputMeasurement && onSelect != nil
+        let isActionable = onSelect != nil
         let badge: (label: String, color: Color, icon: String) = {
             if let verdict {
                 return UsageSuitabilityCopy.liveStatusBadge(for: verdict)

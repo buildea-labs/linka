@@ -39,6 +39,29 @@ private struct HomeLiveSignalView: View {
     }
 }
 
+private struct LiveUsageDetailSheet: View {
+    let usageCase: UsageCase
+    let verdict: LiveUsageCaseVerdict?
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Label(UsageSuitabilityCopy.title(for: usageCase), systemImage: UsageSuitabilityCopy.iconName(for: usageCase))
+                    .font(.title3.weight(.semibold))
+                Text(verdict.map { UsageSuitabilityCopy.liveDetail(for: $0) } ?? LinkaCopy.value("usage.live.measuring"))
+                    .font(.bodyRegular)
+                    .foregroundColor(.textSecondary)
+                Spacer()
+            }
+            .padding(24)
+            .navigationTitle(LinkaCopy.value("home.now"))
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button(LinkaCopy.value("common.close")) { dismiss() } } }
+        }
+        .presentationDetents([.height(220)])
+    }
+}
+
 private enum AssistEntryPoint {
     case fresh
     case result(NetworkMeasurement)
@@ -86,6 +109,7 @@ struct MainView: View {
     @State private var showExpertModeMigrationBanner: Bool = false
     @State private var ringScale: CGFloat = 1.0
     @State private var selectedLiveUsageCase: UsageCase?
+    @State private var showLiveUsageDetail = false
     @Namespace private var animation
 
     @Environment(\.scenePhase) private var scenePhase
@@ -338,6 +362,11 @@ struct MainView: View {
         .sheet(isPresented: $showUsage) {
             UsageDiagnosticsView(measurement: currentMeasurement)
         }
+        .sheet(isPresented: $showLiveUsageDetail) {
+            if let usageCase = selectedLiveUsageCase {
+                LiveUsageDetailSheet(usageCase: usageCase, verdict: viewModel.liveUsageReport?.verdict(for: usageCase))
+            }
+        }
         .sheet(isPresented: $showConnectionPath) {
             if let connectionPathReport { ConnectionPathDetailView(report: connectionPathReport) }
         }
@@ -516,11 +545,6 @@ struct MainView: View {
                         Text(heroStateTitle)
                             .font(.displayMedium)
                             .foregroundColor(.textPrimary)
-
-                        Text(heroStateSubtitle)
-                            .font(.bodyRegular)
-                            .foregroundColor(.textSecondary)
-                            .multilineTextAlignment(.center)
                     }
                     Spacer(minLength: 54)
 
@@ -538,48 +562,30 @@ struct MainView: View {
                     .padding(.bottom, 28)
 
                     VStack(spacing: 12) {
-                        Button(action: {
-                            startSpeedTest()
-                        }) {
-                            actionRow(icon: "speedometer", title: speedTestCTALabel)
+                        VStack(spacing: 0) {
+                            Button { startSpeedTest() } label: {
+                                actionRow(icon: "speedometer", title: speedTestCTALabel)
+                            }
+                            Divider().overlay(Color.borderDefault.opacity(0.55)).padding(.horizontal, 18)
+                            Button { requestAssist(from: .fresh) } label: {
+                                actionRow(icon: "sparkles", title: LinkaCopy.value("home.assist.cta"), accent: true)
+                            }
                         }
                         .buttonStyle(.plain)
+                        .linkaCard()
 
-                        // Card do Último Teste
                         if let latest = viewModel.latestFinishedMeasurement {
-                            Button {
-                                navPath.append(AppRoute.history)
-                            } label: {
+                            Button { navPath.append(AppRoute.history) } label: {
                                 HStack(alignment: .center, spacing: 10) {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(LinkaCopy.value("home.lastTest"))
-                                            .font(.bodySmallStrong)
-                                            .foregroundColor(.textPrimary)
-                                        Text(LinkaCopy.format("home.lastTest.value", formatted(latest.downloadMbps ?? 0), formatRelativeTime(latest.measuredAt)))
-                                            .font(.monoCaption)
-                                            .foregroundColor(.textSecondary)
-                                            .fixedSize(horizontal: false, vertical: true)
+                                        Text(LinkaCopy.value("home.lastTest")).font(.bodySmallStrong).foregroundColor(.textPrimary)
+                                        Text(LinkaCopy.format("home.lastTest.value", formatted(latest.downloadMbps ?? 0), formatRelativeTime(latest.measuredAt))).font(.monoCaption).foregroundColor(.textSecondary)
                                     }
                                     Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.captionSmall)
-                                        .foregroundColor(.textSecondary)
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .frame(minHeight: 52)
-                                .linkaCard()
-                            }
-                            .buttonStyle(.plain)
+                                    Image(systemName: "chevron.right").font(.captionSmall).foregroundColor(.textSecondary)
+                                }.padding(.horizontal, 16).frame(minHeight: 58).frame(maxWidth: .infinity).linkaCard()
+                            }.buttonStyle(.plain)
                         }
-
-                        Button {
-                            requestAssist(from: .fresh)
-                        } label: {
-                            actionRow(icon: "sparkles", title: LinkaCopy.value("home.assist.cta"), accent: true)
-                        }
-                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 28)
@@ -617,7 +623,7 @@ struct MainView: View {
             Spacer()
             Image(systemName: "chevron.right").font(.bodySmallStrong).foregroundColor(.textSecondary)
         }
-        .padding(.horizontal, 18).frame(minHeight: 62).frame(maxWidth: .infinity).linkaCard()
+        .padding(.horizontal, 18).frame(minHeight: 62).frame(maxWidth: .infinity)
     }
 
     // 2. Medindo (Connecting / Downloading / Uploading)
@@ -1072,10 +1078,8 @@ struct MainView: View {
     }
 
     private func selectLiveUsageCase(_ usageCase: UsageCase) {
-        guard viewModel.liveUsageReport?.verdict(for: usageCase)?.reason == .missingThroughputMeasurement else {
-            return
-        }
         selectedLiveUsageCase = usageCase
+        showLiveUsageDetail = true
     }
 
     private func startSpeedTest() {

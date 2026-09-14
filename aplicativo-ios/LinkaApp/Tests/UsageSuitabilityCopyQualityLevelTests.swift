@@ -6,6 +6,12 @@ import NetworkInsights
 /// agrega os veredictos por caso de uso num resumo de uma palavra para a
 /// linha "Qualidade de uso" da tela de resultado.
 final class UsageSuitabilityCopyQualityLevelTests: XCTestCase {
+    func testHistoryVisualizationOnlyShowsTrendWithTwoOrMoreMeasurements() {
+        XCTAssertEqual(HistoryVisualizationState.resolve(measurementCount: 0), .empty)
+        XCTAssertEqual(HistoryVisualizationState.resolve(measurementCount: 1), .singleMeasurement)
+        XCTAssertEqual(HistoryVisualizationState.resolve(measurementCount: 2), .trend)
+    }
+
     func testAllAdequateIsGood() {
         let report = report(levels: [.adequate, .adequate, .adequate, .adequate, .adequate])
         XCTAssertEqual(UsageSuitabilityCopy.qualityLevel(for: report), .good)
