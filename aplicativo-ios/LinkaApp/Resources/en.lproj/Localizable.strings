@@ -322,7 +322,7 @@
 "home.lastTest" = "Last test";
 "home.lastTest.value" = "%@ Mbps · %@";
 "home.downloadUnit" = "Mbps download";
-"home.assist.cta" = "Analyze my connection now";
+"home.assist.cta" = "Analyze my connection";
 "home.assist.resultMessage" = "Let's analyze this measurement's data.";
 "home.accessibility.back" = "Back to Home";
 "home.accessibility.history" = "History";
@@ -365,6 +365,8 @@
 "home.relative.today" = "Today, %@";
 "home.relative.yesterday" = "Yesterday, %@";
 "home.usage.videoCalls" = "Video calls";
+"home.live.calls" = "Calls";
+"home.live.viewDetails" = "View details";
 "home.usage.onlineGaming" = "Online gaming";
 "home.usage.streaming" = "Streaming";
 "common.continue" = "Continue";

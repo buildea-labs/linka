@@ -34,6 +34,9 @@ struct LiveUsageCasesView: View {
     private func node(for usageCase: UsageCase) -> some View {
         let verdict = report?.verdict(for: usageCase)
         let isActionable = onSelect != nil
+        let title = isEmbedded && usageCase == .videoCall
+            ? LinkaCopy.value("home.live.calls")
+            : UsageSuitabilityCopy.title(for: usageCase)
         let badge: (label: String, color: Color, icon: String) = {
             if let verdict {
                 return UsageSuitabilityCopy.liveStatusBadge(for: verdict)
@@ -46,25 +49,12 @@ struct LiveUsageCasesView: View {
             Image(systemName: UsageSuitabilityCopy.iconName(for: usageCase))
                 .font(.system(size: 20, weight: .medium))
                 .foregroundColor(.textPrimary)
-                .frame(width: 48, height: 48)
-                .background(Color.surfacePage, in: Circle())
+                .frame(width: 46, height: 46)
+                .background(Color.surfacePage.opacity(isEmbedded ? 0.7 : 1), in: Circle())
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(UsageSuitabilityCopy.title(for: usageCase))
-                    .font(.bodyRegular)
-                    .foregroundColor(.textPrimary)
-
-                if let verdict, verdict.confidence == .historicalBaselineInferred {
-                    Text(UsageSuitabilityCopy.liveDetail(for: verdict))
-                        .font(.captionSmall)
-                        .foregroundColor(.textSecondary)
-                        .lineLimit(2)
-                } else {
-                    Text(badge.label)
-                        .font(.captionSmall)
-                        .foregroundColor(badge.color)
-                }
-            }
+            Text(title)
+                .font(.bodyRegular)
+                .foregroundColor(.textPrimary)
             Spacer(minLength: 8)
 
             if verdict?.level == .adequate {
@@ -82,19 +72,19 @@ struct LiveUsageCasesView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(minHeight: 64)
+        .frame(minHeight: isEmbedded ? 70 : 64)
         .padding(.horizontal, 4)
 
         if isActionable {
             Button { onSelect?(usageCase) } label: { content }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(UsageSuitabilityCopy.title(for: usageCase)): \(badge.label)")
+                .accessibilityLabel("\(title): \(badge.label)")
                 .accessibilityHint(verdict.map { UsageSuitabilityCopy.liveDetail(for: $0) } ?? "")
         } else {
             content
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(UsageSuitabilityCopy.title(for: usageCase)): \(badge.label)")
+                .accessibilityLabel("\(title): \(badge.label)")
                 .accessibilityHint(verdict.map { UsageSuitabilityCopy.liveDetail(for: $0) } ?? "")
         }
     }

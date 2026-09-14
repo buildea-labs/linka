@@ -99,6 +99,8 @@ struct HistoryView: View {
                         }
                         .font(.captionSmall)
                         .foregroundColor(.textSecondary)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 2, leading: 4, bottom: 2, trailing: 4))
                     }
 
                     if hasPlus {
@@ -162,18 +164,23 @@ struct HistoryView: View {
                         if historyVisualizationState == .singleMeasurement,
                            let measurement = filteredMeasurements.first {
                             Section {
-                                HistorySingleMeasurementSummary(measurement: measurement)
+                                Button { onSelectMeasurement?(measurement) } label: {
+                                    HistorySingleMeasurementSummary(measurement: measurement)
+                                }
+                                .buttonStyle(.plain)
                             }
                             .listRowBackground(Color.clear)
                         }
-                        Section("\(LinkaCopy.value("history.measurements")) (\(filteredMeasurements.count))") {
-                            ForEach(filteredMeasurements, id: \.id) { measurement in
-                                Button {
-                                    onSelectMeasurement?(measurement)
-                                } label: {
-                                    AppleStyleHistoryRow(measurement: measurement)
+                        if historyVisualizationState != .singleMeasurement {
+                            Section("\(LinkaCopy.value("history.measurements")) (\(filteredMeasurements.count))") {
+                                ForEach(filteredMeasurements, id: \.id) { measurement in
+                                    Button {
+                                        onSelectMeasurement?(measurement)
+                                    } label: {
+                                        AppleStyleHistoryRow(measurement: measurement)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }

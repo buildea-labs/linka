@@ -24,17 +24,23 @@ private struct HomeLiveSignalView: View {
             let phase = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
             Canvas { context, size in
                 var path = Path()
-                let amplitude = size.height * 0.22
+                let amplitude = size.height * 0.16
                 let centerY = size.height * 0.54
-                let color: Color = isActive ? .statusGood : .textSecondary.opacity(0.35)
                 for x in stride(from: 0.0, through: size.width, by: 2.0) {
                     let y = centerY + sin((x / size.width * .pi * 4) + phase * 1.4) * amplitude
                     if x == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
                 }
-                context.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                let shading: GraphicsContext.Shading = isActive
+                    ? .linearGradient(
+                        Gradient(colors: [.statusGood, .cyan.opacity(0.8), .statusGood]),
+                        startPoint: .zero,
+                        endPoint: CGPoint(x: size.width, y: size.height)
+                    )
+                    : .color(.textSecondary.opacity(0.35))
+                context.stroke(path, with: shading, style: StrokeStyle(lineWidth: 2, lineCap: .round))
             }
         }
-        .frame(height: 54)
+        .frame(height: 34)
         .accessibilityHidden(true)
     }
 }
@@ -218,9 +224,9 @@ struct MainView: View {
 
                 activeMeasurementView
             }
-            .navigationTitle(mainTitle)
+            .navigationTitle(viewModel.uiPhase == .idle ? "" : mainTitle)
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(viewModel.uiPhase == .idle ? .inline : .large)
             #endif
             .navigationDestination(for: AppRoute.self) { route in
                 destinationView(for: route)
@@ -520,6 +526,13 @@ struct MainView: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
+                    Text(mainTitle)
+                        .font(.system(size: 44, weight: .bold))
+                        .foregroundColor(.textPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 146)
+                        .padding(.bottom, 10)
                     HStack(spacing: 9) {
                         Circle().fill(viewModel.liveConnectionKind == nil ? Color.textSecondary : Color.statusGood)
                             .frame(width: 11, height: 11)
@@ -528,23 +541,25 @@ struct MainView: View {
                             .foregroundColor(.textSecondary)
                         Spacer()
                     }
-                    .padding(.top, 8)
+                    .padding(.top, 0)
                     .padding(.horizontal, 24)
 
                     HomeLiveSignalView(isActive: viewModel.liveConnectionKind != nil)
-                        .padding(.top, 30)
+                        .padding(.top, 18)
                         .padding(.horizontal, 24)
 
                     homeConnectionTrail
                         .padding(.horizontal, 28)
                         .padding(.top, 6)
 
-                    Spacer(minLength: 66)
+                    Spacer(minLength: 42)
 
                     VStack(spacing: 8) {
                         Text(heroStateTitle)
                             .font(.displayMedium)
                             .foregroundColor(.textPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
                     }
                     Spacer(minLength: 54)
 
@@ -555,8 +570,28 @@ struct MainView: View {
                         LiveUsageCasesView(
                             report: viewModel.liveUsageReport,
                             cases: [.videoCall, .onlineGaming],
+                            isEmbedded: true,
                             onSelect: selectLiveUsageCase
                         )
+
+                        Button {
+                            selectedLiveUsageCase = .videoCall
+                            showLiveUsageDetail = true
+                        } label: {
+                            HStack {
+                                Text(LinkaCopy.value("home.live.viewDetails"))
+                                    .font(.bodyRegular)
+                                    .foregroundColor(.textPrimary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.captionSmallStrong)
+                                    .foregroundColor(.textSecondary)
+                            }
+                            .frame(minHeight: 58)
+                            .overlay(alignment: .top) { Divider().overlay(Color.borderDefault.opacity(0.55)) }
+                            .overlay(alignment: .bottom) { Divider().overlay(Color.borderDefault.opacity(0.55)) }
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 28)
@@ -564,11 +599,11 @@ struct MainView: View {
                     VStack(spacing: 12) {
                         VStack(spacing: 0) {
                             Button { startSpeedTest() } label: {
-                                actionRow(icon: "speedometer", title: speedTestCTALabel)
+                                speedTestActionRow
                             }
                             Divider().overlay(Color.borderDefault.opacity(0.55)).padding(.horizontal, 18)
                             Button { requestAssist(from: .fresh) } label: {
-                                actionRow(icon: "sparkles", title: LinkaCopy.value("home.assist.cta"), accent: true)
+                                assistActionRow
                             }
                         }
                         .buttonStyle(.plain)
@@ -592,6 +627,7 @@ struct MainView: View {
                 }
                 .frame(minHeight: proxy.size.height)
             }
+            .ignoresSafeArea(edges: .top)
         }
     }
 
@@ -608,22 +644,41 @@ struct MainView: View {
 
     private func trailItem(icon: String, label: String) -> some View {
         VStack(spacing: 7) {
-            Image(systemName: icon).font(.system(size: 19, weight: .medium))
-                .frame(width: 42, height: 42).overlay(Circle().stroke(Color.borderDefault, lineWidth: 1))
+            Image(systemName: icon).font(.system(size: 17, weight: .medium))
+                .frame(width: 36, height: 36).overlay(Circle().stroke(Color.borderDefault, lineWidth: 1))
             Text(label).font(.captionSmall).foregroundColor(.textSecondary).lineLimit(1).minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity)
     }
 
-    private func actionRow(icon: String, title: String, accent: Bool = false) -> some View {
+    private var speedTestActionRow: some View {
         HStack(spacing: 16) {
-            Image(systemName: icon).font(.system(size: 23, weight: .medium)).foregroundColor(accent ? .brandAccentWarm : .textPrimary)
+            Image(systemName: "speedometer").font(.system(size: 23, weight: .medium)).foregroundColor(.textPrimary)
                 .frame(width: 42)
-            Text(title).font(.bodyRegularStrong).foregroundColor(.textPrimary)
+            Divider().frame(height: 34).overlay(Color.borderDefault)
+            Text(speedTestCTALabel).font(.bodyRegularStrong).foregroundColor(.textPrimary)
             Spacer()
             Image(systemName: "chevron.right").font(.bodySmallStrong).foregroundColor(.textSecondary)
         }
         .padding(.horizontal, 18).frame(minHeight: 62).frame(maxWidth: .infinity)
+    }
+
+    private var assistActionRow: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("ASSIST ✦")
+                    .font(.captionSmallStrong)
+                    .foregroundColor(.brandAccentWarm)
+                Text(LinkaCopy.value("home.assist.cta"))
+                    .font(.bodyRegularStrong)
+                    .foregroundColor(.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            Spacer()
+            Image(systemName: "chevron.right").font(.bodySmallStrong).foregroundColor(.textSecondary)
+        }
+        .padding(.horizontal, 18).frame(minHeight: 70).frame(maxWidth: .infinity)
     }
 
     // 2. Medindo (Connecting / Downloading / Uploading)
