@@ -172,3 +172,65 @@ Uma troca de rede força alguns segundos de aquecimento — preferência explíc
 por honestidade em vez de confiança herdada. Não são objetivos: medir banda
 continuamente, diagnosticar topologia mesh, atribuir causa a roteador/provedor
 ou alterar o algoritmo do speed test.
+
+---
+
+# Architecture Plan — Home iOS fluida e Histórico #236
+
+## OBJETIVO
+
+Implementar a Home iOS aprovada: leitura viva limpa, trilha factual de rede e
+cenários de uso sem transformar o Linka em dashboard ou speedtest puro. Corrigir
+o Histórico da issue #236 para que controles não dominem a primeira dobra e uma
+medição nunca seja apresentada como tendência.
+
+## COMPORTAMENTO ESPERADO
+
+- Home usa título grande nativo e uma única leitura principal derivada de
+  `liveUsageReport`: `Avaliando conexão`, `Conexão estável`,
+  `Conexão oscilando` ou `Sem conexão`.
+- A linha verde é somente um sinal visual de monitoramento: não representa
+  velocidade/ping, não tem escala e não é anunciada pelo VoiceOver. Fica
+  estática com Reduzir Movimento e não fica verde fora de rota.
+- A trilha `Este iPhone → rede atual → Internet` é leve e factual. A lista
+  `Agora` tem Chamadas e Jogo online, com ícone de atividade à esquerda e
+  check de condição à direita; detalhes vivem sob toque.
+- Medir e Assist permanecem ações secundárias e agrupadas. Sem dado suficiente,
+  não há check, velocidade estimada nem hero saudável herdado.
+- Histórico move filtro/ordenação para controle discreto; com 0 não há gráfico,
+  com 1 há resumo e mensagem honesta, e tendência só aparece com 2+ medições.
+
+## MUDANÇA TÉCNICA
+
+- Limitar a alteração à camada SwiftUI: `MainView.swift`,
+  `LiveUsageCasesView.swift`, um componente local de sinal se necessário e
+  `HistoryView.swift`, mais testes de estado/presentação extraíveis.
+- Consumir os estados publicados existentes. Não alterar `SpeedTestViewModel`,
+  `LiveTelemetryCollector`, `NetworkInsights`, LinkaEngine, persistência,
+  CloudKit nem contratos.
+- Extrair a decisão do estado de apresentação do histórico para cobertura de
+  0/1/2 registros. No gráfico, empilhar título/período e legenda em largura
+  compacta, sem apertar as métricas no mesmo `HStack`.
+
+## ACEITE
+
+- Home e Histórico exibem título grande no iPhone.
+- VoiceOver identifica o estado da linha/cenários por texto e não por cor;
+  alvo das linhas tem no mínimo 44 pt.
+- Uma medição não renderiza card/eixos/série/arrasto de gráfico.
+- Duas ou mais medições não inventam zero para métricas ausentes e seguem
+  legíveis em iPhone compacto.
+
+## NÃO-OBJETIVOS
+
+- Não criar coleta contínua de velocidade, diagnóstico novo, tela nova ou CTA
+  de medição adicional.
+- Não inferir causa raiz, topologia ou qualidade de serviço específico.
+
+## RISCOS / VALIDAÇÃO
+
+- O hero não pode prometer estabilidade durante aquecimento/offline; o sinal
+  visual precisa acompanhar exatamente a rota/estado vivo existente.
+- Rodar testes de telemetria/insights já existentes, testes de apresentação
+  novos, build/teste de simulador iOS e smoke visual em largura compacta com
+  1 e 2 medições.
