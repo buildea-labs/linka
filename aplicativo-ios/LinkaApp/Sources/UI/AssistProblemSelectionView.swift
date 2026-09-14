@@ -108,6 +108,7 @@ struct AssistProblemSelectionView: View {
     /// controle para a Home iniciar uma medição nova antes do Assist.
     let onStartFreshMeasurement: ((String?, String?, String?) -> Void)?
     let entitlements: StoreKitEntitlementProvider?
+    let isInline: Bool
 
     @State private var reportedProblemText: String = ""
     @State private var selectedObjective: AssistProblemObjective?
@@ -124,7 +125,8 @@ struct AssistProblemSelectionView: View {
         onRetry: (() -> Void)? = nil,
         onShowDetails: (() -> Void)? = nil,
         onStartFreshMeasurement: ((String?, String?, String?) -> Void)? = nil,
-        entitlements: StoreKitEntitlementProvider? = nil
+        entitlements: StoreKitEntitlementProvider? = nil,
+        isInline: Bool = false
     ) {
         self.currentMeasurement = currentMeasurement
         self.recentMeasurements = recentMeasurements
@@ -133,6 +135,7 @@ struct AssistProblemSelectionView: View {
         self.onShowDetails = onShowDetails
         self.onStartFreshMeasurement = onStartFreshMeasurement
         self.entitlements = entitlements
+        self.isInline = isInline
     }
 
     var body: some View {
@@ -142,7 +145,17 @@ struct AssistProblemSelectionView: View {
                 else if showingReportedProblem { reportedProblemStep }
                 else { objectiveStep }
             }
-            .linkaSheetToolbar(title: LinkaCopy.value("assist.title"), dismissTitle: navigationActionTitle, onDismiss: handleNavigationAction)
+            .navigationTitle(LinkaCopy.value("assist.title"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                if !isInline || selectedObjective != nil || showingReportedProblem {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(navigationActionTitle, action: handleNavigationAction)
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showAssist) {
             assistDestination(objective: assistObjective, subcategory: assistSubcategory, reportedProblem: assistReportedProblem)
@@ -166,6 +179,39 @@ struct AssistProblemSelectionView: View {
     // MARK: - Etapa 1 — macro-grupo
     private var objectiveStep: some View {
         List {
+            if let currentMeasurement {
+                Section("Medição para análise") {
+                    HStack(spacing: 16) {
+                        if let down = currentMeasurement.downloadMbps {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.down")
+                                    .foregroundColor(.brandAccentWarm)
+                                Text(String(format: "%.1f Mbps", down))
+                                    .fontWeight(.semibold)
+                            }
+                        }
+                        if let up = currentMeasurement.uploadMbps {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.up")
+                                    .foregroundColor(.brandAccentWarm)
+                                Text(String(format: "%.1f Mbps", up))
+                                    .fontWeight(.semibold)
+                            }
+                        }
+                        if let lat = currentMeasurement.latencyMs {
+                            HStack(spacing: 4) {
+                                Image(systemName: "gauge.with.needle")
+                                    .foregroundColor(.textSecondary)
+                                Text(String(format: "%.0f ms", lat))
+                            }
+                        }
+                    }
+                    .font(.bodySmall)
+                    .foregroundColor(.textPrimary)
+                    .padding(.vertical, 2)
+                }
+            }
+
             Section(LinkaCopy.value("assist.problem.question")) {
                 ForEach(AssistProblemObjective.allCases) { objective in
                     Button { selectedObjective = objective } label: {
@@ -259,7 +305,10 @@ struct AssistProblemSelectionView: View {
             onRetry: onRetry,
             onShowDetails: onShowDetails,
             entitlements: entitlements,
-            onCloseSheet: { dismissSheet() }
+            onCloseSheet: {
+                showAssist = false
+                dismissSheet()
+            }
         )
     }
 

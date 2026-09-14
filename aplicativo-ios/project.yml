@@ -89,6 +89,10 @@ targets:
     info:
       path: LinkaApp/Info-macOS.plist
       properties:
+        CFBundleLocalizations:
+          - pt-BR
+          - en
+          - es-419
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleURLTypes:
@@ -106,6 +110,8 @@ targets:
       - path: LinkaApp/Sources
         excludes:
           - UI/MainView.swift
+      - path: LinkaApp/Resources
+        buildPhase: resources
     dependencies:
       - package: LinkaEngine
       - package: LinkaModules

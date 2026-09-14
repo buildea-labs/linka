@@ -46,6 +46,22 @@ public enum LinkaWidgetShared {
         }
     }
 
+    public static func effectiveLanguageTag(
+        preference: String,
+        systemLocale: Locale = .autoupdatingCurrent
+    ) -> String {
+        switch preference {
+        case "pt-BR", "en", "es-419":
+            return preference
+        default:
+            switch systemLocale.language.languageCode?.identifier.lowercased() {
+            case "pt": return "pt-BR"
+            case "es": return "es-419"
+            default: return "en"
+            }
+        }
+    }
+
     public struct LatestMeasurementSummary: Codable, Equatable, Sendable {
         public let downloadMbps: Double
         public let uploadMbps: Double?

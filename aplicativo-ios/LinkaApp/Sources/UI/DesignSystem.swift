@@ -327,21 +327,41 @@ enum LinkaCopy {
         return value(key, locale: preference, defaultValue: defaultValue)
     }
 
-    /// Usa a tag BCP-47 que já acompanha uma operação remota. Isso evita que
-    /// um fallback de transporte volte ao idioma do sistema depois que o
-    /// Linka recebeu uma escolha explícita de idioma.
+    /// Usa a tag BCP-47 que já acompanha uma operação remota ou preferência do app.
     static func value(_ key: String, locale: String?, defaultValue: String? = nil) -> String {
-        let preference = locale ?? UserDefaults.standard.string(forKey: LinkaWidgetShared.languagePreferenceKey) ?? "system"
+        let rawPreference = locale
+            ?? UserDefaults.standard.string(forKey: LinkaWidgetShared.languagePreferenceKey)
+            ?? "system"
+        
+        let effectiveTag = LinkaWidgetShared.effectiveLanguageTag(preference: rawPreference)
+
         let bundle: Bundle
-        if preference == "system" {
-            bundle = .main
-        } else if let path = Bundle.main.path(forResource: preference, ofType: "lproj"),
-                  let localizedBundle = Bundle(path: path) {
+        if let path = Bundle.main.path(forResource: effectiveTag, ofType: "lproj"),
+           let localizedBundle = Bundle(path: path) {
             bundle = localizedBundle
+        } else if let path = Bundle.main.path(forResource: "pt-BR", ofType: "lproj"),
+                  let fallbackBundle = Bundle(path: path) {
+            bundle = fallbackBundle
         } else {
             bundle = .main
         }
-        return bundle.localizedString(forKey: key, value: defaultValue ?? key, table: "Localizable")
+
+        let notFoundSentinel = "__LINKA_NOT_FOUND__"
+        let localized = bundle.localizedString(forKey: key, value: notFoundSentinel, table: "Localizable")
+        if localized != notFoundSentinel {
+            return localized
+        }
+
+        // Se falhou no bundle escolhido, tenta o fallback pt-BR explicitamente
+        if let path = Bundle.main.path(forResource: "pt-BR", ofType: "lproj"),
+           let ptBundle = Bundle(path: path) {
+            let ptLocalized = ptBundle.localizedString(forKey: key, value: notFoundSentinel, table: "Localizable")
+            if ptLocalized != notFoundSentinel {
+                return ptLocalized
+            }
+        }
+
+        return defaultValue ?? key
     }
 
     static func format(_ key: String, _ arguments: CVarArg...) -> String {
