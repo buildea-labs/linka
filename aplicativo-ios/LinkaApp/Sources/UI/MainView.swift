@@ -246,46 +246,12 @@ struct MainView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    if viewModel.uiPhase == .done {
-                        Button {
-                            withAnimation {
-                                viewModel.resetToIdle()
-                            }
-                        } label: {
-                            Image(systemName: "house")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textPrimary)
-                        }
-                        .accessibilityLabel(LinkaCopy.value("home.accessibility.back"))
-                    }
+                    toolbarBackButton
                 }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    if viewModel.uiPhase == .idle || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
-                        Button { navPath.append(AppRoute.history) } label: {
-                            Image(systemName: "clock")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textPrimary)
-                        }
-                        .accessibilityLabel(LinkaCopy.value("home.accessibility.history"))
-                    }
-                    if viewModel.uiPhase == .done {
-                        Button {
-                            showShareSheet = true
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textPrimary)
-                        }
-                        .accessibilityLabel(LinkaCopy.value("home.accessibility.share"))
-                    }
-                    if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
-                        Button { navPath.append(AppRoute.settings) } label: {
-                            Image(systemName: "slider.horizontal.3")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textPrimary)
-                        }
-                        .accessibilityLabel(LinkaCopy.value("home.accessibility.settings"))
-                    }
+                    toolbarHistoryButton
+                    toolbarShareButton
+                    toolbarSettingsButton
                 }
             }
             .sheet(
@@ -417,6 +383,65 @@ struct MainView: View {
             }
         }
         .onChange(of: viewModel.uiPhase) { handleUIPhaseChange($0) }
+        }
+    }
+
+    // MARK: - Toolbar
+
+    /// Extraídos do closure `.toolbar` para o type-checker não precisar
+    /// inferir vários `if` de botão dentro da mesma expressão — sem isso o
+    /// build estourava o limite de tempo de type-check em CI.
+    @ViewBuilder
+    private var toolbarBackButton: some View {
+        if viewModel.uiPhase == .done {
+            Button {
+                withAnimation {
+                    viewModel.resetToIdle()
+                }
+            } label: {
+                Image(systemName: "house")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textPrimary)
+            }
+            .accessibilityLabel(LinkaCopy.value("home.accessibility.back"))
+        }
+    }
+
+    @ViewBuilder
+    private var toolbarHistoryButton: some View {
+        if viewModel.uiPhase == .idle || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
+            Button { navPath.append(AppRoute.history) } label: {
+                Image(systemName: "clock")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textPrimary)
+            }
+            .accessibilityLabel(LinkaCopy.value("home.accessibility.history"))
+        }
+    }
+
+    @ViewBuilder
+    private var toolbarShareButton: some View {
+        if viewModel.uiPhase == .done {
+            Button {
+                showShareSheet = true
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textPrimary)
+            }
+            .accessibilityLabel(LinkaCopy.value("home.accessibility.share"))
+        }
+    }
+
+    @ViewBuilder
+    private var toolbarSettingsButton: some View {
+        if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
+            Button { navPath.append(AppRoute.settings) } label: {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textPrimary)
+            }
+            .accessibilityLabel(LinkaCopy.value("home.accessibility.settings"))
         }
     }
 
