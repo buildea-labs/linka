@@ -38,6 +38,13 @@ final class LinkaEntitlementsTests: XCTestCase {
         }
     }
 
+    func testTemporaryFreeOfferHasAnInclusiveEndDate() {
+        let duringOffer = LinkaTemporaryFreeOffer.endsAt.addingTimeInterval(-1)
+        XCTAssertTrue(LinkaTemporaryFreeOffer.isWithinOfferPeriod(at: duringOffer))
+        XCTAssertTrue(LinkaTemporaryFreeOffer.isWithinOfferPeriod(at: LinkaTemporaryFreeOffer.endsAt))
+        XCTAssertFalse(LinkaTemporaryFreeOffer.isWithinOfferPeriod(at: LinkaTemporaryFreeOffer.endsAt.addingTimeInterval(1)))
+    }
+
     func testActivePlusAllowsPremiumCapabilities() {
         let snapshot = LinkaEntitlementSnapshot.plus(
             status: .active,
@@ -197,8 +204,25 @@ final class StoreKitEntitlementProviderTests: XCTestCase {
     }
 
     func testProductStartsNilBeforeAnyLoadResolves() {
-        let provider = StoreKitEntitlementProvider()
+        let now = self.now
+        let provider = StoreKitEntitlementProvider(now: { now })
         XCTAssertEqual(provider.productState, .loading)
+        XCTAssertEqual(provider.snapshot, .free)
+    }
+
+    func testTemporaryFreeOfferStartsAsPromotionWithoutStoreKitPurchase() {
+        let provider = StoreKitEntitlementProvider(now: {
+            LinkaTemporaryFreeOffer.endsAt.addingTimeInterval(-1)
+        })
+
+        #if os(iOS)
+        XCTAssertEqual(provider.snapshot.plan, .plus)
+        XCTAssertEqual(provider.snapshot.status, .active)
+        XCTAssertEqual(provider.snapshot.source, .promotion)
+        XCTAssertEqual(provider.snapshot.validUntil, LinkaTemporaryFreeOffer.endsAt)
+        #else
+        XCTAssertEqual(provider.snapshot, .free)
+        #endif
     }
 
     func testLoadProductWithAnUnknownIDResolvesToNilProductAndStopsLoading() async {

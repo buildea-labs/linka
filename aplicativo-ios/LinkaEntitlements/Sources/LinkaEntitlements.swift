@@ -48,6 +48,27 @@ public enum LinkaAccessReason: String, Codable, Sendable {
     case invalidSnapshot
 }
 
+/// Campanha de lançamento: todos os recursos ficam disponíveis sem compra
+/// até o fim de 31/10/2026 no horário de São Paulo.
+///
+/// A data é centralizada para que UI, Atalhos e provedores de dados usem o
+/// mesmo limite. Depois dela, a política normal de entitlement volta a valer.
+public enum LinkaTemporaryFreeOffer {
+    public static let endsAt = Date(timeIntervalSince1970: 1_793_501_999)
+
+    public static func isWithinOfferPeriod(at date: Date) -> Bool {
+        date <= endsAt
+    }
+
+    public static func isActive(at date: Date = Date()) -> Bool {
+        #if os(iOS)
+        return isWithinOfferPeriod(at: date)
+        #else
+        return false
+        #endif
+    }
+}
+
 public struct LinkaEntitlementSnapshot: Codable, Equatable, Sendable {
     public let plan: LinkaPlan
     public let status: LinkaEntitlementStatus
