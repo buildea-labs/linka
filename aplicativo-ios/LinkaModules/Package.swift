@@ -40,6 +40,7 @@ let package = Package(
             name: "LinkaModulesTests",
             dependencies: [
                 "LinkaModules",
+                .product(name: "MeasurementHistory", package: "MeasurementHistory"),
                 .product(name: "MeasurementHistoryCloudKit", package: "MeasurementHistoryCloudKit")
             ],
             path: "Tests"

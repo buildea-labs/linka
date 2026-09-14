@@ -58,3 +58,117 @@ O histórico também passa a exibir a origem da medição (Mac ou iOS). Isso exi
 - Realizar teste no macOS e iOS usando as mesmas credenciais do iCloud.
 - Validar se o CloudKit sincroniza a nova medição e exibe os ícones corretos de origem no Histórico.
 - Verificar o visual da `MacMainView` (Gauge removido, UI de "Hero Horizontal", painel e rodapé funcionando corretamente em redimensionamento e Dark Mode).
+
+---
+
+# Architecture Plan — Home iOS viva, uma única verdade
+
+## 1. Problema
+
+A Home já tem dados vivos, mas exibe duas leituras independentes: o hero usa
+`LinkaHealthCheck` (`NWPathMonitor` e ping próprio); os casos de uso usam
+`LiveTelemetryCollector` e `LiveUsageSuitabilityEvaluator` (janela atualizada
+a cada 3 segundos). Elas podem discordar para a pessoa usuária.
+
+A base de throughput também não é segura hoje: a busca parte do SSID atual,
+enquanto medições persistidas gravam `networkIdentifier` como provedor; e a
+baseline em memória não é invalidada na troca de rede ou volta do background.
+
+## 2. Comportamento desejado
+
+A pessoa abre a Home e entende se está conectada, se a conexão está
+respondendo agora e se o uso escolhido é adequado. Hero e cards refletem a
+mesma janela de evidência. A velocidade continua sendo medida apenas por ação
+explícita; não há modo novo nem medição pesada em segundo plano.
+
+## 3. Decisão
+
+- `liveUsageReport` passa a ser a fonte única do estado idle da Home.
+- A baseline de throughput é efêmera e só é elegível para Wi-Fi com SSID atual
+  disponível, teste completo, upload disponível e idade máxima de quatro horas.
+- A busca compara `measurement.wifiContext?.ssid`, nunca `provider`/
+  `networkIdentifier`.
+- Sem identidade Wi-Fi confiável, a interface pede uma medição para confirmar
+  upload; não infere throughput.
+- Não há schema novo, persistência de telemetria, mudança no LinkaEngine,
+  CloudKit nem novo modo de teste.
+
+```text
+NWPathMonitor + sonda leve (3 s)
+           ↓
+LiveNetworkTelemetrySnapshot ← baseline de teste completo no mesmo SSID
+           ↓
+LiveUsageSuitabilityReport
+           ↓
+Hero + usos + CTA contextual
+```
+
+## 4. Módulos e contratos
+
+- `LinkaApp/Sources/Adapters/SpeedTestViewModel.swift`
+  - centraliza a chave efêmera de baseline (SSID Wi-Fi ou indisponível);
+  - ao trocar a chave, entrar em background/voltar ativo ou perder a rota,
+    limpa buffer, baseline e relatório antes de novo polling;
+  - após teste concluído, só publica baseline quando a identidade Wi-Fi
+    efetivamente associada à medição existir;
+  - preserva pausa do polling enquanto `isTesting`.
+- `LinkaModules/Sources/LiveTelemetryCollector.swift`
+  - recebe uma identidade/predicado tipado de baseline e filtra histórico por
+    `wifiContext.ssid`, resultado completo e TTL; `ThroughputBaseline` segue
+    apenas em memória.
+- `LinkaApp/Sources/UI/MainView.swift`
+  - deriva hero de `liveConnectionKind` e `liveUsageReport`, não de
+    `LinkaHealthCheck`;
+  - conecta `LiveUsageCasesView.onSelect`: ausência de throughput ajusta o
+    rótulo do único CTA para a intenção, por exemplo “Medir para chamada em
+    vídeo”, mantendo `startSpeedTest()` inalterado;
+  - mantém origem/confiança em detalhe sob toque, não no hero.
+- `LinkaApp/Sources/UI/LiveUsageCasesView.swift` e
+  `UsageSuitabilityCopy.swift`
+  - só apresentam estados/copy acessível: aquecendo, “estável agora”,
+    “com base no último teste desta rede” e pedido de medição.
+- `LinkaHealthCheck.swift`
+  - fica fora da Home neste escopo; remoção/realocação só após verificar
+    consumidores remanescentes, em mudança separada.
+
+## 5. Estados da Home
+
+| Estado | Condição | Leitura |
+|---|---|---|
+| offline | rota não satisfeita | Sem conexão; não há veredito de uso |
+| aquecendo | rota ativa, menos de três amostras | Avaliando sua conexão |
+| ao vivo | janela válida | Hero e jogo usam latência, jitter e perda atuais |
+| baseline elegível | teste completo, <=4 h, mesmo SSID | Vídeo combina estado atual e upload da rede |
+| sem baseline | SSID ausente/trocado, expirado ou sem upload | Medir para confirmar upload |
+| medindo | `isTesting` | Polling suspenso; fluxo de medição é soberano |
+
+## 6. Falhas, privacidade e compatibilidade
+
+- Falha/timeout de sonda vira perda na janela, nunca zero ou estado saudável.
+- Troca de rede invalida dados derivados antes de qualquer novo veredito.
+- SSID só é usado quando a plataforma já o disponibiliza; não há BSSID cru,
+  novo identificador persistente ou envio remoto.
+- Histórico legado continua visível, porém registros sem SSID não são baseline.
+- iPhone/iPad não inventam RSSI nem velocidade de enlace; macOS preserva os
+  fatos de plataforma disponíveis.
+
+## 7. Verificação
+
+- `LiveTelemetryCollectorTests`: baseline só para mesmo SSID, resultado
+  completo, upload presente e dentro do TTL; ignora provider, SSID diferente e
+  dados expirados.
+- `SpeedTestViewModel`/app tests: troca de SSID e retorno ativo limpam estado;
+  conclusão habilita baseline só com SSID consistente; CTA contextual dispara a
+  mesma medição.
+- `LiveUsageSuitabilityTests`: cobertura de baseline expirada e preservação da
+  avaliação determinística.
+- Validação manual iPhone: aquecimento, troca de rede, background/retorno,
+  offline, vídeo sem/com teste recente e acessibilidade (Dynamic Type,
+  VoiceOver, reduzir movimento).
+
+## 8. Riscos e não-objetivos
+
+Uma troca de rede força alguns segundos de aquecimento — preferência explícita
+por honestidade em vez de confiança herdada. Não são objetivos: medir banda
+continuamente, diagnosticar topologia mesh, atribuir causa a roteador/provedor
+ou alterar o algoritmo do speed test.

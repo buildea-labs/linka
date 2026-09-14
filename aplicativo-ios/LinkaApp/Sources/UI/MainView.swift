@@ -36,7 +36,6 @@ struct MainView: View {
     }
 
     @StateObject private var viewModel = SpeedTestViewModel()
-    @StateObject private var healthCheck = LinkaHealthCheck()
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
     @ObservedObject private var intentCoordinator = AppIntentCoordinator.shared
 
@@ -60,6 +59,7 @@ struct MainView: View {
     @State private var showConnectivityTriage: Bool = false
     @State private var showExpertModeMigrationBanner: Bool = false
     @State private var ringScale: CGFloat = 1.0
+    @State private var selectedLiveUsageCase: UsageCase?
     @Namespace private var animation
 
     @Environment(\.scenePhase) private var scenePhase
@@ -130,41 +130,31 @@ struct MainView: View {
     }
 
     private var videoCallVerdict: (label: String, color: Color) {
-        let dl = viewModel.downloadSpeed
-        let ul = viewModel.uploadSpeed
-        let ping = Double(viewModel.ping)
-        let loss = viewModel.packetLossPercent ?? 0
-
-        if dl >= 15 && ul >= 5 && ping <= 60 && loss < 2 {
-            return (LinkaCopy.value("home.verdict.good"), .statusGood)
-        } else if dl >= 5 && ul >= 1.5 && ping <= 120 && loss < 5 {
-            return (LinkaCopy.value("home.verdict.fair"), .statusAttention)
-        } else {
-            return (LinkaCopy.value("home.verdict.poor"), .statusCritical)
+        if let v = usageSuitabilityReport?.verdict(for: .videoCall) {
+            switch v.level {
+            case .adequate: return (LinkaCopy.value("home.verdict.good"), .statusGood)
+            case .limited: return (LinkaCopy.value("home.verdict.fair"), .statusAttention)
+            case .notAssessed: return (LinkaCopy.value("home.verdict.poor"), .statusCritical)
+            }
         }
+        return (LinkaCopy.value("home.verdict.poor"), .statusCritical)
     }
 
     private var gamingVerdict: (label: String, color: Color) {
-        let ping = Double(viewModel.ping)
-        let jitter = viewModel.jitter
-        let loss = viewModel.packetLossPercent ?? 0
-
-        if ping <= 40 && jitter <= 20 && loss < 1 {
-            return (LinkaCopy.value("home.verdict.good"), .statusGood)
-        } else if ping <= 90 && loss < 3 {
-            return (LinkaCopy.value("home.verdict.fair"), .statusAttention)
-        } else {
-            return (LinkaCopy.value("home.verdict.poor"), .statusCritical)
+        if let v = usageSuitabilityReport?.verdict(for: .onlineGaming) {
+            switch v.level {
+            case .adequate: return (LinkaCopy.value("home.verdict.good"), .statusGood)
+            case .limited: return (LinkaCopy.value("home.verdict.fair"), .statusAttention)
+            case .notAssessed: return (LinkaCopy.value("home.verdict.poor"), .statusCritical)
+            }
         }
+        return (LinkaCopy.value("home.verdict.poor"), .statusCritical)
     }
 
     private var streamingVerdict: (label: String, color: Color) {
-        let dl = viewModel.downloadSpeed
-        let loss = viewModel.packetLossPercent ?? 0
-
-        if dl >= 25 && loss < 2 {
+        if let v4k = usageSuitabilityReport?.verdict(for: .streaming4K), v4k.level == .adequate {
             return (LinkaCopy.value("home.verdict.4k"), .statusGood)
-        } else if dl >= 10 {
+        } else if let vHD = usageSuitabilityReport?.verdict(for: .streamingHD), vHD.level == .adequate {
             return (LinkaCopy.value("home.verdict.hd"), .statusGood)
         } else {
             return (LinkaCopy.value("home.verdict.sd"), .statusAttention)
@@ -337,21 +327,14 @@ struct MainView: View {
         }
         .onAppear {
             viewModel.refreshLiveNetwork()
-            healthCheck.start()
-        }
-        .onDisappear {
-            healthCheck.stop()
         }
         .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
         .onChange(of: scenePhase) { newPhase in
             viewModel.handleScenePhaseChange(newPhase)
             switch newPhase {
             case .active:
-                healthCheck.start()
                 recoverAdvancedWiFiMeasurementIfNeeded()
-            case .background:
-                healthCheck.stop()
-            case .inactive:
+            case .background, .inactive:
                 break
             }
         }
@@ -505,16 +488,23 @@ struct MainView: View {
                             .foregroundColor(.textSecondary)
                             .multilineTextAlignment(.center)
                     }
-                    .padding(.horizontal, 24)
+                    Spacer(minLength: 24)
 
-                    Spacer(minLength: 38)
+                    // Casos de Uso ao Vivo (Tempo Real)
+                    LiveUsageCasesView(
+                        report: viewModel.liveUsageReport,
+                        cases: [.videoCall, .onlineGaming],
+                        onSelect: selectLiveUsageCase
+                    )
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
 
                     VStack(spacing: 12) {
                         // Botão Primário Analisar Rede
                         Button(action: {
                             startSpeedTest()
                         }) {
-                            Text(LinkaCopy.value("home.testSpeed"))
+                            Text(speedTestCTALabel)
                                 .multilineTextAlignment(.center)
                         }
                         .buttonStyle(.linkaPrimary)
@@ -828,27 +818,34 @@ struct MainView: View {
 
     // MARK: - Idle hero state
 
-    /// Qualidade da conexão em repouso baseada no ping medido pelo HealthCheck
+    /// Qualidade da Home derivada da mesma janela que alimenta os casos de
+    /// uso. Não consulta `LinkaHealthCheck`, para não criar uma segunda
+    /// leitura concorrente para a pessoa.
     private enum IdleConnectionQuality {
-        case unknown       // sem dados ainda
+        case warming       // janela ainda sem evidência suficiente
         case offline       // sem internet
-        case good          // ping <= 80ms
-        case fair          // ping 81–200ms
-        case poor          // ping > 200ms
+        case good
+        case fair
+        case poor
     }
 
     private var idleConnectionQuality: IdleConnectionQuality {
         guard viewModel.liveConnectionKind != nil else { return .offline }
-        guard healthCheck.isOnline else { return .offline }
-        guard let ping = healthCheck.pingMs else { return .unknown }
-        if ping <= 80 { return .good }
-        if ping <= 200 { return .fair }
-        return .poor
+        guard let report = viewModel.liveUsageReport,
+              report.telemetry.sampleCount >= 3 else { return .warming }
+
+        guard let gaming = report.verdict(for: .onlineGaming) else { return .warming }
+        switch gaming.level {
+        case .adequate: return .good
+        case .limited:
+            return gaming.reason == .packetLossExceeded ? .poor : .fair
+        case .notAssessed: return .warming
+        }
     }
 
     private var heroStateIcon: String {
         switch idleConnectionQuality {
-        case .unknown:  return "checkmark.circle.fill"
+        case .warming:  return "ellipsis.circle"
         case .offline:  return "wifi.exclamationmark"
         case .good:     return "checkmark.circle.fill"
         case .fair:     return "exclamationmark.circle.fill"
@@ -858,7 +855,7 @@ struct MainView: View {
 
     private var heroStateIconColor: Color {
         switch idleConnectionQuality {
-        case .unknown:  return .statusGood
+        case .warming:  return .textSecondary
         case .offline:  return .statusCritical
         case .good:     return .statusGood
         case .fair:     return .statusAttention
@@ -868,7 +865,7 @@ struct MainView: View {
 
     private var heroStateTitle: String {
         switch idleConnectionQuality {
-        case .unknown:  return viewModel.liveConnectionKind == nil ? LinkaCopy.value("home.offline") : LinkaCopy.value("home.checking")
+        case .warming:  return LinkaCopy.value("home.hero.warming.title")
         case .offline:  return LinkaCopy.value("home.offline")
         case .good:     return LinkaCopy.value("home.hero.good.title")
         case .fair:     return LinkaCopy.value("home.hero.fair.title")
@@ -878,40 +875,13 @@ struct MainView: View {
 
     private var heroStateSubtitle: String {
         switch idleConnectionQuality {
-        case .unknown:  return viewModel.liveConnectionKind == nil
-            ? LinkaCopy.value("home.hero.connectToAnalyze")
-            : LinkaCopy.value("home.hero.measuringQuality")
+        case .warming:  return LinkaCopy.value("home.hero.warming.subtitle")
         case .offline:  return LinkaCopy.value("home.hero.connectToAnalyze")
         case .good:     return LinkaCopy.value("home.hero.good.subtitle")
         case .fair:     return LinkaCopy.value("home.hero.fair.subtitle")
         case .poor:     return LinkaCopy.value("home.hero.poor.subtitle")
         }
     }
-
-    /// Frase natural com os dados reais do HealthCheck, exibida abaixo do subtítulo
-    private var heroStateDetail: String? {
-        guard healthCheck.isOnline, healthCheck.pingMs != nil else { return nil }
-
-        var parts: [String] = []
-
-        if let ping = healthCheck.pingMs, ping > 0 {
-            parts.append(LinkaCopy.format("home.health.ping", Int(ping)))
-        }
-        if let jitter = healthCheck.jitterMs, jitter > 0 {
-            parts.append(LinkaCopy.format("home.health.jitter", Int(jitter)))
-        }
-        if let dns = healthCheck.dnsMs, dns > 0 {
-            parts.append(LinkaCopy.format("home.health.dns", Int(dns)))
-        }
-
-        guard !parts.isEmpty else { return nil }
-
-        // Monta frase natural
-        var sentence = parts.joined(separator: ", ")
-        sentence = sentence.prefix(1).uppercased() + sentence.dropFirst()
-        return sentence + "."
-    }
-
 
     private var simpleNetworkContext: String? {
         if viewModel.connectionKind == .wifi {
@@ -1041,7 +1011,23 @@ struct MainView: View {
         }
     }
 
+    private var speedTestCTALabel: String {
+        guard selectedLiveUsageCase == .videoCall,
+              viewModel.liveUsageReport?.verdict(for: .videoCall)?.reason == .missingThroughputMeasurement else {
+            return LinkaCopy.value("home.testSpeed")
+        }
+        return LinkaCopy.value("home.testSpeed.videoCall")
+    }
+
+    private func selectLiveUsageCase(_ usageCase: UsageCase) {
+        guard viewModel.liveUsageReport?.verdict(for: usageCase)?.reason == .missingThroughputMeasurement else {
+            return
+        }
+        selectedLiveUsageCase = usageCase
+    }
+
     private func startSpeedTest() {
+        selectedLiveUsageCase = nil
         let advancedWiFiAllowed = LinkaEntitlementPolicy.decision(
             for: .advancedWiFiDiagnostics,
             snapshot: entitlements.snapshot,

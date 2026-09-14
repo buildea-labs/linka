@@ -10,6 +10,7 @@ import CryptoKit
 import LinkaEngine
 import MeasurementHistory
 import NetworkCore
+import NetworkInsights
 import LinkaEntitlements
 import LinkaModules
 import LinkaWidgetShared
@@ -91,6 +92,16 @@ public class SpeedTestViewModel: ObservableObject {
     @Published public private(set) var liveDnsLatencyMs: Double?
     @Published public private(set) var livePacketLossPercent: Double?
     @Published public private(set) var liveWifiRSSI: Double?
+
+    /// Relatório de adequação de casos de uso calculado em tempo real.
+    @Published public private(set) var liveUsageReport: LiveUsageSuitabilityReport?
+
+    let liveTelemetryCollector = LiveTelemetryCollector()
+    private let liveUsageEvaluator = LiveUsageSuitabilityEvaluator()
+    var currentThroughputBaseline: ThroughputBaseline?
+    /// SSID ao qual a janela e a baseline efêmera pertencem. `nil` não é
+    /// uma identidade substituível por provedor, interface ou rede celular.
+    private(set) var liveUsageWiFiSSID: String?
 
     /// Latência sob carga (issue #52). Não é `@Published` de propósito: não
     /// deve disparar re-render nenhum, para não competir com o resultado
@@ -355,6 +366,8 @@ public class SpeedTestViewModel: ObservableObject {
     
     public func startTest(advancedWiFiDiagnostics: AdvancedWiFiDiagnostics? = nil) {
         guard !isTesting else { return }
+        stopLivePolling()
+        liveTelemetryCollector.suspend()
         isTesting = true
         progress = 0.0
         downloadSpeed = 0.0
@@ -493,6 +506,8 @@ public class SpeedTestViewModel: ObservableObject {
                         networkIdentifier: self.provider
                     )
                     self.latestFinishedMeasurement = m
+                    self.publishThroughputBaselineIfEligible(from: m)
+                    await self.refreshLiveUsageSuitability()
                     let repo = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
                     do {
                         try await repo.save(m)
@@ -512,6 +527,8 @@ public class SpeedTestViewModel: ObservableObject {
                 }
                 
                 self.isTesting = false
+                self.liveTelemetryCollector.resume()
+                self.startLivePolling()
             } catch {
                 // Mesma guarda por geração do caminho de sucesso acima: uma
                 // T1 cancelada que só percebe isso aqui (via
@@ -520,6 +537,8 @@ public class SpeedTestViewModel: ObservableObject {
                 // rodando (issue #47, rodada 3 — achado de Marcelo).
                 guard self.testGeneration == myGeneration else { return }
                 self.isTesting = false
+                self.liveTelemetryCollector.resume()
+                self.startLivePolling()
             }
         }
     }
@@ -536,6 +555,8 @@ public class SpeedTestViewModel: ObservableObject {
         isTesting = false
         progress = 0.0
         uiPhase = .idle
+        liveTelemetryCollector.resume()
+        startLivePolling()
     }
 
     /// Retorna à tela inicial (Home/Idle) a partir do resultado ou de qualquer outro estado.
@@ -546,6 +567,8 @@ public class SpeedTestViewModel: ObservableObject {
         failureReason = nil
         progress = 0.0
         uiPhase = .idle
+        liveTelemetryCollector.resume()
+        startLivePolling()
     }
 
     /// O `NWPathMonitor` observou que a rota que iniciou a medição mudou ou
@@ -568,6 +591,9 @@ public class SpeedTestViewModel: ObservableObject {
         provider = ""
         networkType = ""
         testDuration = ""
+        resetLiveUsageState()
+        liveTelemetryCollector.resume()
+        startLivePolling()
         packetLossPercent = nil
         hasMeasuredUpload = false
         hasMeasuredPing = false
@@ -609,6 +635,7 @@ public class SpeedTestViewModel: ObservableObject {
         switch phase {
         case .background:
             stopLivePolling()
+            resetLiveUsageState()
 
             // Só age em cima de uma medição em andamento — `.done`/`.error`
             // já são estados terminais e não têm nada pra cancelar; agir
@@ -644,6 +671,9 @@ public class SpeedTestViewModel: ObservableObject {
             }
 
         case .active:
+            // A rota pode ter mudado enquanto o app não estava visível. A
+            // janela anterior não é evidência para a nova sessão ativa.
+            resetLiveUsageState()
             startLivePolling()
 
             refreshLiveNetwork()
@@ -1006,20 +1036,7 @@ public class SpeedTestViewModel: ObservableObject {
 
         if kind == .wifi {
             let wifiCtx = await Self.sampleWiFiContext()
-            self.liveWiFiContext = wifiCtx
-            if let ssid = wifiCtx?.ssid {
-                let band = wifiCtx?.bandGHz ?? ApplePlatformSignalProvider.currentWifiBandGHz()
-                if let band {
-                    let bandStr = band.truncatingRemainder(dividingBy: 1) == 0
-                        ? String(format: "%.0f", band)
-                        : String(format: "%.1f", band)
-                    self.liveNetworkLabel = "\(ssid) · \(bandStr) GHz"
-                } else {
-                    self.liveNetworkLabel = ssid
-                }
-            } else {
-                self.liveNetworkLabel = LinkaCopy.value("network.wifi")
-            }
+            updateLiveWiFiContext(wifiCtx)
         } else if kind == .cellular {
             self.liveWiFiContext = nil
             let hints = await ApplePlatformSignalProvider().currentHints()
@@ -1036,6 +1053,34 @@ public class SpeedTestViewModel: ObservableObject {
         } else {
             self.liveWiFiContext = nil
             self.liveNetworkLabel = LinkaCopy.value("network.connection")
+        }
+
+        reconcileLiveUsageNetworkIdentity()
+    }
+
+    /// O `NWPathMonitor` não dispara ao trocar de SSID sem trocar de
+    /// interface. Por isso o polling reamostra o contexto Wi-Fi antes de
+    /// registrar uma nova sonda e invalida qualquer evidência da rede antiga.
+    private func refreshLiveWiFiContextForPolling() async {
+        guard liveConnectionKind == .wifi else { return }
+        updateLiveWiFiContext(await Self.sampleWiFiContext())
+        reconcileLiveUsageNetworkIdentity()
+    }
+
+    private func updateLiveWiFiContext(_ wifiCtx: WiFiNetworkContext?) {
+        liveWiFiContext = wifiCtx
+        if let ssid = wifiCtx?.ssid {
+            let band = wifiCtx?.bandGHz ?? ApplePlatformSignalProvider.currentWifiBandGHz()
+            if let band {
+                let bandStr = band.truncatingRemainder(dividingBy: 1) == 0
+                    ? String(format: "%.0f", band)
+                    : String(format: "%.1f", band)
+                liveNetworkLabel = "\(ssid) · \(bandStr) GHz"
+            } else {
+                liveNetworkLabel = ssid
+            }
+        } else {
+            liveNetworkLabel = LinkaCopy.value("network.wifi")
         }
     }
     
@@ -1063,8 +1108,10 @@ public class SpeedTestViewModel: ObservableObject {
                 // Só coleta métricas ao vivo se NÃO estiver testando — o
                 // polling nunca deve concorrer com a medição ativa.
                 if !self.isTesting {
+                    await self.refreshLiveWiFiContextForPolling()
                     await self.performLivePing()
                     await self.updateLiveRSSI()
+                    await self.refreshLiveUsageSuitability()
                 }
 
                 // Polling a cada 3 segundos
@@ -1083,19 +1130,119 @@ public class SpeedTestViewModel: ObservableObject {
         guard let url = URL(string: "https://www.apple.com/library/test/success.html") else { return }
         let start = Date()
         do {
-            let _ = try await livePingSession.data(from: url)
-            // Uma medição em `isTesting` pode ter começado enquanto este
-            // request estava em voo (até 4s de timeout) — não sobrescreve o
-            // resultado do teste real com um valor de polling atrasado.
+            let (_, response) = try await livePingSession.data(from: url)
             guard !self.isTesting else { return }
-            let ms = Date().timeIntervalSince(start) * 1000
-            self.liveDnsLatencyMs = ms
-            self.livePacketLossPercent = 0
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if statusCode >= 200 && statusCode < 400 {
+                let ms = Date().timeIntervalSince(start) * 1000
+                self.liveTelemetryCollector.recordProbe(rttMs: ms)
+                self.liveDnsLatencyMs = ms
+            } else {
+                self.liveTelemetryCollector.recordProbe(rttMs: nil)
+            }
         } catch {
             guard !self.isTesting else { return }
-            self.liveDnsLatencyMs = nil
-            self.livePacketLossPercent = 100
+            self.liveTelemetryCollector.recordProbe(rttMs: nil)
         }
+    }
+
+    /// Atualiza a avaliação de casos de uso em tempo real na tela Início.
+    public func refreshLiveUsageSuitability() async {
+        guard !isTesting else { return }
+
+        guard let ssid = liveUsageWiFiSSID else {
+            liveUsageReport = liveUsageEvaluator.evaluate(
+                telemetry: liveTelemetryCollector.snapshot(
+                    connectionKind: liveConnectionKind,
+                    interfaceLabel: liveNetworkLabel,
+                    isExpensive: liveConnectionKind == .cellular,
+                    isConstrained: false,
+                    wifiRssiDbm: liveWifiRSSI
+                ),
+                baseline: nil
+            )
+            return
+        }
+
+        if currentThroughputBaseline == nil {
+            let repository = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
+            let baseline = await LiveTelemetryCollector.fetchThroughputBaseline(
+                forWiFiSSID: ssid,
+                maxAge: 14400,
+                repository: repository
+            )
+            // A busca é assíncrona: só aceita o resultado se ele ainda
+            // pertence ao SSID que originou a consulta.
+            guard liveUsageWiFiSSID == ssid else { return }
+            currentThroughputBaseline = baseline
+        }
+
+        #if os(macOS)
+        let linkSpeed = liveWiFiContext?.linkSpeedMbps
+        #else
+        let linkSpeed: Double? = nil
+        #endif
+
+        let snapshot = liveTelemetryCollector.snapshot(
+            connectionKind: liveConnectionKind,
+            interfaceLabel: liveNetworkLabel,
+            isExpensive: liveConnectionKind == .cellular,
+            isConstrained: false,
+            wifiLinkSpeedMbps: linkSpeed,
+            wifiRssiDbm: liveWifiRSSI
+        )
+
+        if let latency = snapshot.latencyMs {
+            self.liveDnsLatencyMs = latency
+        }
+        if let loss = snapshot.packetLossPercent {
+            self.livePacketLossPercent = loss
+        }
+
+        self.liveUsageReport = liveUsageEvaluator.evaluate(
+            telemetry: snapshot,
+            baseline: currentThroughputBaseline
+        )
+    }
+
+    /// Invalida fatos derivados que não podem sobreviver a troca de rede ou
+    /// retorno do background. A rota e o polling serão amostrados novamente.
+    func resetLiveUsageState() {
+        liveTelemetryCollector.clearBuffer()
+        currentThroughputBaseline = nil
+        liveUsageWiFiSSID = nil
+        liveUsageReport = nil
+        liveDnsLatencyMs = nil
+        livePacketLossPercent = nil
+    }
+
+    func reconcileLiveUsageNetworkIdentity(for sampledSSID: String? = nil) {
+        let currentSSID = sampledSSID ?? (liveConnectionKind == .wifi ? liveWiFiContext?.ssid : nil)
+        guard currentSSID != liveUsageWiFiSSID else { return }
+
+        liveTelemetryCollector.clearBuffer()
+        currentThroughputBaseline = nil
+        liveUsageReport = nil
+        liveDnsLatencyMs = nil
+        livePacketLossPercent = nil
+        liveUsageWiFiSSID = currentSSID
+    }
+
+    private func publishThroughputBaselineIfEligible(from measurement: NetworkMeasurement) {
+        guard measurement.outcome == .complete,
+              let ssid = measurement.wifiContext?.ssid,
+              ssid == liveUsageWiFiSSID,
+              let download = measurement.downloadMbps, download > 0,
+              let upload = measurement.uploadMbps, upload > 0 else {
+            return
+        }
+
+        currentThroughputBaseline = ThroughputBaseline(
+            downloadMbps: download,
+            uploadMbps: upload,
+            lastMeasuredAt: measurement.measuredAt,
+            networkIdentifier: ssid
+        )
     }
 
     /// Sinal Wi-Fi ao vivo, atualizado a cada ciclo de polling independente
