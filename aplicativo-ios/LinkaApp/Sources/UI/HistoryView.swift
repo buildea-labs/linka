@@ -369,7 +369,7 @@ struct HistoryWaveChartView: View {
                 let height = geo.size.height
 
                 ZStack(alignment: .topLeading) {
-                    chartGrid
+                    chartGrid(height: height)
                     chartLines(width: width, height: height)
                 }
                 .contentShape(Rectangle())
@@ -438,31 +438,59 @@ struct HistoryWaveChartView: View {
         HStack(spacing: 5) { Circle().fill(color).frame(width: 7, height: 7); Text("\(title) \(formatValue(value)) Mbps").font(.system(size: 11, weight: .medium)).foregroundColor(.textSecondary) }
     }
 
-    private var chartGrid: some View {
-        VStack(spacing: 0) {
-            HStack { Text("↓ \(Int(round(maxDownload))) Mbps").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundColor(downloadColor.opacity(0.8)); Spacer() }.padding(.bottom, 2)
-            Rectangle().fill(Color.borderDefault.opacity(0.35)).frame(height: 0.8)
-            Spacer()
-            HStack { Text("↑ \(Int(round(maxUpload))) Mbps").font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundColor(uploadColor.opacity(0.8)); Spacer() }.padding(.bottom, 2)
-            Rectangle().fill(Color.borderDefault.opacity(0.25)).frame(height: 0.8)
-            Spacer()
-            Rectangle().fill(Color.borderDefault.opacity(0.35)).frame(height: 0.8)
+    /// Duas bandas verticais compartilhadas pela grade e pelas ondas: a banda
+    /// de download vai de `top` (máximo) a `mid` (zero) e a de upload de
+    /// `mid` (máximo) a `bottom` (zero). Sem esse contrato único, a grade
+    /// reservava metade da altura para o upload mas a onda era desenhada na
+    /// altura quase inteira — sobrava espaço vazio abaixo das duas linhas.
+    private func chartBands(height: CGFloat) -> (top: CGFloat, mid: CGFloat, bottom: CGFloat) {
+        let top: CGFloat = 16
+        let bottom: CGFloat = max(height - 10, top + 20)
+        return (top, (top + bottom) / 2, bottom)
+    }
+
+    private func chartGrid(height: CGFloat) -> some View {
+        let bands = chartBands(height: height)
+        return ZStack(alignment: .topLeading) {
+            gridLine(opacity: 0.35).offset(y: bands.top)
+            gridLine(opacity: 0.25).offset(y: bands.mid)
+            gridLine(opacity: 0.35).offset(y: bands.bottom)
+
+            Text("↓ \(Int(round(maxDownload))) Mbps")
+                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .foregroundColor(downloadColor.opacity(0.8))
+                .offset(y: max(bands.top - 13, 0))
+
+            Text("↑ \(Int(round(maxUpload))) Mbps")
+                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .foregroundColor(uploadColor.opacity(0.8))
+                .offset(y: bands.mid - 13)
         }
+    }
+
+    private func gridLine(opacity: Double) -> some View {
+        Rectangle()
+            .fill(Color.borderDefault.opacity(opacity))
+            .frame(height: 0.8)
+            .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
     private func chartLines(width: CGFloat, height: CGFloat) -> some View {
+        let bands = chartBands(height: height)
+        let downloadBandHeight = bands.mid - bands.top
+        let uploadBandHeight = bands.bottom - bands.mid
         let count = chronologicalMeasurements.count
         let stepX = width / CGFloat(max(count - 1, 1))
-        let topPadding: CGFloat = 16
-        let availableHeight = max(height - topPadding - 10, 10)
         let dlPoints = chronologicalMeasurements.enumerated().compactMap { index, measurement -> CGPoint? in
             guard let value = measurement.downloadMbps else { return nil }
-            return CGPoint(x: CGFloat(index) * stepX, y: height - (CGFloat(value / maxDownload) * availableHeight) - 4)
+            let ratio = maxDownload > 0 ? CGFloat(value / maxDownload) : 0
+            return CGPoint(x: CGFloat(index) * stepX, y: bands.mid - ratio * downloadBandHeight)
         }
         let ulPoints = chronologicalMeasurements.enumerated().compactMap { index, measurement -> CGPoint? in
             guard let value = measurement.uploadMbps else { return nil }
-            return CGPoint(x: CGFloat(index) * stepX, y: height - (CGFloat(value / maxUpload) * availableHeight * 0.75) - 4)
+            let ratio = maxUpload > 0 ? CGFloat(value / maxUpload) : 0
+            return CGPoint(x: CGFloat(index) * stepX, y: bands.bottom - ratio * uploadBandHeight)
         }
         if dlPoints.count >= 2 { wavePath(points: dlPoints, isClosed: false, height: height).stroke(downloadColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)) }
         if ulPoints.count >= 2 { wavePath(points: ulPoints, isClosed: false, height: height).stroke(uploadColor, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)) }
