@@ -57,6 +57,7 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
     @Published public private(set) var isRefreshingSnapshot = false
 
     private let productID: String
+    private let now: @Sendable () -> Date
     private var updatesTask: Task<Void, Never>?
     private var productTask: Task<Void, Never>?
 
@@ -71,9 +72,19 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
     #endif
 
     public init(
-        productID: String = LinkaStoreProductID.plusAnnual
+        productID: String = LinkaStoreProductID.plusAnnual,
+        now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.productID = productID
+        self.now = now
+
+        if LinkaTemporaryFreeOffer.isActive(at: now()) {
+            snapshot = .plus(
+                status: .active,
+                source: .promotion,
+                validUntil: LinkaTemporaryFreeOffer.endsAt
+            )
+        }
 
         #if DEBUG
         // Override exclusivamente para testes de desenvolvimento.
@@ -160,6 +171,15 @@ public final class StoreKitEntitlementProvider: ObservableObject, LinkaEntitleme
     /// do StoreKit 2 é a fonte da verdade sobre se o usuário tem a assinatura
     /// ativa, já lidando com revogações, renovações e carências.
     public func refreshSnapshot() async {
+        if LinkaTemporaryFreeOffer.isActive(at: now()) {
+            snapshot = .plus(
+                status: .active,
+                source: .promotion,
+                validUntil: LinkaTemporaryFreeOffer.endsAt
+            )
+            return
+        }
+
         #if DEBUG
         // Em desenvolvimento, preserva o override explícito do teste.
         guard !isForcePlusEnabled else { return }

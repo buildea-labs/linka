@@ -50,13 +50,13 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>O Linka consulta o roteador da rede local para identificar o equipamento e diagnosticar a qualidade da conexão Wi-Fi.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>O Linka usa a localização apenas porque o iPhone exige essa autorização para informar o nome da rede Wi-Fi atual. Sua localização não é salva para identificar a rede.</string>
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
 	<dict>
 		<key>WiFiIdentification</key>
 		<string>O Linka precisa de precisão total apenas para obter o nome da rede Wi-Fi atual exigido pelo sistema.</string>
 	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>O Linka usa a localização apenas porque o iPhone exige essa autorização para informar o nome da rede Wi-Fi atual. Sua localização não é salva para identificar a rede.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

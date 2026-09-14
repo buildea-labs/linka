@@ -411,6 +411,9 @@ struct SettingsView: View {
     }
 
     private var subscriptionStatusText: String {
+        if LinkaTemporaryFreeOffer.isActive() {
+            return LinkaCopy.value("settings.subscription.temporaryFree")
+        }
         if entitlements.isRefreshingSnapshot { return LinkaCopy.value("settings.subscription.checking") }
         switch entitlements.snapshot.plan {
         case .free:
@@ -475,6 +478,7 @@ struct SettingsView: View {
     }
 
     private func openSubscription() {
+        guard !LinkaTemporaryFreeOffer.isActive() else { return }
         if entitlements.snapshot.plan == .plus, entitlements.snapshot.status == .active {
             if let onSubscriptionManagementRequest {
                 onSubscriptionManagementRequest()

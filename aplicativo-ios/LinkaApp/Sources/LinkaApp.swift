@@ -84,8 +84,10 @@ struct LinkaApp: App {
                 return LinkaSystemActionResponse(action: .openHistory)
 
             case .openPurchase:
-                await MainActor.run {
-                    AppIntentCoordinator.shared.requestPurchasePrompt()
+                if !LinkaTemporaryFreeOffer.isActive() {
+                    await MainActor.run {
+                        AppIntentCoordinator.shared.requestPurchasePrompt()
+                    }
                 }
                 return LinkaSystemActionResponse(action: .openPurchase)
                 
