@@ -11,6 +11,7 @@ Os agentes são definidos nativamente em `.codex/agents/`:
 
 - **Íris (`iris`)** — produto, experiência, curadoria, UX/UI, copy e critérios de aceite. Somente leitura.
 - **Camillo (`camillo`)** — engenharia, arquitetura, implementação, motor e integrações Apple. Escrita apenas quando autorizada.
+- **Pedro (`pedro`)** — desenvolvimento e implementação após o plano de engenharia aplicável. Escrita apenas quando autorizada; executa a arquitetura decidida e não a reabre durante o trabalho.
 - **Tito (`tito`)** — qualidade, auditoria, regressão, testes, acessibilidade e segurança. Somente leitura por padrão.
 
 ## Antes de delegar
@@ -29,7 +30,7 @@ Não delegue tarefa vaga, decisão acoplada ao próximo passo crítico ou duas t
 ## Mensagem mínima
 
 ```text
-Especialista: <iris|camillo|tito>
+Especialista: <iris|camillo|pedro|tito>
 Objetivo: <entrega concreta>
 Escopo de leitura: <arquivos ou módulos>
 Escopo de escrita: <somente leitura ou arquivos/módulos autorizados>

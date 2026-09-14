@@ -11,6 +11,7 @@ A voz do produto é definida em [`documentacao/produto/VOZ.md`](../documentacao/
 - **Codex principal** — orquestra, conversa com o Luiz, delimita escopo, integra resultados e revisa a entrega.
 - **Íris** — produto, jornada, UX/UI, copy, curadoria e critérios de aceite. Somente leitura.
 - **Camillo** — Principal Engineer transversal: arquitetura, contratos, motor, integrações Apple entre superfícies e revisão sistêmica. Escrita quando autorizada; não é o implementador obrigatório de tarefas comuns.
+- **Pedro** — desenvolvedor: implementa o plano definido, escreve testes relevantes e valida o módulo tocado. Escrita somente quando delegado/autorizado.
 - **Tito** — qualidade, regressão, testes, acessibilidade, segurança e revisão independente. Somente leitura por padrão.
 
 Especialista é ferramenta de trabalho, não personagem que precisa aparecer em toda tarefa. O Codex não deve criar handoff só para cumprir rito.
@@ -34,7 +35,7 @@ Quando houver dúvida de produto, o Codex consulta **Íris**. Quando a decisão 
 
 Camillo é obrigatório antes de implementar quando houver múltiplos módulos/pacotes; API; integração entre sistemas, app ↔ backend ou produtos Buildea; contrato compartilhado; schema/persistência entre componentes; alteração relevante no `LinkaEngine`; novo serviço/dependência estrutural; integração Apple em múltiplas superfícies; refatoração arquitetural; segurança/privacidade sistêmica; ou grande raio de impacto.
 
-Nesses casos: Produto/Íris define o comportamento → Camillo cria ou revisa o Architecture Plan → implementação → Tito valida → Camillo revisa de novo apenas se a entrega materializar uma decisão arquitetural relevante. Fora desses gatilhos, o Codex principal pode implementar normalmente.
+Nesses casos: Produto/Íris define o comportamento → Camillo cria ou revisa o Architecture Plan → Pedro ou Codex principal implementa → Tito valida → Camillo revisa de novo apenas se a entrega materializar uma decisão arquitetural relevante. Fora desses gatilhos, o Codex principal ou Pedro pode implementar normalmente.
 
 ---
 
@@ -99,7 +100,7 @@ RISCOS / VALIDAÇÃO
 
 Se ainda houver decisão material de produto sem resposta, o Codex apresenta a questão ao Luiz. Não transforma dúvida de produto em suposição técnica.
 
-### 4. Implementação — Codex principal ou delegado
+### 4. Implementação — Pedro ou Codex principal
 
 - trabalha em branch apropriada;
 - implementa apenas o escopo combinado;
@@ -110,7 +111,7 @@ Se ainda houver decisão material de produto sem resposta, o Codex apresenta a q
 - não transforma descoberta lateral em feature nova;
 - revisa o próprio diff e executa validação proporcional antes de devolver.
 
-Camillo pode implementar a mudança quando a investigação dele continuar naturalmente até a execução; isso não o transforma no executor obrigatório da squad. Partes independentes podem ser delegadas em paralelo apenas quando os escopos de escrita forem disjuntos.
+Pedro implementa a arquitetura decidida; não a critica nem a devolve para reabertura. Lacuna recuperável recebe a menor decisão compatível com o plano e é registrada no retorno. Contradição factual material é reportada ao Codex com evidência, sem arquitetura alternativa improvisada. Camillo pode implementar a mudança quando a investigação dele continuar naturalmente até a execução; isso não o transforma no executor obrigatório da squad. Partes independentes podem ser delegadas em paralelo apenas quando os escopos de escrita forem disjuntos.
 
 ### 5. Evaluate — Tito
 
@@ -119,7 +120,7 @@ Tito tenta quebrar a entrega e responde com verdict tipado:
 | Verdict | Significado | Ação |
 |---|---|---|
 | **BLOQUEIA** | regressão, medição incorreta, quebra de contrato, risco de segurança/privacidade ou comportamento materialmente errado | volta para correção |
-| **AJUSTA** | deve ser corrigido nesta entrega, mas não representa problema estrutural | Camillo ajusta |
+| **AJUSTA** | deve ser corrigido nesta entrega, mas não representa problema estrutural | Pedro ajusta dentro do plano; Camillo só entra se materializar nova decisão arquitetural |
 | **ISSUE_FUTURA** | melhoria real fora do escopo atual | registra no backlog e segue |
 
 Cobertura proporcional ao risco:

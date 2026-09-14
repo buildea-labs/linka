@@ -688,6 +688,14 @@ struct MacMainView: View {
                 .padding(.horizontal, 4)
                 .padding(.top, 2)
             }
+
+            // Casos de Uso ao Vivo (Tempo Real)
+            LiveUsageCasesView(
+                report: viewModel.liveUsageReport,
+                cases: [.videoCall, .onlineGaming],
+                isEmbedded: true
+            )
+            .padding(.top, 4)
         }
         .padding(16)
         .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.lg, style: .continuous))

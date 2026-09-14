@@ -140,6 +140,70 @@ enum UsageSuitabilityCopy {
     /// `.notAssessed` fica fora da proporção: falta de dado não deve
     /// puxar o nível pra baixo nem pra cima, mesmo princípio de
     /// `ConnectionPathStageStatus.unavailable`.
+    /// Ícone canônico de cada caso de uso.
+    static func iconName(for usageCase: UsageCase) -> String {
+        switch usageCase {
+        case .videoCall: return "video"
+        case .onlineGaming: return "gamecontroller"
+        case .streamingHD, .streaming4K: return "play.tv"
+        case .workUpload: return "arrow.up.circle"
+        }
+    }
+
+    /// Rótulo, cor e ícone para um veredito avaliado ao vivo.
+    static func liveStatusBadge(for verdict: LiveUsageCaseVerdict) -> (label: String, color: Color, icon: String) {
+        switch verdict.level {
+        case .adequate:
+            if verdict.confidence == .liveTelemetry {
+                return (LinkaCopy.value("usage.live.stable"), .statusGood, "checkmark.circle.fill")
+            } else {
+                return (LinkaCopy.value("usage.status.adequate"), .statusGood, "checkmark.circle.fill")
+            }
+        case .limited:
+            if let reason = verdict.reason {
+                switch reason {
+                case .latencyTooHigh:
+                    return (LinkaCopy.value("usage.live.latencyHigh"), .statusAttention, "exclamationmark.triangle.fill")
+                case .jitterTooHigh:
+                    return (LinkaCopy.value("usage.live.jitterHigh"), .statusAttention, "exclamationmark.triangle.fill")
+                case .packetLossExceeded:
+                    return (LinkaCopy.value("usage.live.packetLoss"), .statusCritical, "exclamationmark.triangle.fill")
+                case .throughputBelowMinimum:
+                    return (LinkaCopy.value("usage.status.limited"), .statusAttention, "exclamationmark.triangle.fill")
+                case .constrainedModeActive:
+                    return (LinkaCopy.value("usage.live.constrained"), .statusAttention, "exclamationmark.triangle.fill")
+                default:
+                    return (LinkaCopy.value("usage.status.limited"), .statusAttention, "exclamationmark.triangle.fill")
+                }
+            }
+            return (LinkaCopy.value("usage.status.limited"), .statusAttention, "exclamationmark.triangle.fill")
+        case .notAssessed:
+            if verdict.reason == .missingThroughputMeasurement {
+                return (LinkaCopy.value("usage.live.requiresSpeedTest"), .textSecondary, "speedometer")
+            }
+            return (LinkaCopy.value("usage.status.notAssessed"), .textSecondary, "questionmark.circle")
+        }
+    }
+
+    /// Detalhe contextual do veredito ao vivo para acessibilidade e tooltips.
+    static func liveDetail(for verdict: LiveUsageCaseVerdict) -> String {
+        switch verdict.confidence {
+        case .liveTelemetry:
+            return LinkaCopy.value("usage.live.stable")
+        case .historicalBaselineInferred:
+            return LinkaCopy.value("usage.live.historicalBaseline")
+        case .insufficientData:
+            return LinkaCopy.value("usage.live.requiresSpeedTest")
+        }
+    }
+
+    /// Nível agregado (Boa/Média/Ruim) exibido como resumo de uma linha na
+    /// tela de resultado (issue "qualidade de uso Boa/Média/Ruim",
+    /// 2026-08-29) — não substitui os veredictos por caso de
+    /// `UsageDiagnosticsView`, é só um resumo de leitura rápida.
+    /// `.notAssessed` fica fora da proporção: falta de dado não deve
+    /// puxar o nível pra baixo nem pra cima, mesmo princípio de
+    /// `ConnectionPathStageStatus.unavailable`.
     static func qualityLevel(for report: UsageSuitabilityReport) -> UsageQualityLevel? {
         let assessed = report.verdicts.filter { $0.level != .notAssessed }
         guard !assessed.isEmpty else { return nil }

@@ -12,6 +12,7 @@ Esta pasta `.agents/` continua existindo para **skills, workflow, scripts e arte
 └── agents/
     ├── iris.toml
     ├── camillo.toml
+    ├── pedro.toml
     └── tito.toml
 
 .agents/
@@ -31,11 +32,12 @@ O **Codex principal** é o orquestrador e interlocutor com o Luiz. Ele decide qu
 
 - **Íris** — Produto, jornada, UX/UI, copy, curadoria, priorização e critérios de aceite. Somente leitura.
 - **Camillo** — Principal Engineer transversal: arquitetura, contratos, motor, pacotes Swift, integrações Apple entre superfícies e revisão sistêmica. Escrita quando o gate arquitetural ou uma delegação explícita justificar; não é implementador obrigatório da rotina.
+- **Pedro** — Desenvolvedor: implementa código após o plano de engenharia aplicável, com testes e validação proporcional. Resolve lacunas recuperáveis pela menor decisão compatível com a arquitetura; não reabre o plano durante a execução.
 - **Tito** — Qualidade, regressão, testes, acessibilidade, segurança/privacidade e revisão independente. Somente leitura por padrão; responde com `BLOQUEIA`, `AJUSTA` ou `ISSUE_FUTURA`.
 
 Especialistas não precisam aparecer em toda tarefa. Se o trabalho for pequeno, coeso e puder ser resolvido com segurança pelo agente principal, não crie handoff artificial.
 
-Camillo é acionado obrigatoriamente pelo gate arquitetural do `AGENTS.md`: contratos, múltiplos módulos, APIs, integrações, persistência compartilhada, `LinkaEngine`, dependência estrutural, refatoração, segurança/privacidade sistêmica ou grande raio de impacto. Fora disso, o Codex principal implementa ou delega pelo ganho real.
+Camillo é acionado obrigatoriamente pelo gate arquitetural do `AGENTS.md`: contratos, múltiplos módulos, APIs, integrações, persistência compartilhada, `LinkaEngine`, dependência estrutural, refatoração, segurança/privacidade sistêmica ou grande raio de impacto. Depois do plano, Pedro é o executor preferencial; fora do gate, o Codex principal implementa ou delega pelo ganho real.
 
 ## Skills
 
@@ -79,7 +81,7 @@ O Codex usa os agentes definidos em `.codex/agents/`. Não precisa reconstruir s
 A delegação deve conter:
 
 ```text
-Especialista: <iris|camillo|tito>
+Especialista: <iris|camillo|pedro|tito>
 Objetivo: <entrega concreta>
 Escopo de leitura: <arquivos/módulos>
 Escopo de escrita: <somente leitura ou limites explícitos>

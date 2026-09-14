@@ -243,4 +243,37 @@ final class SpeedTestViewModelScenePhaseTests: XCTestCase {
         XCTAssertEqual(viewModel.uploadSpeed, 0)
         XCTAssertNil(viewModel.latestFinishedMeasurement)
     }
+
+    func test_wifiSSIDChangeWithoutInterfaceChangeClearsLiveWindowBaselineAndReport() async {
+        let viewModel = SpeedTestViewModel()
+        viewModel.stopLivePolling()
+        viewModel.liveConnectionKind = .wifi
+        viewModel.reconcileLiveUsageNetworkIdentity(for: "Casa")
+        viewModel.liveTelemetryCollector.recordProbe(rttMs: 12)
+        viewModel.liveTelemetryCollector.recordProbe(rttMs: 14)
+        viewModel.liveTelemetryCollector.recordProbe(rttMs: 13)
+        viewModel.currentThroughputBaseline = ThroughputBaseline(
+            downloadMbps: 300,
+            uploadMbps: 40,
+            lastMeasuredAt: Date(),
+            networkIdentifier: "Casa"
+        )
+        await viewModel.refreshLiveUsageSuitability()
+        XCTAssertNotNil(viewModel.liveUsageReport)
+
+        // O NWPathMonitor pode continuar em `.wifi`; o SSID reamostrado pelo
+        // polling ainda precisa invalidar toda evidência da Casa.
+        viewModel.reconcileLiveUsageNetworkIdentity(for: "Outra")
+
+        XCTAssertEqual(viewModel.liveUsageWiFiSSID, "Outra")
+        XCTAssertNil(viewModel.currentThroughputBaseline)
+        XCTAssertNil(viewModel.liveUsageReport)
+        XCTAssertEqual(
+            viewModel.liveTelemetryCollector.snapshot(
+                connectionKind: .wifi,
+                interfaceLabel: "Outra"
+            ).sampleCount,
+            0
+        )
+    }
 }
