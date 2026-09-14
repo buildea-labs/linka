@@ -312,6 +312,7 @@
 "settings.subscription.noPurchase" = "Nenhuma compra ativa foi encontrada.";
 "settings.subscription.restoreError" = "Não foi possível restaurar a compra agora.";
 "home.title" = "Início";
+"home.now" = "Agora";
 "home.testing" = "Testando...";
 "home.speed" = "Velocidade";
 "home.offline" = "Sem conexão";
@@ -321,7 +322,7 @@
 "home.lastTest" = "Último teste";
 "home.lastTest.value" = "%@ Mbps · %@";
 "home.downloadUnit" = "Mbps download";
-"home.assist.cta" = "Analisar minha conexão agora";
+"home.assist.cta" = "Analisar minha conexão";
 "home.assist.resultMessage" = "Vamos analisar os dados desta medição.";
 "home.accessibility.back" = "Voltar para o início";
 "home.accessibility.history" = "Histórico";
@@ -364,6 +365,17 @@
 "home.relative.today" = "Hoje, %@";
 "home.relative.yesterday" = "Ontem, %@";
 "home.usage.videoCalls" = "Chamadas de vídeo";
+"home.live.calls" = "Chamadas";
+"home.live.viewDetails" = "Ver detalhes";
+"home.live.metrics" = "Agora";
+"home.live.response" = "Resposta";
+"home.live.variation" = "Variação";
+"home.live.loss" = "Perda";
+"home.live.details" = "Detalhes ao vivo";
+"home.live.samples" = "%d amostras recentes";
+"home.live.confidence.live" = "Baseado nas medições ao vivo desta conexão";
+"home.live.confidence.insufficient" = "Ainda há poucas amostras para concluir";
+"home.live.speedTest" = "Teste de velocidade";
 "home.usage.onlineGaming" = "Jogo online";
 "home.usage.streaming" = "Streaming";
 "common.continue" = "Continuar";
@@ -416,6 +428,8 @@
 "history.empty.message" = "Faça uma medição para vê-la aqui.";
 "history.measurements" = "Medições";
 "history.measurement" = "Medição";
+"history.single.title" = "Sua primeira medição";
+"history.single.message" = "Faça mais uma medição para começar a acompanhar a tendência.";
 "history.insight.improved" = "Sua velocidade de download está cerca de %@%% melhor esta semana em comparação à semana anterior.";
 "history.insight.worsened" = "Sua velocidade de download está cerca de %@%% pior esta semana em comparação à semana anterior.";
 "detail.title" = "Detalhes da medição";

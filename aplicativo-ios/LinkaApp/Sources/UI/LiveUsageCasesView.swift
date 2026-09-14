@@ -13,13 +13,14 @@ struct LiveUsageCasesView: View {
     var onSelect: ((UsageCase) -> Void)? = nil
 
     var body: some View {
-        let content = HStack(spacing: 12) {
+        let content = VStack(spacing: 0) {
             ForEach(cases, id: \.self) { usageCase in
                 node(for: usageCase)
+                if usageCase != cases.last {
+                    Divider().overlay(Color.borderDefault.opacity(0.55))
+                }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
 
         if isEmbedded {
             content
@@ -32,7 +33,10 @@ struct LiveUsageCasesView: View {
     @ViewBuilder
     private func node(for usageCase: UsageCase) -> some View {
         let verdict = report?.verdict(for: usageCase)
-        let isActionable = verdict?.reason == .missingThroughputMeasurement && onSelect != nil
+        let isActionable = onSelect != nil
+        let title = isEmbedded && usageCase == .videoCall
+            ? LinkaCopy.value("home.live.calls")
+            : UsageSuitabilityCopy.title(for: usageCase)
         let badge: (label: String, color: Color, icon: String) = {
             if let verdict {
                 return UsageSuitabilityCopy.liveStatusBadge(for: verdict)
@@ -41,43 +45,46 @@ struct LiveUsageCasesView: View {
             }
         }()
 
-        let content = VStack(spacing: 6) {
+        let content = HStack(spacing: 14) {
             Image(systemName: UsageSuitabilityCopy.iconName(for: usageCase))
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: 20, weight: .medium))
                 .foregroundColor(.textPrimary)
-                .frame(width: 38, height: 38)
-                .background(Color.surfacePage, in: Circle())
+                .frame(width: 46, height: 46)
+                .background(Color.surfacePage.opacity(isEmbedded ? 0.7 : 1), in: Circle())
 
-            Text(UsageSuitabilityCopy.title(for: usageCase))
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.textSecondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+            Text(title)
+                .font(.bodyRegular)
+                .foregroundColor(.textPrimary)
+            Spacer(minLength: 8)
 
-            LinkaStatusBadge(badge.label, color: badge.color)
-
-            if let verdict, verdict.confidence == .historicalBaselineInferred {
-                Text(UsageSuitabilityCopy.liveDetail(for: verdict))
-                    .font(.system(size: 10, weight: .regular))
+            if verdict?.level == .adequate {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundColor(.statusGood)
+            } else if isActionable {
+                Image(systemName: "chevron.right")
+                    .font(.captionSmallStrong)
                     .foregroundColor(.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Image(systemName: "minus.circle")
+                    .font(.bodyRegular)
+                    .foregroundColor(.textSecondary)
             }
         }
         .frame(maxWidth: .infinity)
+        .frame(minHeight: isEmbedded ? 70 : 64)
+        .padding(.horizontal, 4)
 
         if isActionable {
             Button { onSelect?(usageCase) } label: { content }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(UsageSuitabilityCopy.title(for: usageCase)): \(badge.label)")
+                .accessibilityLabel("\(title): \(badge.label)")
                 .accessibilityHint(verdict.map { UsageSuitabilityCopy.liveDetail(for: $0) } ?? "")
         } else {
             content
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(UsageSuitabilityCopy.title(for: usageCase)): \(badge.label)")
+                .accessibilityLabel("\(title): \(badge.label)")
                 .accessibilityHint(verdict.map { UsageSuitabilityCopy.liveDetail(for: $0) } ?? "")
         }
     }

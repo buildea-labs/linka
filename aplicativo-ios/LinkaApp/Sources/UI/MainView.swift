@@ -13,6 +13,74 @@ enum AppRoute: Hashable {
     case measurementDetail(NetworkMeasurement)
 }
 
+private struct LiveUsageDetailSheet: View {
+    @ObservedObject var viewModel: SpeedTestViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        let telemetry = viewModel.liveUsageReport?.telemetry ?? viewModel.liveTelemetryCollector.snapshot(
+            connectionKind: viewModel.liveConnectionKind,
+            interfaceLabel: viewModel.liveNetworkLabel,
+            isExpensive: viewModel.liveConnectionKind == .cellular,
+            wifiRssiDbm: viewModel.liveWifiRSSI
+        )
+        let confidence = viewModel.liveUsageReport?.verdict(for: .videoCall)?.confidence
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                LiveMetricsView(telemetry: telemetry)
+                Divider()
+                Text(LinkaCopy.format("home.live.samples", telemetry.sampleCount))
+                    .font(.captionSmall)
+                    .foregroundColor(.textSecondary)
+                Text(confidenceCopy(confidence))
+                    .font(.captionSmall)
+                    .foregroundColor(.textSecondary)
+                Spacer()
+            }
+            .padding(24)
+            .navigationTitle(LinkaCopy.value("home.live.details"))
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button(LinkaCopy.value("common.close")) { dismiss() } } }
+        }
+        .presentationDetents([.height(260)])
+    }
+
+    private func confidenceCopy(_ confidence: LiveAssessmentConfidence?) -> String {
+        switch confidence {
+        case .historicalBaselineInferred: return LinkaCopy.value("usage.live.historicalBaseline")
+        case .liveTelemetry: return LinkaCopy.value("home.live.confidence.live")
+        case .insufficientData, .none: return LinkaCopy.value("home.live.confidence.insufficient")
+        }
+    }
+}
+
+private struct LiveMetricsView: View {
+    let telemetry: LiveNetworkTelemetrySnapshot
+
+    var body: some View {
+        HStack(spacing: 0) {
+            metric(LinkaCopy.value("home.live.response"), value: telemetry.latencyMs, suffix: "ms")
+            Divider().frame(height: 32).opacity(0.35)
+            metric(LinkaCopy.value("home.live.variation"), value: telemetry.jitterMs, suffix: "ms")
+            Divider().frame(height: 32).opacity(0.35)
+            metric(LinkaCopy.value("home.live.loss"), value: telemetry.packetLossPercent, suffix: "%")
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func metric(_ label: String, value: Double?, suffix: String) -> some View {
+        VStack(alignment: .center, spacing: 4) {
+            Text(label).font(.captionSmall).foregroundColor(.textSecondary)
+            Text(value.map { "\($0.formatted(.number.precision(.fractionLength(0...1)))) \(suffix)" } ?? "—")
+                .font(.bodyRegularStrong)
+                .foregroundColor(.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.horizontal, 8)
+    }
+}
+
 private enum AssistEntryPoint {
     case fresh
     case result(NetworkMeasurement)
@@ -60,6 +128,7 @@ struct MainView: View {
     @State private var showExpertModeMigrationBanner: Bool = false
     @State private var ringScale: CGFloat = 1.0
     @State private var selectedLiveUsageCase: UsageCase?
+    @State private var showLiveUsageDetail = false
     @Namespace private var animation
 
     @Environment(\.scenePhase) private var scenePhase
@@ -163,59 +232,50 @@ struct MainView: View {
 
     var body: some View {
         NavigationStack(path: $navPath) {
-            ZStack {
-                Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
+            navigationContent
+        }
+    }
 
-                activeMeasurementView
+    /// Dividido em funções `attach*` porque uma única cadeia com todos os
+    /// `.sheet`/`.onChange` (mais de 20 modificadores numa expressão só)
+    /// estourava o limite de tempo do type-checker do Swift em CI — cada
+    /// função aqui é uma expressão pequena o bastante para inferir rápido.
+    private var navigationContent: some View {
+        let base = ZStack {
+            Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
+            activeMeasurementView
+        }
+        .navigationTitle(mainTitle)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(viewModel.uiPhase == .idle || viewModel.uiPhase == .done ? .large : .inline)
+        #endif
+        .navigationDestination(for: AppRoute.self) { route in
+            destinationView(for: route)
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                toolbarBackButton
             }
-            .navigationTitle(mainTitle)
-            .navigationDestination(for: AppRoute.self) { route in
-                destinationView(for: route)
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                toolbarHistoryButton
+                toolbarShareButton
+                toolbarSettingsButton
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    if viewModel.uiPhase == .done {
-                        Button {
-                            withAnimation {
-                                viewModel.resetToIdle()
-                            }
-                        } label: {
-                            Image(systemName: "house")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textPrimary)
-                        }
-                        .accessibilityLabel(LinkaCopy.value("home.accessibility.back"))
-                    }
-                }
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    if viewModel.uiPhase == .idle || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
-                        Button { navPath.append(AppRoute.history) } label: {
-                            Image(systemName: "clock")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textPrimary)
-                        }
-                        .accessibilityLabel(LinkaCopy.value("home.accessibility.history"))
-                    }
-                    if viewModel.uiPhase == .done {
-                        Button {
-                            showShareSheet = true
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textPrimary)
-                        }
-                        .accessibilityLabel(LinkaCopy.value("home.accessibility.share"))
-                    }
-                    if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
-                        Button { navPath.append(AppRoute.settings) } label: {
-                            Image(systemName: "slider.horizontal.3")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textPrimary)
-                        }
-                        .accessibilityLabel(LinkaCopy.value("home.accessibility.settings"))
-                    }
-                }
-            }
+        }
+
+        return attachLifecycleHandlers(
+            attachSecondaryPresentation(
+                attachResultPresentation(
+                    attachIntentHandlers(
+                        attachAssistPresentation(base)
+                    )
+                )
+            )
+        )
+    }
+
+    private func attachAssistPresentation<Content: View>(_ content: Content) -> some View {
+        content
             .sheet(
                 isPresented: $showAssistProblemSelection,
                 onDismiss: beginPendingAssistCollection
@@ -242,103 +302,183 @@ struct MainView: View {
                     entitlements: entitlements
                 )
             }
-        .onChange(of: intentCoordinator.pendingStartSpeedTest) { pending in
-            guard pending else { return }
-            viewModel.startTest()
-            intentCoordinator.consumeStartSpeedTestRequest()
-        }
-        .onChange(of: viewModel.uiPhase) { phase in
-            handleAssistMeasurementCompletion(phase)
-        }
-        .onChange(of: intentCoordinator.pendingAdvancedWiFiDiagnosticsImport) { pending in
-            guard pending else { return }
-            viewModel.consumePendingAdvancedWiFiDiagnostics()
-            intentCoordinator.consumeAdvancedWiFiDiagnosticsImport()
-            guard pendingAdvancedWiFiMeasurement else { return }
-            pendingAdvancedWiFiMeasurement = false
-            beginSpeedTest()
-        }
-        .onChange(of: intentCoordinator.pendingPurchasePrompt) { pending in
-            guard pending else { return }
-            purchaseEntryPoint = .settings
-            showPurchase = true
-            intentCoordinator.consumePurchasePrompt()
-        }
-        .onChange(of: intentCoordinator.pendingOpenHistory) { pending in
-            handleOpenHistoryRequest(pending)
-        }
-        .onChange(of: intentCoordinator.pendingOpenLatestMeasurement) { pending in
-            handleOpenLatestMeasurementRequest(pending)
-        }
-        .sheet(isPresented: $showPurchase) {
-            PurchaseSheet(entryPoint: purchaseEntryPoint) {
-                if purchaseEntryPoint == .assist { showAssistProblemSelection = true }
+    }
+
+    private func attachIntentHandlers<Content: View>(_ content: Content) -> some View {
+        content
+            .onChange(of: intentCoordinator.pendingStartSpeedTest) { pending in
+                guard pending else { return }
+                viewModel.startTest()
+                intentCoordinator.consumeStartSpeedTestRequest()
             }
-            .environmentObject(entitlements)
-        }
-        .sheet(isPresented: $showConnectivityTriage) {
-            ConnectivityTriageView(onRetry: { viewModel.startTest() })
-        }
-        .confirmationDialog(LinkaCopy.value("home.advancedWiFiRecovery.title"), isPresented: $showAdvancedWiFiRecovery, titleVisibility: .visible) {
-            Button(LinkaCopy.value("common.tryAgain")) { startSpeedTest() }
-            Button(LinkaCopy.value("home.advancedWiFiRecovery.measureWithout")) { beginSpeedTest() }
-            Button(LinkaCopy.value("common.cancel"), role: .cancel) {}
-        } message: {
-            Text(LinkaCopy.value("home.advancedWiFiRecovery.message"))
-        }
-        .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
-        .onChange(of: showShareSheet) { isPresented in
-            if !isPresented { requestAppStoreReviewAfterResultInteraction() }
-        }
-        .sheet(isPresented: $showDetails) {
-            NavigationStack {
-                MeasurementDetailView(measurement: currentMeasurement, duration: viewModel.testDuration)
-                    .environmentObject(entitlements)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button(LinkaCopy.value("common.back")) {
-                                showDetails = false
+            .onChange(of: viewModel.uiPhase) { phase in
+                handleAssistMeasurementCompletion(phase)
+            }
+            .onChange(of: intentCoordinator.pendingAdvancedWiFiDiagnosticsImport) { pending in
+                guard pending else { return }
+                viewModel.consumePendingAdvancedWiFiDiagnostics()
+                intentCoordinator.consumeAdvancedWiFiDiagnosticsImport()
+                guard pendingAdvancedWiFiMeasurement else { return }
+                pendingAdvancedWiFiMeasurement = false
+                beginSpeedTest()
+            }
+            .onChange(of: intentCoordinator.pendingPurchasePrompt) { pending in
+                guard pending else { return }
+                purchaseEntryPoint = .settings
+                showPurchase = true
+                intentCoordinator.consumePurchasePrompt()
+            }
+            .onChange(of: intentCoordinator.pendingOpenHistory) { pending in
+                handleOpenHistoryRequest(pending)
+            }
+            .onChange(of: intentCoordinator.pendingOpenLatestMeasurement) { pending in
+                handleOpenLatestMeasurementRequest(pending)
+            }
+    }
+
+    private func attachResultPresentation<Content: View>(_ content: Content) -> some View {
+        content
+            .sheet(isPresented: $showPurchase) {
+                PurchaseSheet(entryPoint: purchaseEntryPoint) {
+                    if purchaseEntryPoint == .assist { showAssistProblemSelection = true }
+                }
+                .environmentObject(entitlements)
+            }
+            .sheet(isPresented: $showConnectivityTriage) {
+                ConnectivityTriageView(onRetry: { viewModel.startTest() })
+            }
+            .confirmationDialog(LinkaCopy.value("home.advancedWiFiRecovery.title"), isPresented: $showAdvancedWiFiRecovery, titleVisibility: .visible) {
+                Button(LinkaCopy.value("common.tryAgain")) { startSpeedTest() }
+                Button(LinkaCopy.value("home.advancedWiFiRecovery.measureWithout")) { beginSpeedTest() }
+                Button(LinkaCopy.value("common.cancel"), role: .cancel) {}
+            } message: {
+                Text(LinkaCopy.value("home.advancedWiFiRecovery.message"))
+            }
+            .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
+            .onChange(of: showShareSheet) { isPresented in
+                if !isPresented { requestAppStoreReviewAfterResultInteraction() }
+            }
+            .sheet(isPresented: $showDetails) {
+                NavigationStack {
+                    MeasurementDetailView(measurement: currentMeasurement, duration: viewModel.testDuration)
+                        .environmentObject(entitlements)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button(LinkaCopy.value("common.back")) {
+                                    showDetails = false
+                                }
                             }
                         }
-                    }
+                }
             }
-        }
-        .onChange(of: showDetails) { isPresented in
-            if !isPresented { requestAppStoreReviewAfterResultInteraction() }
-        }
-        .sheet(isPresented: $showUsage) {
-            UsageDiagnosticsView(measurement: currentMeasurement)
-        }
-        .sheet(isPresented: $showConnectionPath) {
-            if let connectionPathReport { ConnectionPathDetailView(report: connectionPathReport) }
-        }
-        .sheet(isPresented: $showExpertModeMigrationBanner, onDismiss: {
-            ExpertModeMigrationBannerState.markSeen()
-        }) {
-            ExpertModeMigrationBanner(
-                onOpenPurchase: {
-                    showExpertModeMigrationBanner = false
-                    purchaseEntryPoint = .settings
-                    showPurchase = true
-                },
-                onDismiss: { showExpertModeMigrationBanner = false }
-            )
-            .presentationDetents([.medium])
-        }
-        .onAppear {
-            viewModel.refreshLiveNetwork()
-        }
-        .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
-        .onChange(of: scenePhase) { newPhase in
-            viewModel.handleScenePhaseChange(newPhase)
-            switch newPhase {
-            case .active:
-                recoverAdvancedWiFiMeasurementIfNeeded()
-            case .background, .inactive:
-                break
+            .onChange(of: showDetails) { isPresented in
+                if !isPresented { requestAppStoreReviewAfterResultInteraction() }
             }
+    }
+
+    private func attachSecondaryPresentation<Content: View>(_ content: Content) -> some View {
+        content
+            .sheet(isPresented: $showUsage) {
+                UsageDiagnosticsView(measurement: currentMeasurement)
+            }
+            .sheet(isPresented: $showLiveUsageDetail) {
+                LiveUsageDetailSheet(viewModel: viewModel)
+            }
+            .sheet(isPresented: $showConnectionPath) {
+                if let connectionPathReport { ConnectionPathDetailView(report: connectionPathReport) }
+            }
+            .sheet(isPresented: $showExpertModeMigrationBanner, onDismiss: {
+                ExpertModeMigrationBannerState.markSeen()
+            }) {
+                ExpertModeMigrationBanner(
+                    onOpenPurchase: {
+                        showExpertModeMigrationBanner = false
+                        purchaseEntryPoint = .settings
+                        showPurchase = true
+                    },
+                    onDismiss: { showExpertModeMigrationBanner = false }
+                )
+                .presentationDetents([.medium])
+            }
+    }
+
+    private func attachLifecycleHandlers<Content: View>(_ content: Content) -> some View {
+        content
+            .onAppear {
+                viewModel.refreshLiveNetwork()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wiFiAuthorizationDidChange)) { _ in
+                viewModel.refreshLiveNetwork()
+            }
+            .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
+            .onChange(of: scenePhase) { newPhase in
+                viewModel.handleScenePhaseChange(newPhase)
+                switch newPhase {
+                case .active:
+                    recoverAdvancedWiFiMeasurementIfNeeded()
+                case .background, .inactive:
+                    break
+                }
+            }
+            .onChange(of: viewModel.uiPhase) { handleUIPhaseChange($0) }
+    }
+
+    // MARK: - Toolbar
+
+    /// Extraídos do closure `.toolbar` para o type-checker não precisar
+    /// inferir vários `if` de botão dentro da mesma expressão — sem isso o
+    /// build estourava o limite de tempo de type-check em CI.
+    @ViewBuilder
+    private var toolbarBackButton: some View {
+        if viewModel.uiPhase == .done {
+            Button {
+                withAnimation {
+                    viewModel.resetToIdle()
+                }
+            } label: {
+                Image(systemName: "house")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textPrimary)
+            }
+            .accessibilityLabel(LinkaCopy.value("home.accessibility.back"))
         }
-        .onChange(of: viewModel.uiPhase) { handleUIPhaseChange($0) }
+    }
+
+    @ViewBuilder
+    private var toolbarHistoryButton: some View {
+        if viewModel.uiPhase == .idle || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
+            Button { navPath.append(AppRoute.history) } label: {
+                Image(systemName: "clock")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textPrimary)
+            }
+            .accessibilityLabel(LinkaCopy.value("home.accessibility.history"))
+        }
+    }
+
+    @ViewBuilder
+    private var toolbarShareButton: some View {
+        if viewModel.uiPhase == .done {
+            Button {
+                showShareSheet = true
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textPrimary)
+            }
+            .accessibilityLabel(LinkaCopy.value("home.accessibility.share"))
+        }
+    }
+
+    @ViewBuilder
+    private var toolbarSettingsButton: some View {
+        if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
+            Button { navPath.append(AppRoute.settings) } label: {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textPrimary)
+            }
+            .accessibilityLabel(LinkaCopy.value("home.accessibility.settings"))
         }
     }
 
@@ -461,109 +601,133 @@ struct MainView: View {
     private var idleView: some View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    // Título será fornecido via navigationTitle no NavigationStack
-                    VStack(spacing: 8) {
-                        LiveConnectionPathView(
-                            kind: viewModel.liveConnectionKind,
-                            label: viewModel.liveNetworkLabel
-                        )
-                    }
-                    .padding(.top, 24)
-                    .padding(.horizontal, 24)
+                VStack(spacing: LinkaSpacing.xl) {
+                    Spacer(minLength: 8)
 
-                    Spacer(minLength: 34)
+                    idleHeroStatus
 
-                    VStack(spacing: 8) {
-                        Image(systemName: heroStateIcon)
-                            .font(.system(size: 40))
-                            .foregroundColor(heroStateIconColor)
+                    connectionContextLine
 
-                        Text(heroStateTitle)
-                            .font(.displayMedium)
-                            .foregroundColor(.textPrimary)
+                    primarySpeedTestButton
 
-                        Text(heroStateSubtitle)
-                            .font(.bodyRegular)
-                            .foregroundColor(.textSecondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    Spacer(minLength: 24)
+                    homeSecondaryActionsGroup
 
-                    // Casos de Uso ao Vivo (Tempo Real)
-                    LiveUsageCasesView(
-                        report: viewModel.liveUsageReport,
-                        cases: [.videoCall, .onlineGaming],
-                        onSelect: selectLiveUsageCase
-                    )
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 16)
-
-                    VStack(spacing: 12) {
-                        // Botão Primário Analisar Rede
-                        Button(action: {
-                            startSpeedTest()
-                        }) {
-                            Text(speedTestCTALabel)
-                                .multilineTextAlignment(.center)
-                        }
-                        .buttonStyle(.linkaPrimary)
-
-                        // Card do Último Teste
-                        if let latest = viewModel.latestFinishedMeasurement {
-                            Button {
-                                navPath.append(AppRoute.history)
-                            } label: {
-                                HStack(alignment: .center, spacing: 10) {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(LinkaCopy.value("home.lastTest"))
-                                            .font(.bodySmallStrong)
-                                            .foregroundColor(.textPrimary)
-                                        Text(LinkaCopy.format("home.lastTest.value", formatted(latest.downloadMbps ?? 0), formatRelativeTime(latest.measuredAt)))
-                                            .font(.monoCaption)
-                                            .foregroundColor(.textSecondary)
-                                            .fixedSize(horizontal: false, vertical: true)
-                                    }
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.captionSmall)
-                                        .foregroundColor(.textSecondary)
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .frame(minHeight: 52)
-                                .linkaCard()
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        // Card Assist
-                        Button {
-                            requestAssist(from: .fresh)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Assist ✦")
-                                    .font(.monoCaption)
-                                    .textCase(.uppercase)
-                                    .foregroundColor(.brandAccentWarm)
-                                Text(LinkaCopy.value("home.assist.cta"))
-                                    .font(.captionSmall)
-                                    .foregroundColor(.textPrimary)
-                                    .multilineTextAlignment(.leading)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .linkaCard()
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 28)
+                    Spacer(minLength: 8)
                 }
-                .frame(minHeight: proxy.size.height)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+                .frame(minHeight: proxy.size.height, alignment: .center)
+            }
+        }
+    }
+
+    private var idleHeroStatus: some View {
+        VStack(spacing: 10) {
+            Image(systemName: heroStateIcon)
+                .font(.system(size: 40, weight: .medium))
+                .foregroundColor(heroStateIconColor)
+                .symbolRenderingMode(.hierarchical)
+
+            Text(heroStateTitle)
+                .font(.displayMedium)
+                .foregroundColor(.textPrimary)
+                .multilineTextAlignment(.center)
+
+            Text(heroStateSubtitle)
+                .font(.bodyRegular)
+                .foregroundColor(.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var connectionContextLine: some View {
+        HStack(spacing: 6) {
+            Button {
+                showLiveUsageDetail = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: liveConnectionIcon)
+                        .font(.system(size: 13, weight: .medium))
+                    Text(liveConnectionName)
+                        .font(.captionSmall)
+                        .lineLimit(1)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .opacity(0.6)
+                }
+                .foregroundColor(.textSecondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(LinkaCopy.value("home.live.viewDetails"))
+
+            #if os(iOS)
+            if viewModel.liveConnectionKind == .wifi && viewModel.liveWiFiContext?.ssid == nil {
+                Button {
+                    WiFiNetworkPermission.requestIdentification()
+                } label: {
+                    Text(LinkaCopy.value("detail.identify"))
+                        .font(.captionSmallStrong)
+                        .foregroundColor(.brandAccentWarm)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Color.brandAccentWarm.opacity(0.12), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            #endif
+        }
+        .padding(.vertical, 6)
+    }
+
+    private var primarySpeedTestButton: some View {
+        Button {
+            startSpeedTest()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "speedometer")
+                    .font(.system(size: 19, weight: .semibold))
+                Text(LinkaCopy.value("home.live.speedTest"))
+            }
+        }
+        .buttonStyle(.linkaPrimary)
+    }
+
+    private var homeSecondaryActionsGroup: some View {
+        VStack(spacing: 18) {
+            Button {
+                requestAssist(from: .fresh)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.brandAccentWarm)
+                    Text(LinkaCopy.value("home.assist.cta"))
+                        .font(.bodyRegular)
+                        .foregroundColor(.textSecondary)
+                        .lineLimit(1)
+                }
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if let latest = viewModel.latestFinishedMeasurement {
+                Button {
+                    navPath.append(AppRoute.history)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 13, weight: .medium))
+                        Text(LinkaCopy.format("home.lastTest.value", formatted(latest.downloadMbps ?? 0), formatRelativeTime(latest.measuredAt)))
+                            .font(.bodyRegular)
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(.textSecondary)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -1017,13 +1181,6 @@ struct MainView: View {
             return LinkaCopy.value("home.testSpeed")
         }
         return LinkaCopy.value("home.testSpeed.videoCall")
-    }
-
-    private func selectLiveUsageCase(_ usageCase: UsageCase) {
-        guard viewModel.liveUsageReport?.verdict(for: usageCase)?.reason == .missingThroughputMeasurement else {
-            return
-        }
-        selectedLiveUsageCase = usageCase
     }
 
     private func startSpeedTest() {

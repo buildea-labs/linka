@@ -27,9 +27,27 @@ enum WiFiNetworkIdentificationState: Equatable {
     }
 }
 
+public extension Notification.Name {
+    static let wiFiAuthorizationDidChange = Notification.Name("linka.wifi.authorizationDidChange")
+}
+
+#if canImport(CoreLocation) && os(iOS)
+private final class LocationPermissionDelegate: NSObject, CLLocationManagerDelegate {
+    static let shared = LocationPermissionDelegate()
+
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        NotificationCenter.default.post(name: .wiFiAuthorizationDidChange, object: nil)
+    }
+}
+#endif
+
 enum WiFiNetworkPermission {
     #if canImport(CoreLocation) && os(iOS)
-    private static let manager = CLLocationManager()
+    private static let manager: CLLocationManager = {
+        let m = CLLocationManager()
+        m.delegate = LocationPermissionDelegate.shared
+        return m
+    }()
 
     static func state(enabled: Bool) -> WiFiNetworkIdentificationState {
         state(

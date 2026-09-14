@@ -312,6 +312,7 @@
 "settings.subscription.noPurchase" = "No se encontró ninguna compra activa.";
 "settings.subscription.restoreError" = "No pudimos restaurar tu compra ahora.";
 "home.title" = "Inicio";
+"home.now" = "Ahora";
 "home.testing" = "Probando...";
 "home.speed" = "Velocidad";
 "home.offline" = "Sin conexión";
@@ -321,7 +322,7 @@
 "home.lastTest" = "Última prueba";
 "home.lastTest.value" = "%@ Mbps · %@";
 "home.downloadUnit" = "Mbps de descarga";
-"home.assist.cta" = "Analizar mi conexión ahora";
+"home.assist.cta" = "Analizar mi conexión";
 "home.assist.resultMessage" = "Analicemos los datos de esta medición.";
 "home.accessibility.back" = "Volver al inicio";
 "home.accessibility.history" = "Historial";
@@ -364,6 +365,17 @@
 "home.relative.today" = "Hoy, %@";
 "home.relative.yesterday" = "Ayer, %@";
 "home.usage.videoCalls" = "Llamadas de video";
+"home.live.calls" = "Llamadas";
+"home.live.viewDetails" = "Ver detalles";
+"home.live.metrics" = "Ahora";
+"home.live.response" = "Respuesta";
+"home.live.variation" = "Variación";
+"home.live.loss" = "Pérdida";
+"home.live.details" = "Detalles en vivo";
+"home.live.samples" = "%d muestras recientes";
+"home.live.confidence.live" = "Basado en mediciones en vivo de esta conexión";
+"home.live.confidence.insufficient" = "Aún no hay suficientes muestras";
+"home.live.speedTest" = "Prueba de velocidad";
 "home.usage.onlineGaming" = "Juegos en línea";
 "home.usage.streaming" = "Streaming";
 "common.continue" = "Continuar";
@@ -416,6 +428,8 @@
 "history.empty.message" = "Haz una medición para verla aquí.";
 "history.measurements" = "Mediciones";
 "history.measurement" = "Medición";
+"history.single.title" = "Tu primera medición";
+"history.single.message" = "Haz una medición más para empezar a seguir la tendencia.";
 "history.insight.improved" = "Tu velocidad de descarga está aproximadamente un %@%% mejor esta semana que la anterior.";
 "history.insight.worsened" = "Tu velocidad de descarga está aproximadamente un %@%% peor esta semana que la anterior.";
 "detail.title" = "Detalles de la medición";

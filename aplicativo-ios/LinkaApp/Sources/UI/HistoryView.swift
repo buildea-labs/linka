@@ -30,6 +30,20 @@ private enum HistorySort: CaseIterable, Hashable {
     }
 }
 
+enum HistoryVisualizationState: Equatable {
+    case empty
+    case singleMeasurement
+    case trend
+
+    static func resolve(measurementCount: Int) -> Self {
+        switch measurementCount {
+        case ..<1: return .empty
+        case 1: return .singleMeasurement
+        default: return .trend
+        }
+    }
+}
+
 struct HistoryView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
@@ -57,14 +71,15 @@ struct HistoryView: View {
             } else {
                 List {
                     Section {
-                        VStack(spacing: 12) {
-                            Picker(LinkaCopy.value("history.filter.title"), selection: $filter) {
+                        HStack {
+                            Menu {
                                 ForEach(availableFilters, id: \.self) { option in
-                                    Text(option.label).tag(option)
+                                    Button(option.label) { filter = option }
                                 }
+                            } label: {
+                                Label(filter.label, systemImage: "line.3.horizontal.decrease.circle")
                             }
-                            .pickerStyle(.segmented)
-
+                            Spacer()
                             Menu {
                                 ForEach(HistorySort.allCases, id: \.self) { option in
                                     Button {
@@ -80,10 +95,12 @@ struct HistoryView: View {
                                 }
                             } label: {
                                 Label(sort.label, systemImage: "arrow.up.arrow.down")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
-                        .padding(.vertical, 4)
+                        .font(.captionSmall)
+                        .foregroundColor(.textSecondary)
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 2, leading: 4, bottom: 2, trailing: 4))
                     }
 
                     if hasPlus {
@@ -126,7 +143,7 @@ struct HistoryView: View {
                         }
                     }
 
-                    if !filteredMeasurements.isEmpty {
+                    if historyVisualizationState == .trend {
                         Section {
                             HistoryWaveChartView(measurements: filteredMeasurements)
                         }
@@ -134,7 +151,7 @@ struct HistoryView: View {
                         .listRowBackground(Color.clear)
                     }
 
-                    if filteredMeasurements.isEmpty {
+                    if historyVisualizationState == .empty {
                         Section {
                             LinkaUnavailableState(
                                 title: LinkaCopy.value("history.empty.title"),
@@ -144,14 +161,26 @@ struct HistoryView: View {
                             .frame(maxWidth: .infinity)
                         }
                     } else {
-                        Section("\(LinkaCopy.value("history.measurements")) (\(filteredMeasurements.count))") {
-                            ForEach(filteredMeasurements, id: \.id) { measurement in
-                                Button {
-                                    onSelectMeasurement?(measurement)
-                                } label: {
-                                    AppleStyleHistoryRow(measurement: measurement)
+                        if historyVisualizationState == .singleMeasurement,
+                           let measurement = filteredMeasurements.first {
+                            Section {
+                                Button { onSelectMeasurement?(measurement) } label: {
+                                    HistorySingleMeasurementSummary(measurement: measurement)
                                 }
                                 .buttonStyle(.plain)
+                            }
+                            .listRowBackground(Color.clear)
+                        }
+                        if historyVisualizationState != .singleMeasurement {
+                            Section("\(LinkaCopy.value("history.measurements")) (\(filteredMeasurements.count))") {
+                                ForEach(filteredMeasurements, id: \.id) { measurement in
+                                    Button {
+                                        onSelectMeasurement?(measurement)
+                                    } label: {
+                                        AppleStyleHistoryRow(measurement: measurement)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
                     }
@@ -197,6 +226,10 @@ struct HistoryView: View {
         #else
         return HistoryFilter.allCases
         #endif
+    }
+
+    private var historyVisualizationState: HistoryVisualizationState {
+        HistoryVisualizationState.resolve(measurementCount: filteredMeasurements.count)
     }
 
     private func loadData() {
@@ -260,6 +293,35 @@ struct HistoryView: View {
     }
 }
 
+private struct HistorySingleMeasurementSummary: View {
+    let measurement: NetworkMeasurement
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(LinkaCopy.value("history.single.title"))
+                .font(.bodyRegularStrong)
+            Text(LinkaCopy.value("history.single.message"))
+                .font(.captionSmall)
+                .foregroundColor(.textSecondary)
+            HStack(spacing: 16) {
+                metric("arrow.down", value: measurement.downloadMbps)
+                metric("arrow.up", value: measurement.uploadMbps)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .linkaCard()
+    }
+
+    private func metric(_ icon: String, value: Double?) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon).foregroundColor(.textSecondary)
+            Text(value.map { "\($0.formatted(.number.precision(.fractionLength(1)))) Mbps" } ?? "—")
+                .font(.monoCaption)
+        }
+    }
+}
+
 // MARK: - Gráfico em Linha Horizontal Estilo Ondas (Dois Eixos)
 
 struct HistoryWaveChartView: View {
@@ -296,52 +358,9 @@ struct HistoryWaveChartView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            // Header do Gráfico estilo Apple Cards
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Tendência de Velocidade")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(.textPrimary)
-                    
-                    if let active = activeMeasurement {
-                        Text(formatHeaderDate(active.measuredAt))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.textSecondary)
-                    }
-                }
-
-                Spacer()
-
-                // Legendas / Eixos de Métricas
-                HStack(spacing: 16) {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(downloadColor)
-                            .frame(width: 8, height: 8)
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("Download")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(.textSecondary)
-                            Text("\(formatValue(activeMeasurement?.downloadMbps)) Mbps")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                                .foregroundColor(.textPrimary)
-                        }
-                    }
-
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(uploadColor)
-                            .frame(width: 8, height: 8)
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text("Upload")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(.textSecondary)
-                            Text("\(formatValue(activeMeasurement?.uploadMbps)) Mbps")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                                .foregroundColor(.textPrimary)
-                        }
-                    }
-                }
+            ViewThatFits(in: .horizontal) {
+                chartHeader(horizontal: true)
+                chartHeader(horizontal: false)
             }
 
             // Canvas da Onda com Dois Eixos Horizontais
@@ -350,135 +369,8 @@ struct HistoryWaveChartView: View {
                 let height = geo.size.height
 
                 ZStack(alignment: .topLeading) {
-                    // Linhas de Grade e Eixos Horizontais de Referência
-                    VStack(spacing: 0) {
-                        // Eixo Horizontal Superior (Download Scale)
-                        HStack {
-                            Text("↓ \(Int(round(maxDownload))) Mbps")
-                                .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                                .foregroundColor(downloadColor.opacity(0.8))
-                            Spacer()
-                        }
-                        .padding(.bottom, 2)
-
-                        Rectangle()
-                            .fill(Color.borderDefault.opacity(0.35))
-                            .frame(height: 0.8)
-
-                        Spacer()
-
-                        // Eixo Horizontal Intermediário (Upload Scale)
-                        HStack {
-                            Text("↑ \(Int(round(maxUpload))) Mbps")
-                                .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                                .foregroundColor(uploadColor.opacity(0.8))
-                            Spacer()
-                        }
-                        .padding(.bottom, 2)
-
-                        Rectangle()
-                            .fill(Color.borderDefault.opacity(0.25))
-                            .frame(height: 0.8)
-
-                        Spacer()
-
-                        // Eixo Horizontal Base
-                        Rectangle()
-                            .fill(Color.borderDefault.opacity(0.35))
-                            .frame(height: 0.8)
-                    }
-
-                    // Curvas e Áreas de Ondas
-                    if chronologicalMeasurements.count >= 2 {
-                        let count = chronologicalMeasurements.count
-                        let stepX = width / CGFloat(max(count - 1, 1))
-                        let topPadding: CGFloat = 16
-                        let availableHeight = max(height - topPadding - 10, 10)
-
-                        // Pontos normalizados de Download
-                        let dlPoints: [CGPoint] = chronologicalMeasurements.enumerated().map { i, m in
-                            let x = CGFloat(i) * stepX
-                            let dl = m.downloadMbps ?? 0
-                            let ratio = CGFloat(dl / maxDownload)
-                            let y = height - (ratio * availableHeight) - 4
-                            return CGPoint(x: x, y: y)
-                        }
-
-                        // Pontos normalizados de Upload
-                        let ulPoints: [CGPoint] = chronologicalMeasurements.enumerated().map { i, m in
-                            let x = CGFloat(i) * stepX
-                            let ul = m.uploadMbps ?? 0
-                            let ratio = CGFloat(ul / maxUpload) * 0.75 // Ajuste relativo
-                            let y = height - (ratio * availableHeight) - 4
-                            return CGPoint(x: x, y: y)
-                        }
-
-                        // 1. Onda de Download (Área + Linha)
-                        wavePath(points: dlPoints, isClosed: true, height: height)
-                            .fill(
-                                LinearGradient(
-                                    colors: [downloadColor.opacity(0.28), downloadColor.opacity(0.01)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-
-                        wavePath(points: dlPoints, isClosed: false, height: height)
-                            .stroke(downloadColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-
-                        // 2. Onda de Upload (Área + Linha)
-                        wavePath(points: ulPoints, isClosed: true, height: height)
-                            .fill(
-                                LinearGradient(
-                                    colors: [uploadColor.opacity(0.25), uploadColor.opacity(0.01)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-
-                        wavePath(points: ulPoints, isClosed: false, height: height)
-                            .stroke(uploadColor, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
-
-                        // Indicador Interativo de Seleção
-                        if let selIdx = selectedIndex, selIdx < dlPoints.count {
-                            let ptDl = dlPoints[selIdx]
-                            let ptUl = ulPoints[selIdx]
-
-                            // Linha Vertical Guia
-                            Path { p in
-                                p.move(to: CGPoint(x: ptDl.x, y: 0))
-                                p.addLine(to: CGPoint(x: ptDl.x, y: height))
-                            }
-                            .stroke(Color.textSecondary.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-
-                            // Ponto Download
-                            Circle()
-                                .fill(downloadColor)
-                                .frame(width: 8, height: 8)
-                                .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                                .position(ptDl)
-
-                            // Ponto Upload
-                            Circle()
-                                .fill(uploadColor)
-                                .frame(width: 8, height: 8)
-                                .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                                .position(ptUl)
-                        }
-                    } else if let single = chronologicalMeasurements.first {
-                        // Estado de medição única
-                        VStack(spacing: 8) {
-                            Spacer()
-                            HStack {
-                                Spacer()
-                                Text("Apenas 1 medição registrada (\(formatValue(single.downloadMbps)) Mbps)")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.textSecondary)
-                                Spacer()
-                            }
-                            Spacer()
-                        }
-                    }
+                    chartGrid(height: height)
+                    chartLines(width: width, height: height)
                 }
                 .contentShape(Rectangle())
                 .gesture(
@@ -487,48 +379,121 @@ struct HistoryWaveChartView: View {
                             let count = chronologicalMeasurements.count
                             guard count > 1 else { return }
                             let stepX = width / CGFloat(count - 1)
-                            let index = Int(round(value.location.x / stepX))
-                            let clamped = max(0, min(count - 1, index))
-                            selectedIndex = clamped
+                            selectedIndex = max(0, min(count - 1, Int(round(value.location.x / stepX))))
                         }
                         .onEnded { _ in
-                            // Mantém a última selecionada ou limpa após 2 segundos
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                withAnimation(.easeOut(duration: 0.2)) {
-                                    selectedIndex = nil
-                                }
+                                withAnimation(.easeOut(duration: 0.2)) { selectedIndex = nil }
                             }
                         }
                 )
             }
             .frame(height: 140)
 
-            // Rodapé do Gráfico: Eixo Horizontal de Tempo
-            if chronologicalMeasurements.count >= 2,
-               let firstDate = chronologicalMeasurements.first?.measuredAt,
+            if let firstDate = chronologicalMeasurements.first?.measuredAt,
                let lastDate = chronologicalMeasurements.last?.measuredAt {
                 HStack {
-                    Text(formatAxisDate(firstDate))
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.textSecondary)
+                    Text(formatAxisDate(firstDate)).font(.system(size: 10, weight: .medium)).foregroundColor(.textSecondary)
                     Spacer()
-                    Text("Tempo / Medições")
-                        .font(.system(size: 9, weight: .regular))
-                        .foregroundColor(.textSecondary.opacity(0.6))
-                    Spacer()
-                    Text(formatAxisDate(lastDate))
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.textSecondary)
+                    Text(formatAxisDate(lastDate)).font(.system(size: 10, weight: .medium)).foregroundColor(.textSecondary)
                 }
-                .padding(.top, -4)
             }
         }
         .padding(18)
         .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.lg, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: LinkaRadius.lg, style: .continuous)
-                .stroke(Color.borderDefault.opacity(0.4), lineWidth: 0.6)
-        )
+        .overlay(RoundedRectangle(cornerRadius: LinkaRadius.lg, style: .continuous).stroke(Color.borderDefault.opacity(0.4), lineWidth: 0.6))
+    }
+
+    @ViewBuilder
+    private func chartHeader(horizontal: Bool) -> some View {
+        if horizontal {
+            HStack(alignment: .firstTextBaseline) {
+                chartTitle
+                Spacer()
+                chartLegend
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 10) {
+                chartTitle
+                chartLegend
+            }
+        }
+    }
+
+    private var chartTitle: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Tendência de Velocidade").font(.system(size: 15, weight: .bold)).foregroundColor(.textPrimary)
+            if let active = activeMeasurement { Text(formatHeaderDate(active.measuredAt)).font(.system(size: 11, weight: .medium)).foregroundColor(.textSecondary) }
+        }
+    }
+
+    private var chartLegend: some View {
+        HStack(spacing: 14) {
+            legend(color: downloadColor, title: "Download", value: activeMeasurement?.downloadMbps)
+            legend(color: uploadColor, title: "Upload", value: activeMeasurement?.uploadMbps)
+        }
+    }
+
+    private func legend(color: Color, title: String, value: Double?) -> some View {
+        HStack(spacing: 5) { Circle().fill(color).frame(width: 7, height: 7); Text("\(title) \(formatValue(value)) Mbps").font(.system(size: 11, weight: .medium)).foregroundColor(.textSecondary) }
+    }
+
+    /// Duas bandas verticais compartilhadas pela grade e pelas ondas: a banda
+    /// de download vai de `top` (máximo) a `mid` (zero) e a de upload de
+    /// `mid` (máximo) a `bottom` (zero). Sem esse contrato único, a grade
+    /// reservava metade da altura para o upload mas a onda era desenhada na
+    /// altura quase inteira — sobrava espaço vazio abaixo das duas linhas.
+    private func chartBands(height: CGFloat) -> (top: CGFloat, mid: CGFloat, bottom: CGFloat) {
+        let top: CGFloat = 16
+        let bottom: CGFloat = max(height - 10, top + 20)
+        return (top, (top + bottom) / 2, bottom)
+    }
+
+    private func chartGrid(height: CGFloat) -> some View {
+        let bands = chartBands(height: height)
+        return ZStack(alignment: .topLeading) {
+            gridLine(opacity: 0.35).offset(y: bands.top)
+            gridLine(opacity: 0.25).offset(y: bands.mid)
+            gridLine(opacity: 0.35).offset(y: bands.bottom)
+
+            Text("↓ \(Int(round(maxDownload))) Mbps")
+                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .foregroundColor(downloadColor.opacity(0.8))
+                .offset(y: max(bands.top - 13, 0))
+
+            Text("↑ \(Int(round(maxUpload))) Mbps")
+                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .foregroundColor(uploadColor.opacity(0.8))
+                .offset(y: bands.mid - 13)
+        }
+    }
+
+    private func gridLine(opacity: Double) -> some View {
+        Rectangle()
+            .fill(Color.borderDefault.opacity(opacity))
+            .frame(height: 0.8)
+            .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private func chartLines(width: CGFloat, height: CGFloat) -> some View {
+        let bands = chartBands(height: height)
+        let downloadBandHeight = bands.mid - bands.top
+        let uploadBandHeight = bands.bottom - bands.mid
+        let count = chronologicalMeasurements.count
+        let stepX = width / CGFloat(max(count - 1, 1))
+        let dlPoints = chronologicalMeasurements.enumerated().compactMap { index, measurement -> CGPoint? in
+            guard let value = measurement.downloadMbps else { return nil }
+            let ratio = maxDownload > 0 ? CGFloat(value / maxDownload) : 0
+            return CGPoint(x: CGFloat(index) * stepX, y: bands.mid - ratio * downloadBandHeight)
+        }
+        let ulPoints = chronologicalMeasurements.enumerated().compactMap { index, measurement -> CGPoint? in
+            guard let value = measurement.uploadMbps else { return nil }
+            let ratio = maxUpload > 0 ? CGFloat(value / maxUpload) : 0
+            return CGPoint(x: CGFloat(index) * stepX, y: bands.bottom - ratio * uploadBandHeight)
+        }
+        if dlPoints.count >= 2 { wavePath(points: dlPoints, isClosed: false, height: height).stroke(downloadColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)) }
+        if ulPoints.count >= 2 { wavePath(points: ulPoints, isClosed: false, height: height).stroke(uploadColor, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round)) }
     }
 
     // Suavizador de Curvas Catmull-Rom para Bézier Cúbica

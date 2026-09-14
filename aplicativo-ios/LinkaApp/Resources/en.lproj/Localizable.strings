@@ -312,6 +312,7 @@
 "settings.subscription.noPurchase" = "No active purchase was found.";
 "settings.subscription.restoreError" = "We couldn't restore your purchase right now.";
 "home.title" = "Home";
+"home.now" = "Now";
 "home.testing" = "Testing...";
 "home.speed" = "Speed";
 "home.offline" = "No connection";
@@ -321,7 +322,7 @@
 "home.lastTest" = "Last test";
 "home.lastTest.value" = "%@ Mbps · %@";
 "home.downloadUnit" = "Mbps download";
-"home.assist.cta" = "Analyze my connection now";
+"home.assist.cta" = "Analyze my connection";
 "home.assist.resultMessage" = "Let's analyze this measurement's data.";
 "home.accessibility.back" = "Back to Home";
 "home.accessibility.history" = "History";
@@ -364,6 +365,17 @@
 "home.relative.today" = "Today, %@";
 "home.relative.yesterday" = "Yesterday, %@";
 "home.usage.videoCalls" = "Video calls";
+"home.live.calls" = "Calls";
+"home.live.viewDetails" = "View details";
+"home.live.metrics" = "Now";
+"home.live.response" = "Response";
+"home.live.variation" = "Variation";
+"home.live.loss" = "Loss";
+"home.live.details" = "Live details";
+"home.live.samples" = "%d recent samples";
+"home.live.confidence.live" = "Based on live measurements from this connection";
+"home.live.confidence.insufficient" = "There are not enough samples yet";
+"home.live.speedTest" = "Speed test";
 "home.usage.onlineGaming" = "Online gaming";
 "home.usage.streaming" = "Streaming";
 "common.continue" = "Continue";
@@ -416,6 +428,8 @@
 "history.empty.message" = "Run a test to see it here.";
 "history.measurements" = "Measurements";
 "history.measurement" = "Measurement";
+"history.single.title" = "Your first measurement";
+"history.single.message" = "Take one more measurement to start following the trend.";
 "history.insight.improved" = "Your download speed is about %@%% better this week than last week.";
 "history.insight.worsened" = "Your download speed is about %@%% worse this week than last week.";
 "detail.title" = "Measurement details";
