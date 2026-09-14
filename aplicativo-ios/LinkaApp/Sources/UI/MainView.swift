@@ -232,28 +232,50 @@ struct MainView: View {
 
     var body: some View {
         NavigationStack(path: $navPath) {
-            ZStack {
-                Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
+            navigationContent
+        }
+    }
 
-                activeMeasurementView
+    /// Dividido em funções `attach*` porque uma única cadeia com todos os
+    /// `.sheet`/`.onChange` (mais de 20 modificadores numa expressão só)
+    /// estourava o limite de tempo do type-checker do Swift em CI — cada
+    /// função aqui é uma expressão pequena o bastante para inferir rápido.
+    private var navigationContent: some View {
+        let base = ZStack {
+            Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
+            activeMeasurementView
+        }
+        .navigationTitle(mainTitle)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(viewModel.uiPhase == .idle || viewModel.uiPhase == .done ? .large : .inline)
+        #endif
+        .navigationDestination(for: AppRoute.self) { route in
+            destinationView(for: route)
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                toolbarBackButton
             }
-            .navigationTitle(mainTitle)
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(viewModel.uiPhase == .idle || viewModel.uiPhase == .done ? .large : .inline)
-            #endif
-            .navigationDestination(for: AppRoute.self) { route in
-                destinationView(for: route)
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                toolbarHistoryButton
+                toolbarShareButton
+                toolbarSettingsButton
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    toolbarBackButton
-                }
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    toolbarHistoryButton
-                    toolbarShareButton
-                    toolbarSettingsButton
-                }
-            }
+        }
+
+        return attachLifecycleHandlers(
+            attachSecondaryPresentation(
+                attachResultPresentation(
+                    attachIntentHandlers(
+                        attachAssistPresentation(base)
+                    )
+                )
+            )
+        )
+    }
+
+    private func attachAssistPresentation<Content: View>(_ content: Content) -> some View {
+        content
             .sheet(
                 isPresented: $showAssistProblemSelection,
                 onDismiss: beginPendingAssistCollection
@@ -280,110 +302,125 @@ struct MainView: View {
                     entitlements: entitlements
                 )
             }
-        .onChange(of: intentCoordinator.pendingStartSpeedTest) { pending in
-            guard pending else { return }
-            viewModel.startTest()
-            intentCoordinator.consumeStartSpeedTestRequest()
-        }
-        .onChange(of: viewModel.uiPhase) { phase in
-            handleAssistMeasurementCompletion(phase)
-        }
-        .onChange(of: intentCoordinator.pendingAdvancedWiFiDiagnosticsImport) { pending in
-            guard pending else { return }
-            viewModel.consumePendingAdvancedWiFiDiagnostics()
-            intentCoordinator.consumeAdvancedWiFiDiagnosticsImport()
-            guard pendingAdvancedWiFiMeasurement else { return }
-            pendingAdvancedWiFiMeasurement = false
-            beginSpeedTest()
-        }
-        .onChange(of: intentCoordinator.pendingPurchasePrompt) { pending in
-            guard pending else { return }
-            purchaseEntryPoint = .settings
-            showPurchase = true
-            intentCoordinator.consumePurchasePrompt()
-        }
-        .onChange(of: intentCoordinator.pendingOpenHistory) { pending in
-            handleOpenHistoryRequest(pending)
-        }
-        .onChange(of: intentCoordinator.pendingOpenLatestMeasurement) { pending in
-            handleOpenLatestMeasurementRequest(pending)
-        }
-        .sheet(isPresented: $showPurchase) {
-            PurchaseSheet(entryPoint: purchaseEntryPoint) {
-                if purchaseEntryPoint == .assist { showAssistProblemSelection = true }
+    }
+
+    private func attachIntentHandlers<Content: View>(_ content: Content) -> some View {
+        content
+            .onChange(of: intentCoordinator.pendingStartSpeedTest) { pending in
+                guard pending else { return }
+                viewModel.startTest()
+                intentCoordinator.consumeStartSpeedTestRequest()
             }
-            .environmentObject(entitlements)
-        }
-        .sheet(isPresented: $showConnectivityTriage) {
-            ConnectivityTriageView(onRetry: { viewModel.startTest() })
-        }
-        .confirmationDialog(LinkaCopy.value("home.advancedWiFiRecovery.title"), isPresented: $showAdvancedWiFiRecovery, titleVisibility: .visible) {
-            Button(LinkaCopy.value("common.tryAgain")) { startSpeedTest() }
-            Button(LinkaCopy.value("home.advancedWiFiRecovery.measureWithout")) { beginSpeedTest() }
-            Button(LinkaCopy.value("common.cancel"), role: .cancel) {}
-        } message: {
-            Text(LinkaCopy.value("home.advancedWiFiRecovery.message"))
-        }
-        .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
-        .onChange(of: showShareSheet) { isPresented in
-            if !isPresented { requestAppStoreReviewAfterResultInteraction() }
-        }
-        .sheet(isPresented: $showDetails) {
-            NavigationStack {
-                MeasurementDetailView(measurement: currentMeasurement, duration: viewModel.testDuration)
-                    .environmentObject(entitlements)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button(LinkaCopy.value("common.back")) {
-                                showDetails = false
+            .onChange(of: viewModel.uiPhase) { phase in
+                handleAssistMeasurementCompletion(phase)
+            }
+            .onChange(of: intentCoordinator.pendingAdvancedWiFiDiagnosticsImport) { pending in
+                guard pending else { return }
+                viewModel.consumePendingAdvancedWiFiDiagnostics()
+                intentCoordinator.consumeAdvancedWiFiDiagnosticsImport()
+                guard pendingAdvancedWiFiMeasurement else { return }
+                pendingAdvancedWiFiMeasurement = false
+                beginSpeedTest()
+            }
+            .onChange(of: intentCoordinator.pendingPurchasePrompt) { pending in
+                guard pending else { return }
+                purchaseEntryPoint = .settings
+                showPurchase = true
+                intentCoordinator.consumePurchasePrompt()
+            }
+            .onChange(of: intentCoordinator.pendingOpenHistory) { pending in
+                handleOpenHistoryRequest(pending)
+            }
+            .onChange(of: intentCoordinator.pendingOpenLatestMeasurement) { pending in
+                handleOpenLatestMeasurementRequest(pending)
+            }
+    }
+
+    private func attachResultPresentation<Content: View>(_ content: Content) -> some View {
+        content
+            .sheet(isPresented: $showPurchase) {
+                PurchaseSheet(entryPoint: purchaseEntryPoint) {
+                    if purchaseEntryPoint == .assist { showAssistProblemSelection = true }
+                }
+                .environmentObject(entitlements)
+            }
+            .sheet(isPresented: $showConnectivityTriage) {
+                ConnectivityTriageView(onRetry: { viewModel.startTest() })
+            }
+            .confirmationDialog(LinkaCopy.value("home.advancedWiFiRecovery.title"), isPresented: $showAdvancedWiFiRecovery, titleVisibility: .visible) {
+                Button(LinkaCopy.value("common.tryAgain")) { startSpeedTest() }
+                Button(LinkaCopy.value("home.advancedWiFiRecovery.measureWithout")) { beginSpeedTest() }
+                Button(LinkaCopy.value("common.cancel"), role: .cancel) {}
+            } message: {
+                Text(LinkaCopy.value("home.advancedWiFiRecovery.message"))
+            }
+            .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
+            .onChange(of: showShareSheet) { isPresented in
+                if !isPresented { requestAppStoreReviewAfterResultInteraction() }
+            }
+            .sheet(isPresented: $showDetails) {
+                NavigationStack {
+                    MeasurementDetailView(measurement: currentMeasurement, duration: viewModel.testDuration)
+                        .environmentObject(entitlements)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button(LinkaCopy.value("common.back")) {
+                                    showDetails = false
+                                }
                             }
                         }
-                    }
+                }
             }
-        }
-        .onChange(of: showDetails) { isPresented in
-            if !isPresented { requestAppStoreReviewAfterResultInteraction() }
-        }
-        .sheet(isPresented: $showUsage) {
-            UsageDiagnosticsView(measurement: currentMeasurement)
-        }
-        .sheet(isPresented: $showLiveUsageDetail) {
-            LiveUsageDetailSheet(viewModel: viewModel)
-        }
-        .sheet(isPresented: $showConnectionPath) {
-            if let connectionPathReport { ConnectionPathDetailView(report: connectionPathReport) }
-        }
-        .sheet(isPresented: $showExpertModeMigrationBanner, onDismiss: {
-            ExpertModeMigrationBannerState.markSeen()
-        }) {
-            ExpertModeMigrationBanner(
-                onOpenPurchase: {
-                    showExpertModeMigrationBanner = false
-                    purchaseEntryPoint = .settings
-                    showPurchase = true
-                },
-                onDismiss: { showExpertModeMigrationBanner = false }
-            )
-            .presentationDetents([.medium])
-        }
-        .onAppear {
-            viewModel.refreshLiveNetwork()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wiFiAuthorizationDidChange)) { _ in
-            viewModel.refreshLiveNetwork()
-        }
-        .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
-        .onChange(of: scenePhase) { newPhase in
-            viewModel.handleScenePhaseChange(newPhase)
-            switch newPhase {
-            case .active:
-                recoverAdvancedWiFiMeasurementIfNeeded()
-            case .background, .inactive:
-                break
+            .onChange(of: showDetails) { isPresented in
+                if !isPresented { requestAppStoreReviewAfterResultInteraction() }
             }
-        }
-        .onChange(of: viewModel.uiPhase) { handleUIPhaseChange($0) }
-        }
+    }
+
+    private func attachSecondaryPresentation<Content: View>(_ content: Content) -> some View {
+        content
+            .sheet(isPresented: $showUsage) {
+                UsageDiagnosticsView(measurement: currentMeasurement)
+            }
+            .sheet(isPresented: $showLiveUsageDetail) {
+                LiveUsageDetailSheet(viewModel: viewModel)
+            }
+            .sheet(isPresented: $showConnectionPath) {
+                if let connectionPathReport { ConnectionPathDetailView(report: connectionPathReport) }
+            }
+            .sheet(isPresented: $showExpertModeMigrationBanner, onDismiss: {
+                ExpertModeMigrationBannerState.markSeen()
+            }) {
+                ExpertModeMigrationBanner(
+                    onOpenPurchase: {
+                        showExpertModeMigrationBanner = false
+                        purchaseEntryPoint = .settings
+                        showPurchase = true
+                    },
+                    onDismiss: { showExpertModeMigrationBanner = false }
+                )
+                .presentationDetents([.medium])
+            }
+    }
+
+    private func attachLifecycleHandlers<Content: View>(_ content: Content) -> some View {
+        content
+            .onAppear {
+                viewModel.refreshLiveNetwork()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wiFiAuthorizationDidChange)) { _ in
+                viewModel.refreshLiveNetwork()
+            }
+            .animation(reduceMotion ? nil : LinkaMotion.spring, value: viewModel.uiPhase)
+            .onChange(of: scenePhase) { newPhase in
+                viewModel.handleScenePhaseChange(newPhase)
+                switch newPhase {
+                case .active:
+                    recoverAdvancedWiFiMeasurementIfNeeded()
+                case .background, .inactive:
+                    break
+                }
+            }
+            .onChange(of: viewModel.uiPhase) { handleUIPhaseChange($0) }
     }
 
     // MARK: - Toolbar
