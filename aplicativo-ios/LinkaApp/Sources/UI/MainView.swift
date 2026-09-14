@@ -13,58 +13,71 @@ enum AppRoute: Hashable {
     case measurementDetail(NetworkMeasurement)
 }
 
-/// Sinal visual de liveness da Home. Não representa velocidade, ping ou uma
-/// série histórica; por isso fica fora da árvore de acessibilidade.
-private struct HomeLiveSignalView: View {
-    let isActive: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: reduceMotion ? 60 : 1.0 / 24)) { timeline in
-            let phase = reduceMotion ? 0 : timeline.date.timeIntervalSinceReferenceDate
-            Canvas { context, size in
-                var path = Path()
-                let amplitude = size.height * 0.16
-                let centerY = size.height * 0.54
-                for x in stride(from: 0.0, through: size.width, by: 2.0) {
-                    let y = centerY + sin((x / size.width * .pi * 4) + phase * 1.4) * amplitude
-                    if x == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
-                }
-                let shading: GraphicsContext.Shading = isActive
-                    ? .linearGradient(
-                        Gradient(colors: [.statusGood, .cyan.opacity(0.8), .statusGood]),
-                        startPoint: .zero,
-                        endPoint: CGPoint(x: size.width, y: size.height)
-                    )
-                    : .color(.textSecondary.opacity(0.35))
-                context.stroke(path, with: shading, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-            }
-        }
-        .frame(height: 34)
-        .accessibilityHidden(true)
-    }
-}
-
 private struct LiveUsageDetailSheet: View {
-    let usageCase: UsageCase
-    let verdict: LiveUsageCaseVerdict?
+    @ObservedObject var viewModel: SpeedTestViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        let telemetry = viewModel.liveUsageReport?.telemetry ?? viewModel.liveTelemetryCollector.snapshot(
+            connectionKind: viewModel.liveConnectionKind,
+            interfaceLabel: viewModel.liveNetworkLabel,
+            isExpensive: viewModel.liveConnectionKind == .cellular,
+            wifiRssiDbm: viewModel.liveWifiRSSI
+        )
+        let confidence = viewModel.liveUsageReport?.verdict(for: .videoCall)?.confidence
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
-                Label(UsageSuitabilityCopy.title(for: usageCase), systemImage: UsageSuitabilityCopy.iconName(for: usageCase))
-                    .font(.title3.weight(.semibold))
-                Text(verdict.map { UsageSuitabilityCopy.liveDetail(for: $0) } ?? LinkaCopy.value("usage.live.measuring"))
-                    .font(.bodyRegular)
+                LiveMetricsView(telemetry: telemetry)
+                Divider()
+                Text(LinkaCopy.format("home.live.samples", telemetry.sampleCount))
+                    .font(.captionSmall)
+                    .foregroundColor(.textSecondary)
+                Text(confidenceCopy(confidence))
+                    .font(.captionSmall)
                     .foregroundColor(.textSecondary)
                 Spacer()
             }
             .padding(24)
-            .navigationTitle(LinkaCopy.value("home.now"))
+            .navigationTitle(LinkaCopy.value("home.live.details"))
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button(LinkaCopy.value("common.close")) { dismiss() } } }
         }
-        .presentationDetents([.height(220)])
+        .presentationDetents([.height(260)])
+    }
+
+    private func confidenceCopy(_ confidence: LiveAssessmentConfidence?) -> String {
+        switch confidence {
+        case .historicalBaselineInferred: return LinkaCopy.value("usage.live.historicalBaseline")
+        case .liveTelemetry: return LinkaCopy.value("home.live.confidence.live")
+        case .insufficientData, .none: return LinkaCopy.value("home.live.confidence.insufficient")
+        }
+    }
+}
+
+private struct LiveMetricsView: View {
+    let telemetry: LiveNetworkTelemetrySnapshot
+
+    var body: some View {
+        HStack(spacing: 0) {
+            metric(LinkaCopy.value("home.live.response"), value: telemetry.latencyMs, suffix: "ms")
+            Divider().frame(height: 38)
+            metric(LinkaCopy.value("home.live.variation"), value: telemetry.jitterMs, suffix: "ms")
+            Divider().frame(height: 38)
+            metric(LinkaCopy.value("home.live.loss"), value: telemetry.packetLossPercent, suffix: "%")
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func metric(_ label: String, value: Double?, suffix: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label).font(.captionSmall).foregroundColor(.textSecondary)
+            Text(value.map { "\($0.formatted(.number.precision(.fractionLength(0...1)))) \(suffix)" } ?? "—")
+                .font(.bodyRegularStrong)
+                .foregroundColor(.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
     }
 }
 
@@ -369,9 +382,7 @@ struct MainView: View {
             UsageDiagnosticsView(measurement: currentMeasurement)
         }
         .sheet(isPresented: $showLiveUsageDetail) {
-            if let usageCase = selectedLiveUsageCase {
-                LiveUsageDetailSheet(usageCase: usageCase, verdict: viewModel.liveUsageReport?.verdict(for: usageCase))
-            }
+            LiveUsageDetailSheet(viewModel: viewModel)
         }
         .sheet(isPresented: $showConnectionPath) {
             if let connectionPathReport { ConnectionPathDetailView(report: connectionPathReport) }
@@ -544,29 +555,16 @@ struct MainView: View {
                     .padding(.top, 0)
                     .padding(.horizontal, 24)
 
-                    HomeLiveSignalView(isActive: viewModel.liveConnectionKind != nil)
-                        .padding(.top, 18)
-                        .padding(.horizontal, 24)
-
                     homeConnectionTrail
                         .padding(.horizontal, 28)
-                        .padding(.top, 6)
-
-                    Spacer(minLength: 42)
-
-                    VStack(spacing: 8) {
-                        Text(heroStateTitle)
-                            .font(.displayMedium)
-                            .foregroundColor(.textPrimary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                    }
-                    Spacer(minLength: 54)
+                        .padding(.top, 22)
 
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(LinkaCopy.value("home.now"))
+                        Text(LinkaCopy.value("home.live.metrics"))
                             .font(.title2.weight(.bold))
                             .foregroundColor(.textPrimary)
+                        LiveMetricsView(telemetry: liveTelemetry)
+                            .padding(.vertical, 6)
                         LiveUsageCasesView(
                             report: viewModel.liveUsageReport,
                             cases: [.videoCall, .onlineGaming],
@@ -575,7 +573,6 @@ struct MainView: View {
                         )
 
                         Button {
-                            selectedLiveUsageCase = .videoCall
                             showLiveUsageDetail = true
                         } label: {
                             HStack {
@@ -597,17 +594,12 @@ struct MainView: View {
                     .padding(.bottom, 28)
 
                     VStack(spacing: 12) {
-                        VStack(spacing: 0) {
-                            Button { startSpeedTest() } label: {
-                                speedTestActionRow
-                            }
-                            Divider().overlay(Color.borderDefault.opacity(0.55)).padding(.horizontal, 18)
-                            Button { requestAssist(from: .fresh) } label: {
-                                assistActionRow
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .linkaCard()
+                        Button { startSpeedTest() } label: { speedTestActionRow }
+                            .buttonStyle(.plain)
+                            .linkaCard()
+
+                        Button { requestAssist(from: .fresh) } label: { assistActionRow }
+                            .buttonStyle(.plain)
 
                         if let latest = viewModel.latestFinishedMeasurement {
                             Button { navPath.append(AppRoute.history) } label: {
@@ -642,6 +634,15 @@ struct MainView: View {
         .accessibilityElement(children: .combine)
     }
 
+    private var liveTelemetry: LiveNetworkTelemetrySnapshot {
+        viewModel.liveUsageReport?.telemetry ?? viewModel.liveTelemetryCollector.snapshot(
+            connectionKind: viewModel.liveConnectionKind,
+            interfaceLabel: viewModel.liveNetworkLabel,
+            isExpensive: viewModel.liveConnectionKind == .cellular,
+            wifiRssiDbm: viewModel.liveWifiRSSI
+        )
+    }
+
     private func trailItem(icon: String, label: String) -> some View {
         VStack(spacing: 7) {
             Image(systemName: icon).font(.system(size: 17, weight: .medium))
@@ -656,7 +657,7 @@ struct MainView: View {
             Image(systemName: "speedometer").font(.system(size: 23, weight: .medium)).foregroundColor(.textPrimary)
                 .frame(width: 42)
             Divider().frame(height: 34).overlay(Color.borderDefault)
-            Text(speedTestCTALabel).font(.bodyRegularStrong).foregroundColor(.textPrimary)
+            Text(LinkaCopy.value("home.live.speedTest")).font(.bodyRegularStrong).foregroundColor(.textPrimary)
             Spacer()
             Image(systemName: "chevron.right").font(.bodySmallStrong).foregroundColor(.textSecondary)
         }
@@ -665,16 +666,14 @@ struct MainView: View {
 
     private var assistActionRow: some View {
         HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("ASSIST ✦")
-                    .font(.captionSmallStrong)
-                    .foregroundColor(.brandAccentWarm)
-                Text(LinkaCopy.value("home.assist.cta"))
-                    .font(.bodyRegularStrong)
-                    .foregroundColor(.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-            }
+            Text("ASSIST ✦")
+                .font(.captionSmallStrong)
+                .foregroundColor(.brandAccentWarm)
+            Text(LinkaCopy.value("home.assist.cta"))
+                .font(.bodyRegular)
+                .foregroundColor(.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
             Spacer()
             Image(systemName: "chevron.right").font(.bodySmallStrong).foregroundColor(.textSecondary)
         }

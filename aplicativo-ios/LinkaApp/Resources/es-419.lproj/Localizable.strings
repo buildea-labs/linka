@@ -367,6 +367,15 @@
 "home.usage.videoCalls" = "Llamadas de video";
 "home.live.calls" = "Llamadas";
 "home.live.viewDetails" = "Ver detalles";
+"home.live.metrics" = "Ahora";
+"home.live.response" = "Respuesta";
+"home.live.variation" = "Variación";
+"home.live.loss" = "Pérdida";
+"home.live.details" = "Detalles en vivo";
+"home.live.samples" = "%d muestras recientes";
+"home.live.confidence.live" = "Basado en mediciones en vivo de esta conexión";
+"home.live.confidence.insufficient" = "Aún no hay suficientes muestras";
+"home.live.speedTest" = "Prueba de velocidad";
 "home.usage.onlineGaming" = "Juegos en línea";
 "home.usage.streaming" = "Streaming";
 "common.continue" = "Continuar";

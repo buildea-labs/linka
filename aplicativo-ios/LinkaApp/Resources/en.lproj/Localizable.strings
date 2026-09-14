@@ -367,6 +367,15 @@
 "home.usage.videoCalls" = "Video calls";
 "home.live.calls" = "Calls";
 "home.live.viewDetails" = "View details";
+"home.live.metrics" = "Now";
+"home.live.response" = "Response";
+"home.live.variation" = "Variation";
+"home.live.loss" = "Loss";
+"home.live.details" = "Live details";
+"home.live.samples" = "%d recent samples";
+"home.live.confidence.live" = "Based on live measurements from this connection";
+"home.live.confidence.insufficient" = "There are not enough samples yet";
+"home.live.speedTest" = "Speed test";
 "home.usage.onlineGaming" = "Online gaming";
 "home.usage.streaming" = "Streaming";
 "common.continue" = "Continue";
