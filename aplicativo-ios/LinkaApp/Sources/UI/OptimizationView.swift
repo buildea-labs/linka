@@ -137,7 +137,7 @@ struct OptimizationView: View {
                 .foregroundStyle(.secondary)
             Text(action(for: opportunity.action))
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.brandAccentWarm)
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
