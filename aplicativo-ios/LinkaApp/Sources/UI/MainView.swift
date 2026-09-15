@@ -5,6 +5,7 @@ import NetworkCore
 import NetworkInsights
 import LinkaEntitlements
 import LinkaModules
+import NetworkOptimization
 import NetworkConnectivityTriage
 
 enum AppRoute: Hashable {
@@ -110,6 +111,10 @@ struct MainView: View {
     @State private var navPath = NavigationPath()
     @State private var showMoreMetrics: Bool = false
     @State private var showPurchase: Bool = false
+    @State private var showOptimization: Bool = false
+    @State private var optimizationBaseline: NetworkMeasurement?
+    @State private var optimizationRetestResult: OptimizationRetestComparison?
+    @State private var showOptimizationRetestResult = false
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
     @State private var showAssistProblemSelection: Bool = false
     @State private var showAssistResult: Bool = false
@@ -179,6 +184,10 @@ struct MainView: View {
             for: .usageDiagnostics,
             snapshot: entitlements.snapshot
         ).isGranted
+    }
+
+    private var canUseOptimization: Bool {
+        LinkaEntitlementPolicy.decision(for: .optimization, snapshot: entitlements.snapshot, at: Date()).isGranted
     }
 
     private var connectionPathReport: ConnectionPathReport? {
@@ -313,6 +322,7 @@ struct MainView: View {
             }
             .onChange(of: viewModel.uiPhase) { phase in
                 handleAssistMeasurementCompletion(phase)
+                handleOptimizationRetestCompletion(phase)
             }
             .onChange(of: intentCoordinator.pendingAdvancedWiFiDiagnosticsImport) { pending in
                 guard pending else { return }
@@ -338,6 +348,21 @@ struct MainView: View {
 
     private func attachResultPresentation<Content: View>(_ content: Content) -> some View {
         content
+            .sheet(isPresented: $showOptimization) {
+                if let measurement = currentMeasurement {
+                    OptimizationView(
+                        baseline: measurement,
+                        history: viewModel.recentMeasurements,
+                        isPlusActive: canUseOptimization,
+                        onRequestPurchase: {
+                            showOptimization = false
+                            purchaseEntryPoint = .optimization
+                            showPurchase = true
+                        },
+                        onRetest: { optimizationBaseline = measurement; startSpeedTest() }
+                    )
+                }
+            }
             .sheet(isPresented: $showPurchase) {
                 PurchaseSheet(entryPoint: purchaseEntryPoint) {
                     if purchaseEntryPoint == .assist { showAssistProblemSelection = true }
@@ -346,6 +371,9 @@ struct MainView: View {
             }
             .sheet(isPresented: $showConnectivityTriage) {
                 ConnectivityTriageView(onRetry: { viewModel.startTest() })
+            }
+            .sheet(isPresented: $showOptimizationRetestResult) {
+                if let result = optimizationRetestResult { OptimizationRetestResultView(result: result) }
             }
             .confirmationDialog(LinkaCopy.value("home.advancedWiFiRecovery.title"), isPresented: $showAdvancedWiFiRecovery, titleVisibility: .visible) {
                 Button(LinkaCopy.value("common.tryAgain")) { startSpeedTest() }
@@ -880,6 +908,16 @@ struct MainView: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
 
+                Button {
+                    showOptimization = true
+                } label: {
+                    Label(LinkaCopy.value("optimization.open"), systemImage: "slider.horizontal.3")
+                        .font(.body.weight(.semibold))
+                }
+                .buttonStyle(.linkaSecondary)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+
                 // 5. Botão Testar Novamente
                 Button(action: {
                     startSpeedTest()
@@ -1253,6 +1291,28 @@ struct MainView: View {
         guard phase == .done, pendingAssistMeasurement else { return }
         pendingAssistMeasurement = false
         showAssistResult = true
+    }
+
+    private func handleOptimizationRetestCompletion(_ phase: SpeedTestUIPhase) {
+        guard let baseline = optimizationBaseline else { return }
+
+        switch phase {
+        case .done:
+            guard let retest = currentMeasurement else {
+                optimizationBaseline = nil
+                return
+            }
+            optimizationBaseline = nil
+            optimizationRetestResult = OptimizationRetestComparator.compare(baseline: baseline, retest: retest)
+            showOptimizationRetestResult = true
+        case .idle, .error, .connectionChanged:
+            // Um reteste interrompido não pode ser comparado com uma medição
+            // futura e não relacionada. A pessoa pode iniciar outro reteste
+            // explicitamente a partir da Otimização.
+            optimizationBaseline = nil
+        case .connecting, .downloading, .uploading:
+            break
+        }
     }
 
     private func handleOpenLatestMeasurementRequest(_ pending: Bool) {

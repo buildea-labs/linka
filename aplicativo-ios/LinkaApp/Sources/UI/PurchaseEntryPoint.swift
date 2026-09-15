@@ -5,6 +5,7 @@ enum PurchaseEntryPoint: Equatable {
     case assist
     case historyInsights
     case advancedWiFi
+    case optimization
     case shortcut
     case appIntent
 
@@ -14,6 +15,7 @@ enum PurchaseEntryPoint: Equatable {
         case .assist: LinkaCopy.value("purchase.entry.assist.title", defaultValue: "Entenda esta medição")
         case .historyInsights: LinkaCopy.value("purchase.entry.history.title", defaultValue: "Veja o que se repete")
         case .advancedWiFi: LinkaCopy.value("purchase.entry.wifi.title", defaultValue: "Veja além da velocidade")
+        case .optimization: LinkaCopy.value("purchase.entry.optimization.title", defaultValue: "Encontre oportunidades reais")
         case .shortcut, .appIntent: LinkaCopy.value("purchase.entry.shortcuts.title", defaultValue: "Automação e Atalhos")
         }
     }
@@ -28,6 +30,8 @@ enum PurchaseEntryPoint: Equatable {
             LinkaCopy.value("purchase.entry.history.subtitle", defaultValue: "Compare suas medições e descubra padrões por rede e horário.")
         case .advancedWiFi:
             LinkaCopy.value("purchase.entry.wifi.subtitle", defaultValue: "Use informações extras do Wi-Fi para entender melhor a conexão.")
+        case .optimization:
+            LinkaCopy.value("purchase.entry.optimization.subtitle", defaultValue: "O Linka Plus encontra ajustes possíveis e mede novamente para comparar.")
         case .shortcut, .appIntent:
             LinkaCopy.value("purchase.entry.shortcuts.subtitle", defaultValue: "Automatize testes e acompanhe resultados usando a Siri e os Atalhos.")
         }

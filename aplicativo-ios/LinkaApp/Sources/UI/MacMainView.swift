@@ -8,11 +8,13 @@ import LinkaEntitlements
 import LinkaModules
 import NetworkConnectivityTriage
 import NetworkInsights
+import NetworkOptimization
 
 private enum MacDestination: Hashable {
     case speedTest
     case history
     case assist
+    case optimization
     case settings
 }
 
@@ -42,6 +44,9 @@ struct MacMainView: View {
 
     @State private var destination: MacDestination = .speedTest
     @State private var showPurchase = false
+    @State private var optimizationBaseline: NetworkMeasurement?
+    @State private var optimizationRetestResult: OptimizationRetestComparison?
+    @State private var showOptimizationRetestResult = false
     @State private var showSubscriptionManagement = false
     @State private var pendingPurchaseDismissalAction: MacPurchaseDismissalAction?
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
@@ -66,6 +71,10 @@ struct MacMainView: View {
 
     private var isPlusActive: Bool {
         LinkaEntitlementPolicy.decision(for: .assist, snapshot: entitlements.snapshot, at: Date()).isGranted
+    }
+
+    private var canUseOptimization: Bool {
+        LinkaEntitlementPolicy.decision(for: .optimization, snapshot: entitlements.snapshot, at: Date()).isGranted
     }
 
     private var activeMeasurement: NetworkMeasurement? {
@@ -132,6 +141,8 @@ struct MacMainView: View {
                     historyView
                 case .assist:
                     assistView
+                case .optimization:
+                    optimizationView
                 case .settings:
                     settingsView
                 }
@@ -148,6 +159,12 @@ struct MacMainView: View {
                 }
             }
             .environmentObject(entitlements)
+        }
+        .sheet(isPresented: $showOptimizationRetestResult) {
+            if let result = optimizationRetestResult {
+                OptimizationRetestResultView(result: result)
+                    .frame(minWidth: 460, minHeight: 360)
+            }
         }
         .sheet(isPresented: $showSubscriptionManagement) {
             SubscriptionManagementSheet()
@@ -226,6 +243,7 @@ struct MacMainView: View {
             if phase == .done {
                 inspectedHistoricalMeasurement = nil
             }
+            handleOptimizationRetestCompletion(phase)
             guard phase == .done, pendingAssistMeasurement else { return }
             pendingAssistMeasurement = false
             showAssistResult = true
@@ -285,6 +303,7 @@ struct MacMainView: View {
 
             sidebarGroupLabel("Ferramentas").padding(.top, 8)
             sidebarNavItem("Assist", systemImage: "sparkles", dest: .assist, disabled: isMeasuring)
+            sidebarNavItem(LinkaCopy.value("optimization.title"), systemImage: "slider.horizontal.3", dest: .optimization, disabled: isMeasuring || currentMeasurement == nil)
 
             sidebarGroupLabel("App").padding(.top, 8)
             sidebarNavItem("Configurações", systemImage: "gearshape", dest: .settings, disabled: isMeasuring)
@@ -937,6 +956,10 @@ struct MacMainView: View {
                         Label("Assist", systemImage: "sparkles")
                     }
                     .buttonStyle(.linkaSecondary)
+                    Button { destination = .optimization } label: {
+                        Label(LinkaCopy.value("optimization.open"), systemImage: "slider.horizontal.3")
+                    }
+                    .buttonStyle(.linkaSecondary)
                 }
             )
         }
@@ -1334,6 +1357,62 @@ struct MacMainView: View {
             ? MacAdvancedWiFiDiagnosticsProvider().capture(entitlement: entitlements.snapshot)
             : nil
         viewModel.startTest(advancedWiFiDiagnostics: diagnostics)
+    }
+
+    private var optimizationView: some View {
+        Group {
+            if let measurement = currentMeasurement {
+                OptimizationView(
+                    baseline: measurement,
+                    history: viewModel.recentMeasurements,
+                    isPlusActive: canUseOptimization,
+                    onRequestPurchase: {
+                        purchaseEntryPoint = .optimization
+                        showPurchase = true
+                    },
+                    onRetest: {
+                        optimizationBaseline = measurement
+                        destination = .speedTest
+                        startMeasurement()
+                    }
+                )
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "gauge.with.dots.needle.50percent")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+                    Text(LinkaCopy.value("optimization.unavailable.title"))
+                        .font(.title3.weight(.semibold))
+                    Text(LinkaCopy.value("optimization.unavailable.message"))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button(LinkaCopy.value("optimization.unavailable.cta")) {
+                        destination = .speedTest
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
+            }
+        }
+    }
+
+    private func handleOptimizationRetestCompletion(_ phase: SpeedTestUIPhase) {
+        guard let baseline = optimizationBaseline else { return }
+
+        switch phase {
+        case .done:
+            guard let retest = currentMeasurement else {
+                optimizationBaseline = nil
+                return
+            }
+            optimizationBaseline = nil
+            optimizationRetestResult = OptimizationRetestComparator.compare(baseline: baseline, retest: retest)
+            showOptimizationRetestResult = true
+        case .idle, .error, .connectionChanged:
+            optimizationBaseline = nil
+        case .connecting, .downloading, .uploading:
+            break
+        }
     }
 
     private func startMeasurementWithAdvancedWiFi() {

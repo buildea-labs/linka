@@ -35,6 +35,8 @@ struct PurchaseSheet: View {
         case .advancedWiFi:
             benefits.removeAll { $0 == copy("purchase.benefit.wifi", "Advanced Wi-Fi diagnostics") }
             benefits.insert(copy("purchase.benefit.wifi", "Advanced Wi-Fi diagnostics"), at: 0)
+        case .optimization:
+            benefits.insert(copy("purchase.benefit.optimization", "Find adjustments that can improve your connection"), at: 0)
         case .shortcut, .appIntent:
             benefits.insert(copy("purchase.benefit.shortcuts", "Siri and Shortcuts automation"), at: 0)
         case .settings:
