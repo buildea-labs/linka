@@ -75,6 +75,7 @@
 "profiles.empty.title" = "Nenhum perfil salvo";
 "profiles.empty.message" = "Faça uma medição em Wi-Fi e abra Otimização para criar o primeiro perfil.";
 "profiles.settings.title" = "Perfis de rede";
+"profiles.settings.accessibilityHint" = "Gerencie nomes locais e referências neste dispositivo.";
 "profiles.disabled.manage" = "Gerenciar identificação de Wi-Fi";
 "profiles.lastAnalyzed.title" = "Última medição";
 "profiles.reference.resetHint" = "A referência será formada novamente com 3 novas medições. Seu Histórico não será apagado.";

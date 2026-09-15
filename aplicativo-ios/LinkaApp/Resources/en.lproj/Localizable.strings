@@ -75,6 +75,7 @@
 "profiles.empty.title" = "No saved profiles";
 "profiles.empty.message" = "Run a test on Wi-Fi, then open Optimization to create your first profile.";
 "profiles.settings.title" = "Network profiles";
+"profiles.settings.accessibilityHint" = "Manage local names and references on this device.";
 "profiles.disabled.manage" = "Manage Wi-Fi identification";
 "profiles.lastAnalyzed.title" = "Last measurement";
 "profiles.reference.resetHint" = "The reference will be built again with 3 new measurements. Your History will not be deleted.";

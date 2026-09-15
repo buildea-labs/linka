@@ -65,6 +65,7 @@ targets:
       - package: NetworkDiagnostics
       - package: NetworkOptimization
       - package: NetworkProfiles
+      - package: NetworkDNSBenchmark
       - target: LinkaWidgetExtension
         embed: true
         codeSign: true
@@ -126,6 +127,7 @@ targets:
       - package: NetworkDiagnostics
       - package: NetworkOptimization
       - package: NetworkProfiles
+      - package: NetworkDNSBenchmark
   LinkaAppUITests:
     type: bundle.ui-testing
     platform: iOS
@@ -214,3 +216,5 @@ packages:
     path: NetworkOptimization
   NetworkProfiles:
     path: NetworkProfiles
+  NetworkDNSBenchmark:
+    path: NetworkDNSBenchmark
