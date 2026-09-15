@@ -1451,13 +1451,20 @@ struct MacMainView: View {
 
     // MARK: - Formatação
 
-    /// Reconstruído a cada acesso (em vez de `static let`) para refletir a
-    /// preferência de idioma corrente — anteriormente fixo em `pt_BR`,
-    /// formatava a data sempre em português mesmo com en/es selecionado.
+    /// Cache por tag de idioma: evita reconstruir o `DateFormatter` (caro)
+    /// a cada acesso — `phaseMessage` é reavaliado a cada atualização da
+    /// view durante uma medição — mas ainda assim reflete a preferência de
+    /// idioma corrente em vez de ficar fixo em `pt_BR` como antes.
+    private static var dateFormatterCache: [String: DateFormatter] = [:]
+
     private static var dateFormatter: DateFormatter {
+        let locale = LinkaLanguagePreference.currentLocale
+        let key = locale.identifier
+        if let cached = dateFormatterCache[key] { return cached }
         let f = DateFormatter()
-        f.locale = LinkaLanguagePreference.currentLocale
+        f.locale = locale
         f.dateFormat = "d MMM · HH:mm"
+        dateFormatterCache[key] = f
         return f
     }
 
@@ -1510,10 +1517,16 @@ struct MacMainView: View {
         }
     }
 
+    private static var timeFormatterCache: [String: DateFormatter] = [:]
+
     private static var timeFormatter: DateFormatter {
+        let locale = LinkaLanguagePreference.currentLocale
+        let key = locale.identifier
+        if let cached = timeFormatterCache[key] { return cached }
         let f = DateFormatter()
-        f.locale = LinkaLanguagePreference.currentLocale
+        f.locale = locale
         f.dateFormat = "HH:mm"
+        timeFormatterCache[key] = f
         return f
     }
 

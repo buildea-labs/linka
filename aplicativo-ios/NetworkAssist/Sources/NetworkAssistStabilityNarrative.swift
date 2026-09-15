@@ -183,6 +183,10 @@ public enum NetworkAssistStabilityNarrativeGenerator {
     }
 
     private static func hourLabel(_ hour: Int, locale: String?) -> String {
-        "\(hour)h"
+        let tag = (locale ?? "pt-BR").lowercased()
+        if tag.hasPrefix("es") || tag.hasPrefix("en") {
+            return "\(hour):00"
+        }
+        return "\(hour)h"
     }
 }
