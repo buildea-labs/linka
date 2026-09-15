@@ -127,9 +127,12 @@ struct AssistView: View {
             .task(id: currentMeasurement?.id) {
                 guard !isCollectingMeasurement else { return }
                 if let current = currentMeasurement {
-                    async let stability: Void = stabilityViewModel.load(currentMeasurement: current)
+                    // A análise de histórico muda a altura do ScrollView. Ela
+                    // precisa terminar antes de publicar o diagnóstico, para a
+                    // pessoa não perder o ponto que estava lendo quando a
+                    // seção de padrões aparece no meio da tela.
+                    await stabilityViewModel.load(currentMeasurement: current)
                     await loadAssist(with: current)
-                    await stability
                 } else {
                     async let stability: Void = stabilityViewModel.load(currentMeasurement: nil)
                     await viewModel.load(
@@ -224,7 +227,7 @@ struct AssistView: View {
                             .foregroundColor(.textPrimary)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Text(data.summary)
+                        Text(summaryWithoutRepeatedRecommendation(data))
                             .font(.bodyRegular)
                             .foregroundColor(.textSecondary)
                             .lineSpacing(4)
@@ -521,6 +524,25 @@ struct AssistView: View {
         let trimmedSummary = summary.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedDescription.isEmpty, trimmedDescription != trimmedSummary else { return [] }
         return [rec.description]
+    }
+
+    /// O problema descreve o que foi medido; a recomendação guarda a próxima
+    /// ação. Quando o servidor repete literalmente a ação no resumo, removê-la
+    /// do primeiro cartão evita duas instruções iguais em sequência.
+    private func summaryWithoutRepeatedRecommendation(_ data: AssistViewModel.DiagnosticData) -> String {
+        guard let recommendation = data.recommendation else { return data.summary }
+        let action = recommendation.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !action.isEmpty else {
+            return data.summary
+        }
+
+        let sentences = data.summary.split(whereSeparator: { ".!?".contains($0) })
+        let summary = sentences
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.localizedCaseInsensitiveContains(action) }
+            .joined(separator: ". ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return summary.isEmpty ? data.summary : summary
     }
 
     private func isHealthyAnalysis(headerStatus: String, title: String, recommendation: NetworkAssistRecommendation?) -> Bool {

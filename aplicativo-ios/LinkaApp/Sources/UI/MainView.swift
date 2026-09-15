@@ -100,7 +100,7 @@ struct MainView: View {
         case .connecting, .downloading, .uploading:
             return LinkaCopy.value("home.testing")
         case .done:
-            return LinkaCopy.value("home.speed")
+            return ""
         }
     }
 

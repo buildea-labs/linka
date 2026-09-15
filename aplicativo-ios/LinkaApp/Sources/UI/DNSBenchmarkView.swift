@@ -130,8 +130,8 @@ struct DNSBenchmarkView: View {
             EmptyView()
         case .awaitingActivation(let name):
             Section {
-                Text("\(name) via DNS sobre HTTPS foi criada. Ative-a nas Configurações do Sistema e depois atualize o estado aqui.")
-                Button("Atualizar estado") { Task { await configuration.refresh() } }
+                Text("\(name) via DNS sobre HTTPS foi criada, mas o iPhone ainda não a ativou. Abra Ajustes > Geral > VPN e Gerenciamento de Dispositivo > DNS, ative \(name) e volte aqui para confirmar.")
+                Button("Já ativei — atualizar") { Task { await configuration.refresh() } }
                 Button("Remover configuração de DNS", role: .destructive) { Task { await configuration.remove() } }
             } header: { Text("Configuração de DNS") }
         case .active(let name):

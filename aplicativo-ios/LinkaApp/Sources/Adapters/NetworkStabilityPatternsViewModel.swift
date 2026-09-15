@@ -102,10 +102,10 @@ final class NetworkStabilityPatternsViewModel: ObservableObject {
 
         let narratives = currentNetworkReport.metricNarratives.map(\.narrative)
 
-        let sentences = narratives.compactMap { narrative -> String? in
-            if case .factual(let text) = narrative { return text }
-            return nil
-        }
+        // Jitter e latência podem apontar para a mesma janela recorrente. A
+        // leitura é uma só: repetir duas frases com o mesmo horário parece um
+        // bug e não acrescenta uma segunda ação para a pessoa tomar.
+        let sentences = deduplicatedPatternSentences(from: narratives)
 
         guard sentences.isEmpty else {
             state = .detected(sentences)
@@ -119,5 +119,30 @@ final class NetworkStabilityPatternsViewModel: ObservableObject {
         }
 
         state = hasAnyEvaluatedMetric ? .noPatternDetected : .insufficientHistory
+    }
+
+    private func deduplicatedPatternSentences(
+        from narratives: [NetworkAssistStabilityNarrative]
+    ) -> [String] {
+        var seenWindows = Set<String>()
+
+        return narratives.compactMap { narrative -> String? in
+            guard case .factual(let text) = narrative else { return nil }
+            let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !normalized.isEmpty else { return nil }
+
+            // O gerador local mantém a janela no fim da narrativa, tanto em
+            // pt-BR quanto nas cópias em inglês/espanhol. Se não houver essa
+            // forma conhecida, preservar a frase é mais honesto que adivinhar.
+            let lowercased = normalized.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            let markers = ["todos os dias", "every day", "todos los dias"]
+            guard let marker = markers.first(where: { lowercased.contains($0) }),
+                  let range = lowercased.range(of: marker) else {
+                return seenWindows.insert(lowercased).inserted ? normalized : nil
+            }
+
+            let window = String(lowercased[range.lowerBound...])
+            return seenWindows.insert(window).inserted ? normalized : nil
+        }
     }
 }
