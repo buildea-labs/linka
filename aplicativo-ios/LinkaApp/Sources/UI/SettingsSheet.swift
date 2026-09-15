@@ -23,6 +23,7 @@ struct SettingsView: View {
     @State private var showSubscriptionManagement = false
     @State private var showWiFiExplanation = false
     @State private var showAdvancedActions = false
+    @State private var showNetworkProfiles = false
     @AppStorage("appAppearance") private var appAppearance = "system"
     @AppStorage(LinkaLanguagePreference.storageKey) private var languagePreference = LinkaLanguagePreference.system.rawValue
     @AppStorage(LinkaWiFiPreferences.identificationEnabledKey) private var networkIdentificationEnabled = true
@@ -68,6 +69,9 @@ struct SettingsView: View {
                 }
                 Button(action: openAdvancedWiFi) {
                     settingsRow(title: LinkaCopy.value("settings.advancedWiFi.title"), value: advancedWiFiStatusText, systemImage: "waveform.path.ecg")
+                }
+                Button { showNetworkProfiles = true } label: {
+                    settingsRow(title: LinkaCopy.value("profiles.settings.title"), value: "", systemImage: "wifi")
                 }
             }
 
@@ -172,6 +176,15 @@ struct SettingsView: View {
             }
         }
         .sheet(isPresented: $showSubscriptionManagement) { SubscriptionManagementSheet() }
+        .sheet(isPresented: $showNetworkProfiles) {
+            NetworkProfilesManagementView(isPlusActive: LinkaEntitlementPolicy.decision(for: .optimization, snapshot: entitlements.snapshot).isGranted) {
+                purchaseEntryPoint = .optimization; showPurchase = true
+            }
+            #if os(iOS)
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            #endif
+        }
         .task {
             await entitlements.refreshSnapshot()
             await entitlements.loadProduct()
@@ -301,6 +314,17 @@ struct SettingsView: View {
                         }
                     }
                     .tint(.brandAccentWarm)
+
+                    NavigationLink(destination: NetworkProfilesManagementView(
+                        isPlusActive: LinkaEntitlementPolicy.decision(for: .optimization, snapshot: entitlements.snapshot).isGranted,
+                        onRequestPurchase: {
+                            purchaseEntryPoint = .optimization
+                            showPurchase = true
+                        }
+                    )) {
+                        macRow(LinkaCopy.value("profiles.settings.title"), systemImage: "wifi", showsChevron: true)
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 macSection(title: "Ferramentas") {

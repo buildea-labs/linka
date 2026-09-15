@@ -64,6 +64,7 @@ targets:
       - package: LinkaWidgetShared
       - package: NetworkDiagnostics
       - package: NetworkOptimization
+      - package: NetworkProfiles
       - target: LinkaWidgetExtension
         embed: true
         codeSign: true
@@ -124,6 +125,7 @@ targets:
       - package: LinkaWidgetShared
       - package: NetworkDiagnostics
       - package: NetworkOptimization
+      - package: NetworkProfiles
   LinkaAppUITests:
     type: bundle.ui-testing
     platform: iOS
@@ -210,3 +212,5 @@ packages:
     path: NetworkDiagnostics
   NetworkOptimization:
     path: NetworkOptimization
+  NetworkProfiles:
+    path: NetworkProfiles
