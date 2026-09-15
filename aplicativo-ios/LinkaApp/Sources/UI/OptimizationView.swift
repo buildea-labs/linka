@@ -14,6 +14,7 @@ struct OptimizationView: View {
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var profileCoordinator = OptimizationProfileCoordinator()
+    @State private var isPresentingProfileCreation = false
 
     private var plan: OptimizationPlan {
         OptimizationPlanBuilder().build(baseline: baseline, history: history)
@@ -55,7 +56,8 @@ struct OptimizationView: View {
                     coordinator: profileCoordinator,
                     isPlusActive: isPlusActive,
                     onRequestPurchase: onRequestPurchase,
-                    onManageIdentification: onManageIdentification
+                    onManageIdentification: onManageIdentification,
+                    isPresentingCreation: $isPresentingProfileCreation
                 )
 
                 Section {
@@ -104,6 +106,22 @@ struct OptimizationView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(LinkaCopy.value("common.close")) { dismiss() }
+                }
+            }
+        }
+        // A apresentação pertence à tela estável de Otimização, não à linha
+        // condicional da rede atual. Assim uma atualização de SSID/perfil não
+        // desmonta a view que sustenta a sheet enquanto a pessoa digita.
+        .sheet(isPresented: $isPresentingProfileCreation) {
+            NetworkProfileNameEditor(
+                title: LinkaCopy.value("profiles.create.title"),
+                name: "",
+                saveTitle: LinkaCopy.value("profiles.create.save")
+            ) { name in
+                Task {
+                    if await profileCoordinator.createProfile(named: name) {
+                        isPresentingProfileCreation = false
+                    }
                 }
             }
         }

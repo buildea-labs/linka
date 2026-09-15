@@ -105,9 +105,23 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
             // tem ação a recomendar: nenhuma regra disparou.
             if v2Explanation.semCausaIdentificada != true, let acao = v2Explanation.acaoUsuario {
                 let evidenceCards = findings.filter { card in v2Explanation.dados?.contains(card.id) == true }
-                let evidenceDesc = evidenceCards.isEmpty
-                    ? (v2Explanation.dados?.joined(separator: ", ") ?? "")
-                    : evidenceCards.map { $0.mensagemUsuario.isEmpty ? $0.titulo : $0.mensagemUsuario }.joined(separator: " • ")
+                // Os findings determinísticos ainda podem chegar no idioma
+                // canônico do serviço. Eles não podem ser encaixados numa
+                // explicação em inglês/espanhol, pois isso mistura idiomas
+                // dentro do mesmo cartão. As dimensões abaixo continuam
+                // expondo a evidência com rótulos locais; a descrição bruta
+                // só é segura para a localidade canônica pt-BR.
+                let isPortuguese = (request.locale ?? "pt-BR").lowercased().hasPrefix("pt")
+                let evidenceDesc: String
+                if !isPortuguese {
+                    evidenceDesc = ""
+                } else if evidenceCards.isEmpty {
+                    evidenceDesc = v2Explanation.dados?.joined(separator: ", ") ?? ""
+                } else {
+                    evidenceDesc = evidenceCards
+                        .map { $0.mensagemUsuario.isEmpty ? $0.titulo : $0.mensagemUsuario }
+                        .joined(separator: " • ")
+                }
 
                 parsedRecommendation = NetworkAssistRecommendation(
                     title: acao,

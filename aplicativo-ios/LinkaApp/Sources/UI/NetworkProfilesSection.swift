@@ -9,8 +9,7 @@ struct NetworkProfilesSection: View {
     let isPlusActive: Bool
     let onRequestPurchase: () -> Void
     let onManageIdentification: () -> Void
-
-    @State private var isPresentingCreation = false
+    @Binding var isPresentingCreation: Bool
 
     var body: some View {
         Group {
@@ -45,9 +44,6 @@ struct NetworkProfilesSection: View {
                     }
                 }
             }
-        }
-        .sheet(isPresented: $isPresentingCreation) {
-            creationSheet
         }
     }
 
@@ -100,20 +96,6 @@ struct NetworkProfilesSection: View {
         }
     }
 
-    private var creationSheet: some View {
-        NetworkProfileNameEditor(
-            title: LinkaCopy.value("profiles.create.title"),
-            name: "",
-            saveTitle: LinkaCopy.value("profiles.create.save")
-        ) { name in
-            Task {
-                if await coordinator.createProfile(named: name) {
-                    isPresentingCreation = false
-                }
-            }
-        }
-    }
-
     private func referenceLabel(for profile: NetworkProfile) -> String {
         switch coordinator.referenceState(for: profile) {
         case .ready:
@@ -126,12 +108,6 @@ struct NetworkProfilesSection: View {
         }
     }
 
-    private var creationPresentation: some View {
-        EmptyView()
-            .sheet(isPresented: $isPresentingCreation) {
-                creationSheet
-            }
-    }
 }
 
 struct NetworkProfilesManagementView: View {
@@ -316,7 +292,7 @@ private struct NetworkProfileDetailView: View {
     }
 }
 
-private struct NetworkProfileNameEditor: View {
+struct NetworkProfileNameEditor: View {
     let title: String
     let saveTitle: String
     let onSave: (String) -> Void
