@@ -174,3 +174,207 @@ public enum OptimizationRetestComparator {
         return first == second
     }
 }
+
+// MARK: - Baseline local por perfil
+
+/// Referência estatística local de uma rede identificada pelo consumidor.
+///
+/// A identidade é propositalmente opaca para este pacote: a futura camada de
+/// perfis fornece seu fingerprint versionado, e esta estrutura nunca precisa
+/// conhecer SSID, BSSID/MAC ou a forma como esse fingerprint foi produzido.
+/// As métricas continuam opcionais porque uma amostra elegível pode não ter
+/// concluído cada sonda; ausência nunca é transformada em zero.
+public struct NetworkBaseline: Equatable, Sendable {
+    public let profileIdentity: String
+    public let sampleCount: Int
+    public let measuredFrom: Date
+    public let measuredUntil: Date
+    public let measurementIDs: [UUID]
+    public let downloadMbps: Double?
+    public let uploadMbps: Double?
+    public let latencyMs: Double?
+    public let jitterMs: Double?
+    public let packetLossPercent: Double?
+
+    public init(
+        profileIdentity: String,
+        sampleCount: Int,
+        measuredFrom: Date,
+        measuredUntil: Date,
+        measurementIDs: [UUID],
+        downloadMbps: Double?,
+        uploadMbps: Double?,
+        latencyMs: Double?,
+        jitterMs: Double?,
+        packetLossPercent: Double?
+    ) {
+        self.profileIdentity = profileIdentity
+        self.sampleCount = sampleCount
+        self.measuredFrom = measuredFrom
+        self.measuredUntil = measuredUntil
+        self.measurementIDs = measurementIDs
+        self.downloadMbps = downloadMbps
+        self.uploadMbps = uploadMbps
+        self.latencyMs = latencyMs
+        self.jitterMs = jitterMs
+        self.packetLossPercent = packetLossPercent
+    }
+}
+
+/// Calcula a referência de qualidade de um perfil local a partir do histórico
+/// já disponível no dispositivo. Não persiste, não busca histórico e não
+/// deriva identidade de `networkIdentifier`, que identifica o provedor/servidor
+/// do teste e não a rede Wi-Fi local.
+public struct NetworkBaselineBuilder: Sendable {
+    public typealias MeasurementIdentity = @Sendable (NetworkMeasurement) -> String?
+
+    public let minimumSampleCount: Int
+    public let window: TimeInterval
+    private let identityForMeasurement: MeasurementIdentity
+
+    public init(
+        minimumSampleCount: Int = 3,
+        window: TimeInterval = 30 * 24 * 60 * 60,
+        identityForMeasurement: @escaping MeasurementIdentity
+    ) {
+        self.minimumSampleCount = max(3, minimumSampleCount)
+        self.window = max(0, window)
+        self.identityForMeasurement = identityForMeasurement
+    }
+
+    /// Retorna `nil` até haver a quantidade mínima de medições completas,
+    /// Wi-Fi, recentes e pertencentes à identidade confirmada do perfil.
+    public func build(
+        profileIdentity: String,
+        measurements: [NetworkMeasurement],
+        referenceDate: Date = Date()
+    ) -> NetworkBaseline? {
+        guard !profileIdentity.isEmpty else { return nil }
+
+        let earliestDate = referenceDate.addingTimeInterval(-window)
+        let eligible = measurements.filter { measurement in
+            measurement.outcome == .complete
+                && measurement.connectionKind == .wifi
+                && measurement.measuredAt >= earliestDate
+                && measurement.measuredAt <= referenceDate
+                && identityForMeasurement(measurement) == profileIdentity
+        }
+
+        guard eligible.count >= minimumSampleCount,
+              let measuredFrom = eligible.map(\.measuredAt).min(),
+              let measuredUntil = eligible.map(\.measuredAt).max() else {
+            return nil
+        }
+
+        return NetworkBaseline(
+            profileIdentity: profileIdentity,
+            sampleCount: eligible.count,
+            measuredFrom: measuredFrom,
+            measuredUntil: measuredUntil,
+            measurementIDs: eligible.map(\.id).sorted { $0.uuidString < $1.uuidString },
+            downloadMbps: Self.median(eligible.compactMap(\.downloadMbps)),
+            uploadMbps: Self.median(eligible.compactMap(\.uploadMbps)),
+            latencyMs: Self.median(eligible.compactMap(\.latencyMs)),
+            jitterMs: Self.median(eligible.compactMap(\.jitterMs)),
+            packetLossPercent: Self.median(eligible.compactMap(\.packetLossPercent))
+        )
+    }
+
+    private static func median(_ values: [Double]) -> Double? {
+        guard !values.isEmpty else { return nil }
+        let sorted = values.sorted()
+        let middle = sorted.count / 2
+        if sorted.count.isMultiple(of: 2) {
+            return (sorted[middle - 1] + sorted[middle]) / 2
+        }
+        return sorted[middle]
+    }
+}
+
+/// Resultado factual da comparação entre uma leitura atual e a referência
+/// estatística de um perfil. Uma direção descreve somente a diferença medida;
+/// ela não atribui essa diferença a qualquer orientação ou alteração feita
+/// pela pessoa.
+public struct NetworkBaselineComparison: Equatable, Sendable {
+    public let currentMeasurementID: UUID
+    public let profileIdentity: String
+    public let metrics: [MetricComparison]
+
+    public init(
+        currentMeasurementID: UUID,
+        profileIdentity: String,
+        metrics: [MetricComparison]
+    ) {
+        self.currentMeasurementID = currentMeasurementID
+        self.profileIdentity = profileIdentity
+        self.metrics = metrics
+    }
+
+    public func comparison(for metric: NetworkMetric) -> MetricComparison? {
+        metrics.first { $0.metric == metric }
+    }
+}
+
+/// Mantém a distinção entre uma métrica ausente (comparação disponível, com
+/// `.unavailable` naquela linha) e uma leitura inteira incompatível com a
+/// referência da rede (não há comparação honesta a mostrar).
+public enum NetworkBaselineComparisonResult: Equatable, Sendable {
+    case compared(NetworkBaselineComparison)
+    case incompatible
+}
+
+/// Compara uma medição atual com uma `NetworkBaseline` já formada. Recebe a
+/// mesma identidade opaca usada na formação da baseline para não acoplar este
+/// pacote ao futuro armazenamento de perfis ou ao formato do fingerprint.
+public struct NetworkBaselineComparator: Sendable {
+    private let identityForMeasurement: NetworkBaselineBuilder.MeasurementIdentity
+    public let stableChangeThresholdPercent: Double
+
+    public init(
+        stableChangeThresholdPercent: Double = NetworkInsightsConfiguration().stableChangeThresholdPercent,
+        identityForMeasurement: @escaping NetworkBaselineBuilder.MeasurementIdentity
+    ) {
+        self.stableChangeThresholdPercent = max(0, stableChangeThresholdPercent)
+        self.identityForMeasurement = identityForMeasurement
+    }
+
+    public func compare(
+        current: NetworkMeasurement,
+        against baseline: NetworkBaseline
+    ) -> NetworkBaselineComparisonResult {
+        guard current.outcome == .complete,
+              current.connectionKind == .wifi,
+              baseline.sampleCount >= 3,
+              !baseline.profileIdentity.isEmpty,
+              identityForMeasurement(current) == baseline.profileIdentity else {
+            return .incompatible
+        }
+
+        let metrics: [MetricComparison] = [
+            compare(.downloadMbps, current.downloadMbps, baseline.downloadMbps),
+            compare(.uploadMbps, current.uploadMbps, baseline.uploadMbps),
+            compare(.latencyMs, current.latencyMs, baseline.latencyMs),
+            compare(.jitterMs, current.jitterMs, baseline.jitterMs),
+            compare(.packetLossPercent, current.packetLossPercent, baseline.packetLossPercent)
+        ]
+
+        return .compared(NetworkBaselineComparison(
+            currentMeasurementID: current.id,
+            profileIdentity: baseline.profileIdentity,
+            metrics: metrics
+        ))
+    }
+
+    private func compare(
+        _ metric: NetworkMetric,
+        _ current: Double?,
+        _ baseline: Double?
+    ) -> MetricComparison {
+        MetricComparator.compare(
+            metric: metric,
+            current: current,
+            baseline: baseline,
+            stableChangeThresholdPercent: stableChangeThresholdPercent
+        )
+    }
+}

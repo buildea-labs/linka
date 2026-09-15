@@ -1374,24 +1374,13 @@ struct MacMainView: View {
                         optimizationBaseline = measurement
                         destination = .speedTest
                         startMeasurement()
-                    }
+                    },
+                    onManageIdentification: { destination = .settings }
                 )
             } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "gauge.with.dots.needle.50percent")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
-                    Text(LinkaCopy.value("optimization.unavailable.title"))
-                        .font(.title3.weight(.semibold))
-                    Text(LinkaCopy.value("optimization.unavailable.message"))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                    Button(LinkaCopy.value("optimization.unavailable.cta")) {
-                        destination = .speedTest
-                    }
+                NetworkProfilesManagementView(isPlusActive: canUseOptimization) {
+                    purchaseEntryPoint = .optimization; showPurchase = true
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding()
             }
         }
     }

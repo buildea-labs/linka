@@ -359,7 +359,8 @@ struct MainView: View {
                             purchaseEntryPoint = .optimization
                             showPurchase = true
                         },
-                        onRetest: { optimizationBaseline = measurement; startSpeedTest() }
+                        onRetest: { optimizationBaseline = measurement; startSpeedTest() },
+                        onManageIdentification: { showOptimization = false; navPath.append(AppRoute.settings) }
                     )
                 }
             }

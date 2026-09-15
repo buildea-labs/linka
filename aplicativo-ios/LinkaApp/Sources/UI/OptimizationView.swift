@@ -10,8 +10,10 @@ struct OptimizationView: View {
     let isPlusActive: Bool
     let onRequestPurchase: () -> Void
     let onRetest: () -> Void
+    let onManageIdentification: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var profileCoordinator = OptimizationProfileCoordinator()
 
     private var plan: OptimizationPlan {
         OptimizationPlanBuilder().build(baseline: baseline, history: history)
@@ -49,6 +51,13 @@ struct OptimizationView: View {
                     }
                 }
 
+                NetworkProfilesSection(
+                    coordinator: profileCoordinator,
+                    isPlusActive: isPlusActive,
+                    onRequestPurchase: onRequestPurchase,
+                    onManageIdentification: onManageIdentification
+                )
+
                 Section {
                     if isPlusActive {
                         Button(LinkaCopy.value("optimization.retest")) {
@@ -65,6 +74,12 @@ struct OptimizationView: View {
                 }
             }
             .navigationTitle(LinkaCopy.value("optimization.title"))
+            .task(id: baseline.id) {
+                await profileCoordinator.refresh(
+                    currentMeasurement: baseline,
+                    history: history
+                )
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(LinkaCopy.value("common.close")) { dismiss() }
