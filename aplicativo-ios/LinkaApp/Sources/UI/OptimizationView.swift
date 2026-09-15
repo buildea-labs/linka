@@ -60,6 +60,27 @@ struct OptimizationView: View {
 
                 Section {
                     if isPlusActive {
+                        NavigationLink("Comparar resposta de DNS") {
+                            DNSBenchmarkView {
+                                dismiss()
+                                onRetest()
+                            }
+                        }
+                    } else {
+                        Button("Comparar resposta de DNS") {
+                            onRequestPurchase()
+                        }
+                    }
+                } header: {
+                    Text("DNS")
+                } footer: {
+                    Text(isPlusActive
+                         ? "Compare respostas DNS medidas nesta conexão."
+                         : "Disponível no Linka Plus.")
+                }
+
+                Section {
+                    if isPlusActive {
                         Button(LinkaCopy.value("optimization.retest")) {
                             dismiss()
                             onRetest()

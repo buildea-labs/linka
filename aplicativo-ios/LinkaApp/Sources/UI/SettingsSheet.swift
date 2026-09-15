@@ -71,8 +71,10 @@ struct SettingsView: View {
                     settingsRow(title: LinkaCopy.value("settings.advancedWiFi.title"), value: advancedWiFiStatusText, systemImage: "waveform.path.ecg")
                 }
                 Button { showNetworkProfiles = true } label: {
-                    settingsRow(title: LinkaCopy.value("profiles.settings.title"), value: "", systemImage: "wifi")
+                    settingsRow(title: LinkaCopy.value("profiles.settings.title"), value: "", systemImage: "tag")
                 }
+                .accessibilityLabel(LinkaCopy.value("profiles.settings.title"))
+                .accessibilityHint(LinkaCopy.value("profiles.settings.accessibilityHint"))
             }
 
             Section(LinkaCopy.value("settings.section.tools")) {
@@ -322,9 +324,11 @@ struct SettingsView: View {
                             showPurchase = true
                         }
                     )) {
-                        macRow(LinkaCopy.value("profiles.settings.title"), systemImage: "wifi", showsChevron: true)
+                        macRow(LinkaCopy.value("profiles.settings.title"), systemImage: "tag", showsChevron: true)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(LinkaCopy.value("profiles.settings.title"))
+                    .accessibilityHint(LinkaCopy.value("profiles.settings.accessibilityHint"))
                 }
 
                 macSection(title: "Ferramentas") {
