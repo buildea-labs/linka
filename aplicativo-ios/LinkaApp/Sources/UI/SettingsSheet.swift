@@ -541,6 +541,12 @@ private enum MacRouterPanelState: Equatable {
     case idle
     case locating
     case found(GatewayInfo)
+    /// O roteador foi identificado na tabela de rotas, mas o painel não respondeu.
+    /// A causa mais provável é a permissão de Rede Local negada para o Linka nos
+    /// Ajustes do Sistema (macOS não distingue "negado" de "inacessível" na API
+    /// pública, então o Linka comunica a causa mais provável em vez de inventar
+    /// um estado de permissão que a plataforma não expõe).
+    case unreachable(gatewayIP: String)
     case unavailable
 }
 
@@ -579,6 +585,19 @@ private struct MacRouterPanelView: View {
                         }
                         Button("Abrir painel no navegador") { showOpenConfirmation = true }
                             .buttonStyle(.linkaPrimary)
+                    }
+                case .unreachable(let gatewayIP):
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Roteador encontrado, painel bloqueado", systemImage: "exclamationmark.shield")
+                            .foregroundColor(.orange)
+                        Text(gatewayIP)
+                            .font(.bodySmallStrong)
+                            .foregroundColor(.textPrimary)
+                        Text("O Linka identificou o roteador desta rede, mas não conseguiu confirmar o painel. O motivo mais comum é a permissão de Rede Local negada para o Linka nos Ajustes do Sistema.")
+                            .font(.bodySmall)
+                            .foregroundColor(.textSecondary)
+                        Button("Abrir Ajustes do Sistema") { openSystemLocalNetworkSettings() }
+                            .buttonStyle(.linkaSecondary)
                     }
                 case .unavailable:
                     VStack(alignment: .leading, spacing: 8) {
@@ -622,7 +641,18 @@ private struct MacRouterPanelView: View {
             return
         }
         let gateway = await GatewayProber().probe(gatewayIP: gatewayIP)
-        state = gateway.isAccessible && gateway.adminURL != nil ? .found(gateway) : .unavailable
+        if gateway.isAccessible, gateway.adminURL != nil {
+            state = .found(gateway)
+        } else {
+            // O gateway foi identificado (temos o IP real da rota ativa), mas o
+            // painel não respondeu: diferente de não termos achado gateway algum.
+            state = .unreachable(gatewayIP: gatewayIP)
+        }
+    }
+
+    private func openSystemLocalNetworkSettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork") else { return }
+        openURL(url)
     }
 }
 #endif
