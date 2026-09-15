@@ -13,8 +13,10 @@
 		0794CAB9623C9907CA924D64 /* AppShortcuts.strings in Resources */ = {isa = PBXBuildFile; fileRef = A7441EDE760EBFBE2B29269F /* AppShortcuts.strings */; };
 		07FA5BACD537ACDC5E210496 /* SettingsProductionStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46F4505095861E3713A028A2 /* SettingsProductionStateTests.swift */; };
 		0BADFEDB706C8F4B6B4634B6 /* LinkaPushRegistrationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BE5DBF301620B59B53EAA9D /* LinkaPushRegistrationDelegate.swift */; };
+		0BB5E0DFD4239FB9F708C89E /* OptimizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67A921C4B0BDC839130F101C /* OptimizationView.swift */; };
 		0C8ECCB89B1CEA92EEA79277 /* 02-resultado.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C18C21A5058B411187DFB0D /* 02-resultado.png */; };
 		0F4DB2B24BB8E41F01C5DB90 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5322DEAA6F1693B771FF7DB2 /* InfoPlist.strings */; };
+		105821D3C05128AFEF44110F /* NetworkOptimization in Frameworks */ = {isa = PBXBuildFile; productRef = 0B4FA6E44D0466821BDF02A7 /* NetworkOptimization */; };
 		114F6A67C7CE3B670CF6AD50 /* 06-historico.png in Resources */ = {isa = PBXBuildFile; fileRef = F959B2CBD5E8F278F7B85F54 /* 06-historico.png */; };
 		12E02BB6A2E493EAC2C1D151 /* LinkaAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8ADAB36D0CC32BA436AFE3 /* LinkaAppShortcuts.swift */; };
 		150054BB7218EF39FF3A2EF5 /* MeasurementHistoryCloudKit in Frameworks */ = {isa = PBXBuildFile; productRef = B36D3C433D496B8EFF185FF3 /* MeasurementHistoryCloudKit */; };
@@ -41,6 +43,7 @@
 		2D978D5BAD95A0E29AE7AE85 /* LinkaModules in Frameworks */ = {isa = PBXBuildFile; productRef = 2A1ED27B4CE61C438B43B40C /* LinkaModules */; };
 		2F7AC1D0FB4C81453B1B1EC7 /* PurchaseSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1056216026BABB240C8AC371 /* PurchaseSheet.swift */; };
 		301F89A56752A800E7E7227E /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FDC4D087897BC1FC0C88DD /* DesignSystem.swift */; };
+		310AA78977C2F11FADDBC9D6 /* NetworkOptimization in Frameworks */ = {isa = PBXBuildFile; productRef = 50E1BD189EF2AF1A4041C1E8 /* NetworkOptimization */; };
 		32D65FC106F2219188A8CFEF /* NetworkStabilityPatternsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E03F3D02E4F5A54E54C94A7 /* NetworkStabilityPatternsViewModelTests.swift */; };
 		3448797354FD2923D4969804 /* AssistProblemSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA202D7A1FB600A3F43CD0ED /* AssistProblemSelectionView.swift */; };
 		344B40654C7879C28C7ECCA8 /* 04-veja-sua-evolucao.jpg in Resources */ = {isa = PBXBuildFile; fileRef = A65313930AF284E519D93B54 /* 04-veja-sua-evolucao.jpg */; };
@@ -112,6 +115,7 @@
 		A545323750FDE9FB8E3EC7A1 /* ConnectionPathDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4781F293BF600F767AD519F6 /* ConnectionPathDetailView.swift */; };
 		A64CA2655143AAA37EDFB39A /* AssistTeaserCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647AB617F0B68B7D63BE2191 /* AssistTeaserCard.swift */; };
 		A762898B9B885102637E5FBF /* UsageDiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6971747152D0754E5176E4 /* UsageDiagnosticsView.swift */; };
+		A957D0E9AD96190A89A532D1 /* OptimizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67A921C4B0BDC839130F101C /* OptimizationView.swift */; };
 		AB57D97A3676EA389D96F2A7 /* ShareCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7798E2D1800A4FF1C0E30E /* ShareCardView.swift */; };
 		AB6FC29CEC4D5920EB901F01 /* LinkaWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6052814E829E396518A3EB18 /* LinkaWidgetBundle.swift */; };
 		ACF13D6407E729AB508C6CD1 /* ServiceStatusStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F6216E8865C9903F201628 /* ServiceStatusStore.swift */; };
@@ -247,6 +251,7 @@
 		5306A9B9735CAA5118F099E0 /* LinkaAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LinkaAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		55521AF45A9C7EF8F0709A96 /* WiFiNetworkPermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WiFiNetworkPermission.swift; sourceTree = "<group>"; };
 		57683E1EF231CFAB7DA64C37 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png"; sourceTree = "<group>"; };
+		5A46A7355BDA5038DF7EF738 /* NetworkOptimization */ = {isa = PBXFileReference; lastKnownFileType = folder; name = NetworkOptimization; path = NetworkOptimization; sourceTree = SOURCE_ROOT; };
 		5A6971747152D0754E5176E4 /* UsageDiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageDiagnosticsView.swift; sourceTree = "<group>"; };
 		5B98EA5D29714616A7E9B981 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.51.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.51.png"; sourceTree = "<group>"; };
 		5CA2630F94D8B48154FD8F54 /* AppStoreReviewPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreReviewPolicy.swift; sourceTree = "<group>"; };
@@ -256,6 +261,7 @@
 		641020ADE92F07BF8F597BD6 /* NetworkStabilityPatternsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkStabilityPatternsViewModel.swift; sourceTree = "<group>"; };
 		647AB617F0B68B7D63BE2191 /* AssistTeaserCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistTeaserCard.swift; sourceTree = "<group>"; };
 		66CBF1A76A2700A86FB6D257 /* LinkaSpeedTestWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaSpeedTestWidget.swift; sourceTree = "<group>"; };
+		67A921C4B0BDC839130F101C /* OptimizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizationView.swift; sourceTree = "<group>"; };
 		6935758C28176CC335C491C7 /* AppStoreScreenshotsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotsUITests.swift; sourceTree = "<group>"; };
 		6A875C6193D28AF210E71F16 /* 04-assist1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "04-assist1.png"; sourceTree = "<group>"; };
 		7245A11E5B4F5766C90CFE12 /* 02-meca-sua-internet.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "02-meca-sua-internet.jpg"; sourceTree = "<group>"; };
@@ -334,6 +340,7 @@
 				92D933AA376E0562D6D7100C /* MeasurementHistoryCloudKit in Frameworks */,
 				00A0E5D3AE63195FBF1E8B73 /* LinkaWidgetShared in Frameworks */,
 				3D4B5CCB6C9200F4417AA7FD /* NetworkDiagnostics in Frameworks */,
+				105821D3C05128AFEF44110F /* NetworkOptimization in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -357,6 +364,7 @@
 				150054BB7218EF39FF3A2EF5 /* MeasurementHistoryCloudKit in Frameworks */,
 				92BDECB59E8455FF2995F4BF /* LinkaWidgetShared in Frameworks */,
 				77B9D8D29C7DF8B583994B6E /* NetworkDiagnostics in Frameworks */,
+				310AA78977C2F11FADDBC9D6 /* NetworkOptimization in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -397,6 +405,7 @@
 				C60A040FE4E49231CD858102 /* MainView.swift */,
 				F8549C59760252CA889B5156 /* MeasurementDetailView.swift */,
 				179DA64F9C7059B7A140B92E /* MetricRing.swift */,
+				67A921C4B0BDC839130F101C /* OptimizationView.swift */,
 				F3E5050B3CBDDCC2A9F2BA57 /* PhaseDots.swift */,
 				44FD51918BF9314D06858F94 /* PurchaseEntryPoint.swift */,
 				1056216026BABB240C8AC371 /* PurchaseSheet.swift */,
@@ -502,6 +511,7 @@
 				17341010AD6A54D297DD1469 /* MeasurementHistoryCloudKit */,
 				FC264CF05674D25561146FCA /* NetworkConnectivityTriage */,
 				1BE3B89888DD7D9F5E3BE5A1 /* NetworkDiagnostics */,
+				5A46A7355BDA5038DF7EF738 /* NetworkOptimization */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -683,6 +693,7 @@
 				C544F31F0954FB38FEA92DAE /* MeasurementHistoryCloudKit */,
 				2E97FB5DC022FF2D8BD11658 /* LinkaWidgetShared */,
 				8D030535C110C19E720EA384 /* NetworkDiagnostics */,
+				0B4FA6E44D0466821BDF02A7 /* NetworkOptimization */,
 			);
 			productName = LinkaApp;
 			productReference = 0E607975E4B121542E79DD68 /* LinkaApp.app */;
@@ -747,6 +758,7 @@
 				B36D3C433D496B8EFF185FF3 /* MeasurementHistoryCloudKit */,
 				6C16385D59C93FAD8555D2E3 /* LinkaWidgetShared */,
 				8C1F5FB6C4EBFBE359500098 /* NetworkDiagnostics */,
+				50E1BD189EF2AF1A4041C1E8 /* NetworkOptimization */,
 			);
 			productName = LinkaApp_macOS;
 			productReference = 8345F2C6AED5E260752371DA /* LinkaApp_macOS.app */;
@@ -797,6 +809,7 @@
 				B2C64BDD2A8270C25380EDDE /* XCLocalSwiftPackageReference "MeasurementHistoryCloudKit" */,
 				498D42432070615E85E2B086 /* XCLocalSwiftPackageReference "NetworkConnectivityTriage" */,
 				109D4BCBC6698BC9B91ED79D /* XCLocalSwiftPackageReference "NetworkDiagnostics" */,
+				3031149103E6570B304B61F4 /* XCLocalSwiftPackageReference "NetworkOptimization" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 89593D469806B613A3DDE80D /* Products */;
@@ -934,6 +947,7 @@
 				D0716D6A4A358B964448A5DE /* MeasurementDetailView.swift in Sources */,
 				637810EBEB63A3121E07FEEE /* MetricRing.swift in Sources */,
 				50898BCE2DC871D60C7B293B /* NetworkStabilityPatternsViewModel.swift in Sources */,
+				A957D0E9AD96190A89A532D1 /* OptimizationView.swift in Sources */,
 				93BC7EBFC6A6DADB94050889 /* PhaseDots.swift in Sources */,
 				5434DD70ECE32A88055577EB /* PurchaseEntryPoint.swift in Sources */,
 				F71D86CB28FD00BFB80BCEDE /* PurchaseSheet.swift in Sources */,
@@ -1003,6 +1017,7 @@
 				C60712F038F34BAF07AEDEC6 /* MeasurementDetailView.swift in Sources */,
 				22ACBF6A87B265E99D871533 /* MetricRing.swift in Sources */,
 				FB04D476B3C59CD38514B55C /* NetworkStabilityPatternsViewModel.swift in Sources */,
+				0BB5E0DFD4239FB9F708C89E /* OptimizationView.swift in Sources */,
 				7F7970BA85081796F66C73DB /* PhaseDots.swift in Sources */,
 				FD6BAD30F4F388AEBF0AAB9F /* PurchaseEntryPoint.swift in Sources */,
 				2F7AC1D0FB4C81453B1B1EC7 /* PurchaseSheet.swift in Sources */,
@@ -1516,6 +1531,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = LinkaAppIntents;
 		};
+		3031149103E6570B304B61F4 /* XCLocalSwiftPackageReference "NetworkOptimization" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = NetworkOptimization;
+		};
 		498D42432070615E85E2B086 /* XCLocalSwiftPackageReference "NetworkConnectivityTriage" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = NetworkConnectivityTriage;
@@ -1539,6 +1558,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0B4FA6E44D0466821BDF02A7 /* NetworkOptimization */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NetworkOptimization;
+		};
 		2A1ED27B4CE61C438B43B40C /* LinkaModules */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LinkaModules;
@@ -1558,6 +1581,10 @@
 		4EC464D2A27C018FC431B081 /* LinkaAppIntents */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LinkaAppIntents;
+		};
+		50E1BD189EF2AF1A4041C1E8 /* NetworkOptimization */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NetworkOptimization;
 		};
 		595A3968E32845EFFA683074 /* NetworkConnectivityTriage */ = {
 			isa = XCSwiftPackageProductDependency;

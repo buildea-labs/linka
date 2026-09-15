@@ -21,6 +21,10 @@ public enum LinkaCapability: String, Codable, CaseIterable, Hashable, Sendable {
     /// veredito por `UsageCase`, incluindo `workUpload`), além do resumo
     /// estruturado enviado como evidência ao Assist.
     case usageDiagnostics
+    /// Sessão pós-medição que encontra oportunidades determinísticas e pede
+    /// um reteste comparável. A prévia permanece disponível para o plano
+    /// gratuito; aplicar a jornada completa exige Plus.
+    case optimization
 }
 
 public enum LinkaEntitlementStatus: String, Codable, Sendable {

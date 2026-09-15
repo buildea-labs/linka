@@ -63,6 +63,7 @@ targets:
       - package: MeasurementHistoryCloudKit
       - package: LinkaWidgetShared
       - package: NetworkDiagnostics
+      - package: NetworkOptimization
       - target: LinkaWidgetExtension
         embed: true
         codeSign: true
@@ -122,6 +123,7 @@ targets:
       - package: MeasurementHistoryCloudKit
       - package: LinkaWidgetShared
       - package: NetworkDiagnostics
+      - package: NetworkOptimization
   LinkaAppUITests:
     type: bundle.ui-testing
     platform: iOS
@@ -206,3 +208,5 @@ packages:
     path: LinkaWidgetShared
   NetworkDiagnostics:
     path: NetworkDiagnostics
+  NetworkOptimization:
+    path: NetworkOptimization
