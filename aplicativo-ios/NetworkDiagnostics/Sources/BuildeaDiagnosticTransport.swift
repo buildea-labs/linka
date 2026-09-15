@@ -76,7 +76,8 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
                 aiTitle: aiExplanation?.tituloAmigavel,
                 aiSummary: aiExplanation?.resumoTecnicoTraduzido,
                 veredicto: veredicto,
-                aiSourceFindingIds: aiResult?.sourceFindingIds
+                aiSourceFindingIds: aiResult?.sourceFindingIds,
+                locale: request.locale
             )
             copy = await coordinator.resolveCopy(for: input)
         }

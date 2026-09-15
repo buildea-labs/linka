@@ -18,3 +18,7 @@
 "Último resultado do \\(.applicationName)" = "Latest result from \\(.applicationName)";
 "Ver resultado do \\(.applicationName)" = "View result from \\(.applicationName)";
 "Qual foi a última medição no \\(.applicationName)" = "What was the latest measurement in \\(.applicationName)";
+
+// MARK: - Missing translations audit (added)
+"Abre as opções do Linka Plus." = "Opens Linka Plus options.";
+"Conhecer Linka Plus" = "Discover Linka Plus";

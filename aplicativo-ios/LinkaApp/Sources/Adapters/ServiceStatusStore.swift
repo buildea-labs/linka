@@ -167,7 +167,7 @@ final class ServiceStatusStore: ObservableObject {
                 popupIncident = incidents.first
             }
         } catch {
-            lastError = "Não foi possível atualizar o status agora."
+            lastError = LinkaCopy.value("Não foi possível atualizar o status agora.")
         }
     }
 

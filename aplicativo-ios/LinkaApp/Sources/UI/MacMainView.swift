@@ -298,15 +298,15 @@ struct MacMainView: View {
                 .padding(.bottom, 28)
 
             sidebarGroupLabel("Testes")
-            sidebarNavItem("Velocímetro", systemImage: "gauge.medium", dest: .speedTest, disabled: false)
-            sidebarNavItem("Histórico", systemImage: "chart.bar", dest: .history, disabled: isMeasuring)
+            sidebarNavItem(LinkaCopy.value("Velocímetro"), systemImage: "gauge.medium", dest: .speedTest, disabled: false)
+            sidebarNavItem(LinkaCopy.value("Histórico"), systemImage: "chart.bar", dest: .history, disabled: isMeasuring)
 
             sidebarGroupLabel("Ferramentas").padding(.top, 8)
             sidebarNavItem("Assist", systemImage: "sparkles", dest: .assist, disabled: isMeasuring)
             sidebarNavItem(LinkaCopy.value("optimization.title"), systemImage: "slider.horizontal.3", dest: .optimization, disabled: isMeasuring || currentMeasurement == nil)
 
             sidebarGroupLabel("App").padding(.top, 8)
-            sidebarNavItem("Configurações", systemImage: "gearshape", dest: .settings, disabled: isMeasuring)
+            sidebarNavItem(LinkaCopy.value("Configurações"), systemImage: "gearshape", dest: .settings, disabled: isMeasuring)
 
             Spacer()
         }
@@ -622,24 +622,24 @@ struct MacMainView: View {
                     }
                     
                     liveMetricCard(
-                        title: "Sinal Wi-Fi",
+                        title: LinkaCopy.value("Sinal Wi-Fi"),
                         value: wifiSignalTechnicalValue,
                         icon: "wifi",
                         statusColor: liveWifiColor
                     )
-                    
+
                     if let band = viewModel.liveWiFiContext?.bandGHz {
                         let bandStr = band.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", band) : String(format: "%.1f", band)
                         let chStr = viewModel.advancedWiFiDiagnostics?.channelNumber.map { " · Ch \($0)" } ?? ""
                         liveMetricCard(
-                            title: "Frequência",
+                            title: LinkaCopy.value("Frequência"),
                             value: "\(bandStr) GHz\(chStr)",
                             icon: "antenna.radiowaves.left.and.right",
                             statusColor: .textSecondary
                         )
                     } else {
                         liveMetricCard(
-                            title: "Frequência",
+                            title: LinkaCopy.value("Frequência"),
                             value: "—",
                             icon: "antenna.radiowaves.left.and.right",
                             statusColor: .textSecondary
@@ -647,40 +647,40 @@ struct MacMainView: View {
                     }
                 } else if viewModel.liveConnectionKind == .ethernet {
                     liveMetricCard(
-                        title: "Conexão",
-                        value: "Cabo Ethernet",
+                        title: LinkaCopy.value("Conexão"),
+                        value: LinkaCopy.value("Cabo Ethernet"),
                         icon: "cable.connector",
                         statusColor: .statusGood
                     )
                     liveMetricCard(
-                        title: "Estado",
-                        value: "Conectado",
+                        title: LinkaCopy.value("Estado"),
+                        value: LinkaCopy.value("Conectado"),
                         icon: "checkmark.circle.fill",
                         statusColor: .statusGood
                     )
                 } else if viewModel.liveConnectionKind == .cellular {
                     liveMetricCard(
-                        title: "Conexão",
-                        value: "Dados Celulares",
+                        title: LinkaCopy.value("Conexão"),
+                        value: LinkaCopy.value("Dados Celulares"),
                         icon: "antenna.radiowaves.left.and.right",
                         statusColor: .brandAccentWarm
                     )
                     liveMetricCard(
-                        title: "Estado",
-                        value: "Conectado",
+                        title: LinkaCopy.value("Estado"),
+                        value: LinkaCopy.value("Conectado"),
                         icon: "checkmark.circle.fill",
                         statusColor: .statusGood
                     )
                 } else {
                     liveMetricCard(
-                        title: "Interface",
+                        title: LinkaCopy.value("Interface"),
                         value: liveConnectionName,
                         icon: "network",
                         statusColor: .textSecondary
                     )
                     liveMetricCard(
-                        title: "Estado",
-                        value: "Ativo",
+                        title: LinkaCopy.value("Estado"),
+                        value: LinkaCopy.value("Ativo"),
                         icon: "checkmark.circle.fill",
                         statusColor: .statusGood
                     )
@@ -690,9 +690,9 @@ struct MacMainView: View {
             // Metadados Físicos Complementares de Wi-Fi
             if viewModel.liveConnectionKind == .wifi, let ctx = viewModel.liveWiFiContext {
                 HStack(spacing: 16) {
-                    wifiDetail(label: "SSID", value: ctx.ssid ?? "Desconhecido")
+                    wifiDetail(label: "SSID", value: ctx.ssid ?? LinkaCopy.value("Desconhecido"))
                     if let std = viewModel.advancedWiFiDiagnostics?.wifiStandard {
-                        wifiDetail(label: "Padrão", value: std)
+                        wifiDetail(label: LinkaCopy.value("Padrão"), value: std)
                     }
                     if let rssi = viewModel.liveWifiRSSI {
                         wifiDetail(label: "RSSI", value: "\(Int(rssi)) dBm")
@@ -782,9 +782,9 @@ struct MacMainView: View {
     
     private var wifiSignalLabel: String {
         guard let rssi = viewModel.liveWifiRSSI else { return "—" }
-        if rssi >= -60 { return "Forte (\(Int(rssi))dBm)" }
-        if rssi >= -75 { return "Médio (\(Int(rssi))dBm)" }
-        return "Fraco (\(Int(rssi))dBm)"
+        if rssi >= -60 { return "\(LinkaCopy.value("Forte")) (\(Int(rssi))dBm)" }
+        if rssi >= -75 { return "\(LinkaCopy.value("Médio")) (\(Int(rssi))dBm)" }
+        return "\(LinkaCopy.value("Fraco")) (\(Int(rssi))dBm)"
     }
 
     private var wifiSignalTechnicalValue: String {
@@ -1030,9 +1030,9 @@ struct MacMainView: View {
 
     private var qualityCard: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-            qualityGridCell(label: "Latência", value: latencyQualityValue, icon: "clock")
+            qualityGridCell(label: LinkaCopy.value("Latência"), value: latencyQualityValue, icon: "clock")
             qualityGridCell(label: "Jitter", value: jitterQualityValue, icon: "waveform")
-            qualityGridCell(label: "Perda", value: lossQualityValue, icon: "exclamationmark.triangle")
+            qualityGridCell(label: LinkaCopy.value("Perda"), value: lossQualityValue, icon: "exclamationmark.triangle")
             
             // Célula de Estabilidade com Badge
             VStack(alignment: .leading, spacing: 6) {
@@ -1451,24 +1451,34 @@ struct MacMainView: View {
 
     // MARK: - Formatação
 
-    private static let dateFormatter: DateFormatter = {
+    /// Cache por tag de idioma: evita reconstruir o `DateFormatter` (caro)
+    /// a cada acesso — `phaseMessage` é reavaliado a cada atualização da
+    /// view durante uma medição — mas ainda assim reflete a preferência de
+    /// idioma corrente em vez de ficar fixo em `pt_BR` como antes.
+    private static var dateFormatterCache: [String: DateFormatter] = [:]
+
+    private static var dateFormatter: DateFormatter {
+        let locale = LinkaLanguagePreference.currentLocale
+        let key = locale.identifier
+        if let cached = dateFormatterCache[key] { return cached }
         let f = DateFormatter()
-        f.locale = Locale(identifier: "pt_BR")
+        f.locale = locale
         f.dateFormat = "d MMM · HH:mm"
+        dateFormatterCache[key] = f
         return f
-    }()
+    }
 
     private func networkLabel(for m: NetworkMeasurement) -> String {
         switch m.connectionKind {
         case .wifi:     return m.wifiContext?.ssid ?? "Wi-Fi"
-        case .cellular: return "Rede móvel"
-        case .ethernet: return "Ethernet"
-        default:        return "Rede"
+        case .cellular: return LinkaCopy.value("network.cellular")
+        case .ethernet: return LinkaCopy.value("network.ethernet")
+        default:        return LinkaCopy.value("Rede")
         }
     }
 
     private var liveConnectionName: String {
-        viewModel.liveNetworkLabel.isEmpty ? "Conexão atual" : viewModel.liveNetworkLabel
+        viewModel.liveNetworkLabel.isEmpty ? LinkaCopy.value("Conexão atual") : viewModel.liveNetworkLabel
     }
 
     // MARK: - Gauge helpers
@@ -1507,30 +1517,36 @@ struct MacMainView: View {
         }
     }
 
-    private static let timeFormatter: DateFormatter = {
+    private static var timeFormatterCache: [String: DateFormatter] = [:]
+
+    private static var timeFormatter: DateFormatter {
+        let locale = LinkaLanguagePreference.currentLocale
+        let key = locale.identifier
+        if let cached = timeFormatterCache[key] { return cached }
         let f = DateFormatter()
-        f.locale = Locale(identifier: "pt_BR")
+        f.locale = locale
         f.dateFormat = "HH:mm"
+        timeFormatterCache[key] = f
         return f
-    }()
+    }
 
     private var phaseMessage: String {
         switch viewModel.uiPhase {
-        case .connecting:       return "Conectando ao servidor mais próximo…"
-        case .downloading:      return "Medindo Download…"
-        case .uploading:        return "Medindo Upload…"
+        case .connecting:       return LinkaCopy.value("home.phase.connecting")
+        case .downloading:      return LinkaCopy.value("Medindo Download…")
+        case .uploading:        return LinkaCopy.value("Medindo Upload…")
         case .done:
             if let m = viewModel.latestFinishedMeasurement {
-                return "Última medição às \(Self.timeFormatter.string(from: m.measuredAt))"
+                return String(format: LinkaCopy.value("Última medição às %@"), Self.timeFormatter.string(from: m.measuredAt))
             }
-            return "Medição concluída"
-        case .error:            return viewModel.failureReason == .offline ? "Sem conexão com a internet." : "Não foi possível medir."
-        case .connectionChanged:return "A rede mudou durante a medição."
+            return LinkaCopy.value("Medição concluída")
+        case .error:            return viewModel.failureReason == .offline ? LinkaCopy.value("Sem conexão com a internet.") : LinkaCopy.value("Não foi possível medir.")
+        case .connectionChanged:return LinkaCopy.value("A rede mudou durante a medição.")
         case .idle:
             if let m = inspectedHistoricalMeasurement {
-                return "Medição de \(Self.dateFormatter.string(from: m.measuredAt))"
+                return String(format: LinkaCopy.value("Medição de %@"), Self.dateFormatter.string(from: m.measuredAt))
             }
-            return "Pronto para medir"
+            return LinkaCopy.value("Pronto para medir")
         }
     }
 

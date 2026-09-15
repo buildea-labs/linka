@@ -10,25 +10,63 @@ import NetworkInsights
 /// cita marca, jogo, app ou serviço específico, mesma restrição de
 /// `UsageSuitabilityCopy` na UI (`LinkaApp/Sources/UI/DetailsDisclosure.swift`).
 public enum UsageDiagnosticsAssistBridge {
-    private static let caseLabels: [UsageCase: String] = [
-        .videoCall: "Chamada em vídeo",
-        .streamingHD: "Streaming em HD",
-        .streaming4K: "Streaming em 4K",
-        .onlineGaming: "Jogo online",
-        .workUpload: "Envio de arquivos e trabalho"
+    private static let caseLabelsByLocale: [String: [UsageCase: String]] = [
+        "pt": [
+            .videoCall: "Chamada em vídeo",
+            .streamingHD: "Streaming em HD",
+            .streaming4K: "Streaming em 4K",
+            .onlineGaming: "Jogo online",
+            .workUpload: "Envio de arquivos e trabalho"
+        ],
+        "en": [
+            .videoCall: "Video call",
+            .streamingHD: "HD streaming",
+            .streaming4K: "4K streaming",
+            .onlineGaming: "Online gaming",
+            .workUpload: "File upload and work"
+        ],
+        "es": [
+            .videoCall: "Videollamada",
+            .streamingHD: "Streaming en HD",
+            .streaming4K: "Streaming en 4K",
+            .onlineGaming: "Juego en línea",
+            .workUpload: "Envío de archivos y trabajo"
+        ]
     ]
 
-    private static let levelLabels: [SuitabilityLevel: String] = [
-        .adequate: "adequada",
-        .limited: "limitada",
-        .notAssessed: "não avaliada (faltam métricas)"
+    private static let levelLabelsByLocale: [String: [SuitabilityLevel: String]] = [
+        "pt": [
+            .adequate: "adequada",
+            .limited: "limitada",
+            .notAssessed: "não avaliada (faltam métricas)"
+        ],
+        "en": [
+            .adequate: "adequate",
+            .limited: "limited",
+            .notAssessed: "not assessed (missing metrics)"
+        ],
+        "es": [
+            .adequate: "adecuada",
+            .limited: "limitada",
+            .notAssessed: "no evaluada (faltan métricas)"
+        ]
     ]
 
     /// Resumo compacto e factual de um `UsageSuitabilityReport`, adequado
     /// para `NetworkAssistContext.usageContext` — o Assist usa isto como
     /// evidência grounded, nunca como opinião a repetir literalmente.
-    public static func assistSummary(for report: UsageSuitabilityReport) -> String {
-        report.verdicts
+    /// `locale` é a tag BCP-47 da preferência de idioma do app.
+    public static func assistSummary(for report: UsageSuitabilityReport, locale: String? = nil) -> String {
+        let key: String
+        switch (locale ?? "pt-BR").lowercased() {
+        case let tag where tag.hasPrefix("es"): key = "es"
+        case let tag where tag.hasPrefix("en"): key = "en"
+        default: key = "pt"
+        }
+        let caseLabels = caseLabelsByLocale[key] ?? [:]
+        let levelLabels = levelLabelsByLocale[key] ?? [:]
+
+        return report.verdicts
             .map { verdict in
                 let label = caseLabels[verdict.usageCase] ?? verdict.usageCase.rawValue
                 let level = levelLabels[verdict.level] ?? verdict.level.rawValue

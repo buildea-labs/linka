@@ -182,11 +182,11 @@ public actor SpeedTestCore {
                     try? await Task.sleep(nanoseconds: 100_000_000)
 
                     if monitor.currentPath.usesInterfaceType(.wifi) {
-                        state.networkType = "Wi-Fi"
+                        state.networkType = .wifi
                     } else if monitor.currentPath.usesInterfaceType(.cellular) {
-                        state.networkType = "Rede móvel"
+                        state.networkType = .cellular
                     } else {
-                        state.networkType = "Desconhecido"
+                        state.networkType = .unknown
                     }
                     monitor.cancel()
 

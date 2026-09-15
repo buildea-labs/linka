@@ -85,7 +85,7 @@ final class NetworkStabilityPatternsViewModel: ObservableObject {
             snapshot: entitlements.snapshot
         )
 
-        guard let reports = try? analyzer.analyze(measurements) else {
+        guard let reports = try? analyzer.analyze(measurements, locale: LinkaLanguagePreference.currentLanguageTag) else {
             // `notEntitled` (Free) ou medição inválida
             state = .unavailable
             return

@@ -83,8 +83,14 @@ public enum NetworkAssistStabilityNarrative: Equatable, Sendable {
 /// cálculo/apresentação do resto do pacote (`NetworkAssistInvestigationEngine`
 /// nunca gera texto; a UI/camada de composição gera).
 public enum NetworkAssistStabilityNarrativeGenerator {
+    /// `locale` é a tag BCP-47 da preferência de idioma do app (mesma
+    /// origem de `NetworkAssistRequest.locale`), nunca `Locale.current` —
+    /// mesmo critério do resto do pacote (`NetworkAssistActionSuggestion`
+    /// não gera copy; quando este tipo gera, segue a preferência manual do
+    /// app, não o idioma do sistema).
     public static func makeNarrative(
-        from outcome: NetworkAssistStabilityPatternOutcome
+        from outcome: NetworkAssistStabilityPatternOutcome,
+        locale: String? = nil
     ) -> NetworkAssistStabilityNarrative {
         switch outcome {
         case .insufficientHistory(let distinctDayCount, let required):
@@ -92,40 +98,95 @@ public enum NetworkAssistStabilityNarrativeGenerator {
         case .noPatternDetected:
             return .noPatternDetected
         case .detected(let signal):
-            return .factual(phrase(for: signal))
+            return .factual(phrase(for: signal, locale: locale))
         }
     }
 
-    private static func phrase(for signal: NetworkAssistStabilityPatternSignal) -> String {
-        let networkLabel = networkLabel(for: signal.network)
-        let metricLabel = metricLabel(for: signal.metric)
-        let windowLabel = "\(hourLabel(signal.startHour)) e \(hourLabel(signal.endHour == 24 ? 0 : signal.endHour))"
-        return "\(networkLabel) \(metricLabel) todos os dias entre \(windowLabel)."
-    }
+    private static func phrase(for signal: NetworkAssistStabilityPatternSignal, locale: String?) -> String {
+        let networkLabel = networkLabel(for: signal.network, locale: locale)
+        let metricLabel = metricLabel(for: signal.metric, locale: locale)
+        let startLabel = hourLabel(signal.startHour, locale: locale)
+        let endLabel = hourLabel(signal.endHour == 24 ? 0 : signal.endHour, locale: locale)
 
-    private static func networkLabel(for network: NetworkAssistNetworkIdentitySignal) -> String {
-        switch network.connectionKind {
-        case .wifi:
-            return "Sua rede Wi-Fi \(network.networkIdentifier)"
-        case .cellular:
-            return "Sua operadora \(network.networkIdentifier)"
-        case .ethernet, .other:
-            return "Sua rede \(network.networkIdentifier)"
+        switch (locale ?? "pt-BR").lowercased() {
+        case let tag where tag.hasPrefix("es"):
+            return "\(networkLabel) \(metricLabel) todos los días entre \(startLabel) y \(endLabel)."
+        case let tag where tag.hasPrefix("en"):
+            return "\(networkLabel) \(metricLabel) every day between \(startLabel) and \(endLabel)."
+        default:
+            return "\(networkLabel) \(metricLabel) todos os dias entre \(startLabel) e \(endLabel)."
         }
     }
 
-    private static func metricLabel(for metric: NetworkAssistMetricSignal) -> String {
-        switch metric {
-        case .jitterMs:
-            return "sofre picos de instabilidade (jitter alto)"
-        case .latencyMs:
-            return "sofre picos de latência alta"
-        case .packetLossPercent:
-            return "perde pacotes com frequência"
+    private static func networkLabel(for network: NetworkAssistNetworkIdentitySignal, locale: String?) -> String {
+        switch (locale ?? "pt-BR").lowercased() {
+        case let tag where tag.hasPrefix("es"):
+            switch network.connectionKind {
+            case .wifi:
+                return "Tu red Wi-Fi \(network.networkIdentifier)"
+            case .cellular:
+                return "Tu operadora \(network.networkIdentifier)"
+            case .ethernet, .other:
+                return "Tu red \(network.networkIdentifier)"
+            }
+        case let tag where tag.hasPrefix("en"):
+            switch network.connectionKind {
+            case .wifi:
+                return "Your Wi-Fi network \(network.networkIdentifier)"
+            case .cellular:
+                return "Your carrier \(network.networkIdentifier)"
+            case .ethernet, .other:
+                return "Your network \(network.networkIdentifier)"
+            }
+        default:
+            switch network.connectionKind {
+            case .wifi:
+                return "Sua rede Wi-Fi \(network.networkIdentifier)"
+            case .cellular:
+                return "Sua operadora \(network.networkIdentifier)"
+            case .ethernet, .other:
+                return "Sua rede \(network.networkIdentifier)"
+            }
         }
     }
 
-    private static func hourLabel(_ hour: Int) -> String {
-        "\(hour)h"
+    private static func metricLabel(for metric: NetworkAssistMetricSignal, locale: String?) -> String {
+        switch (locale ?? "pt-BR").lowercased() {
+        case let tag where tag.hasPrefix("es"):
+            switch metric {
+            case .jitterMs:
+                return "sufre picos de inestabilidad (jitter alto)"
+            case .latencyMs:
+                return "sufre picos de latencia alta"
+            case .packetLossPercent:
+                return "pierde paquetes con frecuencia"
+            }
+        case let tag where tag.hasPrefix("en"):
+            switch metric {
+            case .jitterMs:
+                return "has spikes of instability (high jitter)"
+            case .latencyMs:
+                return "has spikes of high latency"
+            case .packetLossPercent:
+                return "loses packets frequently"
+            }
+        default:
+            switch metric {
+            case .jitterMs:
+                return "sofre picos de instabilidade (jitter alto)"
+            case .latencyMs:
+                return "sofre picos de latência alta"
+            case .packetLossPercent:
+                return "perde pacotes com frequência"
+            }
+        }
+    }
+
+    private static func hourLabel(_ hour: Int, locale: String?) -> String {
+        let tag = (locale ?? "pt-BR").lowercased()
+        if tag.hasPrefix("es") || tag.hasPrefix("en") {
+            return "\(hour):00"
+        }
+        return "\(hour)h"
     }
 }

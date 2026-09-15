@@ -273,7 +273,7 @@ struct SettingsView: View {
                     .accessibilityLabel("Linka Plus, \(subscriptionStatusText)")
                 }
 
-                macSection(title: "Preferências") {
+                macSection(title: LinkaCopy.value("Preferências")) {
                     HStack {
                         Label("Aparência", systemImage: "circle.lefthalf.filled")
                         Spacer()
@@ -288,14 +288,14 @@ struct SettingsView: View {
                     }
                 }
 
-                macSection(title: "Status de serviços") {
+                macSection(title: LinkaCopy.value("Status de serviços")) {
                     NavigationLink(destination: ServiceStatusView()) {
-                        macRow("Acompanhar serviços", systemImage: "dot.radiowaves.left.and.right", showsChevron: true)
+                        macRow(LinkaCopy.value("Acompanhar serviços"), systemImage: "dot.radiowaves.left.and.right", showsChevron: true)
                     }
                     .buttonStyle(.plain)
                 }
 
-                macSection(title: "Rede e diagnóstico") {
+                macSection(title: LinkaCopy.value("Rede e diagnóstico")) {
                     Toggle(isOn: Binding(
                         get: { advancedWiFiEnabled },
                         set: { enabled in
@@ -331,30 +331,30 @@ struct SettingsView: View {
                     .accessibilityHint(LinkaCopy.value("profiles.settings.accessibilityHint"))
                 }
 
-                macSection(title: "Ferramentas") {
+                macSection(title: LinkaCopy.value("Ferramentas")) {
                     NavigationLink(destination: MacRouterPanelView()) {
-                        macRow("Painel do roteador", systemImage: "router", showsChevron: true)
+                        macRow(LinkaCopy.value("Painel do roteador"), systemImage: "router", showsChevron: true)
                     }
                     .buttonStyle(.plain)
                 }
 
-                macSection(title: "Ajuda") {
+                macSection(title: LinkaCopy.value("Ajuda")) {
                     VStack(alignment: .leading, spacing: 10) {
-                        macLinkRow("Como medimos", systemImage: "speedometer", destination: LinkaExternalLinks.howWeMeasure)
-                        macLinkRow("Suporte", systemImage: "questionmark.circle", destination: LinkaExternalLinks.support)
-                        macLinkRow("Enviar feedback", systemImage: "text.bubble", destination: LinkaExternalLinks.support)
+                        macLinkRow(LinkaCopy.value("Como medimos"), systemImage: "speedometer", destination: LinkaExternalLinks.howWeMeasure)
+                        macLinkRow(LinkaCopy.value("Suporte"), systemImage: "questionmark.circle", destination: LinkaExternalLinks.support)
+                        macLinkRow(LinkaCopy.value("Enviar feedback"), systemImage: "text.bubble", destination: LinkaExternalLinks.support)
                         Button { requestReview() } label: {
-                            macRow("Avaliar o Linka", systemImage: "star", showsChevron: false)
+                            macRow(LinkaCopy.value("Avaliar o Linka"), systemImage: "star", showsChevron: false)
                         }
                         .buttonStyle(.plain)
                     }
                 }
 
-                macSection(title: "Sobre e legal") {
+                macSection(title: LinkaCopy.value("Sobre e legal")) {
                     VStack(alignment: .leading, spacing: 10) {
-                        macLinkRow("Privacidade", systemImage: "hand.raised", destination: LinkaExternalLinks.privacy)
-                        macLinkRow("Termos de Uso", systemImage: "doc.text", destination: LinkaExternalLinks.terms)
-                        macLinkRow("Sobre o Linka", systemImage: "info.circle", destination: LinkaExternalLinks.about)
+                        macLinkRow(LinkaCopy.value("Privacidade"), systemImage: "hand.raised", destination: LinkaExternalLinks.privacy)
+                        macLinkRow(LinkaCopy.value("Termos de Uso"), systemImage: "doc.text", destination: LinkaExternalLinks.terms)
+                        macLinkRow(LinkaCopy.value("Sobre o Linka"), systemImage: "info.circle", destination: LinkaExternalLinks.about)
                         Text("Versão \(appVersion)")
                             .font(.captionMedium)
                             .foregroundColor(.textSecondary)

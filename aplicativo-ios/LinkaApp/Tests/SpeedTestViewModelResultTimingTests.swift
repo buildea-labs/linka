@@ -140,7 +140,7 @@ final class SpeedTestViewModelResultTimingTests: XCTestCase {
             progress: 1.0,
             phase: .result,
             provider: "Provedor Teste",
-            networkType: "Wi-Fi",
+            networkType: .wifi,
             duration: 9.8
         )
     }

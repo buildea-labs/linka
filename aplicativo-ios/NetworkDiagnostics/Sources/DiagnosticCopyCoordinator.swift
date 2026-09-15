@@ -12,6 +12,12 @@ public struct DiagnosticCopyInput: Equatable, Sendable {
     /// como evidência (issue #129) — permite recusar uma explicação que
     /// afirma problema sem nenhum achado que a sustente.
     public let aiSourceFindingIds: [String]?
+    /// Tag BCP-47 da preferência de idioma do app (mesma origem de
+    /// `NetworkAssistRequest.locale`) — usada só pelo fallback
+    /// determinístico local (`DeterministicDiagnosticCopyRenderer`), já que
+    /// a explicação de IA (`aiTitle`/`aiSummary`) já chega pronta no idioma
+    /// pedido ao NDS.
+    public let locale: String?
 
     public init(
         recommendationTitle: String?,
@@ -21,7 +27,8 @@ public struct DiagnosticCopyInput: Equatable, Sendable {
         aiTitle: String? = nil,
         aiSummary: String? = nil,
         veredicto: String? = nil,
-        aiSourceFindingIds: [String]? = nil
+        aiSourceFindingIds: [String]? = nil,
+        locale: String? = nil
     ) {
         self.recommendationTitle = recommendationTitle
         self.recommendationDescription = recommendationDescription
@@ -31,6 +38,41 @@ public struct DiagnosticCopyInput: Equatable, Sendable {
         self.aiSummary = aiSummary
         self.veredicto = veredicto
         self.aiSourceFindingIds = aiSourceFindingIds
+        self.locale = locale
+    }
+}
+
+/// Textos locais do fallback determinístico — mesmas três localidades
+/// suportadas pelo app (`LinkaLanguagePreference`), mesmo critério de
+/// prefixo BCP-47 de `BuildeaDiagnosticTransport.localFallback`.
+enum DiagnosticCopyLocalText {
+    case allGood
+    case inconclusive
+
+    func resolve(locale: String?) -> (title: String, summary: String) {
+        switch (locale ?? "pt-BR").lowercased() {
+        case let tag where tag.hasPrefix("es"):
+            switch self {
+            case .allGood:
+                return ("Todo bien con la conexión", "Tu resultado está bien. No encontramos nada que requiera atención ahora.")
+            case .inconclusive:
+                return ("Diagnóstico no concluyente", "No hay datos suficientes para concluir.")
+            }
+        case let tag where tag.hasPrefix("en"):
+            switch self {
+            case .allGood:
+                return ("Everything is fine with your connection", "Your result looks good. We didn't find anything that needs attention right now.")
+            case .inconclusive:
+                return ("Inconclusive diagnosis", "There isn't enough data to reach a conclusion.")
+            }
+        default:
+            switch self {
+            case .allGood:
+                return ("Tudo certo com a conexão", "Seu resultado está bom. Não encontrei nada que exija atenção agora.")
+            case .inconclusive:
+                return ("Diagnóstico inconclusivo", "Não há dados suficientes para concluir.")
+            }
+        }
     }
 }
 
@@ -63,15 +105,17 @@ public struct DeterministicDiagnosticCopyRenderer: DiagnosticCopyRenderer {
         let hasProblemCards = input.findings.contains { $0.status == "attention" || $0.status == "critical" }
         
         if isHealthyScore && !hasProblemCards {
+            let text = DiagnosticCopyLocalText.allGood.resolve(locale: input.locale)
             return DiagnosticCopy(
-                title: "Tudo certo com a conexão",
-                summary: "Seu resultado está bom. Não encontrei nada que exija atenção agora.",
+                title: text.title,
+                summary: text.summary,
                 source: .deterministic
             )
         } else {
+            let text = DiagnosticCopyLocalText.inconclusive.resolve(locale: input.locale)
             return DiagnosticCopy(
-                title: "Diagnóstico inconclusivo",
-                summary: "Não há dados suficientes para concluir.",
+                title: text.title,
+                summary: text.summary,
                 source: .deterministic
             )
         }
@@ -131,9 +175,10 @@ public struct DiagnosticCopyCoordinator: Sendable {
         }
 
         // Fallback determinístico
+        let text = DiagnosticCopyLocalText.inconclusive.resolve(locale: input.locale)
         return (try? await deterministic.render(input: input)) ?? DiagnosticCopy(
-            title: input.recommendationTitle ?? "Diagnóstico inconclusivo",
-            summary: input.recommendationDescription ?? "Não há dados suficientes para concluir.",
+            title: input.recommendationTitle ?? text.title,
+            summary: input.recommendationDescription ?? text.summary,
             source: .deterministic
         )
     }

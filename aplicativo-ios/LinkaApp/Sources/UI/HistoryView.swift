@@ -554,17 +554,22 @@ struct HistoryWaveChartView: View {
         return "\(Int(round(v)))"
     }
 
+    /// Usa `setLocalizedDateFormatFromTemplate` em vez de um `dateFormat`
+    /// fixo: o padrão anterior tinha o conectivo "de" (gramática do pt-BR)
+    /// escrito literalmente no formato, então em en/es a data misturava um
+    /// conectivo português com o mês no idioma selecionado. O template deixa
+    /// o sistema escolher a ordem/conectivo corretos por idioma.
     private func formatHeaderDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
-        formatter.dateFormat = "d 'de' MMMM, HH:mm"
+        formatter.locale = LinkaLanguagePreference.currentLocale
+        formatter.setLocalizedDateFormatFromTemplate("dMMMMHHmm")
         return formatter.string(from: date)
     }
 
     private func formatAxisDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
-        formatter.dateFormat = "d MMM"
+        formatter.locale = LinkaLanguagePreference.currentLocale
+        formatter.setLocalizedDateFormatFromTemplate("dMMM")
         return formatter.string(from: date)
     }
 }

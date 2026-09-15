@@ -48,7 +48,10 @@ public protocol NetworkStabilityPatternAnalyzing: Sendable {
     /// Varre o histórico completo do usuário, agrupa por rede e devolve um
     /// relatório por grupo elegível. Nunca lança por falta de padrão — só
     /// por medição inválida (mesma semântica de `NetworkInsightsAnalyzing`).
-    func analyze(_ measurements: [NetworkMeasurement]) throws -> [NetworkStabilityPatternReport]
+    /// `locale` é a tag BCP-47 da preferência de idioma do app — repassada
+    /// para `NetworkAssistStabilityNarrativeGenerator` para que a frase
+    /// factual saia no idioma corrente em vez de sempre pt-BR.
+    func analyze(_ measurements: [NetworkMeasurement], locale: String?) throws -> [NetworkStabilityPatternReport]
 }
 
 /// Implementação local e determinística (issue #125): agrupa por rede
@@ -85,7 +88,7 @@ public struct BasicNetworkStabilityPatternAnalyzer: NetworkStabilityPatternAnaly
         self.calendar = calendar
     }
 
-    public func analyze(_ measurements: [NetworkMeasurement]) throws -> [NetworkStabilityPatternReport] {
+    public func analyze(_ measurements: [NetworkMeasurement], locale: String? = nil) throws -> [NetworkStabilityPatternReport] {
         let groups = NetworkGroupInsightsAnalyzer.eligibleGroups(
             measurements,
             minimumSampleCount: groupConfiguration.minimumSampleCount
@@ -103,7 +106,7 @@ public struct BasicNetworkStabilityPatternAnalyzer: NetworkStabilityPatternAnaly
                     calendar: calendar
                 )
                 let assistOutcome = Self.translate(outcome, metric: assistMetric, identity: identity)
-                let narrative = NetworkAssistStabilityNarrativeGenerator.makeNarrative(from: assistOutcome)
+                let narrative = NetworkAssistStabilityNarrativeGenerator.makeNarrative(from: assistOutcome, locale: locale)
                 return NetworkStabilityMetricNarrative(metric: assistMetric, narrative: narrative)
             }
 
@@ -183,11 +186,11 @@ public struct EntitlementGatedNetworkStabilityPatternAnalyzer: NetworkStabilityP
         self.snapshot = snapshot
     }
 
-    public func analyze(_ measurements: [NetworkMeasurement]) throws -> [NetworkStabilityPatternReport] {
+    public func analyze(_ measurements: [NetworkMeasurement], locale: String? = nil) throws -> [NetworkStabilityPatternReport] {
         let decision = LinkaEntitlementPolicy.decision(for: .insights, snapshot: snapshot)
         guard decision.isGranted else {
             throw NetworkInsightsError.notEntitled
         }
-        return try analyzer.analyze(measurements)
+        return try analyzer.analyze(measurements, locale: locale)
     }
 }
