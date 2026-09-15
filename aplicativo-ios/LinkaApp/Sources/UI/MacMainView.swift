@@ -316,7 +316,7 @@ struct MacMainView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(
-                    destination == dest ? Color.brandAccentWarm.opacity(0.12) : Color.clear,
+                    destination == dest ? Color.brandAccentWarm.opacity(0.18) : Color.clear,
                     in: RoundedRectangle(cornerRadius: LinkaRadius.sm, style: .continuous)
                 )
         }
@@ -395,14 +395,9 @@ struct MacMainView: View {
             }
             .padding(.bottom, 4)
 
-            VStack(spacing: 6) {
-                Text("Pronto para testar sua velocidade")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.textPrimary)
-                Text(liveConnectionName)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.textSecondary)
-            }
+            Text("Pronto para testar sua velocidade")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(.textPrimary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -411,7 +406,7 @@ struct MacMainView: View {
         HStack(spacing: 14) {
             HStack(spacing: 5) {
                 Image(systemName: "calendar")
-                    .font(.system(size: 11))
+                    .font(.system(size: 11, weight: .regular))
                 Text(Self.dateFormatter.string(from: m.measuredAt))
                     .font(.system(size: 12, weight: .medium))
             }
@@ -419,7 +414,7 @@ struct MacMainView: View {
                 .foregroundColor(.borderDefault)
             HStack(spacing: 5) {
                 Image(systemName: "network")
-                    .font(.system(size: 11))
+                    .font(.system(size: 11, weight: .regular))
                 Text(networkLabel(for: m))
                     .font(.system(size: 12, weight: .medium))
             }
@@ -428,7 +423,7 @@ struct MacMainView: View {
                     .foregroundColor(.borderDefault)
                 HStack(spacing: 5) {
                     Image(systemName: "server.rack")
-                        .font(.system(size: 11))
+                        .font(.system(size: 11, weight: .regular))
                     Text(server)
                         .font(.system(size: 12, weight: .medium))
                 }
@@ -555,7 +550,7 @@ struct MacMainView: View {
         
         return HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 15))
+                .font(.system(size: 15, weight: .regular))
                 .foregroundColor(color)
             Text(title)
                 .font(.system(size: 13, weight: .medium))
@@ -587,7 +582,7 @@ struct MacMainView: View {
                 if let rssi = viewModel.liveWifiRSSI {
                     HStack(spacing: 4) {
                         Image(systemName: "wifi")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.system(size: 11, weight: .regular))
                         Text(wifiSignalLabel)
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
                     }
@@ -609,7 +604,7 @@ struct MacMainView: View {
                     
                     liveMetricCard(
                         title: "Sinal Wi-Fi",
-                        value: wifiSignalLabel,
+                        value: wifiSignalTechnicalValue,
                         icon: "wifi",
                         statusColor: liveWifiColor
                     )
@@ -773,6 +768,11 @@ struct MacMainView: View {
         return "Fraco (\(Int(rssi))dBm)"
     }
 
+    private var wifiSignalTechnicalValue: String {
+        guard let rssi = viewModel.liveWifiRSSI else { return "—" }
+        return "\(Int(rssi)) dBm"
+    }
+
     private func wifiDetail(label: String, value: String) -> some View {
         HStack(spacing: 6) {
             Text(label + ":")
@@ -930,7 +930,7 @@ struct MacMainView: View {
             return AnyView(
                 HStack(spacing: 10) {
                     Button("Medir novamente") { startMeasurement() }
-                        .buttonStyle(.linkaPrimary)
+                        .buttonStyle(.macPrimary)
                         .frame(maxWidth: 280)
                         .keyboardShortcut("r", modifiers: .command)
                     Button { requestAssist(from: .result(m)) } label: {
@@ -945,14 +945,14 @@ struct MacMainView: View {
         case .idle:
             return AnyView(
                 Button("Testar velocidade") { startMeasurement() }
-                    .buttonStyle(.linkaPrimary)
+                    .buttonStyle(.macPrimary)
                     .frame(maxWidth: 280)
                     .keyboardShortcut("r", modifiers: .command)
             )
         case .connecting, .downloading, .uploading, .done:
             return AnyView(
                 Button("Testar velocidade") { startMeasurement() }
-                    .buttonStyle(.linkaPrimary)
+                    .buttonStyle(.macPrimary)
                     .frame(maxWidth: 280)
                     .keyboardShortcut("r", modifiers: .command)
             )
@@ -960,7 +960,7 @@ struct MacMainView: View {
             return AnyView(
                 HStack(spacing: 10) {
                     Button("Tentar novamente") { startMeasurement() }
-                        .buttonStyle(.linkaPrimary)
+                        .buttonStyle(.macPrimary)
                         .frame(maxWidth: 280)
                         .keyboardShortcut("r", modifiers: .command)
                     Button("Verificar conexão") { showConnectivityTriage = true }
@@ -970,7 +970,7 @@ struct MacMainView: View {
         case .connectionChanged:
             return AnyView(
                 Button("Testar conexão") { startMeasurement() }
-                    .buttonStyle(.linkaPrimary)
+                    .buttonStyle(.macPrimary)
                     .frame(maxWidth: 280)
                     .keyboardShortcut("r", modifiers: .command)
             )
@@ -1015,8 +1015,9 @@ struct MacMainView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 4) {
                     Image(systemName: "shield.checkerboard")
-                        .font(.system(size: 11))
+                        .font(.system(size: 11, weight: .regular))
                         .foregroundColor(.textSecondary)
+                        .opacity(hasQualityData ? 1.0 : 0.55)
                     Text("Estabilidade")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.textSecondary)
@@ -1034,12 +1035,18 @@ struct MacMainView: View {
         }
     }
 
+    private var hasQualityData: Bool {
+        activeMeasurement != nil
+    }
+
     private func qualityGridCell(label: String, value: String, icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let isPlaceholder = value == "—"
+        return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 11))
+                    .font(.system(size: 11, weight: .regular))
                     .foregroundColor(.textSecondary)
+                    .opacity(isPlaceholder ? 0.55 : 1.0)
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.textSecondary)
@@ -1048,6 +1055,7 @@ struct MacMainView: View {
             Text(value)
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                 .foregroundColor(.textPrimary)
+                .opacity(isPlaceholder ? 0.55 : 1.0)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -1088,26 +1096,41 @@ struct MacMainView: View {
     }
 
     private var recentMeasurementsList: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             if viewModel.recentMeasurements.isEmpty {
                 Text("Ainda sem medições.")
                     .font(.captionSmall)
                     .foregroundColor(.textSecondary)
                     .padding(.vertical, 16)
             } else {
-                ForEach(Array(viewModel.recentMeasurements.prefix(5))) { m in
-                    recentRow(m)
+                let items = Array(viewModel.recentMeasurements.prefix(5))
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, m in
+                    recentRow(m, isFirst: index == 0)
+                    if index < items.count - 1 {
+                        Divider()
+                            .background(Color.borderDefault.opacity(0.10))
+                    }
                 }
             }
             Button("Ver histórico completo") { destination = .history }
                 .buttonStyle(.linkaSecondary)
                 .disabled(isMeasuring)
-                .padding(.top, 4)
+                .padding(.top, 8)
         }
     }
 
-    private func recentRow(_ m: NetworkMeasurement) -> some View {
+    private func recentRow(_ m: NetworkMeasurement, isFirst: Bool = false) -> some View {
         let isSelected = activeMeasurement?.id == m.id
+        let rowBackground: Color = {
+            if isSelected {
+                return Color.brandAccentWarm.opacity(0.12)
+            } else if isFirst {
+                return Color.textSecondary.opacity(0.04)
+            } else {
+                return Color.clear
+            }
+        }()
+
         return Button {
             withAnimation(.easeInOut(duration: 0.2)) {
                 inspectedHistoricalMeasurement = m
@@ -1121,7 +1144,7 @@ struct MacMainView: View {
                     
                     if let platform = m.devicePlatform {
                         Image(systemName: platform == "macOS" ? "macbook" : "iphone")
-                            .font(.system(size: 10))
+                            .font(.system(size: 10, weight: .regular))
                             .foregroundColor(.textSecondary)
                             .padding(.leading, 2)
                     }
@@ -1138,16 +1161,9 @@ struct MacMainView: View {
                     miniStatCell(label: "Ping", value: m.latencyMs.map    { "\(Int(round($0))) ms" } ?? "—")
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(
-                isSelected ? Color.brandAccentWarm.opacity(0.12) : Color.surfacePage,
-                in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
-                    .stroke(isSelected ? Color.brandAccentWarm : Color.borderDefault.opacity(0.25), lineWidth: isSelected ? 1.5 : 0.5)
-            )
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .background(rowBackground, in: RoundedRectangle(cornerRadius: LinkaRadius.sm, style: .continuous))
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -1458,6 +1474,36 @@ struct MacMainView: View {
         }
         return 10 * mag
     }
+}
+
+// MARK: - MacPrimaryButtonStyle
+
+private struct MacPrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.buttonLabel)
+            .foregroundColor(.brandOnSurface)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 52)
+            .padding(.vertical, LinkaSpacing.sm)
+            .padding(.horizontal, LinkaSpacing.md)
+            .background(
+                Color.brandSurface.opacity(isEnabled ? 1 : 0.42),
+                in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
+                    .stroke(Color.borderDefault.opacity(0.35), lineWidth: 0.5)
+            )
+            .shadow(color: Color.black.opacity(configuration.isPressed ? 0.04 : 0.12), radius: 4, x: 0, y: 2)
+            .opacity(configuration.isPressed ? 0.82 : 1)
+    }
+}
+
+private extension ButtonStyle where Self == MacPrimaryButtonStyle {
+    static var macPrimary: MacPrimaryButtonStyle { MacPrimaryButtonStyle() }
 }
 
 // MARK: - MacMetricRing
