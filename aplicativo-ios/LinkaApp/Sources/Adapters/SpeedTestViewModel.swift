@@ -857,7 +857,13 @@ public class SpeedTestViewModel: ObservableObject {
             self.hasMeasuredUpload = true
         }
         if let prov = state.provider { self.provider = prov }
-        if let net = state.networkType { self.networkType = net }
+        if let net = state.networkType {
+            switch net {
+            case .wifi: self.networkType = LinkaCopy.value("network.wifi")
+            case .cellular: self.networkType = LinkaCopy.value("network.cellular")
+            case .unknown: self.networkType = LinkaCopy.value("network.other")
+            }
+        }
         if let dur = state.duration {
             self.testDuration = Self.formattedDuration(dur)
             self.rawTestDuration = dur

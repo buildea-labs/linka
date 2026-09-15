@@ -96,7 +96,7 @@ final class SpeedTestCoreFailureTests: XCTestCase {
     /// capturados na fase anterior.
     func test_errorState_fatalFailureDuringDownload_preservesPingAndJitterAlreadyCaptured() {
         var state = MeasurementState(ping: 42.0, jitter: 3.5, packetLossPercent: 0.0, phase: .download)
-        state.networkType = "Wi-Fi"
+        state.networkType = .wifi
 
         let errored = SpeedTestCore.errorState(preserving: state, reason: .connectionLost(phase: .download))
 
@@ -105,7 +105,7 @@ final class SpeedTestCoreFailureTests: XCTestCase {
         XCTAssertEqual(errored.ping, 42.0)
         XCTAssertEqual(errored.jitter, 3.5)
         XCTAssertEqual(errored.packetLossPercent, 0.0)
-        XCTAssertEqual(errored.networkType, "Wi-Fi")
+        XCTAssertEqual(errored.networkType, .wifi)
         XCTAssertNil(errored.downloadSpeed)
     }
 

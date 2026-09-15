@@ -1,5 +1,14 @@
 import Foundation
 
+/// Tipo de rede detectado por `SpeedTestCore` (`NWPathMonitor`). Fato puro,
+/// sem copy — mesma disciplina de `EngineFailureReason`: o motor nunca
+/// decide texto de apresentação, só o fato tipado. A UI (`SpeedTestViewModel`)
+/// resolve o texto no idioma corrente a partir deste caso.
+public enum MeasurementNetworkKind: String, Equatable, Sendable {
+    case wifi
+    case cellular
+    case unknown
+}
 
 public struct MeasurementState {
     public var ping: Double?
@@ -10,7 +19,7 @@ public struct MeasurementState {
     public var progress: Double // 0.0 to 1.0
     public var phase: Phase
     public var provider: String?
-    public var networkType: String?
+    public var networkType: MeasurementNetworkKind?
     public var duration: Double?
     /// Latência sob carga (ms), amostrada durante a fase de download
     /// (issue #52). `nil` quando a fase não produziu amostras válidas
@@ -48,7 +57,7 @@ public struct MeasurementState {
     
     public var location: (latitude: Double, longitude: Double)?
 
-    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: String? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, loadedLatencyUploadMs: Double? = nil, dnsResolutionMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil, failureReason: EngineFailureReason? = nil, location: (latitude: Double, longitude: Double)? = nil) {
+    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: MeasurementNetworkKind? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, loadedLatencyUploadMs: Double? = nil, dnsResolutionMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil, failureReason: EngineFailureReason? = nil, location: (latitude: Double, longitude: Double)? = nil) {
         self.ping = ping
         self.jitter = jitter
         self.packetLossPercent = packetLossPercent
