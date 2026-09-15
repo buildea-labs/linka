@@ -31,7 +31,7 @@ struct ServiceStatusView: View {
                     Toggle("Receber alertas de \(service.name)", isOn: Binding(
                         get: { store.isFollowing(service) },
                         set: { enabled in Task { await store.setFollowing(service, enabled: enabled) } }
-                    )).labelsHidden().disabled(!service.notificationEligible || !service.monitoringEnabled)
+                    )).labelsHidden().tint(.brandAccentWarm).disabled(!service.notificationEligible || !service.monitoringEnabled)
                 }
                 .accessibilityElement(children: .combine)
             }

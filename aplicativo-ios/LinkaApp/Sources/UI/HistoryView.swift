@@ -324,6 +324,13 @@ private struct HistorySingleMeasurementSummary: View {
 
 // MARK: - Gráfico em Linha Horizontal Estilo Ondas (Dois Eixos)
 
+/// Cor da série de download nos gráficos e linhas de histórico — sem token
+/// equivalente no Design System (`DesignSystem.swift` só define a cor de
+/// marca laranja); mantida aqui como constante única em vez de duplicada em
+/// cada view para evitar drift entre `HistoryWaveChartView` e
+/// `AppleStyleHistoryRow`.
+let linkaDownloadSeriesColor = Color(red: 0.12, green: 0.53, blue: 0.98) // Azul Royal Apple
+
 struct HistoryWaveChartView: View {
     let measurements: [NetworkMeasurement]
     @State private var selectedIndex: Int? = nil
@@ -353,7 +360,7 @@ struct HistoryWaveChartView: View {
         return latestMeasurement
     }
 
-    private let downloadColor = Color(red: 0.12, green: 0.53, blue: 0.98) // Azul Royal Apple
+    private let downloadColor = linkaDownloadSeriesColor
     private let uploadColor = Color(red: 0.95, green: 0.50, blue: 0.15)   // Laranja Quente Linka
 
     var body: some View {
@@ -628,7 +635,7 @@ struct AppleStyleHistoryRow: View {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Image(systemName: "arrow.down")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(Color(red: 0.12, green: 0.53, blue: 0.98))
+                        .foregroundColor(linkaDownloadSeriesColor)
                     Text(formatSpeed(measurement.downloadMbps))
                         .font(.system(size: 17, weight: .bold, design: .rounded))
                         .foregroundColor(.textPrimary)
@@ -643,7 +650,7 @@ struct AppleStyleHistoryRow: View {
                         HStack(spacing: 2) {
                             Image(systemName: "arrow.up")
                                 .font(.system(size: 9, weight: .semibold))
-                                .foregroundColor(Color(red: 0.95, green: 0.50, blue: 0.15))
+                                .foregroundColor(.brandAccentWarm)
                             Text("\(Int(round(up)))")
                                 .font(.system(size: 11, weight: .semibold, design: .monospaced))
                                 .foregroundColor(.textSecondary)
@@ -693,10 +700,10 @@ struct AppleStyleHistoryRow: View {
 
     private var iconTintColor: Color {
         switch measurement.connectionKind {
-        case .wifi: return Color(red: 0.12, green: 0.53, blue: 0.98)
-        case .cellular: return .green
-        case .ethernet: return .orange
-        default: return .secondary
+        case .wifi: return linkaDownloadSeriesColor
+        case .cellular: return .statusGood
+        case .ethernet: return .statusAttention
+        default: return .textSecondary
         }
     }
 
