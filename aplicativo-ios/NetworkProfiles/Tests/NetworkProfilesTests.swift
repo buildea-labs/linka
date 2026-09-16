@@ -3,145 +3,109 @@ import XCTest
 @testable import NetworkProfiles
 
 final class NetworkProfilesTests: XCTestCase {
-    private let installationSecret = Data(repeating: 7, count: 32)
-
-    func testIdentityRejectsMissingEmptyAndInvalidPersistedValues() {
-        XCTAssertNil(NetworkProfileIdentity(ssid: nil, installationSecret: installationSecret))
-        XCTAssertNil(NetworkProfileIdentity(ssid: " \n\t ", installationSecret: installationSecret))
-        XCTAssertNil(NetworkProfileIdentity(ssid: "Casa", installationSecret: Data()))
-        XCTAssertNil(NetworkProfileIdentity(version: 2, fingerprint: String(repeating: "a", count: 64)))
-        XCTAssertNil(NetworkProfileIdentity(version: 1, fingerprint: "not-a-sha256"))
+    func testCRUDAllowsRepeatedNamesAndAtomicAssignment() async throws {
+        let url = temporaryFileURL(); defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let repository = FileNetworkProfileRepository(fileURL: url)
+        let first = try XCTUnwrap(NetworkEnvironment(name: "Sala"))
+        let second = try XCTUnwrap(NetworkEnvironment(name: "Sala"))
+        try await repository.create(first)
+        try await repository.createAndAssign(second, measurementID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!, assignedAt: Date(timeIntervalSince1970: 2))
+        let environments = try await repository.environments()
+        let assignment = try await repository.assignment(for: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!)
+        XCTAssertEqual(environments.map(\.name), ["Sala", "Sala"])
+        XCTAssertEqual(assignment?.environmentID, second.id)
     }
 
-    func testIdentityNormalizesUnicodeAndBoundaryWhitespaceWithoutCollapsingDistinctSSID() {
-        let composed = NetworkProfileIdentity(ssid: " Café ", installationSecret: installationSecret)
-        let decomposed = NetworkProfileIdentity(ssid: "Cafe\u{301}", installationSecret: installationSecret)
-        let differentCase = NetworkProfileIdentity(ssid: "café", installationSecret: installationSecret)
-
-        XCTAssertEqual(composed, decomposed)
-        XCTAssertNotEqual(composed, differentCase)
-        XCTAssertEqual(NetworkProfileIdentity.normalizedSSID("\n Casa Wi-Fi \t"), "Casa Wi-Fi")
+    func testReassignmentIsUniqueAndRemovalCascades() async throws {
+        let url = temporaryFileURL(); defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let repository = FileNetworkProfileRepository(fileURL: url)
+        let first = try XCTUnwrap(NetworkEnvironment(name: "Sala")); let second = try XCTUnwrap(NetworkEnvironment(name: "Quarto")); let measurement = UUID()
+        try await repository.create(first); try await repository.create(second)
+        try await repository.assign(measurementID: measurement, to: first.id, assignedAt: Date())
+        try await repository.assign(measurementID: measurement, to: second.id, assignedAt: Date())
+        let reassigned = try await repository.assignment(for: measurement)
+        XCTAssertEqual(reassigned?.environmentID, second.id)
+        try await repository.remove(id: second.id)
+        let removed = try await repository.assignment(for: measurement)
+        XCTAssertNil(removed)
     }
 
-    func testFileRepositoryRoundTripsAndUpsertsByIdentity() async throws {
-        let fileURL = temporaryFileURL()
-        defer { try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent()) }
-        let identity = try XCTUnwrap(NetworkProfileIdentity(ssid: "Casa", installationSecret: installationSecret))
-        let createdAt = Date(timeIntervalSince1970: 1_000)
-        let first = try XCTUnwrap(NetworkProfile(
-            id: UUID(uuidString: "40E6215D-B5C6-4896-987C-F30F3678F608")!,
-            identity: identity,
-            name: "Casa",
-            createdAt: createdAt,
-            updatedAt: createdAt
-        ))
-        let updated = try XCTUnwrap(NetworkProfile(
-            id: UUID(uuidString: "40E6215D-B5C6-4896-987C-F30F3678F608")!,
-            identity: identity,
-            name: "Casa principal",
-            createdAt: createdAt,
-            updatedAt: createdAt.addingTimeInterval(10),
-            lastAnalyzedAt: createdAt.addingTimeInterval(10)
-        ))
-
-        let writer = FileNetworkProfileRepository(fileURL: fileURL)
-        try await writer.upsert(first)
-        try await writer.upsert(updated)
-
-        let reader = FileNetworkProfileRepository(fileURL: fileURL)
-        let restoredProfiles = try await reader.profiles()
-        let restoredProfile = try await reader.profile(for: identity)
-        XCTAssertEqual(restoredProfiles, [updated])
-        XCTAssertEqual(restoredProfile, updated)
+    func testSchemaTwoRoundTripsAcrossRepositoryInstances() async throws {
+        let url = temporaryFileURL(); defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let environment = try XCTUnwrap(NetworkEnvironment(name: "Escritório"))
+        let measurement = UUID()
+        let writer = FileNetworkProfileRepository(fileURL: url)
+        try await writer.createAndAssign(environment, measurementID: measurement, assignedAt: Date(timeIntervalSince1970: 42))
+        let reader = FileNetworkProfileRepository(fileURL: url)
+        let restored = try await reader.environment(id: environment.id)
+        XCTAssertEqual(restored, environment)
+        let assignment = try await reader.assignment(for: measurement)
+        XCTAssertEqual(assignment?.environmentID, environment.id)
+        XCTAssertEqual(assignment?.assignedAt, Date(timeIntervalSince1970: 42))
     }
 
-    func testRemovalPersistsAndMissingFileStartsEmpty() async throws {
-        let fileURL = temporaryFileURL()
-        defer { try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent()) }
-        let repository = FileNetworkProfileRepository(fileURL: fileURL)
-        let identity = try XCTUnwrap(NetworkProfileIdentity(ssid: "Trabalho", installationSecret: installationSecret))
-        let profile = try XCTUnwrap(NetworkProfile(identity: identity, name: "Trabalho"))
-
-        let initiallyStored = try await repository.profiles()
-        XCTAssertTrue(initiallyStored.isEmpty)
-        try await repository.upsert(profile)
-        try await repository.remove(identity: identity)
-
-        let reader = FileNetworkProfileRepository(fileURL: fileURL)
-        let restoredProfile = try await reader.profile(for: identity)
-        let restoredProfiles = try await reader.profiles()
-        XCTAssertNil(restoredProfile)
-        XCTAssertTrue(restoredProfiles.isEmpty)
+    func testSchemaTwoRejectsOrphanAndDuplicateAssignments() async throws {
+        let orphanURL = temporaryFileURL(); let duplicateURL = temporaryFileURL()
+        defer { try? FileManager.default.removeItem(at: orphanURL.deletingLastPathComponent()); try? FileManager.default.removeItem(at: duplicateURL.deletingLastPathComponent()) }
+        try FileManager.default.createDirectory(at: orphanURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: duplicateURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let orphan = #"{"schemaVersion":2,"environments":[],"assignments":[{"measurementID":"00000000-0000-0000-0000-000000000001","environmentID":"00000000-0000-0000-0000-000000000002","assignedAt":1}]}"#
+        let duplicate = #"{"schemaVersion":2,"environments":[{"id":"00000000-0000-0000-0000-000000000002","name":"Sala","createdAt":1,"updatedAt":2}],"assignments":[{"measurementID":"00000000-0000-0000-0000-000000000001","environmentID":"00000000-0000-0000-0000-000000000002","assignedAt":1},{"measurementID":"00000000-0000-0000-0000-000000000001","environmentID":"00000000-0000-0000-0000-000000000002","assignedAt":2}]}"#
+        try Data(orphan.utf8).write(to: orphanURL); try Data(duplicate.utf8).write(to: duplicateURL)
+        await assertError(.corruptedStore, repository: FileNetworkProfileRepository(fileURL: orphanURL))
+        await assertError(.corruptedStore, repository: FileNetworkProfileRepository(fileURL: duplicateURL))
     }
 
-    func testCorruptedAndUnknownVersionFilesFailClosed() async throws {
-        let corruptedURL = temporaryFileURL()
-        let versionURL = temporaryFileURL()
+    func testSchemaOneMigrationPersistenceFailurePreservesLegacyFile() async throws {
+        let url = temporaryFileURL()
+        let parent = url.deletingLastPathComponent()
         defer {
-            try? FileManager.default.removeItem(at: corruptedURL.deletingLastPathComponent())
-            try? FileManager.default.removeItem(at: versionURL.deletingLastPathComponent())
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: parent.path)
+            try? FileManager.default.removeItem(at: parent)
         }
-        try FileManager.default.createDirectory(at: corruptedURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(at: versionURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Data("not-json".utf8).write(to: corruptedURL)
-        try Data("{\"schemaVersion\":99,\"profiles\":[]}".utf8).write(to: versionURL)
-
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        let legacy = Data(#"{"schemaVersion":1,"profiles":[{"id":"40E6215D-B5C6-4896-987C-F30F3678F608","identity":{"version":1,"fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"name":"Sala","createdAt":1000,"updatedAt":2000}]}"#.utf8)
+        try legacy.write(to: url)
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: parent.path)
+        let repository = FileNetworkProfileRepository(fileURL: url)
         do {
-            _ = try await FileNetworkProfileRepository(fileURL: corruptedURL).profiles()
-            XCTFail("Expected corruptedStore")
+            _ = try await repository.environments()
+            XCTFail("Expected migration persistence failure")
         } catch let error as NetworkProfileRepositoryError {
-            XCTAssertEqual(error, .corruptedStore)
+            XCTAssertEqual(error, .persistenceFailed)
         }
-
-        do {
-            _ = try await FileNetworkProfileRepository(fileURL: versionURL).profiles()
-            XCTFail("Expected unsupportedStoreVersion")
-        } catch let error as NetworkProfileRepositoryError {
-            XCTAssertEqual(error, .unsupportedStoreVersion(99))
-        }
+        XCTAssertEqual(try Data(contentsOf: url), legacy)
     }
 
-    func testPersistedJSONNeverContainsClearSSID() async throws {
-        let fileURL = temporaryFileURL()
-        defer { try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent()) }
-        let ssid = "Segredo Wi-Fi da Casa"
-        let identity = try XCTUnwrap(NetworkProfileIdentity(ssid: ssid, installationSecret: installationSecret))
-        let profile = try XCTUnwrap(NetworkProfile(identity: identity, name: "Casa"))
-        let repository = FileNetworkProfileRepository(fileURL: fileURL)
-
-        try await repository.upsert(profile)
-
-        let document = try String(decoding: Data(contentsOf: fileURL), as: UTF8.self)
-        XCTAssertFalse(document.contains(ssid))
-        XCTAssertTrue(document.contains(identity.fingerprint))
-        XCTAssertFalse(document.contains("ssid"))
+    func testSchemaOneMigrationPreservesNameAndIDWithoutAssignmentsOrIdentity() async throws {
+        let url = temporaryFileURL(); defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let id = UUID(uuidString: "40E6215D-B5C6-4896-987C-F30F3678F608")!
+        let json = #"{"schemaVersion":1,"profiles":[{"id":"40E6215D-B5C6-4896-987C-F30F3678F608","identity":{"version":1,"fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"name":"Sala","createdAt":1000,"updatedAt":2000,"referenceStartedAt":1000}]}"#
+        try Data(json.utf8).write(to: url)
+        let repository = FileNetworkProfileRepository(fileURL: url)
+        let environments = try await repository.environments()
+        XCTAssertEqual(environments.first?.id, id); XCTAssertEqual(environments.first?.name, "Sala")
+        let assignments = try await repository.assignments(for: id)
+        XCTAssertTrue(assignments.isEmpty)
+        let persisted = try String(decoding: Data(contentsOf: url), as: UTF8.self)
+        XCTAssertTrue(persisted.contains("\"schemaVersion\":2")); XCTAssertFalse(persisted.contains("identity")); XCTAssertFalse(persisted.contains("fingerprint"))
     }
 
-    func testReferenceStartPersistsAcrossRepositoryInstances() async throws {
-        let fileURL = temporaryFileURL()
-        defer { try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent()) }
-        let identity = try XCTUnwrap(NetworkProfileIdentity(ssid: "Casa", installationSecret: installationSecret))
-        let createdAt = Date(timeIntervalSince1970: 2_000)
-        let referenceStartedAt = createdAt.addingTimeInterval(30)
-        let profile = try XCTUnwrap(NetworkProfile(
-            identity: identity,
-            name: "Casa",
-            createdAt: createdAt,
-            updatedAt: referenceStartedAt,
-            referenceStartedAt: referenceStartedAt
-        ))
-
-        let writer = FileNetworkProfileRepository(fileURL: fileURL)
-        try await writer.upsert(profile)
-
-        let reader = FileNetworkProfileRepository(fileURL: fileURL)
-        let restored = try await reader.profile(for: identity)
-        XCTAssertEqual(restored?.referenceStartedAt, referenceStartedAt)
+    func testInvalidAndFutureStoresFailClosed() async throws {
+        let corrupt = temporaryFileURL(); let future = temporaryFileURL()
+        defer { try? FileManager.default.removeItem(at: corrupt.deletingLastPathComponent()); try? FileManager.default.removeItem(at: future.deletingLastPathComponent()) }
+        try FileManager.default.createDirectory(at: corrupt.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: future.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("not-json".utf8).write(to: corrupt); try Data("{\"schemaVersion\":99}".utf8).write(to: future)
+        await assertError(.corruptedStore, repository: FileNetworkProfileRepository(fileURL: corrupt))
+        await assertError(.unsupportedStoreVersion(99), repository: FileNetworkProfileRepository(fileURL: future))
     }
 
-    private func temporaryFileURL() -> URL {
-        FileManager.default.temporaryDirectory
-            .appendingPathComponent("NetworkProfilesTests-\(UUID().uuidString)")
-            .appendingPathComponent("profiles.json")
+    private func assertError(_ expected: NetworkProfileRepositoryError, repository: FileNetworkProfileRepository) async {
+        do { _ = try await repository.environments(); XCTFail("Expected error") }
+        catch let error as NetworkProfileRepositoryError { XCTAssertEqual(error, expected) }
+        catch { XCTFail("Unexpected error: \(error)") }
     }
+    private func temporaryFileURL() -> URL { FileManager.default.temporaryDirectory.appendingPathComponent("NetworkProfilesTests-\(UUID().uuidString)").appendingPathComponent("profiles.json") }
 }

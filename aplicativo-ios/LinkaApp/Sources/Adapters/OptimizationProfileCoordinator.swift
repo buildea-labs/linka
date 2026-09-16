@@ -1,281 +1,135 @@
 import Foundation
 import Combine
-import Security
 import NetworkCore
 import NetworkInsights
 import NetworkOptimization
 import NetworkProfiles
 
-/// Estado local da jornada de perfis. A coordenação conhece a preferência de
-/// identificação e o histórico, mas não pede permissão nem envia dados.
+/// Coordena a associação explícita e local entre o resultado aberto e um
+/// ambiente. SSID é só uma pré-condição efêmera: nunca é persistido nem usado
+/// como chave de ambiente.
 @MainActor
 final class OptimizationProfileCoordinator: ObservableObject {
-    enum CurrentNetworkState: Equatable {
-        case identificationDisabled
-        case notWiFi
-        case ssidUnavailable
-        case available(identity: NetworkProfileIdentity)
-    }
+    enum CurrentNetworkState: Equatable { case identificationDisabled, notWiFi, ssidUnavailable, available }
+    enum ReferenceState: Equatable { case building(sampleCount: Int), ready(sampleCount: Int) }
 
-    enum ReferenceState: Equatable {
-        case building(sampleCount: Int)
-        case ready(sampleCount: Int)
-    }
-
-    @Published private(set) var profiles: [NetworkProfile] = []
+    @Published private(set) var environments: [NetworkEnvironment] = []
     @Published private(set) var currentNetworkState: CurrentNetworkState = .notWiFi
-    @Published private(set) var referenceSampleCounts: [NetworkProfileIdentity: Int] = [:]
-    @Published private(set) var readyProfileIdentities: Set<NetworkProfileIdentity> = []
-    @Published private(set) var currentComparisons: [NetworkProfileIdentity: [MetricComparison]] = [:]
+    @Published private(set) var currentAssignment: EnvironmentMeasurementAssignment?
+    @Published private(set) var referenceSampleCounts: [UUID: Int] = [:]
+    @Published private(set) var readyEnvironmentIDs: Set<UUID> = []
+    @Published private(set) var currentComparisons: [UUID: [MetricComparison]] = [:]
     @Published private(set) var hasStoreError = false
 
     private let repository: any NetworkProfileRepository
-    private let identityForSSID: (String?) -> NetworkProfileIdentity?
     private var measurements: [NetworkMeasurement] = []
     private var currentMeasurement: NetworkMeasurement?
+    private var assignmentsByMeasurementID: [UUID: EnvironmentMeasurementAssignment] = [:]
 
-    init(
-        repository: (any NetworkProfileRepository)? = nil,
-        identityForSSID: @escaping (String?) -> NetworkProfileIdentity? = NetworkProfileInstallationSecret.identity
-    ) {
-        self.repository = repository ?? FileNetworkProfileRepository(
-            fileURL: Self.defaultStoreURL()
-        )
-        self.identityForSSID = identityForSSID
+    init(repository: (any NetworkProfileRepository)? = nil) {
+        self.repository = repository ?? FileNetworkProfileRepository(fileURL: Self.defaultStoreURL())
     }
 
     func refresh(currentMeasurement: NetworkMeasurement, history: [NetworkMeasurement]) async {
         measurements = Array(Set(history + [currentMeasurement]))
         self.currentMeasurement = currentMeasurement
         currentNetworkState = networkState(for: currentMeasurement)
+        await loadStore()
+    }
 
+    func retryStoreAccess() async { guard currentMeasurement != nil else { return }; await loadStore() }
+    func loadEnvironments() async { await loadStore() }
+
+    func assignCurrentMeasurement(to environment: NetworkEnvironment) async -> Bool {
+        guard canAssignCurrentMeasurement, let currentMeasurement else { return false }
         do {
-            profiles = try await repository.profiles()
+            try await repository.assign(measurementID: currentMeasurement.id, to: environment.id, assignedAt: Date())
+            await loadStore()
+            return true
+        } catch { hasStoreError = true; return false }
+    }
+
+    func createAndAssignCurrentMeasurement(named name: String) async -> Bool {
+        guard canAssignCurrentMeasurement, let currentMeasurement, let environment = NetworkEnvironment(name: name) else { return false }
+        do {
+            try await repository.createAndAssign(environment, measurementID: currentMeasurement.id, assignedAt: Date())
+            await loadStore()
+            return true
+        } catch { hasStoreError = true; return false }
+    }
+
+    func rename(_ environment: NetworkEnvironment, to name: String) async -> Bool {
+        do { try await repository.rename(id: environment.id, to: name, updatedAt: Date()); await loadStore(); return true }
+        catch { hasStoreError = true; return false }
+    }
+
+    func remove(_ environment: NetworkEnvironment) async -> Bool {
+        do { try await repository.remove(id: environment.id); await loadStore(); return true }
+        catch { hasStoreError = true; return false }
+    }
+
+    func referenceState(for environment: NetworkEnvironment) -> ReferenceState {
+        let count = referenceSampleCounts[environment.id, default: 0]
+        return readyEnvironmentIDs.contains(environment.id) ? .ready(sampleCount: count) : .building(sampleCount: count)
+    }
+
+    func comparison(for environment: NetworkEnvironment) -> [MetricComparison]? { currentComparisons[environment.id] }
+
+    var canAssignCurrentMeasurement: Bool {
+        guard currentMeasurement?.outcome == .complete else { return false }
+        if case .available = currentNetworkState { return true }
+        return false
+    }
+
+    private func loadStore() async {
+        do {
+            environments = try await repository.environments()
+            var assignments: [UUID: EnvironmentMeasurementAssignment] = [:]
+            for environment in environments {
+                for assignment in try await repository.assignments(for: environment.id) { assignments[assignment.measurementID] = assignment }
+            }
+            assignmentsByMeasurementID = assignments
+            currentAssignment = currentMeasurement.flatMap { assignments[$0.id] }
             hasStoreError = false
             recalculateReferenceStates()
-        } catch {
-            hasStoreError = true
-        }
-    }
-
-    func retryStoreAccess() async {
-        guard let currentMeasurement else { return }
-        await refresh(currentMeasurement: currentMeasurement, history: measurements)
-    }
-
-    func loadProfiles() async {
-        do { profiles = try await repository.profiles(); hasStoreError = false }
-        catch { hasStoreError = true }
-    }
-
-    func createProfile(named name: String) async -> Bool {
-        guard case .available(let identity) = currentNetworkState,
-              let currentMeasurement,
-              let profile = NetworkProfile(identity: identity, name: name) else {
-            return false
-        }
-        guard let profileAtMeasurement = NetworkProfile(
-            id: profile.id,
-            identity: profile.identity,
-            name: profile.name,
-            createdAt: profile.createdAt,
-            updatedAt: profile.updatedAt,
-            referenceStartedAt: currentMeasurement.measuredAt
-        ) else { return false }
-        return await save(profileAtMeasurement)
-    }
-
-    func rename(_ profile: NetworkProfile, to name: String) async -> Bool {
-        guard let updated = NetworkProfile(
-            id: profile.id,
-            identity: profile.identity,
-            name: name,
-            createdAt: profile.createdAt,
-            updatedAt: Date(),
-            referenceStartedAt: profile.referenceStartedAt,
-            lastAnalyzedAt: profile.lastAnalyzedAt
-        ) else {
-            return false
-        }
-        return await save(updated)
-    }
-
-    /// Persiste um novo marco para a referência derivada, sem apagar o perfil
-    /// ou qualquer medição do Histórico.
-    func resetReference(for profile: NetworkProfile) async -> Bool {
-        guard let resetProfile = NetworkProfile(
-            id: profile.id,
-            identity: profile.identity,
-            name: profile.name,
-            createdAt: profile.createdAt,
-            updatedAt: Date(),
-            referenceStartedAt: Date(),
-            lastAnalyzedAt: profile.lastAnalyzedAt
-        ) else { return false }
-        return await save(resetProfile)
-    }
-
-    func remove(_ profile: NetworkProfile) async -> Bool {
-        do {
-            try await repository.remove(identity: profile.identity)
-            profiles.removeAll { $0.identity == profile.identity }
-            recalculateReferenceStates()
-            return true
-        } catch {
-            hasStoreError = true
-            return false
-        }
-    }
-
-    func referenceState(for profile: NetworkProfile) -> ReferenceState {
-        let count = referenceSampleCounts[profile.identity, default: 0]
-        return readyProfileIdentities.contains(profile.identity)
-            ? .ready(sampleCount: count)
-            : .building(sampleCount: count)
-    }
-
-    func profileForCurrentNetwork() -> NetworkProfile? {
-        guard case .available(let identity) = currentNetworkState else { return nil }
-        return profiles.first { $0.identity == identity }
-    }
-
-    func comparison(for profile: NetworkProfile) -> [MetricComparison]? {
-        currentComparisons[profile.identity]
-    }
-
-    func markAnalyzed(_ profile: NetworkProfile) async {
-        guard let lastEligible = measurements
-            .filter({
-                $0.outcome == .complete &&
-                $0.connectionKind == .wifi &&
-                $0.measuredAt >= profile.referenceStartedAt &&
-                identityForSSID($0.wifiContext?.ssid) == profile.identity
-            })
-            .map(\.measuredAt)
-            .max(),
-            lastEligible != profile.lastAnalyzedAt,
-            let updated = NetworkProfile(
-                id: profile.id,
-                identity: profile.identity,
-                name: profile.name,
-                createdAt: profile.createdAt,
-                updatedAt: Date(),
-                referenceStartedAt: profile.referenceStartedAt,
-                lastAnalyzedAt: lastEligible
-            ) else { return }
-        _ = await save(updated)
-    }
-
-    private func save(_ profile: NetworkProfile) async -> Bool {
-        do {
-            try await repository.upsert(profile)
-            profiles = try await repository.profiles()
-            hasStoreError = false
-            recalculateReferenceStates()
-            return true
-        } catch {
-            hasStoreError = true
-            return false
-        }
+        } catch { hasStoreError = true }
     }
 
     private func recalculateReferenceStates() {
-        guard LinkaWiFiPreferences.isIdentificationEnabled else {
-            referenceSampleCounts = [:]
-            readyProfileIdentities = []
-            currentComparisons = [:]
-            return
-        }
-
         let now = Date()
-        let builder = NetworkBaselineBuilder { measurement in
-            guard measurement.connectionKind == .wifi,
-                  let ssid = measurement.wifiContext?.ssid else { return nil }
-            return self.identityForSSID(ssid).map(Self.profileKey)
-        }
-        let comparator = NetworkBaselineComparator { measurement in
-            guard let ssid = measurement.wifiContext?.ssid else { return nil }
-            return self.identityForSSID(ssid).map(Self.profileKey)
-        }
-
-        var counts: [NetworkProfileIdentity: Int] = [:]
-        var ready: Set<NetworkProfileIdentity> = []
-        var comparisons: [NetworkProfileIdentity: [MetricComparison]] = [:]
-        for profile in profiles {
-            let key = Self.profileKey(profile.identity)
-            let eligibleCount = measurements.filter {
-                $0.outcome == .complete &&
-                $0.connectionKind == .wifi &&
-                $0.measuredAt >= profile.referenceStartedAt &&
-                $0.measuredAt >= now.addingTimeInterval(-30 * 24 * 60 * 60) &&
-                $0.measuredAt <= now &&
-                self.identityForSSID($0.wifiContext?.ssid).map(Self.profileKey) == key
-            }.count
-            counts[profile.identity] = eligibleCount
-            let referenceMeasurements = measurements.filter {
-                $0.measuredAt >= profile.referenceStartedAt
+        let assignments = assignmentsByMeasurementID
+        let builder = NetworkBaselineBuilder { assignments[$0.id]?.environmentID.uuidString }
+        let comparator = NetworkBaselineComparator { assignments[$0.id]?.environmentID.uuidString }
+        var counts: [UUID: Int] = [:]
+        var ready: Set<UUID> = []
+        var comparisons: [UUID: [MetricComparison]] = [:]
+        for environment in environments {
+            let identity = environment.id.uuidString
+            let assigned = measurements.filter {
+                assignments[$0.id]?.environmentID == environment.id && $0.outcome == .complete && $0.connectionKind == .wifi &&
+                $0.measuredAt >= now.addingTimeInterval(-30 * 24 * 60 * 60) && $0.measuredAt <= now
             }
-            let baselineMeasurements = referenceMeasurements.filter { $0.id != currentMeasurement?.id }
-            if let baseline = builder.build(
-                profileIdentity: key,
-                measurements: baselineMeasurements,
-                referenceDate: now
-            ) {
-                ready.insert(profile.identity)
-                if let currentMeasurement,
-                   case .compared(let result) = comparator.compare(current: currentMeasurement, against: baseline) {
-                    comparisons[profile.identity] = result.metrics
-                }
-            }
+            counts[environment.id] = assigned.count
+            guard let baseline = builder.build(profileIdentity: identity, measurements: assigned.filter { $0.id != currentMeasurement?.id }, referenceDate: now) else { continue }
+            ready.insert(environment.id)
+            guard currentAssignment?.environmentID == environment.id, let currentMeasurement,
+                  case .compared(let result) = comparator.compare(current: currentMeasurement, against: baseline) else { continue }
+            comparisons[environment.id] = result.metrics
         }
         referenceSampleCounts = counts
-        readyProfileIdentities = ready
+        readyEnvironmentIDs = ready
         currentComparisons = comparisons
     }
 
     private func networkState(for measurement: NetworkMeasurement) -> CurrentNetworkState {
         guard LinkaWiFiPreferences.isIdentificationEnabled else { return .identificationDisabled }
         guard measurement.connectionKind == .wifi else { return .notWiFi }
-        guard let ssid = measurement.wifiContext?.ssid,
-              let identity = identityForSSID(ssid) else { return .ssidUnavailable }
-        // O SSID é usado somente neste ponto para derivar a identidade. Não
-        // atravessa a fronteira do coordinator, portanto não pode virar nome
-        // sugerido nem ser persistido indiretamente no perfil.
-        return .available(identity: identity)
-    }
-
-    nonisolated private static func profileKey(_ identity: NetworkProfileIdentity) -> String {
-        "v\(identity.version):\(identity.fingerprint)"
+        guard let ssid = measurement.wifiContext?.ssid, !ssid.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return .ssidUnavailable }
+        return .available
     }
 
     private static func defaultStoreURL() -> URL {
-        let base = FileManager.default.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first ?? FileManager.default.temporaryDirectory
-        return base
-            .appendingPathComponent("Linka", isDirectory: true)
-            .appendingPathComponent("network-profiles-v1.json")
-    }
-}
-
-private enum NetworkProfileInstallationSecret {
-    private static let service = "com.linka.network-profiles"
-    private static let account = "installation-secret-v1"
-
-    static func identity(for ssid: String?) -> NetworkProfileIdentity? {
-        guard let secret = installationSecret() else { return nil }
-        return NetworkProfileIdentity(ssid: ssid, installationSecret: secret)
-    }
-
-    private static func installationSecret() -> Data? {
-        if let existing = KeychainHelper.shared.read(service: service, account: account), existing.count == 32 {
-            return existing
-        }
-        var bytes = [UInt8](repeating: 0, count: 32)
-        guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else { return nil }
-        let generated = Data(bytes)
-        KeychainHelper.shared.save(generated, service: service, account: account)
-        return KeychainHelper.shared.read(service: service, account: account) == generated ? generated : nil
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory
+        return base.appendingPathComponent("Linka", isDirectory: true).appendingPathComponent("network-profiles-v1.json")
     }
 }
