@@ -2,6 +2,39 @@ import XCTest
 @testable import NetworkCore
 
 final class NetworkCoreTests: XCTestCase {
+    func testLoadResponsivenessRoundTripsAndProjectsDirectionalMedians() throws {
+        let latency = LatencyEvidenceSummary(medianMs: 12, p95Ms: 20, maximumMs: 25, sampleCount: 8, timeoutCount: 1, warmupDurationMs: 2_000)
+        let phase = LoadPhaseEvidence(latency: latency, usefulDurationMs: 10_000, bytesTransferred: 4_000_000, averageMbps: 80, saturation: .sustained)
+        let evidence = LoadResponsivenessEvidence(
+            environmentIdentifier: "cloudflare-speedtest-v1",
+            integrity: .valid,
+            baseline: LatencyEvidenceSummary(medianMs: 8, p95Ms: 9, maximumMs: 10, sampleCount: 8, timeoutCount: 0, warmupDurationMs: 200),
+            download: phase,
+            upload: phase
+        )
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 100,
+            uploadMbps: 40,
+            latencyMs: 8,
+            loadedLatencyMs: 12,
+            loadedLatencyUploadMs: 12,
+            loadResponsiveness: evidence
+        )
+
+        let decoded = try JSONDecoder().decode(NetworkMeasurement.self, from: JSONEncoder().encode(measurement))
+        XCTAssertEqual(decoded, measurement)
+        XCTAssertTrue(NetworkMeasurementContract.isValid(decoded))
+    }
+
+    func testLoadResponsivenessRejectsMismatchedScalarProjection() {
+        let latency = LatencyEvidenceSummary(medianMs: 12, p95Ms: 12, maximumMs: 12, sampleCount: 5, timeoutCount: 0, warmupDurationMs: 2_000)
+        let phase = LoadPhaseEvidence(latency: latency, usefulDurationMs: 10_000, bytesTransferred: 1, averageMbps: 1, saturation: .sustained)
+        let evidence = LoadResponsivenessEvidence(environmentIdentifier: "cloudflare-speedtest-v1", integrity: .valid, baseline: latency, download: phase, upload: phase)
+        let measurement = NetworkMeasurement(latencyMs: 12, loadedLatencyMs: 11, loadedLatencyUploadMs: 12, loadResponsiveness: evidence)
+        XCTAssertTrue(NetworkMeasurementContract.violations(for: measurement).contains("loadedLatencyMs"))
+    }
+
     func testAdvancedWiFiDiagnosticsRoundTripsWithoutRawIdentifiers() throws {
         let diagnostics = AdvancedWiFiDiagnostics(
             capturedAt: Date(timeIntervalSince1970: 1_700_000_000),

@@ -1,5 +1,102 @@
 import Foundation
 
+/// Integridade da evidência de responsividade sob carga. `valid` é a única
+/// condição que autoriza consumidores a produzir um veredito geral; os
+/// demais casos preservam fatos parciais sem promover confiança indevida.
+public enum LoadResponsivenessIntegrity: String, Codable, Equatable, Hashable, Sendable {
+    case valid
+    case baselineInconclusive
+    case downloadInconclusive
+    case uploadInconclusive
+}
+
+public enum LoadSaturationState: String, Codable, Equatable, Hashable, Sendable {
+    case sustained
+    case insufficient
+}
+
+public struct LatencyEvidenceSummary: Codable, Equatable, Hashable, Sendable {
+    public let medianMs: Double
+    public let p95Ms: Double
+    public let maximumMs: Double
+    public let sampleCount: Int
+    public let timeoutCount: Int
+    public let warmupDurationMs: Int
+
+    public init(medianMs: Double, p95Ms: Double, maximumMs: Double, sampleCount: Int, timeoutCount: Int, warmupDurationMs: Int) {
+        self.medianMs = medianMs
+        self.p95Ms = p95Ms
+        self.maximumMs = maximumMs
+        self.sampleCount = sampleCount
+        self.timeoutCount = timeoutCount
+        self.warmupDurationMs = warmupDurationMs
+    }
+}
+
+public struct LoadPhaseEvidence: Codable, Equatable, Hashable, Sendable {
+    public let latency: LatencyEvidenceSummary?
+    public let usefulDurationMs: Int
+    public let bytesTransferred: Int64
+    public let averageMbps: Double?
+    public let saturation: LoadSaturationState
+
+    public init(latency: LatencyEvidenceSummary?, usefulDurationMs: Int, bytesTransferred: Int64, averageMbps: Double?, saturation: LoadSaturationState) {
+        self.latency = latency
+        self.usefulDurationMs = usefulDurationMs
+        self.bytesTransferred = bytesTransferred
+        self.averageMbps = averageMbps
+        self.saturation = saturation
+    }
+}
+
+/// Envelope aditivo e versionado da metodologia de responsividade. Os
+/// escalares legados seguem como projeção das medianas para compatibilidade.
+public struct LoadResponsivenessEvidence: Codable, Equatable, Hashable, Sendable {
+    public static let currentMethodologyVersion = 1
+
+    public let methodologyVersion: Int
+    public let environmentIdentifier: String
+    public let integrity: LoadResponsivenessIntegrity
+    public let baseline: LatencyEvidenceSummary?
+    public let download: LoadPhaseEvidence?
+    public let upload: LoadPhaseEvidence?
+
+    public init(
+        methodologyVersion: Int = Self.currentMethodologyVersion,
+        environmentIdentifier: String,
+        integrity: LoadResponsivenessIntegrity,
+        baseline: LatencyEvidenceSummary?,
+        download: LoadPhaseEvidence?,
+        upload: LoadPhaseEvidence?
+    ) {
+        self.methodologyVersion = methodologyVersion
+        self.environmentIdentifier = environmentIdentifier
+        self.integrity = integrity
+        self.baseline = baseline
+        self.download = download
+        self.upload = upload
+    }
+}
+
+public extension NetworkMeasurement {
+    /// Única porta de consumo dos escalares de latência sob carga. Registros
+    /// anteriores ao envelope continuam usando os fatos legados; quando o
+    /// envelope existe, porém, só a integridade `valid` autoriza expor suas
+    /// medianas a diagnóstico, Assist, tendência ou otimização.
+    var trustedLoadedLatencies: (downloadMs: Double?, uploadMs: Double?) {
+        guard let loadResponsiveness else {
+            return (loadedLatencyMs, loadedLatencyUploadMs)
+        }
+        guard loadResponsiveness.integrity == .valid else {
+            return (nil, nil)
+        }
+        return (
+            loadResponsiveness.download?.latency?.medianMs,
+            loadResponsiveness.upload?.latency?.medianMs
+        )
+    }
+}
+
 /// Contrato canônico de uma medição concluída ou parcialmente aproveitável.
 ///
 /// Contém somente fatos medidos e metadados técnicos mínimos. Diagnóstico,
@@ -29,6 +126,10 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
     /// (`NetworkInsights.LoadResponsivenessEvaluator`) precisa dos dois
     /// valores separadamente, não de um único campo ambíguo.
     public let loadedLatencyUploadMs: Double?
+    /// Evidência v1 de responsividade sob carga. Ausente em medições
+    /// anteriores; consumidores não podem reinterpretar esse legado como
+    /// uma medição de alta confiança.
+    public let loadResponsiveness: LoadResponsivenessEvidence?
     /// Tempo de resolução DNS (ms) do host usado no teste — issue Expert
     /// Mode. Campo aditivo: opcional, `nil` por padrão, não muda
     /// `schemaVersion`. Uma medição antiga decodifica com `nil`, mesmo
@@ -73,6 +174,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         packetLossPercent: Double? = nil,
         loadedLatencyMs: Double? = nil,
         loadedLatencyUploadMs: Double? = nil,
+        loadResponsiveness: LoadResponsivenessEvidence? = nil,
         dnsResolutionMs: Double? = nil,
         durationMs: Int? = nil,
         connectionKind: NetworkConnectionKind? = nil,
@@ -96,6 +198,7 @@ public struct NetworkMeasurement: Identifiable, Codable, Equatable, Hashable, Se
         self.packetLossPercent = packetLossPercent
         self.loadedLatencyMs = loadedLatencyMs
         self.loadedLatencyUploadMs = loadedLatencyUploadMs
+        self.loadResponsiveness = loadResponsiveness
         self.dnsResolutionMs = dnsResolutionMs
         self.durationMs = durationMs
         self.connectionKind = connectionKind
@@ -351,6 +454,45 @@ public enum NetworkMeasurementContract {
 
         if let durationMs = measurement.durationMs, durationMs < 0 {
             result.append("durationMs")
+        }
+
+        if let responsiveness = measurement.loadResponsiveness {
+            if responsiveness.methodologyVersion != LoadResponsivenessEvidence.currentMethodologyVersion || responsiveness.environmentIdentifier.isEmpty {
+                result.append("loadResponsiveness")
+            }
+
+            func validLatency(_ summary: LatencyEvidenceSummary?) -> Bool {
+                guard let summary else { return true }
+                return [summary.medianMs, summary.p95Ms, summary.maximumMs].allSatisfy { $0.isFinite && $0 >= 0 }
+                    && summary.medianMs <= summary.p95Ms
+                    && summary.p95Ms <= summary.maximumMs
+                    && summary.sampleCount > 0
+                    && summary.timeoutCount >= 0
+                    && summary.warmupDurationMs >= 0
+            }
+            func validPhase(_ phase: LoadPhaseEvidence?) -> Bool {
+                guard let phase else { return true }
+                return validLatency(phase.latency)
+                    && phase.usefulDurationMs >= 0
+                    && phase.bytesTransferred >= 0
+                    && (phase.averageMbps.map { $0.isFinite && $0 >= 0 } ?? true)
+            }
+
+            if !validLatency(responsiveness.baseline) || !validPhase(responsiveness.download) || !validPhase(responsiveness.upload) {
+                result.append("loadResponsiveness")
+            }
+            if let downloadMedian = responsiveness.download?.latency?.medianMs,
+               measurement.loadedLatencyMs != downloadMedian {
+                result.append("loadedLatencyMs")
+            }
+            if let uploadMedian = responsiveness.upload?.latency?.medianMs,
+               measurement.loadedLatencyUploadMs != uploadMedian {
+                result.append("loadedLatencyUploadMs")
+            }
+            if responsiveness.integrity == .valid,
+               (responsiveness.baseline == nil || responsiveness.download?.latency == nil || responsiveness.upload?.latency == nil || responsiveness.download?.saturation != .sustained || responsiveness.upload?.saturation != .sustained) {
+                result.append("loadResponsiveness")
+            }
         }
 
         if let wifiBandGHz = measurement.wifiBandGHz {

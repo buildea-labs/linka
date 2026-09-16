@@ -69,11 +69,7 @@ public struct OptimizationPlanBuilder: Sendable {
     public func build(baseline: NetworkMeasurement, history: [NetworkMeasurement]) -> OptimizationPlan {
         var opportunities: [OptimizationOpportunity] = []
 
-        let responsiveness = LoadResponsivenessEvaluator.evaluate(
-            idleLatencyMs: baseline.latencyMs,
-            loadedDownloadLatencyMs: baseline.loadedLatencyMs,
-            loadedUploadLatencyMs: baseline.loadedLatencyUploadMs
-        )
+        let responsiveness = LoadResponsivenessEvaluator.evaluateForConsumer(baseline)
         if responsiveness.category == .medium || responsiveness.category == .low {
             opportunities.append(OptimizationOpportunity(
                 id: "responsiveness-under-load-v1",

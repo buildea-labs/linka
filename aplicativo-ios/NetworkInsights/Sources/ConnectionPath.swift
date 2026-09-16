@@ -223,7 +223,8 @@ public struct ConnectionPathEvaluator: ConnectionPathEvaluating {
             }
         }
 
-        if let loaded = measurement.loadedLatencyMs, let idle = measurement.latencyMs {
+        let trustedLoadedLatency = measurement.trustedLoadedLatencies.downloadMs
+        if let loaded = trustedLoadedLatency, let idle = measurement.latencyMs {
             hasAnySignal = true
             let delta = loaded - idle
             if delta >= thresholds.routerLoadedLatencyDeltaProblemMs {

@@ -560,9 +560,26 @@ final class CloudKitMeasurementSyncTests: XCTestCase {
     // MARK: - Mapeamento CKRecord <-> NetworkMeasurement
 
     func testRecordRoundTripPreservesAllApprovedFields() {
-        let measurement = Self.makeMeasurement(
+        let summary = LatencyEvidenceSummary(medianMs: 12, p95Ms: 18, maximumMs: 20, sampleCount: 8, timeoutCount: 1, warmupDurationMs: 2_000)
+        let phase = LoadPhaseEvidence(latency: summary, usefulDurationMs: 10_000, bytesTransferred: 4_000_000, averageMbps: 80, saturation: .sustained)
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 120.5,
+            uploadMbps: 25.3,
+            latencyMs: 18,
+            jitterMs: 2,
+            packetLossPercent: 0,
+            loadedLatencyMs: 12,
+            loadedLatencyUploadMs: 12,
+            loadResponsiveness: LoadResponsivenessEvidence(
+                environmentIdentifier: "cloudflare-speedtest-v1",
+                integrity: .valid,
+                baseline: LatencyEvidenceSummary(medianMs: 18, p95Ms: 20, maximumMs: 22, sampleCount: 8, timeoutCount: 0, warmupDurationMs: 200),
+                download: phase,
+                upload: phase
+            ),
             connectionKind: .wifi,
-            wifiBand: 5.0,
+            wifiBandGHz: 5.0,
             serverIdentifier: "sp-42",
             engineVersion: "1.2.3"
         )
@@ -571,6 +588,14 @@ final class CloudKitMeasurementSyncTests: XCTestCase {
         let roundTripped = MeasurementRecordMapper.measurement(from: record)
 
         XCTAssertEqual(roundTripped, measurement)
+    }
+
+    func testLegacyRecordWithoutLoadResponsivenessStillDecodes() {
+        let measurement = Self.makeMeasurement()
+        let record = MeasurementRecordMapper.record(from: measurement)
+        XCTAssertNil(record["loadedLatencyUploadMs"])
+        XCTAssertNil(record["loadResponsivenessData"])
+        XCTAssertNil(MeasurementRecordMapper.measurement(from: record)?.loadResponsiveness)
     }
 
     func testRecordDoesNotSynchronizeWiFiIdentityByDefault() {

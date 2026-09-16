@@ -98,6 +98,33 @@ final class NetworkAssistInvestigationTests: XCTestCase {
         XCTAssertNotNil(latencyEvidence?.value)
     }
 
+    func testInconclusiveEnvelopeIsNotUsedAsAssistLoadedLatencyEvidence() {
+        let history = (0..<3).map { _ in
+            NetworkMeasurement(
+                outcome: .complete,
+                downloadMbps: 200,
+                uploadMbps: 50,
+                latencyMs: 15,
+                loadedLatencyMs: 250,
+                loadResponsiveness: LoadResponsivenessEvidence(
+                    environmentIdentifier: "cloudflare-speedtest-v1",
+                    integrity: .downloadInconclusive,
+                    baseline: nil,
+                    download: nil,
+                    upload: nil
+                ),
+                connectionKind: .wifi,
+                wifiBandGHz: 5
+            )
+        }
+        let result = NetworkAssistInvestigationEngine.investigate(
+            NetworkAssistInvestigationInput(failureSignal: .connectionLost(phase: .download), recentMeasurements: history)
+        )
+
+        XCTAssertNil(result.evidence.first { $0.metricKey == "loadedLatencyMs" })
+        XCTAssertTrue(result.missingSignals.contains(.loadedLatencyBaseline))
+    }
+
     func testConnectionLostWithUnstableHistoryLeansLocal() {
         let history = [
             measurement(outcome: .partial, connectionKind: .wifi),

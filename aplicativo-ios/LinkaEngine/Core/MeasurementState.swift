@@ -50,6 +50,10 @@ public struct MeasurementState {
     public var downloadThroughputVariation: Double?
     /// Mesma medida de `downloadThroughputVariation`, para a fase de upload.
     public var uploadThroughputVariation: Double?
+    /// Evidência da metodologia v1 de responsividade sob carga. Só é
+    /// preenchida no estado final; a UI continua recebendo os escalares
+    /// compatíveis durante as fases.
+    public var loadResponsiveness: EngineLoadResponsivenessEvidence?
     /// Motivo tipado de falha fatal (issue #66) — não-`nil` somente quando
     /// `phase == .error`. Só fato, sem copy: mensagem amigável é decisão da
     /// UI (ver `EngineFailureReason`).
@@ -57,7 +61,7 @@ public struct MeasurementState {
     
     public var location: (latitude: Double, longitude: Double)?
 
-    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: MeasurementNetworkKind? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, loadedLatencyUploadMs: Double? = nil, dnsResolutionMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil, failureReason: EngineFailureReason? = nil, location: (latitude: Double, longitude: Double)? = nil) {
+    public init(ping: Double? = nil, jitter: Double? = nil, packetLossPercent: Double? = nil, downloadSpeed: Double? = nil, uploadSpeed: Double? = nil, progress: Double = 0.0, phase: Phase = .idle, provider: String? = nil, networkType: MeasurementNetworkKind? = nil, duration: Double? = nil, loadedLatencyMs: Double? = nil, loadedLatencyUploadMs: Double? = nil, dnsResolutionMs: Double? = nil, downloadThroughputVariation: Double? = nil, uploadThroughputVariation: Double? = nil, loadResponsiveness: EngineLoadResponsivenessEvidence? = nil, failureReason: EngineFailureReason? = nil, location: (latitude: Double, longitude: Double)? = nil) {
         self.ping = ping
         self.jitter = jitter
         self.packetLossPercent = packetLossPercent
@@ -73,6 +77,7 @@ public struct MeasurementState {
         self.dnsResolutionMs = dnsResolutionMs
         self.downloadThroughputVariation = downloadThroughputVariation
         self.uploadThroughputVariation = uploadThroughputVariation
+        self.loadResponsiveness = loadResponsiveness
         self.failureReason = failureReason
         self.location = location
     }

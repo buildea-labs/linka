@@ -115,6 +115,10 @@ public class SpeedTestViewModel: ObservableObject {
     /// `loadedLatencyMs`) — mesmo motivo de não ser `@Published`.
     public private(set) var loadedLatencyUploadMs: Double? = nil
 
+    /// Envelope v1 de evidência. Não é publicado durante o teste: só o
+    /// resultado final pode expor uma integridade conclusiva ou parcial.
+    public private(set) var loadResponsiveness: LoadResponsivenessEvidence? = nil
+
     /// Tempo de resolução DNS (ms) do host usado no teste — Expert Mode.
     /// Mesmo motivo de não ser `@Published` que `loadedLatencyMs`: não deve
     /// competir com o resultado por re-render.
@@ -335,6 +339,7 @@ public class SpeedTestViewModel: ObservableObject {
         self.packetLossPercent = measurement.packetLossPercent
         self.loadedLatencyMs = measurement.loadedLatencyMs
         self.loadedLatencyUploadMs = measurement.loadedLatencyUploadMs
+        self.loadResponsiveness = measurement.loadResponsiveness
         self.dnsResolutionMs = measurement.dnsResolutionMs
         self.connectionKind = measurement.connectionKind
         self.wifiBandGHz = measurement.wifiBandGHz
@@ -379,6 +384,7 @@ public class SpeedTestViewModel: ObservableObject {
         testDuration = ""
         loadedLatencyMs = nil
         loadedLatencyUploadMs = nil
+        loadResponsiveness = nil
         dnsResolutionMs = nil
         rawTestDuration = nil
         failureReason = nil
@@ -497,6 +503,7 @@ public class SpeedTestViewModel: ObservableObject {
                         packetLossPercent: self.packetLossPercent,
                         loadedLatencyMs: self.loadedLatencyMs,
                         loadedLatencyUploadMs: self.loadedLatencyUploadMs,
+                        loadResponsiveness: self.loadResponsiveness,
                         dnsResolutionMs: self.dnsResolutionMs,
                         durationMs: self.rawTestDuration.map { Int(($0 * 1000).rounded()) },
                         connectionKind: self.connectionKind,
@@ -599,6 +606,7 @@ public class SpeedTestViewModel: ObservableObject {
         hasMeasuredPing = false
         loadedLatencyMs = nil
         loadedLatencyUploadMs = nil
+        loadResponsiveness = nil
         dnsResolutionMs = nil
         rawTestDuration = nil
         connectionKind = nil
@@ -825,6 +833,7 @@ public class SpeedTestViewModel: ObservableObject {
             packetLossPercent: measurement.packetLossPercent,
             loadedLatencyMs: measurement.loadedLatencyMs,
             loadedLatencyUploadMs: measurement.loadedLatencyUploadMs,
+            loadResponsiveness: measurement.loadResponsiveness,
             dnsResolutionMs: measurement.dnsResolutionMs,
             durationMs: measurement.durationMs,
             connectionKind: measurement.connectionKind,
@@ -870,6 +879,10 @@ public class SpeedTestViewModel: ObservableObject {
         }
         if let loss = state.packetLossPercent { self.packetLossPercent = loss }
         if let loadedLatency = state.loadedLatencyMs { self.loadedLatencyMs = loadedLatency }
+        if let loadedLatencyUpload = state.loadedLatencyUploadMs { self.loadedLatencyUploadMs = loadedLatencyUpload }
+        if let responsiveness = state.loadResponsiveness {
+            self.loadResponsiveness = Self.loadResponsivenessEvidence(from: responsiveness)
+        }
         if let dns = state.dnsResolutionMs { self.dnsResolutionMs = dns }
         if let reason = state.failureReason { self.failureReason = reason }
 
@@ -881,6 +894,48 @@ public class SpeedTestViewModel: ObservableObject {
         case .result: self.uiPhase = .done
         case .error: self.uiPhase = .error
         }
+    }
+
+    private static func loadResponsivenessEvidence(
+        from source: EngineLoadResponsivenessEvidence
+    ) -> LoadResponsivenessEvidence {
+        func latency(_ value: EngineLatencyStatistics?) -> LatencyEvidenceSummary? {
+            guard let value else { return nil }
+            return LatencyEvidenceSummary(
+                medianMs: value.medianMs,
+                p95Ms: value.p95Ms,
+                maximumMs: value.maximumMs,
+                sampleCount: value.sampleCount,
+                timeoutCount: value.timeoutCount,
+                warmupDurationMs: value.warmupDurationMs
+            )
+        }
+        func phase(_ value: EngineLoadedPhaseEvidence?) -> LoadPhaseEvidence? {
+            guard let value else { return nil }
+            let saturation: LoadSaturationState = value.saturation == .sustained ? .sustained : .insufficient
+            return LoadPhaseEvidence(
+                latency: latency(value.latency),
+                usefulDurationMs: value.usefulDurationMs,
+                bytesTransferred: value.bytesTransferred,
+                averageMbps: value.averageMbps,
+                saturation: saturation
+            )
+        }
+        let integrity: LoadResponsivenessIntegrity
+        switch source.integrity {
+        case .valid: integrity = .valid
+        case .baselineInconclusive: integrity = .baselineInconclusive
+        case .downloadInconclusive: integrity = .downloadInconclusive
+        case .uploadInconclusive: integrity = .uploadInconclusive
+        }
+        return LoadResponsivenessEvidence(
+            methodologyVersion: source.methodologyVersion,
+            environmentIdentifier: source.environmentIdentifier,
+            integrity: integrity,
+            baseline: latency(source.baseline),
+            download: phase(source.download),
+            upload: phase(source.upload)
+        )
     }
 
     private static func formattedDuration(_ seconds: Double) -> String {
