@@ -228,6 +228,98 @@ final class SpeedTestCorePhaseStabilityTests: XCTestCase {
 /// `hasConverged`/`shouldStopPhase`: a fase real bate em endpoint Cloudflare
 /// sem ponto de injeção.
 final class SpeedTestCoreLoadedMetricsTests: XCTestCase {
+    func testLatencyStatisticsUsesMedianP95AndPreservesProbeFailures() {
+        let statistics = SpeedTestCore.latencyStatistics(
+            samples: [10, 12, 14, 16, 100],
+            timeoutCount: 2,
+            warmupDuration: 2
+        )
+
+        XCTAssertEqual(statistics?.medianMs, 14)
+        XCTAssertEqual(statistics?.p95Ms, 100)
+        XCTAssertEqual(statistics?.maximumMs, 100)
+        XCTAssertEqual(statistics?.sampleCount, 5)
+        XCTAssertEqual(statistics?.timeoutCount, 2)
+        XCTAssertEqual(statistics?.warmupDurationMs, 2_000)
+    }
+
+    func testLoadIntegrityRequiresBothSustainedDirectionsAndBaseline() {
+        let baseline = EngineLatencyStatistics(medianMs: 10, p95Ms: 12, maximumMs: 14, sampleCount: 5, timeoutCount: 0, warmupDurationMs: 200)
+        let phase = EngineLoadedPhaseEvidence(
+            latency: EngineLatencyStatistics(medianMs: 20, p95Ms: 25, maximumMs: 30, sampleCount: 5, timeoutCount: 0, warmupDurationMs: 2_000),
+            usefulDurationMs: 10_000,
+            bytesTransferred: 1_000_000,
+            averageMbps: 80,
+            saturation: .sustained
+        )
+
+        XCTAssertEqual(SpeedTestCore.loadIntegrity(baseline: baseline, download: phase, upload: phase, baselineRemediationFailed: false), .valid)
+        XCTAssertEqual(SpeedTestCore.loadIntegrity(baseline: baseline, download: phase, upload: nil, baselineRemediationFailed: false), .uploadInconclusive)
+        XCTAssertEqual(SpeedTestCore.loadIntegrity(baseline: nil, download: phase, upload: phase, baselineRemediationFailed: false), .baselineInconclusive)
+    }
+
+    func testMateriallyInvertedLoadedLatencyRequiresBaselineRemediation() {
+        let baseline = EngineLatencyStatistics(medianMs: 100, p95Ms: 110, maximumMs: 120, sampleCount: 5, timeoutCount: 0, warmupDurationMs: 200)
+        let phase = EngineLoadedPhaseEvidence(
+            latency: EngineLatencyStatistics(medianMs: 70, p95Ms: 72, maximumMs: 75, sampleCount: 5, timeoutCount: 0, warmupDurationMs: 2_000),
+            usefulDurationMs: 10_000,
+            bytesTransferred: 1,
+            averageMbps: 1,
+            saturation: .sustained
+        )
+        XCTAssertTrue(SpeedTestCore.isMateriallyInverted(baseline: baseline, download: phase, upload: nil))
+    }
+
+    func testSaturationIsInsufficientWhenTrafficExistsOnlyBeforeWarmup() {
+        // O transporte falso teria transferido bytes no warm-up, mas deixou
+        // a janela útil sem bytes/amostras. Só os fatos pós-warm-up entram
+        // no gate, então não há evidência de carga sustentada.
+        let result = SpeedTestCore.loadSaturation(
+            usefulDuration: 10,
+            usefulBytes: 0,
+            usefulSampleCount: 0
+        )
+        XCTAssertEqual(result, .insufficient)
+    }
+
+    func testFakePreWarmupTrafficIsExcludedFromUsefulByteEvidence() async {
+        let counter = ByteCounter()
+        let phaseStart = Date(timeIntervalSince1970: 1_700_000_000)
+        // Falso transporte: completou tráfego durante o warm-up e parou.
+        await counter.add(5_000_000, at: phaseStart.addingTimeInterval(1.9))
+
+        let usefulBytes = await counter.total(completedAfter: phaseStart.addingTimeInterval(2))
+        let saturation = SpeedTestCore.loadSaturation(
+            usefulDuration: 10,
+            usefulBytes: usefulBytes,
+            usefulSampleCount: 0
+        )
+
+        XCTAssertEqual(usefulBytes, 0)
+        XCTAssertEqual(saturation, .insufficient)
+    }
+
+    func testSaturationRequiresPostWarmupSamplesToBeDistributed() {
+        XCTAssertEqual(
+            SpeedTestCore.loadSaturation(
+                usefulDuration: 10,
+                usefulBytes: 1_000_000,
+                usefulSampleCount: 8,
+                usefulSampleSpan: 0.9
+            ),
+            .insufficient
+        )
+        XCTAssertEqual(
+            SpeedTestCore.loadSaturation(
+                usefulDuration: 10,
+                usefulBytes: 1_000_000,
+                usefulSampleCount: 8,
+                usefulSampleSpan: 7
+            ),
+            .sustained
+        )
+    }
+
 
     // MARK: - aggregateLoadedLatency
 
@@ -372,6 +464,201 @@ final class SpeedTestCoreLoadedMetricsTests: XCTestCase {
         XCTAssertLessThan(result!, 0.05)
     }
 
+}
+
+/// Exercita o ciclo completo com transporte falso: diferentemente dos testes
+/// puros de `ByteCounter`, estes passam pelo `runPhaseTimeBased` real e
+/// comprovam que o corte temporal é aplicado ao resultado publicado.
+final class SpeedTestCoreLoadResponsivenessEndToEndTests: XCTestCase {
+    private struct ConnectedPath: PathStatusProvider {
+        func hasConnectivity() async -> Bool { true }
+    }
+
+    private struct NilProviderLookup: ProviderOrgLookup {
+        func fetchOrg() async throws -> String? { nil }
+    }
+
+    private static let testEnvironment = SpeedTestEnvironment(
+        identifier: "test-load-responsiveness",
+        downloadEndpoint: URL(string: "https://example.invalid/down")!,
+        uploadEndpoint: URL(string: "https://example.invalid/up")!,
+        latencyProbeEndpoint: URL(string: "https://example.invalid/probe")!
+    )
+
+    /// Mantém o algoritmo e as transições reais, apenas reduzindo o relógio
+    /// para a suíte. A configuração de produção continua sendo 2s + 10s.
+    private static let testTiming = SpeedTestTiming(
+        phaseMinDuration: 0.5,
+        phaseMaxDuration: 0.6,
+        loadWarmupDuration: 0.12,
+        minimumUsefulLoadDuration: 0.35,
+        sampleInterval: 0.03,
+        latencyProbeInterval: 0.04,
+        phaseTransitionDelay: 0.01,
+        baselineRemediationDrainDelay: 0.05
+    )
+
+    /// Entrega bytes apenas no começo de cada fase. Os workers continuam
+    /// vivos até o mínimo de 12s do motor, mas recebem 429 depois da rajada
+    /// inicial — exatamente o cenário que antes podia ser vendido como carga
+    /// sustentada ao somar bytes do warm-up.
+    private actor WarmupOnlyTransport: SpeedTestTransport {
+        private var downloadStartedAt: Date?
+        private var uploadStartedAt: Date?
+
+        func execute(_ request: SpeedTestTransportRequest) async throws -> SpeedTestTransportResponse {
+            switch request {
+            case .probe:
+                try await Task.sleep(nanoseconds: 1_000_000)
+                return SpeedTestTransportResponse(statusCode: 200, byteCount: 0)
+            case .download:
+                return try await transfer(isUpload: false, byteCount: 100_000)
+            case .upload(_, let payload):
+                return try await transfer(isUpload: true, byteCount: payload.count)
+            }
+        }
+
+        private func transfer(isUpload: Bool, byteCount: Int) async throws -> SpeedTestTransportResponse {
+            let now = Date()
+            let startedAt = isUpload ? uploadStartedAt : downloadStartedAt
+            if startedAt == nil {
+                if isUpload {
+                    uploadStartedAt = now
+                } else {
+                    downloadStartedAt = now
+                }
+            }
+            let elapsed = now.timeIntervalSince(startedAt ?? now)
+            // Mantém as conclusões bem antes dos 2s de warm-up.
+            try await Task.sleep(nanoseconds: 5_000_000)
+            return elapsed < 0.06
+                ? SpeedTestTransportResponse(statusCode: 200, byteCount: byteCount)
+                : SpeedTestTransportResponse(statusCode: 429, byteCount: 0)
+        }
+    }
+
+    func testRunTestWarmupOnlyTrafficPublishesInsufficientLoadEvidence() async throws {
+        let engine = SpeedTestCore(
+            providerLookup: NilProviderLookup(),
+            pathStatusProvider: ConnectedPath(),
+            environment: Self.testEnvironment,
+            transport: WarmupOnlyTransport(),
+            timing: Self.testTiming
+        )
+
+        var terminal: MeasurementState?
+        for try await state in await engine.runTest() {
+            terminal = state
+        }
+
+        let evidence = try XCTUnwrap(terminal?.loadResponsiveness)
+        XCTAssertEqual(terminal?.phase, .result)
+        XCTAssertEqual(evidence.download?.saturation, .insufficient)
+        XCTAssertEqual(evidence.upload?.saturation, .insufficient)
+        XCTAssertEqual(evidence.download?.bytesTransferred, 0)
+        XCTAssertEqual(evidence.upload?.bytesTransferred, 0)
+        XCTAssertEqual(evidence.integrity, .downloadInconclusive)
+    }
+
+    private actor StateRecorder {
+        private var states: [MeasurementState] = []
+        func append(_ state: MeasurementState) { states.append(state) }
+        func snapshot() -> [MeasurementState] { states }
+    }
+
+    /// O baseline inicial é deliberadamente mais lento que as sondagens sob
+    /// carga, o que força `remediatedBaselineIfNeeded`. O transporte detecta
+    /// a primeira probe após o dreno de 500ms e a mantém suspensa: cancelar
+    /// a consumidora nesse ponto precisa cortar o await e impedir `.result`.
+    private actor RemediationBlockingTransport: SpeedTestTransport {
+        private var probeCount = 0
+        private var lastTransferStartedAt: Date?
+        private var hasSeenUpload = false
+        private var remediationProbeStarted = false
+        private var remediationProbeCancelled = false
+
+        func execute(_ request: SpeedTestTransportRequest) async throws -> SpeedTestTransportResponse {
+            switch request {
+            case .download:
+                return try await transfer(byteCount: 100_000, isUpload: false)
+            case .upload(_, let payload):
+                return try await transfer(byteCount: payload.count, isUpload: true)
+            case .probe:
+                probeCount += 1
+                let timeSinceTransfer = Date().timeIntervalSince(lastTransferStartedAt ?? .distantFuture)
+                if probeCount > 10, hasSeenUpload, timeSinceTransfer >= 0.04 {
+                    remediationProbeStarted = true
+                    do {
+                        try await Task.sleep(nanoseconds: 5_000_000_000)
+                    } catch {
+                        remediationProbeCancelled = Task.isCancelled
+                        throw error
+                    }
+                }
+                try await Task.sleep(nanoseconds: probeCount <= 10 ? 50_000_000 : 1_000_000)
+                return SpeedTestTransportResponse(statusCode: 200, byteCount: 0)
+            }
+        }
+
+        private func transfer(byteCount: Int, isUpload: Bool) async throws -> SpeedTestTransportResponse {
+            lastTransferStartedAt = Date()
+            hasSeenUpload = hasSeenUpload || isUpload
+            try await Task.sleep(nanoseconds: 50_000_000)
+            return SpeedTestTransportResponse(statusCode: 200, byteCount: byteCount)
+        }
+
+        func remediationHasStarted() -> Bool { remediationProbeStarted }
+        func remediationWasCancelled() -> Bool { remediationProbeCancelled }
+    }
+
+    func testCancellingDuringBaselineRemediationDoesNotPublishResult() async throws {
+        let transport = RemediationBlockingTransport()
+        let engine = SpeedTestCore(
+            providerLookup: NilProviderLookup(),
+            pathStatusProvider: ConnectedPath(),
+            environment: Self.testEnvironment,
+            transport: transport,
+            timing: Self.testTiming
+        )
+        let recorder = StateRecorder()
+
+        let consumer = Task {
+            do {
+                for try await state in await engine.runTest() {
+                    await recorder.append(state)
+                }
+            } catch {
+                // O cancelamento da stream é o comportamento esperado aqui.
+            }
+        }
+
+        var remediationStarted = false
+        for _ in 0..<500 {
+            if await transport.remediationHasStarted() {
+                remediationStarted = true
+                break
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertTrue(remediationStarted, "o ciclo deveria chegar à remediação de baseline")
+
+        consumer.cancel()
+
+        var cancellationObserved = false
+        for _ in 0..<200 {
+            if await transport.remediationWasCancelled() {
+                cancellationObserved = true
+                break
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        await consumer.value
+
+        let states = await recorder.snapshot()
+        XCTAssertTrue(cancellationObserved, "o await da probe de remediação deveria observar o cancelamento")
+        XCTAssertFalse(states.contains { $0.phase == .result }, "cancelar na remediação não pode publicar conclusão")
+        XCTAssertFalse(states.contains { $0.loadResponsiveness != nil }, "nenhum envelope deve ser publicado após o cancelamento")
+    }
 }
 
 // Nota: `performLoadedLatencyProbe` bate em endpoint Cloudflare real e não

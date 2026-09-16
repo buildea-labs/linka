@@ -221,8 +221,9 @@ public struct UsageSuitabilityEvaluator: UsageSuitabilityEvaluating {
         // de jogo online (conexão ocupada) que o ping isolado — mas caímos
         // para `latencyMs` quando o motor não calculou `loadedLatencyMs`
         // para este teste, em vez de marcar como não avaliado à toa.
-        let latencyMetric: NetworkMetric = measurement.loadedLatencyMs != nil ? .loadedLatencyMs : .latencyMs
-        guard let latencyMs = measurement.loadedLatencyMs ?? measurement.latencyMs else {
+        let trustedLoadedLatency = measurement.trustedLoadedLatencies.downloadMs
+        let latencyMetric: NetworkMetric = trustedLoadedLatency != nil ? .loadedLatencyMs : .latencyMs
+        guard let latencyMs = trustedLoadedLatency ?? measurement.latencyMs else {
             return verdict(.onlineGaming, .notAssessed, .latencyMs)
         }
         guard let jitterMs = measurement.jitterMs else {

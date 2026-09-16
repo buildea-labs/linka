@@ -159,6 +159,10 @@ struct AssistProblemSelectionView: View {
         }
         .sheet(isPresented: $showAssist) {
             assistDestination(objective: assistObjective, subcategory: assistSubcategory, reportedProblem: assistReportedProblem)
+                // O resultado é uma etapa conclusiva da jornada. Ele fecha
+                // explicitamente por "Fechar"; não deve revelar a seleção
+                // anterior enquanto a pessoa arrasta a tela.
+                .interactiveDismissDisabled()
         }
     }
 

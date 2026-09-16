@@ -307,7 +307,7 @@ public enum NetworkAssistInvestigationEngine {
         in measurements: [NetworkMeasurement]
     ) -> (value: Double, measurementIDs: [UUID])? {
         let samples = measurements.compactMap { measurement -> (UUID, Double)? in
-            guard let latency = measurement.loadedLatencyMs else { return nil }
+            guard let latency = measurement.trustedLoadedLatencies.downloadMs else { return nil }
             return (measurement.id, latency)
         }
         guard !samples.isEmpty else { return nil }

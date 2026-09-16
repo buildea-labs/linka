@@ -177,6 +177,86 @@ ou alterar o algoritmo do speed test.
 
 # Architecture Plan — Home iOS fluida e Histórico #236
 
+# Architecture Plan — Responsividade sob carga de alta confiança
+
+## OBJETIVO
+
+Elevar a medição de responsividade sob carga do Linka sem alterar o fluxo
+`ABRIR → MEDIR → RESULTADO → REPETIR`: produzir um veredito apenas quando a
+evidência de baseline, carga sustentada e sondagem por direção for válida.
+
+## COMPORTAMENTO ESPERADO
+
+- A velocidade continua sendo o resultado principal; não há modo novo, WebView,
+  SDK de terceiros, Worker próprio ou CTA extra.
+- Detalhes apresenta responsividade em repouso, download e upload somente como
+  fatos medidos. Ausência/insuficiência vira “não avaliada”, nunca zero ou
+  categoria saudável.
+- O resultado geral exige baseline e as duas direções válidas. Uma direção
+  isolada pode aparecer como fato parcial, mas não gera veredito geral,
+  tendência, Assist ou otimização.
+- Histórico preserva a metodologia da época: dados legados seguem legados e
+  não ganham classificação de alta confiança retroativamente.
+
+## MUDANÇA TÉCNICA
+
+- `LinkaEngine`: introduzir ambiente/transporte injetável para os endpoints
+  Cloudflare existentes; coletar baseline por mediana após warm-up e evidência
+  por direção somente depois de carga sustentada. A janela de responsividade
+  tem duração útil fixa independente da convergência da vazão. Ponto inicial
+  para calibração: até 18 s por direção, com ao menos 10 s úteis; números não
+  viram promessa pública antes de teste físico.
+- `NetworkCore`: adicionar envelope opcional e versionado
+  `loadResponsiveness`, com resumo de baseline e de cada direção (mediana,
+  p95, máximo, amostras, timeouts, warm-up, duração útil, bytes/vazão e estado
+  de saturação), além de integridade tipada. Os escalares atuais permanecem
+  como projeção compatível das medianas.
+- `LinkaApp`: propagar `loadedLatencyUploadMs`, o envelope e a integridade do
+  estado do engine até `NetworkMeasurement`.
+- `MeasurementHistoryCloudKit`: sincronizar explicitamente upload e envelope;
+  registros remotos antigos sem esses campos continuam decodificando.
+- `NetworkInsights`: usar evidência v2 somente com integridade válida. O
+  avaliador atual fica como apresentação de metodologia legada, sem promoção
+  silenciosa de confiança.
+- `NetworkDiagnostics`, Assist e Optimization mantêm payload/caminho existente
+  nesta fatia; só consomem classificação v2 quando válida. Não ampliar NDS sem
+  contrato remoto aditivo separado.
+
+## ACEITE
+
+- Baseline e carga usam o mesmo ambiente lógico Cloudflare; não se declara
+  causalidade de roteador, ISP ou SQM.
+- Sondas antes de carga sustentada não entram nas estatísticas de carga.
+- Baseline contaminado ou materialmente invertido dispara uma única remedição
+  ociosa; persistindo a falha, a integridade é inconclusiva.
+- Falha/cancelamento/rede alterada preservam os fatos válidos de velocidade,
+  mas nunca geram veredito de responsividade.
+- JSON, FileHistory e CloudKit fazem round-trip de upload e do envelope novo;
+  JSON/record legado continua aceito.
+- Testes cobrem estatística, warm-up, saturação, perda, transições de
+  integridade, transporte falso, adaptador, persistência, consumidores e
+  compatibilidade.
+- Validação física posterior cobre iPhone e Mac, Wi-Fi/celular e links lentos
+  e rápidos; CI não é prova de saturação real ou comportamento de CDN.
+
+## NÃO-OBJETIVOS
+
+- Não integrar `@cloudflare/speedtest`, LibreSpeed, CoverageMap, widgets ou
+  WebView.
+- Não criar infraestrutura/Worker próprio nem mudar endpoint público nesta
+  fatia.
+- Não expor bufferbloat como nota, certificação ou diagnóstico causal.
+- Não reclassificar histórico anterior com a metodologia nova.
+
+## RISCOS / VALIDAÇÃO
+
+- Mais tempo, dados e bateria; o progresso deve refletir extensão controlada e
+  o cancelamento segue disponível.
+- HTTP/CDN pode não sustentar a carga: isso é `uncertain`/inconclusivo, nunca
+  ajuste silencioso.
+- WIP preexistente em RouterDiscovery/localizações, xcscheme e `.worktrees/`
+  é estritamente fora de escopo e deve permanecer intacto.
+
 ## OBJETIVO
 
 Implementar a Home iOS aprovada: leitura viva limpa, trilha factual de rede e

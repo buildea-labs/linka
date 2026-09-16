@@ -8,17 +8,31 @@ import Network
 /// (mais confiável que NSLock + delegate custom em iOS 26+).
 actor ByteCounter {
     private var value: Int64 = 0
-    func add(_ n: Int64) { value += n }
+    private var completions: [(date: Date, bytes: Int64)] = []
+    func add(_ n: Int64, at date: Date = Date()) {
+        value += n
+        completions.append((date, n))
+    }
     func total() -> Int64 { value }
+    func total(completedAfter date: Date) -> Int64 {
+        completions.lazy.filter { $0.date >= date }.map(\.bytes).reduce(0, +)
+    }
 }
 
 /// Coletor thread-safe de amostras double por fase (issue #52). Usado para
 /// juntar as sondagens de latência sob carga coletadas em paralelo à
 /// transferência real, sem acoplar a task de amostragem ao estado do ator.
-actor DoubleSampleCollector {
+actor LatencyProbeCollector {
     private var values: [Double] = []
-    func add(_ value: Double) { values.append(value) }
-    func all() -> [Double] { values }
+    private var timeoutCount = 0
+    func record(_ value: Double?) {
+        if let value, value.isFinite, value > 0 {
+            values.append(value)
+        } else {
+            timeoutCount += 1
+        }
+    }
+    func snapshot() -> (values: [Double], timeoutCount: Int) { (values, timeoutCount) }
 }
 
 /// Contador thread-safe de falhas fatais de transporte consecutivas por fase
@@ -109,6 +123,31 @@ public struct NWPathStatusProvider: PathStatusProvider {
     }
 }
 
+/// Relógio da medição. Produção mantém a janela de 2s + 10s; a variante
+/// interna injetável existe apenas para executar o mesmo ciclo de fases em
+/// testes determinísticos, sem transformar a suíte em um teste de 30s.
+struct SpeedTestTiming: Sendable {
+    let phaseMinDuration: TimeInterval
+    let phaseMaxDuration: TimeInterval
+    let loadWarmupDuration: TimeInterval
+    let minimumUsefulLoadDuration: TimeInterval
+    let sampleInterval: TimeInterval
+    let latencyProbeInterval: TimeInterval
+    let phaseTransitionDelay: TimeInterval
+    let baselineRemediationDrainDelay: TimeInterval
+
+    static let production = SpeedTestTiming(
+        phaseMinDuration: 12,
+        phaseMaxDuration: 18,
+        loadWarmupDuration: 2,
+        minimumUsefulLoadDuration: 10,
+        sampleInterval: 0.3,
+        latencyProbeInterval: 1,
+        phaseTransitionDelay: 0.5,
+        baselineRemediationDrainDelay: 0.5
+    )
+}
+
 public actor SpeedTestCore {
 
     // ----------------------------------------------------------------
@@ -122,8 +161,8 @@ public actor SpeedTestCore {
     // respeitando sempre um piso (`phaseMinDuration`) e um teto
     // (`phaseMaxDuration`) conhecidos:
     //
-    //   - `phaseMinDuration` (6s) garante amostras suficientes após o
-    //     warmup de conexão TCP/TLS antes de sequer considerar encerrar —
+    //   - `phaseMinDuration` (12s) garante dois segundos de warm-up e dez
+    //     segundos úteis de carga antes de sequer considerar encerrar —
     //     evita "convergência" espúria por poucas amostras iniciais.
     //   - `phaseMaxDuration` (18s) preserva o teto de hoje: em conexões
     //     instáveis que nunca convergem, o consumo de dados e o tempo
@@ -133,13 +172,13 @@ public actor SpeedTestCore {
     // (ver PR #62) justifica um piso/teto assimétrico entre as duas fases;
     // ambas usam os mesmos 4 streams e a mesma técnica de amostragem.
     // ----------------------------------------------------------------
-    private static let phaseMinDuration: TimeInterval = 6.0
-    private static let phaseMaxDuration: TimeInterval = 18.0
-
     private let providerLookup: ProviderOrgLookup
     private let providerEnrichmentTimeout: TimeInterval
     private let pathStatusProvider: PathStatusProvider
     private let locationTracker: LocationTracker
+    private let environment: SpeedTestEnvironment
+    private let transport: any SpeedTestTransport
+    private let timing: SpeedTestTiming
 
     /// - Parameters:
     ///   - providerLookup: fonte do dado bruto de provedor. Injetável para testes;
@@ -153,12 +192,34 @@ public actor SpeedTestCore {
     public init(
         providerLookup: ProviderOrgLookup = IPInfoOrgLookup(),
         providerEnrichmentTimeout: TimeInterval = 2.0,
-        pathStatusProvider: PathStatusProvider = NWPathStatusProvider()
+        pathStatusProvider: PathStatusProvider = NWPathStatusProvider(),
+        environment: SpeedTestEnvironment = .cloudflare,
+        transport: any SpeedTestTransport = URLSessionSpeedTestTransport()
     ) {
         self.providerLookup = providerLookup
         self.providerEnrichmentTimeout = providerEnrichmentTimeout
         self.pathStatusProvider = pathStatusProvider
         self.locationTracker = LocationTracker()
+        self.environment = environment
+        self.transport = transport
+        self.timing = .production
+    }
+
+    init(
+        providerLookup: ProviderOrgLookup,
+        providerEnrichmentTimeout: TimeInterval = 2.0,
+        pathStatusProvider: PathStatusProvider,
+        environment: SpeedTestEnvironment,
+        transport: any SpeedTestTransport,
+        timing: SpeedTestTiming
+    ) {
+        self.providerLookup = providerLookup
+        self.providerEnrichmentTimeout = providerEnrichmentTimeout
+        self.pathStatusProvider = pathStatusProvider
+        self.locationTracker = LocationTracker()
+        self.environment = environment
+        self.transport = transport
+        self.timing = timing
     }
 
     /// Starts the speed test and yields updates via an AsyncThrowingStream
@@ -229,7 +290,10 @@ public actor SpeedTestCore {
                     }
 
                     // Measure Ping and Packet Loss
-                    let pingOutcome = await SpeedTestCore.performPingTest()
+                    let pingOutcome = try await SpeedTestCore.performDetailedPingTest(
+                        environment: environment,
+                        transport: transport
+                    )
 
                     // `performPingTest()` roda até 10 sondagens sequenciais
                     // sem checar cancelamento internamente — sem este ponto
@@ -240,11 +304,13 @@ public actor SpeedTestCore {
                     // esta é a única lacuna real anterior a ele.
                     try Task.checkCancellation()
 
+                    let initialBaseline: BaselineMeasurement
                     switch pingOutcome {
-                    case .measured(let pingMs, let jitterMs, let lossPercent):
+                    case .measured(let pingMs, let jitterMs, let lossPercent, let baseline):
                         state.ping = pingMs
                         state.jitter = jitterMs
                         state.packetLossPercent = lossPercent
+                        initialBaseline = baseline
                     case .fatalFailure(let reason):
                         // Falha fatal já durante o ping (issue #85) — antes
                         // desta correção, uma conexão morta gastava os ~11s
@@ -272,7 +338,7 @@ public actor SpeedTestCore {
 
                     // ----------------------------------------------------
                     // Measure Download
-                    // 6s–18s adaptativo (issue #62), 4 streams, 10MB chunk.
+                    // 12s–18s adaptativo (issue #62), 4 streams, 10MB chunk.
                     // Chunks menores + menos streams reduzem drasticamente a
                     // chance de tomar 429 do Cloudflare em uso real (cada
                     // request pesa 60% menos e a rajada por segundo cai pela
@@ -280,17 +346,19 @@ public actor SpeedTestCore {
                     // ----------------------------------------------------
                     let downloadOutcome = try await runPhaseTimeBased(
                         phase: .download,
-                        minDuration: Self.phaseMinDuration,
-                        maxDuration: Self.phaseMaxDuration,
+                        minDuration: timing.phaseMinDuration,
+                        maxDuration: timing.phaseMaxDuration,
                         streams: 4,
                         bytes: 10_000_000, // 10 MB
                         state: &state,
                         continuation: continuation
                     )
 
+                    let downloadEvidence: EngineLoadedPhaseEvidence?
                     switch downloadOutcome {
-                    case .measured(let speed):
-                        state.downloadSpeed = speed
+                    case .measured(let measurement):
+                        state.downloadSpeed = measurement.speed
+                        downloadEvidence = measurement.evidence
                     case .fatalFailure(let reason):
                         // Preserva ping/jitter/packetLoss já capturados nesta
                         // fase anterior — só marca o fato tipado, sem
@@ -306,27 +374,29 @@ public actor SpeedTestCore {
                     continuation.yield(state)
 
                     // Pausa dramática para o respiro visual e percepção de mudança de fase
-                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    try? await Task.sleep(nanoseconds: UInt64(timing.phaseTransitionDelay * 1_000_000_000))
 
                     // ----------------------------------------------------
                     // Measure Upload
-                    // 6s–18s adaptativo (issue #62), 4 streams, 5MB chunk.
+                    // 12s–18s adaptativo (issue #62), 4 streams, 5MB chunk.
                     // Mesmo motivo do download: agressividade reduzida pra
                     // fugir de 429.
                     // ----------------------------------------------------
                     let uploadOutcome = try await runPhaseTimeBased(
                         phase: .upload,
-                        minDuration: Self.phaseMinDuration,
-                        maxDuration: Self.phaseMaxDuration,
+                        minDuration: timing.phaseMinDuration,
+                        maxDuration: timing.phaseMaxDuration,
                         streams: 4,
                         bytes: 5_000_000, // 5 MB
                         state: &state,
                         continuation: continuation
                     )
 
+                    let uploadEvidence: EngineLoadedPhaseEvidence?
                     switch uploadOutcome {
-                    case .measured(let speed):
-                        state.uploadSpeed = speed
+                    case .measured(let measurement):
+                        state.uploadSpeed = measurement.speed
+                        uploadEvidence = measurement.evidence
                     case .fatalFailure(let reason):
                         // Preserva o download já medido (e ping/jitter) —
                         // mesma regra do aborto na fase de download acima.
@@ -335,6 +405,29 @@ public actor SpeedTestCore {
                         continuation.finish()
                         return
                     }
+
+                    let finalBaseline = try await Self.remediatedBaselineIfNeeded(
+                        initial: initialBaseline,
+                        download: downloadEvidence,
+                        upload: uploadEvidence,
+                        environment: environment,
+                        transport: transport,
+                        drainDelay: timing.baselineRemediationDrainDelay
+                    )
+                    try Task.checkCancellation()
+                    state.ping = finalBaseline.statistics?.medianMs ?? state.ping
+                    state.loadResponsiveness = EngineLoadResponsivenessEvidence(
+                        environmentIdentifier: environment.identifier,
+                        integrity: Self.loadIntegrity(
+                            baseline: finalBaseline.statistics,
+                            download: downloadEvidence,
+                            upload: uploadEvidence,
+                            baselineRemediationFailed: finalBaseline.remediationFailed
+                        ),
+                        baseline: finalBaseline.statistics,
+                        download: downloadEvidence,
+                        upload: uploadEvidence
+                    )
 
                     // Anexa o provedor somente aqui, na virada para o resultado final.
                     // A essa altura download (18s) + upload (18s) já consumiram muito
@@ -376,8 +469,13 @@ public actor SpeedTestCore {
     /// Resultado de uma fase de transferência (issue #66): ou ela produziu
     /// uma vazão medida normalmente, ou abortou por falha fatal de
     /// transporte (`shouldAbortPhase`) antes de conseguir medir nada.
+    private struct PhaseMeasurement {
+        let speed: Double
+        let evidence: EngineLoadedPhaseEvidence
+    }
+
     private enum PhaseOutcome {
-        case measured(Double)
+        case measured(PhaseMeasurement)
         case fatalFailure(EngineFailureReason)
     }
 
@@ -387,6 +485,16 @@ public actor SpeedTestCore {
     public enum PingOutcome {
         case measured(latency: Double, jitter: Double, packetLossPercent: Double)
         case fatalFailure(EngineFailureReason)
+    }
+
+    private enum DetailedPingOutcome {
+        case measured(latency: Double, jitter: Double, packetLossPercent: Double, baseline: BaselineMeasurement)
+        case fatalFailure(EngineFailureReason)
+    }
+
+    private struct BaselineMeasurement {
+        let statistics: EngineLatencyStatistics?
+        let remediationFailed: Bool
     }
 
     private func runPhaseTimeBased(
@@ -400,9 +508,12 @@ public actor SpeedTestCore {
     ) async throws -> PhaseOutcome {
 
         let phaseStart = Date()
-        let sampleInterval = 0.3 // 300ms
+        let sampleInterval = timing.sampleInterval
         let counter = ByteCounter()
         let fatalErrorTracker = FatalErrorTracker()
+        let measurementEnvironment = environment
+        let measurementTransport = transport
+        let phaseTiming = timing
 
         // Random payload for upload to avoid compression caching at network level.
         let payload = phase == .upload ? generateRandomPayload(size: bytes) : nil
@@ -426,29 +537,23 @@ public actor SpeedTestCore {
         // ou no teto — nunca estende a duração calibrada por #62. O
         // intervalo de 1s entre sondagens mantém o custo de dados desprezível
         // (HEAD de 0 bytes) e não compete por banda com os streams de carga.
-        let latencyCollector: DoubleSampleCollector? = (phase == .download || phase == .upload)
-            ? DoubleSampleCollector()
+        let latencyCollector: LatencyProbeCollector? = (phase == .download || phase == .upload)
+            ? LatencyProbeCollector()
             : nil
         let latencySamplingTask: Task<Void, Never>? = latencyCollector.map { collector in
             Task.detached(priority: .utility) {
                 while Date().timeIntervalSince(phaseStart) < maxDuration && !Task.isCancelled {
-                    if let sample = await SpeedTestCore.performLoadedLatencyProbe() {
-                        await collector.add(sample)
+                    if Date().timeIntervalSince(phaseStart) >= phaseTiming.loadWarmupDuration {
+                        let sample = await SpeedTestCore.performLoadedLatencyProbe(
+                            environment: measurementEnvironment,
+                            transport: measurementTransport
+                        )
+                        await collector.record(sample)
                     }
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1s entre sondagens
+                    try? await Task.sleep(nanoseconds: UInt64(phaseTiming.latencyProbeInterval * 1_000_000_000))
                 }
             }
         }
-
-        // Ephemeral session sem delegate custom. Confiamos na API async
-        // de URLSession pra contar bytes por requisição concluída — muito
-        // mais confiável que o esquema anterior de delegate + NSLock, que
-        // silenciosamente não contabilizava dados de download em iOS 26.
-        let config = URLSessionConfiguration.ephemeral
-        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        config.httpMaximumConnectionsPerHost = streams + 2
-        config.timeoutIntervalForRequest = 30.0
-        let session = URLSession(configuration: config)
 
         let workersTask = Task {
             await withTaskGroup(of: Void.self) { group in
@@ -463,17 +568,13 @@ public actor SpeedTestCore {
                                 let bytesGained: Int64
                                 let statusCode: Int
                                 if phase == .download {
-                                    guard let url = URL(string: "https://speed.cloudflare.com/__down?bytes=\(bytes)") else { return }
-                                    let (data, response) = try await session.data(from: url)
-                                    statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-                                    bytesGained = statusCode == 200 ? Int64(data.count) : 0
+                                    let response = try await measurementTransport.execute(.download(measurementEnvironment.downloadURL(bytes: bytes)))
+                                    statusCode = response.statusCode
+                                    bytesGained = statusCode == 200 ? Int64(response.byteCount) : 0
                                 } else {
-                                    guard let url = URL(string: "https://speed.cloudflare.com/__up") else { return }
-                                    var request = URLRequest(url: url)
-                                    request.httpMethod = "POST"
                                     guard let payload else { return }
-                                    let (_, response) = try await session.upload(for: request, from: payload)
-                                    statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                                    let response = try await measurementTransport.execute(.upload(measurementEnvironment.uploadEndpoint, payload))
+                                    statusCode = response.statusCode
                                     bytesGained = statusCode == 200 ? Int64(payload.count) : 0
                                 }
                                 if bytesGained > 0 {
@@ -505,6 +606,8 @@ public actor SpeedTestCore {
         }
 
         var mbpsSamples: [Double] = []
+        var usefulMbpsSamples: [Double] = []
+        var usefulSampleDates: [Date] = []
         var smoothedMbps: Double = 0.0
         var lastTotal: Int64 = 0
 
@@ -520,6 +623,10 @@ public actor SpeedTestCore {
             if instantMbps > 0 {
                 smoothedMbps = smoothedMbps == 0 ? instantMbps : 0.3 * instantMbps + 0.7 * smoothedMbps
                 mbpsSamples.append(instantMbps)
+                if Date().timeIntervalSince(phaseStart) >= timing.loadWarmupDuration {
+                    usefulMbpsSamples.append(instantMbps)
+                    usefulSampleDates.append(Date())
+                }
 
                 if phase == .download {
                     state.downloadSpeed = smoothedMbps
@@ -552,7 +659,6 @@ public actor SpeedTestCore {
             if Self.shouldAbortPhase(consecutiveFatalErrors: fatalCount, bytesTransferred: total) {
                 workersTask.cancel()
                 _ = await workersTask.result
-                session.invalidateAndCancel()
                 latencySamplingTask?.cancel()
                 _ = await latencySamplingTask?.value
                 return .fatalFailure(.connectionLost(phase: phase))
@@ -575,7 +681,6 @@ public actor SpeedTestCore {
 
         workersTask.cancel()
         _ = await workersTask.result
-        session.invalidateAndCancel()
 
         // Encerra a sondagem de latência sob carga na mesma virada da carga
         // real — nunca sobrevive além da janela da fase. Falha ou ausência
@@ -586,28 +691,61 @@ public actor SpeedTestCore {
         // depende deste bloco.
         latencySamplingTask?.cancel()
         _ = await latencySamplingTask?.value
+        let elapsedTotal = Date().timeIntervalSince(phaseStart)
+        let usefulBytes = await counter.total(completedAfter: phaseStart.addingTimeInterval(timing.loadWarmupDuration))
+        let valid = mbpsSamples.filter { $0 > 0 }
+        let usefulDuration = max(0, elapsedTotal - timing.loadWarmupDuration)
+        let saturation = Self.loadSaturation(
+            usefulDuration: usefulDuration,
+            usefulBytes: usefulBytes,
+            usefulSampleCount: usefulMbpsSamples.count,
+            usefulSampleSpan: Self.sampleSpan(usefulSampleDates),
+            minimumUsefulDuration: timing.minimumUsefulLoadDuration
+        )
+        let phaseAverageMbps = usefulDuration > 0
+            ? (Double(usefulBytes) * 8.0) / usefulDuration / 1_000_000.0
+            : nil
+
+        let evidence: EngineLoadedPhaseEvidence
         if let latencyCollector {
-            let latencySamples = await latencyCollector.all()
-            let aggregatedLatency = Self.aggregateLoadedLatency(samples: latencySamples)
+            let snapshot = await latencyCollector.snapshot()
+            let latency = saturation == .sustained
+                ? Self.latencyStatistics(
+                    samples: snapshot.values,
+                    timeoutCount: snapshot.timeoutCount,
+                    warmupDuration: timing.loadWarmupDuration
+                )
+                : nil
+            let aggregatedLatency = latency?.medianMs
             if phase == .download {
                 state.loadedLatencyMs = aggregatedLatency
             } else {
                 state.loadedLatencyUploadMs = aggregatedLatency
             }
+            evidence = EngineLoadedPhaseEvidence(
+                latency: latency,
+                usefulDurationMs: Int((usefulDuration * 1_000).rounded()),
+                bytesTransferred: usefulBytes,
+                averageMbps: phaseAverageMbps,
+                saturation: saturation
+            )
+        } else {
+            evidence = EngineLoadedPhaseEvidence(
+                latency: nil,
+                usefulDurationMs: Int((usefulDuration * 1_000).rounded()),
+                bytesTransferred: usefulBytes,
+                averageMbps: phaseAverageMbps,
+                saturation: saturation
+            )
         }
 
         // Fallback: se nenhum sample instantâneo pegou nada (rede muito
         // rápida ou requisição única muito lenta), calcula pela média
         // global bytes / duração da fase — nunca retorna 0 se algum byte
         // foi contabilizado.
-        let elapsedTotal = Date().timeIntervalSince(phaseStart)
-        let totalBytes = await counter.total()
-        let averageMbps = elapsedTotal > 0
-            ? (Double(totalBytes) * 8.0) / elapsedTotal / 1_000_000.0
-            : 0.0
+        let averageMbps = phaseAverageMbps ?? 0.0
 
         // Janela estável (últimos 65%) — mesma técnica do SignallQ, corta warmup TCP.
-        let valid = mbpsSamples.filter { $0 > 0 }
         let stableStart = Int(ceil(Double(valid.count) * 0.35))
         let stable = valid.count > stableStart ? Array(valid[stableStart...]) : valid
         let stableAvg = stable.isEmpty ? 0.0 : stable.reduce(0, +) / Double(stable.count)
@@ -625,7 +763,7 @@ public actor SpeedTestCore {
             state.uploadThroughputVariation = variation
         }
 
-        return .measured(stableAvg > 0 ? stableAvg : averageMbps)
+        return .measured(PhaseMeasurement(speed: stableAvg > 0 ? stableAvg : averageMbps, evidence: evidence))
     }
 
     /// Critério de convergência de vazão (issue #62): decide se uma janela
@@ -836,6 +974,125 @@ public actor SpeedTestCore {
         return sorted[mid]
     }
 
+    /// Resume uma janela de sondagens sem promover uma única resposta a
+    /// evidência. O p95 usa nearest-rank, estável para conjuntos pequenos.
+    nonisolated static func latencyStatistics(
+        samples: [Double],
+        timeoutCount: Int,
+        warmupDuration: TimeInterval,
+        minimumSamples: Int = 5
+    ) -> EngineLatencyStatistics? {
+        let valid = samples.filter { $0.isFinite && $0 > 0 }.sorted()
+        guard valid.count >= minimumSamples else { return nil }
+        let middle = valid.count / 2
+        let median = valid.count.isMultiple(of: 2)
+            ? (valid[middle - 1] + valid[middle]) / 2
+            : valid[middle]
+        let p95Index = min(valid.count - 1, max(0, Int(ceil(Double(valid.count) * 0.95)) - 1))
+        return EngineLatencyStatistics(
+            medianMs: median,
+            p95Ms: valid[p95Index],
+            maximumMs: valid.last!,
+            sampleCount: valid.count,
+            timeoutCount: max(0, timeoutCount),
+            warmupDurationMs: Int((max(0, warmupDuration) * 1_000).rounded())
+        )
+    }
+
+    nonisolated static func loadIntegrity(
+        baseline: EngineLatencyStatistics?,
+        download: EngineLoadedPhaseEvidence?,
+        upload: EngineLoadedPhaseEvidence?,
+        baselineRemediationFailed: Bool
+    ) -> EngineLoadResponsivenessIntegrity {
+        if baseline == nil || baselineRemediationFailed { return .baselineInconclusive }
+        guard let download, download.saturation == .sustained, download.latency != nil else {
+            return .downloadInconclusive
+        }
+        guard let upload, upload.saturation == .sustained, upload.latency != nil else {
+            return .uploadInconclusive
+        }
+        return .valid
+    }
+
+    /// A saturação é deliberadamente calculada só com carga concluída após o
+    /// warm-up. Bytes/amostras da subida inicial jamais compensam uma janela
+    /// útil sem tráfego.
+    nonisolated static func loadSaturation(
+        usefulDuration: TimeInterval,
+        usefulBytes: Int64,
+        usefulSampleCount: Int,
+        usefulSampleSpan: TimeInterval? = nil,
+        minimumUsefulDuration: TimeInterval = 10
+    ) -> EngineLoadSaturation {
+        guard usefulDuration >= minimumUsefulDuration,
+              usefulBytes > 0,
+              usefulSampleCount >= 5 else {
+            return .insufficient
+        }
+
+        // Amostras pós-warm-up concentradas numa rajada curta não comprovam
+        // carga sustentada. No caminho real, elas precisam atravessar 60% da
+        // janela útil observada (ao menos 6s na janela mínima de 10s).
+        // O parâmetro opcional mantém compatibilidade com chamadores puros
+        // antigos; `runPhaseTimeBased` sempre informa as datas reais.
+        if let usefulSampleSpan {
+            let minimumDistributedSpan = max(
+                usefulDuration * 0.6,
+                minimumUsefulDuration * 0.6
+            )
+            guard usefulSampleSpan >= minimumDistributedSpan else {
+                return .insufficient
+            }
+        }
+        return .sustained
+    }
+
+    nonisolated private static func sampleSpan(_ dates: [Date]) -> TimeInterval? {
+        guard let first = dates.min(), let last = dates.max() else { return nil }
+        return max(0, last.timeIntervalSince(first))
+    }
+
+    /// Uma latência sob carga materialmente menor que o repouso normalmente
+    /// indica baseline contaminado (cache, rádio acordando, fila anterior),
+    /// não uma melhora que o Linka deva vender como fato.
+    nonisolated static func isMateriallyInverted(
+        baseline: EngineLatencyStatistics?,
+        download: EngineLoadedPhaseEvidence?,
+        upload: EngineLoadedPhaseEvidence?
+    ) -> Bool {
+        guard let baseline else { return false }
+        let loaded = [download?.latency?.medianMs, upload?.latency?.medianMs].compactMap { $0 }
+        return loaded.contains { $0 < baseline.medianMs * 0.8 }
+    }
+
+    private static func remediatedBaselineIfNeeded(
+        initial: BaselineMeasurement,
+        download: EngineLoadedPhaseEvidence?,
+        upload: EngineLoadedPhaseEvidence?,
+        environment: SpeedTestEnvironment,
+        transport: any SpeedTestTransport,
+        drainDelay: TimeInterval
+    ) async throws -> BaselineMeasurement {
+        guard isMateriallyInverted(baseline: initial.statistics, download: download, upload: upload) else {
+            return initial
+        }
+        // Dá à última transferência cancelada uma curta janela para drenar;
+        // sem isso a "remedição ociosa" ainda poderia testemunhar a própria
+        // cauda da carga que está tentando validar.
+        try await Task.sleep(nanoseconds: UInt64(drainDelay * 1_000_000_000))
+        try Task.checkCancellation()
+        switch try await performDetailedPingTest(environment: environment, transport: transport) {
+        case .measured(_, _, _, let retried):
+            return BaselineMeasurement(
+                statistics: retried.statistics,
+                remediationFailed: isMateriallyInverted(baseline: retried.statistics, download: download, upload: upload)
+            )
+        case .fatalFailure:
+            return BaselineMeasurement(statistics: initial.statistics, remediationFailed: true)
+        }
+    }
+
     /// Medida objetiva de variação de vazão (issue #52): coeficiente de
     /// variação (desvio padrão relativo à média) das amostras de mbps já
     /// coletadas na janela estável da fase (`stable`, a mesma usada para
@@ -878,21 +1135,38 @@ public actor SpeedTestCore {
     }
 
     public static func performPingTest() async -> PingOutcome {
+        let outcome: DetailedPingOutcome
+        do {
+            outcome = try await performDetailedPingTest(
+                environment: .cloudflare,
+                transport: URLSessionSpeedTestTransport()
+            )
+        } catch {
+            return .fatalFailure(.connectionLost(phase: .ping))
+        }
+        switch outcome {
+        case .measured(let latency, let jitter, let loss, _):
+            return .measured(latency: latency, jitter: jitter, packetLossPercent: loss)
+        case .fatalFailure(let reason):
+            return .fatalFailure(reason)
+        }
+    }
+
+    private static func performDetailedPingTest(
+        environment: SpeedTestEnvironment,
+        transport: any SpeedTestTransport
+    ) async throws -> DetailedPingOutcome {
         var latencies: [Double] = []
         var failures = 0
         var consecutiveFatalErrors = 0
         let totalPings = 10
 
         for _ in 0..<totalPings {
+            try Task.checkCancellation()
             let start = Date()
             do {
-                guard let url = URL(string: "https://speed.cloudflare.com/__down?bytes=0") else { continue }
-                var request = URLRequest(url: url)
-                request.httpMethod = "HEAD"
-                request.timeoutInterval = 1.0
-                request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-                let (_, response) = try await URLSession.shared.data(for: request)
-                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                let response = try await transport.execute(.probe(environment.latencyProbeEndpoint))
+                if response.statusCode == 200 {
                     let latency = Date().timeIntervalSince(start) * 1000.0
                     latencies.append(latency)
                     // Sondagem bem-sucedida prova que o transporte não está
@@ -924,16 +1198,26 @@ public actor SpeedTestCore {
                 failures += 1
             }
             // Small delay between pings
-            try? await Task.sleep(nanoseconds: 50_000_000)
+            try await Task.sleep(nanoseconds: 50_000_000)
         }
 
         let lossPercent = (Double(failures) / Double(totalPings)) * 100.0
 
         guard !latencies.isEmpty else {
-            return .measured(latency: 0.0, jitter: 0.0, packetLossPercent: lossPercent) // 100% loss
+            return .measured(
+                latency: 0.0,
+                jitter: 0.0,
+                packetLossPercent: lossPercent,
+                baseline: BaselineMeasurement(statistics: nil, remediationFailed: false)
+            ) // 100% loss
         }
 
-        let avgLatency = latencies.reduce(0, +) / Double(latencies.count)
+        let baselineSamples = Array(latencies.dropFirst(min(2, latencies.count)))
+        let baseline = BaselineMeasurement(
+            statistics: latencyStatistics(samples: baselineSamples, timeoutCount: failures, warmupDuration: 0.1),
+            remediationFailed: false
+        )
+        let representativeLatency = baseline.statistics?.medianMs ?? latencies.reduce(0, +) / Double(latencies.count)
 
         // Calculate Jitter (average of differences between consecutive pings)
         var jitterSum = 0.0
@@ -942,10 +1226,10 @@ public actor SpeedTestCore {
                 jitterSum += abs(latencies[i] - latencies[i-1])
             }
             let avgJitter = jitterSum / Double(latencies.count - 1)
-            return .measured(latency: avgLatency, jitter: avgJitter, packetLossPercent: lossPercent)
+            return .measured(latency: representativeLatency, jitter: avgJitter, packetLossPercent: lossPercent, baseline: baseline)
         }
 
-        return .measured(latency: avgLatency, jitter: 0.0, packetLossPercent: lossPercent)
+        return .measured(latency: representativeLatency, jitter: 0.0, packetLossPercent: lossPercent, baseline: baseline)
     }
 
     /// Resolução DNS cronometrada do host usado no teste — Expert Mode. Uma
@@ -1013,16 +1297,14 @@ public actor SpeedTestCore {
     ///   200, ou `nil` em qualquer falha/timeout/status diferente — nunca
     ///   lança, para nunca derrubar a task de amostragem que a chama em
     ///   loop.
-    nonisolated static func performLoadedLatencyProbe() async -> Double? {
+    nonisolated static func performLoadedLatencyProbe(
+        environment: SpeedTestEnvironment = .cloudflare,
+        transport: any SpeedTestTransport = URLSessionSpeedTestTransport()
+    ) async -> Double? {
         let start = Date()
         do {
-            guard let url = URL(string: "https://speed.cloudflare.com/__down?bytes=0") else { return nil }
-            var request = URLRequest(url: url)
-            request.httpMethod = "HEAD"
-            request.timeoutInterval = 1.0
-            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-            let (_, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            let response = try await transport.execute(.probe(environment.latencyProbeEndpoint))
+            guard response.statusCode == 200 else {
                 return nil
             }
             return Date().timeIntervalSince(start) * 1000.0

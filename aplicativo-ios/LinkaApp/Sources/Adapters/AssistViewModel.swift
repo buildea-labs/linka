@@ -174,11 +174,7 @@ final class AssistViewModel: ObservableObject {
 
         var allEvidence = [currentEvidence] + recentEvidence
         
-        let responsivenessResult = LoadResponsivenessEvaluator.evaluate(
-            idleLatencyMs: currentMeasurement.latencyMs,
-            loadedDownloadLatencyMs: currentMeasurement.loadedLatencyMs,
-            loadedUploadLatencyMs: currentMeasurement.loadedLatencyUploadMs
-        )
+        let responsivenessResult = LoadResponsivenessEvaluator.evaluateForConsumer(currentMeasurement)
         if responsivenessResult.category != .notAssessed {
             allEvidence.append(NetworkAssistEvidence(
                 id: "responsiveness:\(currentMeasurement.id.uuidString.lowercased())",

@@ -25,10 +25,11 @@ public struct NDSRequestBuilder: Sendable {
             band: bandStr
         )
         let speed = mapSpeed(downloadMbps: current.downloadMbps, uploadMbps: current.uploadMbps)
+        let trustedLoadedLatencies = current.trustedLoadedLatencies
         let quality = mapQuality(
             latencyMs: current.latencyMs,
-            loadedLatencyMs: current.loadedLatencyMs,
-            loadedLatencyUploadMs: current.loadedLatencyUploadMs,
+            loadedLatencyMs: trustedLoadedLatencies.downloadMs,
+            loadedLatencyUploadMs: trustedLoadedLatencies.uploadMs,
             dnsResolutionMs: current.dnsResolutionMs,
             jitterMs: current.jitterMs,
             packetLossPercent: current.packetLossPercent

@@ -3,6 +3,35 @@ import XCTest
 import NetworkCore
 
 final class NDSRequestBuilderTests: XCTestCase {
+    func testBuildRequestOmitsInconclusiveLoadedLatencyEnvelope() {
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 100,
+            uploadMbps: 50,
+            latencyMs: 20,
+            loadedLatencyMs: 300,
+            loadedLatencyUploadMs: 400,
+            loadResponsiveness: LoadResponsivenessEvidence(
+                environmentIdentifier: "cloudflare-speedtest-v1",
+                integrity: .uploadInconclusive,
+                baseline: nil,
+                download: nil,
+                upload: nil
+            )
+        )
+
+        let request = NDSRequestBuilder().buildRequest(
+            current: measurement,
+            platformHints: PlatformHints(),
+            appVersion: nil,
+            platformIdentifier: "ios",
+            requestAI: true
+        )
+        XCTAssertNil(request.quality?.loadedLatencyMs)
+        XCTAssertNil(request.quality?.loadedLatencyUploadMs)
+        XCTAssertEqual(request.quality?.latencyMs, 20)
+    }
+
     func testBuildRequest() throws {
         let builder = NDSRequestBuilder()
         let measurement = NetworkMeasurement(

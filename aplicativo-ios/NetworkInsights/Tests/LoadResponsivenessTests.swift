@@ -8,6 +8,24 @@ import NetworkCore
 /// não percentual, ver `LoadResponsivenessThresholds`. Função pura — sem
 /// rede, sem `Date()` ao vivo — mesmo espírito de `UsageSuitabilityTests`.
 final class LoadResponsivenessTests: XCTestCase {
+    func testHighConfidenceEvaluationRejectsIncompleteEnvelope() {
+        let measurement = NetworkMeasurement(
+            latencyMs: 10,
+            loadedLatencyMs: 200,
+            loadedLatencyUploadMs: 200,
+            loadResponsiveness: LoadResponsivenessEvidence(
+                environmentIdentifier: "cloudflare-speedtest-v1",
+                integrity: .downloadInconclusive,
+                baseline: nil,
+                download: nil,
+                upload: nil
+            )
+        )
+
+        XCTAssertEqual(LoadResponsivenessEvaluator.evaluateHighConfidence(measurement).category, .notAssessed)
+        XCTAssertEqual(LoadResponsivenessEvaluator.evaluateForConsumer(measurement).category, .notAssessed)
+    }
+
 
     // MARK: - Categorias com limiares padrão (high 30ms / medium 100ms)
 

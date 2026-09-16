@@ -10,6 +10,26 @@ final class NetworkOptimizationTests: XCTestCase {
         XCTAssertEqual(plan.opportunities.first?.action, .reduceConcurrentUse)
     }
 
+    func testInconclusiveEnvelopeCannotCreateLoadOpportunity() {
+        let measurement = NetworkMeasurement(
+            outcome: .complete,
+            downloadMbps: 100,
+            uploadMbps: 20,
+            latencyMs: 20,
+            loadedLatencyMs: 250,
+            loadedLatencyUploadMs: 300,
+            loadResponsiveness: LoadResponsivenessEvidence(
+                environmentIdentifier: "cloudflare-speedtest-v1",
+                integrity: .baselineInconclusive,
+                baseline: nil,
+                download: nil,
+                upload: nil
+            )
+        )
+
+        XCTAssertFalse(OptimizationPlanBuilder().build(baseline: measurement, history: []).opportunities.contains { $0.kind == .responsivenessUnderLoad })
+    }
+
     func testDoesNotInventHistoryWithoutConfirmedIdentity() {
         let measurement = sample(latency: 80, loaded: nil, ssid: nil)
         let history = (0..<4).map { _ in sample(latency: 20, loaded: nil, ssid: nil) }

@@ -58,6 +58,11 @@ public enum MeasurementRecordMapper {
         case jitterMs
         case packetLossPercent
         case loadedLatencyMs
+        case loadedLatencyUploadMs
+        /// JSON codificado do envelope aditivo. CloudKit não aceita structs
+        /// aninhadas; `Data` mantém o schema remoto compatível com records
+        /// antigos que naturalmente não possuem esta chave.
+        case loadResponsivenessData
         case durationMs
         case connectionKind
         case wifiBandGHz
@@ -91,6 +96,11 @@ public enum MeasurementRecordMapper {
         record[FieldKey.jitterMs.rawValue] = measurement.jitterMs
         record[FieldKey.packetLossPercent.rawValue] = measurement.packetLossPercent
         record[FieldKey.loadedLatencyMs.rawValue] = measurement.loadedLatencyMs
+        record[FieldKey.loadedLatencyUploadMs.rawValue] = measurement.loadedLatencyUploadMs
+        if let responsiveness = measurement.loadResponsiveness,
+           let encoded = try? JSONEncoder().encode(responsiveness) {
+            record[FieldKey.loadResponsivenessData.rawValue] = encoded as NSData
+        }
         record[FieldKey.durationMs.rawValue] = measurement.durationMs
         record[FieldKey.connectionKind.rawValue] = measurement.connectionKind?.rawValue
         record[FieldKey.wifiBandGHz.rawValue] = measurement.wifiBandGHz
@@ -129,6 +139,9 @@ public enum MeasurementRecordMapper {
             jitterMs: record[FieldKey.jitterMs.rawValue] as? Double,
             packetLossPercent: record[FieldKey.packetLossPercent.rawValue] as? Double,
             loadedLatencyMs: record[FieldKey.loadedLatencyMs.rawValue] as? Double,
+            loadedLatencyUploadMs: record[FieldKey.loadedLatencyUploadMs.rawValue] as? Double,
+            loadResponsiveness: (record[FieldKey.loadResponsivenessData.rawValue] as? Data)
+                .flatMap { try? JSONDecoder().decode(LoadResponsivenessEvidence.self, from: $0) },
             durationMs: record[FieldKey.durationMs.rawValue] as? Int,
             connectionKind: connectionKind,
             wifiBandGHz: record[FieldKey.wifiBandGHz.rawValue] as? Double,
@@ -196,6 +209,8 @@ public enum MeasurementConflictResolver {
             measurement.jitterMs != nil,
             measurement.packetLossPercent != nil,
             measurement.loadedLatencyMs != nil,
+            measurement.loadedLatencyUploadMs != nil,
+            measurement.loadResponsiveness != nil,
             measurement.durationMs != nil,
             measurement.connectionKind != nil,
             measurement.wifiBandGHz != nil,
@@ -220,6 +235,8 @@ public enum MeasurementConflictResolver {
             jitterMs: winner.jitterMs ?? loser.jitterMs,
             packetLossPercent: winner.packetLossPercent ?? loser.packetLossPercent,
             loadedLatencyMs: winner.loadedLatencyMs ?? loser.loadedLatencyMs,
+            loadedLatencyUploadMs: winner.loadedLatencyUploadMs ?? loser.loadedLatencyUploadMs,
+            loadResponsiveness: winner.loadResponsiveness ?? loser.loadResponsiveness,
             durationMs: winner.durationMs ?? loser.durationMs,
             connectionKind: winner.connectionKind ?? loser.connectionKind,
             wifiBandGHz: winner.wifiBandGHz ?? loser.wifiBandGHz,

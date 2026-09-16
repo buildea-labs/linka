@@ -100,6 +100,45 @@ public struct LoadResponsivenessResult: Codable, Equatable, Sendable {
 /// os três valores em mãos a partir de uma única medição — mas nada aqui
 /// impede um `NetworkMeasurement` de ser a fonte desses três `Double?`.
 public enum LoadResponsivenessEvaluator {
+    /// Avaliação destinada a consumidores que precisam de confiança alta.
+    /// Medições legadas continuam apresentáveis pelo método escalar abaixo,
+    /// mas não recebem promoção silenciosa para a metodologia v1.
+    public static func evaluateHighConfidence(
+        _ measurement: NetworkMeasurement,
+        thresholds: LoadResponsivenessThresholds = .init()
+    ) -> LoadResponsivenessResult {
+        guard measurement.loadResponsiveness?.integrity == .valid else {
+            return evaluate(
+                idleLatencyMs: nil,
+                loadedDownloadLatencyMs: nil,
+                loadedUploadLatencyMs: nil,
+                thresholds: thresholds
+            )
+        }
+        return evaluate(
+            idleLatencyMs: measurement.loadResponsiveness?.baseline?.medianMs,
+            loadedDownloadLatencyMs: measurement.loadResponsiveness?.download?.latency?.medianMs,
+            loadedUploadLatencyMs: measurement.loadResponsiveness?.upload?.latency?.medianMs,
+            thresholds: thresholds
+        )
+    }
+
+    /// Gate compartilhado pelos consumidores de produto. O fallback escalar
+    /// é exclusivamente para registros sem envelope (metodologia legada).
+    public static func evaluateForConsumer(
+        _ measurement: NetworkMeasurement,
+        thresholds: LoadResponsivenessThresholds = .init()
+    ) -> LoadResponsivenessResult {
+        let loaded = measurement.trustedLoadedLatencies
+        let idle = measurement.loadResponsiveness?.baseline?.medianMs ?? measurement.latencyMs
+        return evaluate(
+            idleLatencyMs: idle,
+            loadedDownloadLatencyMs: loaded.downloadMs,
+            loadedUploadLatencyMs: loaded.uploadMs,
+            thresholds: thresholds
+        )
+    }
+
     /// - Parameters:
     ///   - idleLatencyMs: latência parada (`NetworkMeasurement.latencyMs`) —
     ///     é a referência ("baseline") das duas comparações.
