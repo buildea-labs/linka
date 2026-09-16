@@ -251,7 +251,7 @@ struct MainView: View {
     /// função aqui é uma expressão pequena o bastante para inferir rápido.
     private var navigationContent: some View {
         let base = ZStack {
-            Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
+            Color.surfacePage.ignoresSafeArea()
             activeMeasurementView
         }
         .navigationTitle(mainTitle)
@@ -939,11 +939,11 @@ struct MainView: View {
                 .foregroundColor(.textSecondary)
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(value)
-                    .font(.headline.weight(.bold))
+                    .font(.metricSecondary)
                     .foregroundColor(.textPrimary)
                 if let unit {
                     Text(unit)
-                        .font(.caption2.weight(.medium))
+                        .font(.captionMedium)
                         .foregroundColor(.textSecondary)
                 }
             }

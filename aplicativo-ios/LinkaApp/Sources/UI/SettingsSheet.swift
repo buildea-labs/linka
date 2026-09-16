@@ -52,7 +52,7 @@ struct SettingsView: View {
                         LinkaPlusWordmarkView(height: 20)
                         Spacer()
                         Text(subscriptionStatusText)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.textSecondary)
                             .multilineTextAlignment(.trailing)
                             .lineLimit(2)
                         Image(systemName: "chevron.right")
@@ -150,7 +150,7 @@ struct SettingsView: View {
             Section {
                 Text(LinkaCopy.format("settings.version", appVersion))
                     .font(.footnote)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.textSecondary)
             }
         }
         #endif
@@ -422,10 +422,10 @@ struct SettingsView: View {
     private func settingsRow(title: String, value: String, systemImage: String) -> some View {
         HStack {
             Label(title, systemImage: systemImage)
-                .foregroundColor(.primary)
+                .foregroundColor(.textPrimary)
             Spacer()
             Text(value)
-                .foregroundColor(.secondary)
+                .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.trailing)
                 .lineLimit(2)
             Image(systemName: "chevron.right")
@@ -602,7 +602,7 @@ private struct MacRouterPanelView: View {
                 case .found(let gateway):
                     VStack(alignment: .leading, spacing: 8) {
                         Label("Painel encontrado", systemImage: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(.statusGood)
                         Text(gateway.ip)
                             .font(.bodySmallStrong)
                             .foregroundColor(.textPrimary)
@@ -617,7 +617,7 @@ private struct MacRouterPanelView: View {
                 case .unreachable(let gatewayIP):
                     VStack(alignment: .leading, spacing: 8) {
                         Label("Roteador encontrado, painel bloqueado", systemImage: "exclamationmark.shield")
-                            .foregroundColor(.orange)
+                            .foregroundColor(.statusAttention)
                         Text(gatewayIP)
                             .font(.bodySmallStrong)
                             .foregroundColor(.textPrimary)

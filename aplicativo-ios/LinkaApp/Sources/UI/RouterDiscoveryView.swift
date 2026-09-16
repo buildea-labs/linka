@@ -31,7 +31,7 @@ struct RouterDiscoveryView: View {
                 case .found(let gateway):
                     VStack(alignment: .leading, spacing: 8) {
                         Label(LinkaCopy.value("router.panel.found"), systemImage: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(.statusGood)
                         Text(gateway.ip).font(.footnote).foregroundColor(.secondary)
                         Button(LinkaCopy.value("router.panel.open")) { showOpenConfirmation = true }
                     }

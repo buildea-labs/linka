@@ -234,7 +234,7 @@ struct AssistView: View {
                     }
                     .padding(20)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 18))
+                    .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.lg))
 
                     // ─── 2. O QUE FAZER PARA RESOLVER OU MELHORAR ───
                     VStack(alignment: .leading, spacing: 12) {
@@ -295,7 +295,7 @@ struct AssistView: View {
                             }
                             .padding(18)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
+                            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.lg))
                         } else {
                             HStack(alignment: .center, spacing: 12) {
                                 Image(systemName: "checkmark.seal.fill")
@@ -308,7 +308,7 @@ struct AssistView: View {
                             }
                             .padding(18)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
+                            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.lg))
                         }
                     }
 
@@ -351,7 +351,7 @@ struct AssistView: View {
                             }
                         }
                         .padding(18)
-                        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
+                        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.lg))
                     }
 
                     // Padrões no seu histórico (quando aplicável)
@@ -734,7 +734,7 @@ private struct AssistWaitingAnalysisView: View {
                 }
             }
             .padding(18)
-            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 18))
+            .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.lg))
             .padding(.horizontal, 24)
 
             HStack(spacing: 8) {

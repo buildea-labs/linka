@@ -137,7 +137,7 @@ struct DNSBenchmarkView: View {
         case .active(let name):
             Section {
                 Label("Ativa: \(name) via DNS sobre HTTPS", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.statusGood)
                 Button("Medir de novo", action: onRetest)
                 Button("Atualizar estado") { Task { await configuration.refresh() } }
                 Button("Remover configuração de DNS", role: .destructive) { Task { await configuration.remove() } }
