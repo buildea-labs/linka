@@ -86,7 +86,7 @@ public struct OptimizationPlanBuilder: Sendable {
             opportunities.append(OptimizationOpportunity(
                 id: "unstable-connection-v1",
                 kind: .unstableConnection,
-                action: .moveCloserToRouter,
+                action: baseline.connectionKind == .wifi ? .moveCloserToRouter : .reduceConcurrentUse,
                 evidenceMeasurementIDs: [baseline.id],
                 confidence: baseline.packetLossPercent.map { $0 >= meaningfulLossPercent } == true ? 0.85 : 0.65
             ))
@@ -96,7 +96,7 @@ public struct OptimizationPlanBuilder: Sendable {
             opportunities.append(OptimizationOpportunity(
                 id: "below-usual-quality-v1",
                 kind: .belowUsualQuality,
-                action: .restartRouter,
+                action: hasHomeRouter(baseline.connectionKind) ? .restartRouter : .reduceConcurrentUse,
                 evidenceMeasurementIDs: [baseline.id] + historicalIDs,
                 confidence: 0.75
             ))
@@ -107,6 +107,21 @@ public struct OptimizationPlanBuilder: Sendable {
             return $0.id < $1.id
         }
         return OptimizationPlan(baselineMeasurementID: baseline.id, opportunities: ordered)
+    }
+
+    /// `restartRouter` só é necessária e possível quando a conexão realmente
+    /// passa por um roteador doméstico que a pessoa pode reiniciar — Wi-Fi ou
+    /// Ethernet. Numa conexão celular não existe roteador nenhum envolvido, e
+    /// `.other`/ausência de tipo é caso desconhecido demais para presumir essa
+    /// topologia. `moveCloserToRouter` é ainda mais restrita (só `.wifi`
+    /// acima, direto no call site): "se aproximar" só faz sentido pra sinal
+    /// sem fio — não existe "se aproximar" de um cabo Ethernet já conectado.
+    /// Quando a ação de roteador não se aplica, cai para `reduceConcurrentUse`
+    /// — a única ação deste conjunto que continua válida independente do tipo
+    /// de rede — mesma disciplina de `NetworkAssistActionEngine` (nunca
+    /// sugere uma ação sem evidência mínima de que ela se aplica).
+    private func hasHomeRouter(_ connectionKind: NetworkConnectionKind?) -> Bool {
+        connectionKind == .wifi || connectionKind == .ethernet
     }
 
     private func degradedHistoryEvidence(

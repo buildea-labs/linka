@@ -42,6 +42,47 @@ final class NetworkOptimizationTests: XCTestCase {
         XCTAssertEqual(OptimizationPlanBuilder().build(baseline: measurement, history: history).opportunities.count, 3)
     }
 
+    /// Não existe roteador para "reiniciar" ou "se aproximar" numa conexão
+    /// celular — a ação sugerida precisa continuar sendo necessária e
+    /// possível para o tipo de rede da medição (issue de padronização de
+    /// regras de Optimization/Assist).
+    func testCellularInstabilityNeverSuggestsRouterAction() {
+        let measurement = sample(latency: 100, loaded: nil, jitter: 30, loss: 5, connectionKind: .cellular)
+        let plan = OptimizationPlanBuilder().build(baseline: measurement, history: [])
+        let unstable = plan.opportunities.first { $0.kind == .unstableConnection }
+        XCTAssertEqual(unstable?.action, .reduceConcurrentUse)
+    }
+
+    /// "Se aproximar do roteador" só faz sentido pra sinal sem fio — não há
+    /// como "se aproximar" de um cabo Ethernet já conectado.
+    func testEthernetInstabilityDoesNotSuggestMovingCloserToRouter() {
+        let measurement = sample(latency: 100, loaded: nil, jitter: 30, loss: 5, connectionKind: .ethernet)
+        let plan = OptimizationPlanBuilder().build(baseline: measurement, history: [])
+        let unstable = plan.opportunities.first { $0.kind == .unstableConnection }
+        XCTAssertEqual(unstable?.action, .reduceConcurrentUse)
+    }
+
+    /// `restartRouter` continua válida para Ethernet (também passa por um
+    /// roteador doméstico), mas não para celular (não existe roteador
+    /// nenhum entre o aparelho e a operadora).
+    func testBelowUsualQualityActionRespectsConnectionKind() {
+        let ethernetHistory = (0..<3).map { _ in sample(latency: 20, loaded: nil, connectionKind: .ethernet) }
+        let ethernetBaseline = sample(latency: 100, loaded: nil, connectionKind: .ethernet)
+        let ethernetPlan = OptimizationPlanBuilder().build(baseline: ethernetBaseline, history: ethernetHistory)
+        XCTAssertEqual(
+            ethernetPlan.opportunities.first { $0.kind == .belowUsualQuality }?.action,
+            .restartRouter
+        )
+
+        let cellularHistory = (0..<3).map { _ in sample(latency: 20, loaded: nil, connectionKind: .cellular) }
+        let cellularBaseline = sample(latency: 100, loaded: nil, connectionKind: .cellular)
+        let cellularPlan = OptimizationPlanBuilder().build(baseline: cellularBaseline, history: cellularHistory)
+        XCTAssertEqual(
+            cellularPlan.opportunities.first { $0.kind == .belowUsualQuality }?.action,
+            .reduceConcurrentUse
+        )
+    }
+
     func testBaselineRequiresAtLeastThreeEligibleMeasurements() {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let builder = baselineBuilder()
@@ -184,7 +225,14 @@ final class NetworkOptimizationTests: XCTestCase {
         XCTAssertEqual(baselineComparator().compare(current: partial, against: baseline), .incompatible)
     }
 
-    private func sample(latency: Double, loaded: Double?, jitter: Double? = nil, loss: Double? = nil, ssid: String? = "Casa") -> NetworkMeasurement {
+    private func sample(
+        latency: Double,
+        loaded: Double?,
+        jitter: Double? = nil,
+        loss: Double? = nil,
+        ssid: String? = "Casa",
+        connectionKind: NetworkConnectionKind = .wifi
+    ) -> NetworkMeasurement {
         NetworkMeasurement(
             outcome: .complete,
             downloadMbps: 100,
@@ -192,8 +240,9 @@ final class NetworkOptimizationTests: XCTestCase {
             jitterMs: jitter,
             packetLossPercent: loss,
             loadedLatencyMs: loaded,
-            connectionKind: .wifi,
-            wifiContext: WiFiNetworkContext(ssid: ssid)
+            connectionKind: connectionKind,
+            wifiContext: connectionKind == .wifi ? WiFiNetworkContext(ssid: ssid) : nil,
+            networkIdentifier: connectionKind == .wifi ? nil : "Operadora"
         )
     }
 
