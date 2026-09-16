@@ -354,7 +354,7 @@ struct MacMainView: View {
                 // Header (Network name)
                 HStack {
                     Text(liveConnectionName)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.bodySmallStrong)
                         .foregroundColor(.textPrimary)
                         .lineLimit(1)
                     Spacer()
@@ -415,7 +415,7 @@ struct MacMainView: View {
             .padding(.bottom, 4)
 
             Text("Pronto para testar sua velocidade")
-                .font(.system(size: 22, weight: .bold))
+                .font(.displayTitle)
                 .foregroundColor(.textPrimary)
         }
         .frame(maxWidth: .infinity)
@@ -427,7 +427,7 @@ struct MacMainView: View {
                 Image(systemName: "calendar")
                     .font(.system(size: 11, weight: .regular))
                 Text(Self.dateFormatter.string(from: m.measuredAt))
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.captionMedium)
             }
             Text("•")
                 .foregroundColor(.borderDefault)
@@ -435,7 +435,7 @@ struct MacMainView: View {
                 Image(systemName: "network")
                     .font(.system(size: 11, weight: .regular))
                 Text(networkLabel(for: m))
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.captionMedium)
             }
             if let server = m.networkIdentifier, !server.isEmpty {
                 Text("•")
@@ -444,7 +444,7 @@ struct MacMainView: View {
                     Image(systemName: "server.rack")
                         .font(.system(size: 11, weight: .regular))
                     Text(server)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.captionMedium)
                 }
             }
         }
@@ -572,7 +572,7 @@ struct MacMainView: View {
                 .font(.system(size: 15, weight: .regular))
                 .foregroundColor(color)
             Text(title)
-                .font(.system(size: 13, weight: .medium))
+                .font(.captionMedium)
                 .foregroundColor(.textPrimary)
         }
         .padding(.horizontal, 16)
@@ -592,7 +592,7 @@ struct MacMainView: View {
                         .fill(Color.statusGood)
                         .frame(width: 7, height: 7)
                     Text("Sua Rede Agora")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.captionSmallStrong)
                         .foregroundColor(.textPrimary)
                 }
                 
@@ -795,10 +795,10 @@ struct MacMainView: View {
     private func wifiDetail(label: String, value: String) -> some View {
         HStack(spacing: 6) {
             Text(label + ":")
-                .font(.system(size: 12, weight: .medium))
+                .font(.captionMedium)
                 .foregroundColor(.textSecondary)
             Text(value)
-                .font(.system(size: 12, weight: .bold))
+                .font(.captionSmallStrong)
                 .foregroundColor(.textPrimary)
         }
     }
@@ -882,7 +882,7 @@ struct MacMainView: View {
                 .fill(statusDotColor)
                 .frame(width: 6, height: 6)
             Text(phaseMessage)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.captionSmallStrong)
                 .foregroundColor(.textSecondary)
         }
         .padding(.horizontal, 14)
@@ -911,14 +911,14 @@ struct MacMainView: View {
     private func footerStatBlock(label: String, value: String, unit: String) -> some View {
         VStack(spacing: 6) {
             Text(label)
-                .font(.system(size: 13, weight: .medium))
+                .font(.captionMedium)
                 .foregroundColor(.textSecondary)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(value)
                     .font(.system(size: 24, weight: .semibold, design: .monospaced))
                     .foregroundColor(.textPrimary)
                 Text(unit)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.captionSmallStrong)
                     .foregroundColor(.textSecondary)
             }
         }
@@ -1288,7 +1288,7 @@ struct MacMainView: View {
 
             VStack(spacing: 8) {
                 Text("Linka Assist")
-                    .font(.system(size: 26, weight: .bold))
+                    .font(.displayLarge)
                     .foregroundColor(.textPrimary)
                 Text("Diagnóstico inteligente e recomendações guiadas para a sua conexão.")
                     .font(.bodyRegular)
