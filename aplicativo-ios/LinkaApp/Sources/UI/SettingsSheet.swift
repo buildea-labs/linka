@@ -71,10 +71,10 @@ struct SettingsView: View {
                     settingsRow(title: LinkaCopy.value("settings.advancedWiFi.title"), value: advancedWiFiStatusText, systemImage: "waveform.path.ecg")
                 }
                 Button { showNetworkProfiles = true } label: {
-                    settingsRow(title: LinkaCopy.value("profiles.settings.title"), value: "", systemImage: "tag")
+                    settingsRow(title: LinkaCopy.value("environments.saved.title"), value: "", systemImage: "mappin.and.ellipse")
                 }
-                .accessibilityLabel(LinkaCopy.value("profiles.settings.title"))
-                .accessibilityHint(LinkaCopy.value("profiles.settings.accessibilityHint"))
+                .accessibilityLabel(LinkaCopy.value("environments.saved.title"))
+                .accessibilityHint(LinkaCopy.value("environments.settings.accessibilityHint"))
             }
 
             Section(LinkaCopy.value("settings.section.tools")) {
@@ -324,11 +324,11 @@ struct SettingsView: View {
                             showPurchase = true
                         }
                     )) {
-                        macRow(LinkaCopy.value("profiles.settings.title"), systemImage: "tag", showsChevron: true)
+                        macRow(LinkaCopy.value("environments.saved.title"), systemImage: "mappin.and.ellipse", showsChevron: true)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(LinkaCopy.value("profiles.settings.title"))
-                    .accessibilityHint(LinkaCopy.value("profiles.settings.accessibilityHint"))
+                    .accessibilityLabel(LinkaCopy.value("environments.saved.title"))
+                    .accessibilityHint(LinkaCopy.value("environments.settings.accessibilityHint"))
                 }
 
                 macSection(title: LinkaCopy.value("Ferramentas")) {

@@ -14,7 +14,7 @@ struct OptimizationView: View {
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var profileCoordinator = OptimizationProfileCoordinator()
-    @State private var isPresentingProfileCreation = false
+    @State private var isPresentingEnvironmentCreation = false
 
     private var plan: OptimizationPlan {
         OptimizationPlanBuilder().build(baseline: baseline, history: history)
@@ -57,7 +57,7 @@ struct OptimizationView: View {
                     isPlusActive: isPlusActive,
                     onRequestPurchase: onRequestPurchase,
                     onManageIdentification: onManageIdentification,
-                    isPresentingCreation: $isPresentingProfileCreation
+                    isPresentingCreation: $isPresentingEnvironmentCreation
                 )
 
                 Section {
@@ -109,18 +109,15 @@ struct OptimizationView: View {
                 }
             }
         }
-        // A apresentação pertence à tela estável de Otimização, não à linha
-        // condicional da rede atual. Assim uma atualização de SSID/perfil não
-        // desmonta a view que sustenta a sheet enquanto a pessoa digita.
-        .sheet(isPresented: $isPresentingProfileCreation) {
+        .sheet(isPresented: $isPresentingEnvironmentCreation) {
             NetworkProfileNameEditor(
-                title: LinkaCopy.value("profiles.create.title"),
+                title: LinkaCopy.value("environments.create.title"),
                 name: "",
-                saveTitle: LinkaCopy.value("profiles.create.save")
+                saveTitle: LinkaCopy.value("environments.create.save")
             ) { name in
                 Task {
-                    if await profileCoordinator.createProfile(named: name) {
-                        isPresentingProfileCreation = false
+                    if await profileCoordinator.createAndAssignCurrentMeasurement(named: name) {
+                        isPresentingEnvironmentCreation = false
                     }
                 }
             }

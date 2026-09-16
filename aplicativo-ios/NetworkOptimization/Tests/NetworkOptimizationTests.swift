@@ -33,6 +33,21 @@ final class NetworkOptimizationTests: XCTestCase {
         XCTAssertNil(builder.build(profileIdentity: "casa", measurements: measurements, referenceDate: now))
     }
 
+    func testBaselineOnlyUsesExplicitEnvironmentAssignments() throws {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let room = "room-id"
+        let otherRoom = "other-room-id"
+        let first = baselineSample(measuredAt: now.addingTimeInterval(-1))
+        let second = baselineSample(measuredAt: now.addingTimeInterval(-2))
+        let third = baselineSample(measuredAt: now.addingTimeInterval(-3))
+        let unassigned = baselineSample(measuredAt: now.addingTimeInterval(-4))
+        let other = baselineSample(measuredAt: now.addingTimeInterval(-5))
+        let assignments = [first.id: room, second.id: room, third.id: room, other.id: otherRoom]
+        let builder = NetworkBaselineBuilder { assignments[$0.id] }
+        let baseline = try XCTUnwrap(builder.build(profileIdentity: room, measurements: [first, second, third, unassigned, other], referenceDate: now))
+        XCTAssertEqual(Set(baseline.measurementIDs), Set([first.id, second.id, third.id]))
+    }
+
     func testBaselineExcludesMeasurementsOutsideThirtyDayWindow() {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let builder = baselineBuilder()
