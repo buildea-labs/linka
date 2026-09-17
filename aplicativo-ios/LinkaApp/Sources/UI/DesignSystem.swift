@@ -361,6 +361,25 @@ public extension View {
     func linkaCard(cornerRadius: CGFloat = LinkaRadius.md) -> some View {
         background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
+
+    /// Largura da coluna de conteúdo principal do fluxo de medição (idle,
+    /// medindo, resultado): 500pt em compact (iPhone, igual a sempre); 720pt
+    /// em regular (iPad) — nem esticado borda a borda, nem uma coluna de
+    /// tamanho de iPhone flutuando no meio de uma tela maior. Único lugar
+    /// que decide esse número; qualquer outra tela cheia (não-sheet) do
+    /// fluxo principal reaproveita em vez de duplicar a constante.
+    func linkaAdaptiveContentWidth() -> some View {
+        modifier(LinkaAdaptiveContentWidthModifier())
+    }
+}
+
+private struct LinkaAdaptiveContentWidthModifier: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: horizontalSizeClass == .regular ? 720 : 500)
+    }
 }
 
 /// Resolves copy through the language chosen in Linka's Settings. SwiftUI's

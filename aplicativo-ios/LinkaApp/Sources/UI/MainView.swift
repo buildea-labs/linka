@@ -255,10 +255,14 @@ struct MainView: View {
             // Sem isso, o conteúdo (pensado na largura de um iPhone) esticava
             // borda a borda na tela maior do iPad, parecendo um iPhone
             // ampliado em vez de um app nativo. Em iPhone o efeito é nulo —
-            // a tela já é mais estreita que 500pt. Não afeta o Mac
-            // (MacMainView é uma tela própria, sem relação com este arquivo).
+            // a tela já é mais estreita que 500pt. Em iPad (.regular), a
+            // coluna cresce para 720pt em vez de ficar travada em 500pt —
+            // mesma pilha vertical, mesmos componentes, só redimensionada
+            // (ver linkaAdaptiveContentWidth() em DesignSystem.swift). Não
+            // afeta o Mac (MacMainView é uma tela própria, sem relação com
+            // este arquivo).
             activeMeasurementView
-                .frame(maxWidth: 500)
+                .linkaAdaptiveContentWidth()
         }
         .navigationTitle(mainTitle)
         #if os(iOS)
