@@ -252,15 +252,13 @@ struct MainView: View {
     private var navigationContent: some View {
         let base = ZStack {
             Color.surfacePage.ignoresSafeArea()
-            // Sem isso, o conteúdo (pensado na largura de um iPhone) esticava
-            // borda a borda na tela maior do iPad, parecendo um iPhone
-            // ampliado em vez de um app nativo. Em iPhone o efeito é nulo —
-            // a tela já é mais estreita que 500pt. Em iPad (.regular), a
-            // coluna cresce para 720pt em vez de ficar travada em 500pt —
-            // mesma pilha vertical, mesmos componentes, só redimensionada
-            // (ver linkaAdaptiveContentWidth() em DesignSystem.swift). Não
-            // afeta o Mac (MacMainView é uma tela própria, sem relação com
-            // este arquivo).
+            // Em iPhone (.compact) trava em 500pt — sem isso o conteúdo
+            // (pensado na largura de um iPhone) esticaria borda a borda
+            // mesmo aí. Em iPad (.regular), por pedido explícito do Luiz,
+            // preenche a tela inteira sem limite (ver
+            // linkaAdaptiveContentWidth() em DesignSystem.swift). Não afeta
+            // o Mac (MacMainView é uma tela própria, sem relação com este
+            // arquivo).
             activeMeasurementView
                 .linkaAdaptiveContentWidth()
         }
