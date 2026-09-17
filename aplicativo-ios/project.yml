@@ -23,7 +23,9 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "2Z4T8228GR"
         PRODUCT_BUNDLE_IDENTIFIER: com.linka.assist
-        TARGETED_DEVICE_FAMILY: "1"
+        # 1 = iPhone, 2 = iPad. Reabre iPad no build (decisão do Luiz,
+        # 2026-09-16) depois do V1 iPhone-only de 2026-09-07 (012c63fd).
+        TARGETED_DEVICE_FAMILY: "1,2"
       configs:
         Debug:
           APS_ENVIRONMENT: development
@@ -55,6 +57,23 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        # iPhone continua só retrato (decisão preservada). iPad ganha as
+        # quatro orientações — é o único jeito de a coluna adaptativa
+        # (linkaAdaptiveContentWidth) fazer sentido em paisagem também.
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Sem isso, iPadOS trata o Linka como app "regular" de Stage
+        # Manager: abre em janela flutuante redimensionável, com o papel de
+        # parede da Tela de Início visível ao redor — exatamente o efeito
+        # que o Luiz rejeitou. Um app de medição de propósito único deve
+        # sempre abrir em tela cheia, sem competir por espaço com outras
+        # janelas (mesmo princípio de "medir vem primeiro" do AGENTS.md).
+        # Efeito colateral aceito: o Linka também fica fora de Split
+        # View/Slide Over no iPad — não dá para meia-tela com outro app.
+        UIRequiresFullScreen: true
     sources:
       - path: LinkaApp/Sources
       - path: LinkaApp/Resources

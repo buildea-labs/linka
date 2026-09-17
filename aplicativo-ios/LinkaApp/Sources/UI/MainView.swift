@@ -140,6 +140,13 @@ struct MainView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.requestReview) private var requestReview
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    /// Em .regular (iPad, agora sem limite de largura) os ícones e o anel
+    /// de medição precisam de um degrau maior — sem isso, o conteúdo
+    /// original (pensado pro iPhone) fica pequeno demais boiando numa tela
+    /// grande, mesmo com o fundo preenchendo tudo.
+    private var isPad: Bool { horizontalSizeClass == .regular }
 
     @AppStorage(LinkaWiFiPreferences.advancedConfiguredKey) private var advancedWiFiConfigured = false
     @AppStorage(LinkaWiFiPreferences.advancedDiagnosticsEnabledKey) private var advancedWiFiEnabled = true
@@ -252,13 +259,15 @@ struct MainView: View {
     private var navigationContent: some View {
         let base = ZStack {
             Color.surfacePage.ignoresSafeArea()
-            // Sem isso, o conteúdo (pensado na largura de um iPhone) esticava
-            // borda a borda na tela maior do iPad, parecendo um iPhone
-            // ampliado em vez de um app nativo. Em iPhone o efeito é nulo —
-            // a tela já é mais estreita que 500pt. Não afeta o Mac
-            // (MacMainView é uma tela própria, sem relação com este arquivo).
+            // Em iPhone (.compact) trava em 500pt — sem isso o conteúdo
+            // (pensado na largura de um iPhone) esticaria borda a borda
+            // mesmo aí. Em iPad (.regular), por pedido explícito do Luiz,
+            // preenche a tela inteira sem limite (ver
+            // linkaAdaptiveContentWidth() em DesignSystem.swift). Não afeta
+            // o Mac (MacMainView é uma tela própria, sem relação com este
+            // arquivo).
             activeMeasurementView
-                .frame(maxWidth: 500)
+                .linkaAdaptiveContentWidth()
         }
         .navigationTitle(mainTitle)
         #if os(iOS)
@@ -659,7 +668,7 @@ struct MainView: View {
     private var idleHeroStatus: some View {
         VStack(spacing: 10) {
             Image(systemName: heroStateIcon)
-                .font(.system(size: 40, weight: .medium))
+                .font(.system(size: isPad ? 56 : 40, weight: .medium))
                 .foregroundColor(heroStateIconColor)
                 .symbolRenderingMode(.hierarchical)
 
@@ -721,7 +730,7 @@ struct MainView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "speedometer")
-                    .font(.system(size: 19, weight: .semibold))
+                    .font(.system(size: isPad ? 24 : 19, weight: .semibold))
                 Text(LinkaCopy.value("home.live.speedTest"))
             }
         }
@@ -777,7 +786,7 @@ struct MainView: View {
                 progress: viewModel.progress,
                 value: ringValue,
                 unit: viewModel.uiPhase == .connecting ? nil : "Mbps",
-                size: 160,
+                size: isPad ? 220 : 160,
                 animation: animation,
                 matchedId: "downloadValue"
             )
@@ -902,9 +911,9 @@ struct MainView: View {
                         }
                         Spacer()
                         Image(systemName: "sparkles")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: isPad ? 19 : 15, weight: .semibold))
                             .foregroundColor(.brandAccentWarm)
-                            .frame(width: 36, height: 36)
+                            .frame(width: isPad ? 46 : 36, height: isPad ? 46 : 36)
                             .background(Color.brandAccentWarm.opacity(0.12), in: Circle())
                     }
                     .padding(.horizontal, 16)
@@ -1384,6 +1393,9 @@ private struct ResultUsageCasesView: View {
     let gaming: (label: String, color: Color)
     let streaming: (label: String, color: Color)
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isPad: Bool { horizontalSizeClass == .regular }
+
     var body: some View {
         HStack(spacing: 12) {
             usageNode(
@@ -1413,13 +1425,13 @@ private struct ResultUsageCasesView: View {
     private func usageNode(title: String, icon: String, result: String, color: Color) -> some View {
         VStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 20, weight: .medium))
+                .font(.system(size: isPad ? 26 : 20, weight: .medium))
                 .foregroundColor(.textPrimary)
-                .frame(width: 44, height: 44)
+                .frame(width: isPad ? 60 : 44, height: isPad ? 60 : 44)
                 .background(Color.surfacePage, in: Circle())
 
             Text(title)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: isPad ? 15 : 12, weight: .medium))
                 .foregroundColor(.textSecondary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
