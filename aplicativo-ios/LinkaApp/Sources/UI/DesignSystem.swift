@@ -126,15 +126,60 @@ public extension Font {
     // Hierarquia hero da tela de resultado (issue "Hero do resultado",
     // 2026-08-29): a conclusão do diagnóstico abre a tela, o número de
     // download continua sendo o maior elemento, Upload/Ping ganham mais
-    // presença. Tamanhos literais (não presos a um textStyle padrão do
-    // sistema) porque a composição pede uma escala própria entre os
-    // níveis — ainda participam do Dynamic Type via `Font.system(size:)`.
-    static let heroConclusion = Font.system(size: 25, weight: .semibold, design: .default)
-    static let heroValueHuge = Font.system(size: 58, weight: .bold, design: .rounded)
-    static let heroValueLarge = Font.system(size: 25, weight: .semibold, design: .rounded)
-    static let heroText17 = Font.system(size: 17, weight: .regular, design: .default)
-    static let heroText17Semibold = Font.system(size: 17, weight: .semibold, design: .default)
-    static let heroText15 = Font.system(size: 15, weight: .regular, design: .default)
+    // presença. Tamanhos literais porque a composição pede uma escala
+    // própria entre os níveis. `Font.system(size:weight:design:)` sozinho
+    // NÃO escala com Dynamic Type — por isso passam por
+    // `scaledSystemFont(relativeTo:)`, que ancora o tamanho customizado a
+    // um text style de referência via `UIFontMetrics` (mesma técnica que
+    // `Font.custom(_:size:relativeTo:)` usa para fontes nomeadas).
+    static var heroConclusion: Font { scaledSystemFont(size: 25, weight: .semibold, design: .default, relativeTo: .title) }
+    static var heroValueHuge: Font { scaledSystemFont(size: 58, weight: .bold, design: .rounded, relativeTo: .largeTitle) }
+    static var heroValueLarge: Font { scaledSystemFont(size: 25, weight: .semibold, design: .rounded, relativeTo: .title) }
+    static var heroText17: Font { scaledSystemFont(size: 17, weight: .regular, design: .default, relativeTo: .body) }
+    static var heroText17Semibold: Font { scaledSystemFont(size: 17, weight: .semibold, design: .default, relativeTo: .body) }
+    static var heroText15: Font { scaledSystemFont(size: 15, weight: .regular, design: .default, relativeTo: .subheadline) }
+
+    /// Tamanho fixo que participa do Dynamic Type de verdade: no iOS/iPadOS
+    /// usa `UIFontMetrics(forTextStyle:)` para escalar `size` como se fosse
+    /// o `textStyle` de referência. No macOS (AppKit) não há equivalente
+    /// público a `UIFontMetrics`, então o tamanho fica fixo — limitação
+    /// conhecida, não uma tentativa de contornar a ausência da API.
+    private static func scaledSystemFont(size: CGFloat, weight: Font.Weight, design: Font.Design, relativeTo textStyle: Font.TextStyle) -> Font {
+        #if canImport(UIKit)
+        let uiWeight: UIFont.Weight
+        switch weight {
+        case .bold: uiWeight = .bold
+        case .semibold: uiWeight = .semibold
+        case .medium: uiWeight = .medium
+        case .light: uiWeight = .light
+        default: uiWeight = .regular
+        }
+
+        let uiTextStyle: UIFont.TextStyle
+        switch textStyle {
+        case .largeTitle: uiTextStyle = .largeTitle
+        case .title: uiTextStyle = .title1
+        case .title2: uiTextStyle = .title2
+        case .title3: uiTextStyle = .title3
+        case .headline: uiTextStyle = .headline
+        case .callout: uiTextStyle = .callout
+        case .subheadline: uiTextStyle = .subheadline
+        case .footnote: uiTextStyle = .footnote
+        case .caption: uiTextStyle = .caption1
+        case .caption2: uiTextStyle = .caption2
+        default: uiTextStyle = .body
+        }
+
+        var baseFont = UIFont.systemFont(ofSize: size, weight: uiWeight)
+        if design == .rounded, let roundedDescriptor = baseFont.fontDescriptor.withDesign(.rounded) {
+            baseFont = UIFont(descriptor: roundedDescriptor, size: size)
+        }
+        let scaledFont = UIFontMetrics(forTextStyle: uiTextStyle).scaledFont(for: baseFont)
+        return Font(scaledFont)
+        #else
+        return Font.system(size: size, weight: weight, design: design)
+        #endif
+    }
 }
 
 public struct LinkaMotion {
