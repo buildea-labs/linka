@@ -65,6 +65,15 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+        # Sem isso, iPadOS trata o Linka como app "regular" de Stage
+        # Manager: abre em janela flutuante redimensionável, com o papel de
+        # parede da Tela de Início visível ao redor — exatamente o efeito
+        # que o Luiz rejeitou. Um app de medição de propósito único deve
+        # sempre abrir em tela cheia, sem competir por espaço com outras
+        # janelas (mesmo princípio de "medir vem primeiro" do AGENTS.md).
+        # Efeito colateral aceito: o Linka também fica fora de Split
+        # View/Slide Over no iPad — não dá para meia-tela com outro app.
+        UIRequiresFullScreen: true
     sources:
       - path: LinkaApp/Sources
       - path: LinkaApp/Resources
