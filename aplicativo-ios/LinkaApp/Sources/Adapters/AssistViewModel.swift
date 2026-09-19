@@ -19,6 +19,7 @@ final class AssistViewModel: ObservableObject {
         let recommendation: NetworkAssistRecommendation?
         let dimensions: [NetworkAssistDimension]
         let fallbackText: String?
+        let aiAttribution: String?
     }
 
     @Published private(set) var state: State = .idle
@@ -83,7 +84,8 @@ final class AssistViewModel: ObservableObject {
                         summary: summary,
                         recommendation: response.recommendation,
                         dimensions: response.dimensions ?? [],
-                        fallbackText: nil
+                        fallbackText: nil,
+                        aiAttribution: response.aiAttribution
                     )
                     state = .success(data)
                 } else {
@@ -93,7 +95,8 @@ final class AssistViewModel: ObservableObject {
                         summary: response.text,
                         recommendation: response.recommendation,
                         dimensions: response.dimensions ?? [],
-                        fallbackText: response.longText
+                        fallbackText: response.longText,
+                        aiAttribution: response.aiAttribution
                     )
                     state = .success(data)
                 }

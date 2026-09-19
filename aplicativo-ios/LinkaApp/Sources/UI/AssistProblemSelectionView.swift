@@ -500,7 +500,6 @@ struct AssistProblemSelectionView: View {
             onShowDetails: onShowDetails,
             entitlements: entitlements,
             onCloseSheet: {
-                showAssist = false
                 dismissSheet()
             }
         )

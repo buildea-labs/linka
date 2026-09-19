@@ -155,6 +155,29 @@ final class AssistViewModelTests: XCTestCase {
         XCTAssertEqual(data.recommendation?.steps, recommendation.steps)
     }
 
+    func test_load_success_propagatesAiAttribution() async {
+        let current = measurement(id: UUID())
+        let provider = StubAssistProvider(
+            response: NetworkAssistResponse(
+                text: "Conexão estável",
+                disposition: .answered,
+                evidenceIDs: [NetworkAssistRequest.currentMeasurementEvidenceID(current.id)],
+                headerStatus: "✓ TUDO CERTO",
+                title: "Tudo certo com o Wi-Fi",
+                summary: "Sua conexão está operando dentro dos parâmetros normais.",
+                aiAttribution: "ChatGPT – Luna"
+            )
+        )
+        let viewModel = AssistViewModel(assistProvider: provider)
+
+        await viewModel.load(currentMeasurement: current, failureSignal: nil)
+
+        guard case .success(let data) = viewModel.state else {
+            return XCTFail("A resposta respondida deveria produzir sucesso")
+        }
+        XCTAssertEqual(data.aiAttribution, "ChatGPT – Luna")
+    }
+
     private func measurement(id: UUID) -> NetworkMeasurement {
         NetworkMeasurement(
             id: id,

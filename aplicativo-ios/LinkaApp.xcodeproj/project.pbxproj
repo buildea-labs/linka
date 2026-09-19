@@ -66,6 +66,7 @@
 		46D6FA38F6C72D89631F5582 /* AssistTeaserCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647AB617F0B68B7D63BE2191 /* AssistTeaserCard.swift */; };
 		474E1128931717978D424844 /* LinkaAppIntents in Frameworks */ = {isa = PBXBuildFile; productRef = 4EC464D2A27C018FC431B081 /* LinkaAppIntents */; };
 		486565208C4928D7B6789515 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736F109DF0DF1C50DFAF202C /* SettingsSheet.swift */; };
+		48ECBA5F2BAFE438ED4250CF /* LinkaScreenBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7AA319CBC0F321ED1449D88 /* LinkaScreenBackground.swift */; };
 		49438996C96BFB28DED35509 /* AssistProblemSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA202D7A1FB600A3F43CD0ED /* AssistProblemSelectionView.swift */; };
 		4A6A54FB3C491F48F8CA9627 /* AppIntentCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7921F180B5C7EC49B0B1D48 /* AppIntentCoordinator.swift */; };
 		4DB6D1F24A36048C31C7F8AE /* AppStoreScreenshotsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6935758C28176CC335C491C7 /* AppStoreScreenshotsUITests.swift */; };
@@ -177,6 +178,7 @@
 		E3BA6001B4C3443808634056 /* AppShortcuts.strings in Resources */ = {isa = PBXBuildFile; fileRef = A7441EDE760EBFBE2B29269F /* AppShortcuts.strings */; };
 		E70DFFFA6549171A03BD19BD /* 06-status-servicos.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 70F0D4652A2A04951C59C77D /* 06-status-servicos.jpg */; };
 		E775EAE8EF0692C4FD3E9D40 /* NetworkProfiles in Frameworks */ = {isa = PBXBuildFile; productRef = 4B6F4EC1AA2912C485BBBA5D /* NetworkProfiles */; };
+		E779F12809B6C62ED6E8E634 /* LinkaScreenBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7AA319CBC0F321ED1449D88 /* LinkaScreenBackground.swift */; };
 		E8738446F6E9EC9EAF2DFDE5 /* ApplePlatformSignalProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F59DF4C04B975718AB2E308A /* ApplePlatformSignalProvider.swift */; };
 		EB421BFDB3D4D610383923F1 /* ApplePlatformSignalProviderCWChannelBandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0979A51676CC7785121587 /* ApplePlatformSignalProviderCWChannelBandTests.swift */; };
 		EBB07AE0AC66329D52CC1475 /* 01-entenda-sua-conexao.png in Resources */ = {isa = PBXBuildFile; fileRef = DD4013816C833AF6D4EBCB3A /* 01-entenda-sua-conexao.png */; };
@@ -366,6 +368,7 @@
 		E40C2EB9152AB6535BCF1740 /* LinkaWidgetTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaWidgetTimelineProvider.swift; sourceTree = "<group>"; };
 		E7754E212D2B59B9FFC88D33 /* NetworkProfiles */ = {isa = PBXFileReference; lastKnownFileType = folder; name = NetworkProfiles; path = NetworkProfiles; sourceTree = SOURCE_ROOT; };
 		E7936AC36AB6A238A31BCF85 /* UsageSuitabilityCopyQualityLevelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageSuitabilityCopyQualityLevelTests.swift; sourceTree = "<group>"; };
+		E7AA319CBC0F321ED1449D88 /* LinkaScreenBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkaScreenBackground.swift; sourceTree = "<group>"; };
 		E816515881C246C6E28B0653 /* SpeedTestViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestViewModel.swift; sourceTree = "<group>"; };
 		E85FFD9D779726CCB4B0404E /* generate_macos_marketing_kit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = generate_macos_marketing_kit.swift; sourceTree = "<group>"; };
 		E86B4E34E31AAC161BEF4E3C /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "pt-BR.lproj/AppShortcuts.strings"; sourceTree = "<group>"; };
@@ -468,6 +471,7 @@
 				E86E6389194D1938B09BEE51 /* HistoryView.swift */,
 				3D8AD73088BDF8E3580F1919 /* KeychainHelper.swift */,
 				D579EFF3B620AD5DF92A3A87 /* LinkaPlusWordmarkView.swift */,
+				E7AA319CBC0F321ED1449D88 /* LinkaScreenBackground.swift */,
 				3812F37CC4BCB2060C4D8427 /* LiveUsageCasesView.swift */,
 				DC347BDA6A055081B31DC174 /* MacMainView.swift */,
 				C60A040FE4E49231CD858102 /* MainView.swift */,
@@ -1008,9 +1012,6 @@
 				114F6A67C7CE3B670CF6AD50 /* 06-historico.png in Resources */,
 				E70DFFFA6549171A03BD19BD /* 06-status-servicos.jpg in Resources */,
 				794A78D7FBF87B7C55A2026C /* 07-status-servicos-source.png in Resources */,
-				4FBFA4B00E64FC22616B4DFF /* README.md in Resources */,
-				C61B62B4C6522F312F3B6526 /* README.md in Resources */,
-				615645512007FA140ACC19BE /* README.md in Resources */,
 				7CF7BA9E1214806740848A59 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.40.png in Resources */,
 				6E728101447F1EA3746A18FE /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.47.png in Resources */,
 				29947FA757E77F75A68839DE /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png in Resources */,
@@ -1069,7 +1070,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				4DB6D1F24A36048C31C7F8AE /* AppStoreScreenshotsUITests.swift in Sources */,
-				65AB245C32EA5A6830552840 /* generate_macos_marketing_kit.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1113,6 +1113,7 @@
 				160D3B49EE71A6FB3D5EF829 /* LinkaHealthCheck.swift in Sources */,
 				6ACF1B8A4BAB5DCF06F6F805 /* LinkaPlusWordmarkView.swift in Sources */,
 				94D1D5801F0D25E7ADB7EBC3 /* LinkaPushRegistrationDelegate.swift in Sources */,
+				48ECBA5F2BAFE438ED4250CF /* LinkaScreenBackground.swift in Sources */,
 				1A2E68C74EC4FECDFBE180DC /* LiveUsageCasesView.swift in Sources */,
 				C78DBB851266E55BA3E8BE87 /* MacMainView.swift in Sources */,
 				7C80510290141EF10AA29DC8 /* MainView.swift in Sources */,
@@ -1190,6 +1191,7 @@
 				5F99076E0F39B3ED74C6C157 /* LinkaHealthCheck.swift in Sources */,
 				BBCD26A5CB7293C88A0A8577 /* LinkaPlusWordmarkView.swift in Sources */,
 				0BADFEDB706C8F4B6B4634B6 /* LinkaPushRegistrationDelegate.swift in Sources */,
+				E779F12809B6C62ED6E8E634 /* LinkaScreenBackground.swift in Sources */,
 				8826FD67628F328D6818D0CB /* LiveUsageCasesView.swift in Sources */,
 				4372E53F27B8B299B4B731AD /* MacMainView.swift in Sources */,
 				C60712F038F34BAF07AEDEC6 /* MeasurementDetailView.swift in Sources */,
@@ -1615,6 +1617,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1632,6 +1635,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

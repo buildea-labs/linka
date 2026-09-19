@@ -56,14 +56,28 @@ private struct LiveUsageDetailSheet: View {
 
 private struct LiveMetricsView: View {
     let telemetry: LiveNetworkTelemetrySnapshot
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(spacing: 0) {
-            metric(LinkaCopy.value("home.live.response"), value: telemetry.latencyMs, suffix: "ms")
-            Divider().frame(height: 32).opacity(0.35)
-            metric(LinkaCopy.value("home.live.variation"), value: telemetry.jitterMs, suffix: "ms")
-            Divider().frame(height: 32).opacity(0.35)
-            metric(LinkaCopy.value("home.live.loss"), value: telemetry.packetLossPercent, suffix: "%")
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 8) {
+                    metric(LinkaCopy.value("home.live.response"), value: telemetry.latencyMs, suffix: "ms")
+                    Divider().opacity(0.35)
+                    metric(LinkaCopy.value("home.live.variation"), value: telemetry.jitterMs, suffix: "ms")
+                    Divider().opacity(0.35)
+                    metric(LinkaCopy.value("home.live.loss"), value: telemetry.packetLossPercent, suffix: "%")
+                }
+                .padding(.vertical, 8)
+            } else {
+                HStack(spacing: 0) {
+                    metric(LinkaCopy.value("home.live.response"), value: telemetry.latencyMs, suffix: "ms")
+                    Divider().frame(height: 32).opacity(0.35)
+                    metric(LinkaCopy.value("home.live.variation"), value: telemetry.jitterMs, suffix: "ms")
+                    Divider().frame(height: 32).opacity(0.35)
+                    metric(LinkaCopy.value("home.live.loss"), value: telemetry.packetLossPercent, suffix: "%")
+                }
+            }
         }
         .accessibilityElement(children: .combine)
     }
@@ -197,6 +211,15 @@ struct MainView: View {
         LinkaEntitlementPolicy.decision(for: .optimization, snapshot: entitlements.snapshot, at: Date()).isGranted
     }
 
+    private var isMeasuring: Bool {
+        switch viewModel.uiPhase {
+        case .connecting, .downloading, .uploading:
+            return true
+        default:
+            return false
+        }
+    }
+
     private var connectionPathReport: ConnectionPathReport? {
         if viewModel.uiPhase == .done, let currentMeasurement {
             return ConnectionPathEvaluator().evaluate(currentMeasurement)
@@ -258,7 +281,7 @@ struct MainView: View {
     /// função aqui é uma expressão pequena o bastante para inferir rápido.
     private var navigationContent: some View {
         let base = ZStack {
-            Color.surfacePage.ignoresSafeArea()
+            LinkaScreenBackground(showWaves: isMeasuring)
             // Em iPhone (.compact) trava em 500pt — sem isso o conteúdo
             // (pensado na largura de um iPhone) esticaria borda a borda
             // mesmo aí. Em iPad (.regular), por pedido explícito do Luiz,
@@ -338,6 +361,12 @@ struct MainView: View {
             .onChange(of: viewModel.uiPhase) { phase in
                 handleAssistMeasurementCompletion(phase)
                 handleOptimizationRetestCompletion(phase)
+            }
+            .onChange(of: viewModel.latestFinishedMeasurement) { measurement in
+                if measurement != nil && pendingAssistMeasurement && viewModel.uiPhase == .done {
+                    pendingAssistMeasurement = false
+                    showAssistResult = true
+                }
             }
             .onChange(of: intentCoordinator.pendingAdvancedWiFiDiagnosticsImport) { pending in
                 guard pending else { return }
@@ -481,7 +510,7 @@ struct MainView: View {
                 }
             } label: {
                 Image(systemName: "house")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundColor(.textPrimary)
             }
             .accessibilityLabel(LinkaCopy.value("home.accessibility.back"))
@@ -493,7 +522,7 @@ struct MainView: View {
         if viewModel.uiPhase == .idle || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
             Button { navPath.append(AppRoute.history) } label: {
                 Image(systemName: "clock")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundColor(.textPrimary)
             }
             .accessibilityLabel(LinkaCopy.value("home.accessibility.history"))
@@ -507,7 +536,7 @@ struct MainView: View {
                 showShareSheet = true
             } label: {
                 Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundColor(.textPrimary)
             }
             .accessibilityLabel(LinkaCopy.value("home.accessibility.share"))
@@ -519,7 +548,7 @@ struct MainView: View {
         if viewModel.uiPhase == .idle || viewModel.uiPhase == .done || viewModel.uiPhase == .error || viewModel.uiPhase == .connectionChanged {
             Button { navPath.append(AppRoute.settings) } label: {
                 Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundColor(.textPrimary)
             }
             .accessibilityLabel(LinkaCopy.value("home.accessibility.settings"))
@@ -717,6 +746,8 @@ struct MainView: View {
                         .padding(.vertical, 2)
                         .background(Color.brandAccentWarm.opacity(0.12), in: Capsule())
                 }
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
                 .buttonStyle(.plain)
             }
             #endif
@@ -730,7 +761,7 @@ struct MainView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "speedometer")
-                    .font(.system(size: isPad ? 24 : 19, weight: .semibold))
+                    .font(isPad ? .title3.weight(.semibold) : .headline.weight(.semibold))
                 Text(LinkaCopy.value("home.live.speedTest"))
             }
         }
@@ -744,7 +775,7 @@ struct MainView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundColor(.brandAccentWarm)
                     Text(LinkaCopy.value("home.assist.cta"))
                         .font(.bodyRegular)
@@ -762,7 +793,7 @@ struct MainView: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.subheadline.weight(.medium))
                         Text(LinkaCopy.format("home.lastTest.value", formatted(latest.downloadMbps ?? 0), formatRelativeTime(latest.measuredAt)))
                             .font(.bodyRegular)
                             .lineLimit(1)
@@ -1307,9 +1338,17 @@ struct MainView: View {
     }
 
     private func handleAssistMeasurementCompletion(_ phase: SpeedTestUIPhase) {
-        guard phase == .done, pendingAssistMeasurement else { return }
-        pendingAssistMeasurement = false
-        showAssistResult = true
+        guard pendingAssistMeasurement else { return }
+        switch phase {
+        case .done:
+            guard viewModel.latestFinishedMeasurement != nil else { return }
+            pendingAssistMeasurement = false
+            showAssistResult = true
+        case .error, .connectionChanged:
+            pendingAssistMeasurement = false
+        default:
+            break
+        }
     }
 
     private func handleOptimizationRetestCompletion(_ phase: SpeedTestUIPhase) {

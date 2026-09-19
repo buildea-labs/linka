@@ -84,7 +84,11 @@ final class NDSContractTests: XCTestCase {
             "titulo": "Ping alto identificado",
             "descricao": "Seu ping está bem acima do esperado para jogos.",
             "dados": "Ping médio de 180ms nos últimos testes.",
-            "acao_usuario": "Conecte o console por cabo em vez de Wi-Fi."
+            "acao_usuario": "Conecte o console por cabo em vez de Wi-Fi.",
+            "provenance": {
+              "source": "ai",
+              "model_label": "gpt-5.6-luna"
+            }
           }
         }
         """.data(using: .utf8)!
@@ -96,6 +100,9 @@ final class NDSContractTests: XCTestCase {
         XCTAssertEqual(response.explanation?.dados, ["Ping médio de 180ms nos últimos testes."])
         XCTAssertEqual(response.explanation?.acaoUsuario, "Conecte o console por cabo em vez de Wi-Fi.")
         XCTAssertNil(response.explanation?.semCausaIdentificada)
+        XCTAssertEqual(response.explanation?.provenance?.source, "ai")
+        XCTAssertEqual(response.explanation?.provenance?.modelLabel, "gpt-5.6-luna")
+        XCTAssertEqual(BuildeaDiagnosticTransport.formatProvenance(response.explanation?.provenance), "ChatGPT – Luna")
         XCTAssertEqual(response.effectiveResults?.first?.result?.score, 40)
         XCTAssertEqual(response.effectiveRecommendation?.id, "REC_X")
     }

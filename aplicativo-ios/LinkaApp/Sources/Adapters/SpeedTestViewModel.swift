@@ -477,42 +477,47 @@ public class SpeedTestViewModel: ObservableObject {
                 // instante do cancelamento — um teste interrompido nunca
                 // vira snapshot válido nem entra no histórico.
                 if self.uiPhase == .done && !Task.isCancelled {
-                    self.lastValidResultSnapshot = ResultSnapshot(
-                        downloadSpeed: self.downloadSpeed,
-                        uploadSpeed: self.uploadSpeed,
-                        ping: self.ping,
-                        hasMeasuredUpload: self.hasMeasuredUpload,
-                        hasMeasuredPing: self.hasMeasuredPing,
-                        jitter: self.jitter,
-                        provider: self.provider,
-                        networkType: self.networkType,
-                        testDuration: self.testDuration,
-                        packetLossPercent: self.packetLossPercent,
-                        connectionKind: self.connectionKind,
-                        wifiBandGHz: self.wifiBandGHz,
-                        wifiContext: self.wifiContext,
-                        advancedWiFiDiagnostics: self.advancedWiFiDiagnostics
-                    )
+                    let m: NetworkMeasurement
+                    if let existing = self.latestFinishedMeasurement {
+                        m = existing
+                    } else {
+                        self.lastValidResultSnapshot = ResultSnapshot(
+                            downloadSpeed: self.downloadSpeed,
+                            uploadSpeed: self.uploadSpeed,
+                            ping: self.ping,
+                            hasMeasuredUpload: self.hasMeasuredUpload,
+                            hasMeasuredPing: self.hasMeasuredPing,
+                            jitter: self.jitter,
+                            provider: self.provider,
+                            networkType: self.networkType,
+                            testDuration: self.testDuration,
+                            packetLossPercent: self.packetLossPercent,
+                            connectionKind: self.connectionKind,
+                            wifiBandGHz: self.wifiBandGHz,
+                            wifiContext: self.wifiContext,
+                            advancedWiFiDiagnostics: self.advancedWiFiDiagnostics
+                        )
 
-                    let m = NetworkMeasurement(
-                        outcome: .complete,
-                        downloadMbps: self.downloadSpeed,
-                        uploadMbps: self.hasMeasuredUpload ? self.uploadSpeed : nil,
-                        latencyMs: self.hasMeasuredPing ? Double(self.ping) : nil,
-                        jitterMs: self.jitter,
-                        packetLossPercent: self.packetLossPercent,
-                        loadedLatencyMs: self.loadedLatencyMs,
-                        loadedLatencyUploadMs: self.loadedLatencyUploadMs,
-                        loadResponsiveness: self.loadResponsiveness,
-                        dnsResolutionMs: self.dnsResolutionMs,
-                        durationMs: self.rawTestDuration.map { Int(($0 * 1000).rounded()) },
-                        connectionKind: self.connectionKind,
-                        wifiBandGHz: self.wifiBandGHz,
-                        wifiContext: self.wifiContext,
-                        advancedWiFiDiagnostics: self.advancedWiFiDiagnostics,
-                        networkIdentifier: self.provider
-                    )
-                    self.latestFinishedMeasurement = m
+                        m = NetworkMeasurement(
+                            outcome: .complete,
+                            downloadMbps: self.downloadSpeed,
+                            uploadMbps: self.hasMeasuredUpload ? self.uploadSpeed : nil,
+                            latencyMs: self.hasMeasuredPing ? Double(self.ping) : nil,
+                            jitterMs: self.jitter,
+                            packetLossPercent: self.packetLossPercent,
+                            loadedLatencyMs: self.loadedLatencyMs,
+                            loadedLatencyUploadMs: self.loadedLatencyUploadMs,
+                            loadResponsiveness: self.loadResponsiveness,
+                            dnsResolutionMs: self.dnsResolutionMs,
+                            durationMs: self.rawTestDuration.map { Int(($0 * 1000).rounded()) },
+                            connectionKind: self.connectionKind,
+                            wifiBandGHz: self.wifiBandGHz,
+                            wifiContext: self.wifiContext,
+                            advancedWiFiDiagnostics: self.advancedWiFiDiagnostics,
+                            networkIdentifier: self.provider
+                        )
+                        self.latestFinishedMeasurement = m
+                    }
                     self.publishThroughputBaselineIfEligible(from: m)
                     await self.refreshLiveUsageSuitability()
                     let repo = LinkaMeasurementHistory.makeRepository(entitlements: historySyncEntitlements)
@@ -772,6 +777,44 @@ public class SpeedTestViewModel: ObservableObject {
             }
         }
         self.update(with: state)
+        if self.testGeneration == generation && self.uiPhase == .done {
+            self.lastValidResultSnapshot = ResultSnapshot(
+                downloadSpeed: self.downloadSpeed,
+                uploadSpeed: self.uploadSpeed,
+                ping: self.ping,
+                hasMeasuredUpload: self.hasMeasuredUpload,
+                hasMeasuredPing: self.hasMeasuredPing,
+                jitter: self.jitter,
+                provider: self.provider,
+                networkType: self.networkType,
+                testDuration: self.testDuration,
+                packetLossPercent: self.packetLossPercent,
+                connectionKind: self.connectionKind,
+                wifiBandGHz: self.wifiBandGHz,
+                wifiContext: self.wifiContext,
+                advancedWiFiDiagnostics: self.advancedWiFiDiagnostics
+            )
+
+            let m = NetworkMeasurement(
+                outcome: .complete,
+                downloadMbps: self.downloadSpeed,
+                uploadMbps: self.hasMeasuredUpload ? self.uploadSpeed : nil,
+                latencyMs: self.hasMeasuredPing ? Double(self.ping) : nil,
+                jitterMs: self.jitter,
+                packetLossPercent: self.packetLossPercent,
+                loadedLatencyMs: self.loadedLatencyMs,
+                loadedLatencyUploadMs: self.loadedLatencyUploadMs,
+                loadResponsiveness: self.loadResponsiveness,
+                dnsResolutionMs: self.dnsResolutionMs,
+                durationMs: self.rawTestDuration.map { Int(($0 * 1000).rounded()) },
+                connectionKind: self.connectionKind,
+                wifiBandGHz: self.wifiBandGHz,
+                wifiContext: self.wifiContext,
+                advancedWiFiDiagnostics: self.advancedWiFiDiagnostics,
+                networkIdentifier: self.provider
+            )
+            self.latestFinishedMeasurement = m
+        }
     }
 
     /// Processa um callback vindo do App Intent/URL. Se a próxima medição

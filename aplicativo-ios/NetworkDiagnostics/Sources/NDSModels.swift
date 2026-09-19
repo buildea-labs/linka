@@ -329,6 +329,21 @@ public struct NDSRawPayload: Codable, Equatable, Sendable {
     }
 }
 
+public struct NDSExplanationProvenance: Codable, Equatable, Sendable {
+    public var source: String?
+    public var modelLabel: String?
+
+    enum CodingKeys: String, CodingKey {
+        case source
+        case modelLabel = "model_label"
+    }
+
+    public init(source: String? = nil, modelLabel: String? = nil) {
+        self.source = source
+        self.modelLabel = modelLabel
+    }
+}
+
 /// Texto tratado do bloco `explanation` do contrato v2. Quando
 /// `semCausaIdentificada == true`, nenhuma regra disparou — `titulo`/
 /// `descricao`/`dados`/`acaoUsuario` podem vir ausentes nesse caso, e o
@@ -340,6 +355,7 @@ public struct NDSV2Explanation: Codable, Equatable, Sendable {
     public var dados: [String]?
     public var acaoUsuario: String?
     public var semCausaIdentificada: Bool?
+    public var provenance: NDSExplanationProvenance?
 
     public enum CodingKeys: String, CodingKey {
         case titulo
@@ -347,6 +363,7 @@ public struct NDSV2Explanation: Codable, Equatable, Sendable {
         case dados
         case acaoUsuario = "acao_usuario"
         case semCausaIdentificada = "sem_causa_identificada"
+        case provenance
     }
 
     public init(
@@ -354,13 +371,15 @@ public struct NDSV2Explanation: Codable, Equatable, Sendable {
         descricao: String? = nil,
         dados: [String]? = nil,
         acaoUsuario: String? = nil,
-        semCausaIdentificada: Bool? = nil
+        semCausaIdentificada: Bool? = nil,
+        provenance: NDSExplanationProvenance? = nil
     ) {
         self.titulo = titulo
         self.descricao = descricao
         self.dados = dados
         self.acaoUsuario = acaoUsuario
         self.semCausaIdentificada = semCausaIdentificada
+        self.provenance = provenance
     }
 
     public init(from decoder: Decoder) throws {
@@ -369,6 +388,7 @@ public struct NDSV2Explanation: Codable, Equatable, Sendable {
         self.descricao = try container.decodeIfPresent(String.self, forKey: .descricao)
         self.acaoUsuario = try container.decodeIfPresent(String.self, forKey: .acaoUsuario)
         self.semCausaIdentificada = try container.decodeIfPresent(Bool.self, forKey: .semCausaIdentificada)
+        self.provenance = try container.decodeIfPresent(NDSExplanationProvenance.self, forKey: .provenance)
         
         if let stringArray = try? container.decodeIfPresent([String].self, forKey: .dados) {
             self.dados = stringArray
@@ -441,6 +461,7 @@ public struct NDSModuleData: Codable, Equatable, Sendable {
     /// `source_finding_ids` do módulo `ai` silenciosamente — o Linka não
     /// tinha como saber se uma explicação de IA tinha evidência por trás.
     public var sourceFindingIds: [String]?
+    public var aiModelUsed: String?
 
     enum CodingKeys: String, CodingKey {
         case score
@@ -449,15 +470,17 @@ public struct NDSModuleData: Codable, Equatable, Sendable {
         case observedDimensions = "observed_dimensions"
         case dimensoes
         case sourceFindingIds = "source_finding_ids"
+        case aiModelUsed = "ai_model_used"
     }
 
-    public init(score: Int? = nil, explanation: NDSExplanation? = nil, veredicto: String? = nil, observedDimensions: Int? = nil, dimensoes: [NDSDimensao]? = nil, sourceFindingIds: [String]? = nil) {
+    public init(score: Int? = nil, explanation: NDSExplanation? = nil, veredicto: String? = nil, observedDimensions: Int? = nil, dimensoes: [NDSDimensao]? = nil, sourceFindingIds: [String]? = nil, aiModelUsed: String? = nil) {
         self.score = score
         self.explanation = explanation
         self.veredicto = veredicto
         self.observedDimensions = observedDimensions
         self.dimensoes = dimensoes
         self.sourceFindingIds = sourceFindingIds
+        self.aiModelUsed = aiModelUsed
     }
 }
 

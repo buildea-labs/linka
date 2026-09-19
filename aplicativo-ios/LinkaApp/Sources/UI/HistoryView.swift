@@ -400,9 +400,9 @@ struct HistoryWaveChartView: View {
             if let firstDate = chronologicalMeasurements.first?.measuredAt,
                let lastDate = chronologicalMeasurements.last?.measuredAt {
                 HStack {
-                    Text(formatAxisDate(firstDate)).font(.system(size: 10, weight: .medium)).foregroundColor(.textSecondary)
+                    Text(formatAxisDate(firstDate)).font(.caption2.weight(.medium)).foregroundColor(.textSecondary)
                     Spacer()
-                    Text(formatAxisDate(lastDate)).font(.system(size: 10, weight: .medium)).foregroundColor(.textSecondary)
+                    Text(formatAxisDate(lastDate)).font(.caption2.weight(.medium)).foregroundColor(.textSecondary)
                 }
             }
         }
@@ -414,13 +414,13 @@ struct HistoryWaveChartView: View {
     @ViewBuilder
     private func chartHeader(horizontal: Bool) -> some View {
         if horizontal {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .top) {
                 chartTitle
                 Spacer()
                 chartLegend
             }
         } else {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 chartTitle
                 chartLegend
             }
@@ -429,8 +429,8 @@ struct HistoryWaveChartView: View {
 
     private var chartTitle: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("Tendência de Velocidade").font(.system(size: 15, weight: .bold)).foregroundColor(.textPrimary)
-            if let active = activeMeasurement { Text(formatHeaderDate(active.measuredAt)).font(.system(size: 11, weight: .medium)).foregroundColor(.textSecondary) }
+            Text("Tendência de Velocidade").font(.subheadline.weight(.bold)).foregroundColor(.textPrimary)
+            if let active = activeMeasurement { Text(formatHeaderDate(active.measuredAt)).font(.caption2.weight(.medium)).foregroundColor(.textSecondary) }
         }
     }
 
@@ -442,7 +442,7 @@ struct HistoryWaveChartView: View {
     }
 
     private func legend(color: Color, title: String, value: Double?) -> some View {
-        HStack(spacing: 5) { Circle().fill(color).frame(width: 7, height: 7); Text("\(title) \(formatValue(value)) Mbps").font(.system(size: 11, weight: .medium)).foregroundColor(.textSecondary) }
+        HStack(spacing: 5) { Circle().fill(color).frame(width: 7, height: 7); Text("\(title) \(formatValue(value)) Mbps").font(.caption2.weight(.medium).monospacedDigit()).foregroundColor(.textSecondary) }
     }
 
     /// Duas bandas verticais compartilhadas pela grade e pelas ondas: a banda
@@ -602,25 +602,25 @@ struct AppleStyleHistoryRow: View {
             // 2. Título, Data e Origem (Mac vs iPhone)
             VStack(alignment: .leading, spacing: 4) {
                 Text(networkTitle)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundColor(.textPrimary)
                     .lineLimit(1)
 
                 HStack(spacing: 6) {
                     Text(formattedDate)
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.caption)
                         .foregroundColor(.textSecondary)
 
                     if let platform = measurement.devicePlatform {
                         Text("·")
-                            .font(.system(size: 12))
+                            .font(.caption)
                             .foregroundColor(.textSecondary.opacity(0.6))
 
                         HStack(spacing: 3) {
                             Image(systemName: platform == "macOS" ? "macbook" : "iphone")
-                                .font(.system(size: 10))
+                                .font(.caption2)
                             Text(platform == "macOS" ? "Mac" : "iPhone")
-                                .font(.system(size: 11, weight: .medium))
+                                .font(.caption2.weight(.medium))
                         }
                         .foregroundColor(.textSecondary)
                     }
@@ -634,13 +634,13 @@ struct AppleStyleHistoryRow: View {
                 // Download em Destaque
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Image(systemName: "arrow.down")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.caption.weight(.bold))
                         .foregroundColor(linkaDownloadSeriesColor)
                     Text(formatSpeed(measurement.downloadMbps))
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .font(.system(.body, design: .rounded, weight: .bold))
                         .foregroundColor(.textPrimary)
                     Text("Mbps")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.caption2.weight(.medium))
                         .foregroundColor(.textSecondary)
                 }
 
@@ -649,10 +649,10 @@ struct AppleStyleHistoryRow: View {
                     if let up = measurement.uploadMbps {
                         HStack(spacing: 2) {
                             Image(systemName: "arrow.up")
-                                .font(.system(size: 9, weight: .semibold))
+                                .font(.caption2.weight(.semibold))
                                 .foregroundColor(.brandAccentWarm)
                             Text("\(Int(round(up)))")
-                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                .font(.caption2.weight(.semibold).monospacedDigit())
                                 .foregroundColor(.textSecondary)
                         }
                     }
@@ -660,10 +660,10 @@ struct AppleStyleHistoryRow: View {
                     if let ping = measurement.latencyMs {
                         HStack(spacing: 2) {
                             Image(systemName: "clock")
-                                .font(.system(size: 9))
+                                .font(.caption2)
                                 .foregroundColor(.textSecondary)
                             Text("\(Int(round(ping)))ms")
-                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                .font(.caption2.weight(.semibold).monospacedDigit())
                                 .foregroundColor(.textSecondary)
                         }
                     }
@@ -672,7 +672,7 @@ struct AppleStyleHistoryRow: View {
 
             // 4. Chevron Nativo Apple
             Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundColor(.textSecondary.opacity(0.35))
                 .padding(.leading, 2)
         }
