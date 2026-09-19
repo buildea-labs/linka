@@ -66,6 +66,8 @@ struct MacMainView: View {
     @State private var showConnectionPath = false
     @State private var showShareSheet = false
     @State private var showAdvancedWiFiUnavailable = false
+    @State private var showMeasurementDetails = false
+    @State private var showLiveNetworkDetails = false
 
     // MARK: Computed
 
@@ -129,22 +131,24 @@ struct MacMainView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar
-            Group {
-                switch destination {
-                case .speedTest:
-                    HStack(spacing: 0) {
-                        mainStage
-                        rightPanel
-                            .frame(width: 280)
+            NavigationStack {
+                Group {
+                    switch destination {
+                    case .speedTest:
+                        HStack(spacing: 0) {
+                            mainStage
+                            rightPanel
+                                .frame(width: 280)
+                        }
+                    case .history:
+                        historyView
+                    case .assist:
+                        assistView
+                    case .optimization:
+                        optimizationView
+                    case .settings:
+                        settingsView
                     }
-                case .history:
-                    historyView
-                case .assist:
-                    assistView
-                case .optimization:
-                    optimizationView
-                case .settings:
-                    settingsView
                 }
             }
         }
@@ -159,16 +163,18 @@ struct MacMainView: View {
                 }
             }
             .environmentObject(entitlements)
+            .frame(minWidth: 620, minHeight: 620)
         }
         .sheet(isPresented: $showOptimizationRetestResult) {
             if let result = optimizationRetestResult {
                 OptimizationRetestResultView(result: result)
-                    .frame(minWidth: 460, minHeight: 360)
+                    .frame(minWidth: 620, minHeight: 420)
             }
         }
         .sheet(isPresented: $showSubscriptionManagement) {
             SubscriptionManagementSheet()
                 .environmentObject(entitlements)
+                .frame(minWidth: 620, minHeight: 560)
         }
         .sheet(isPresented: $showAssistProblemSelection, onDismiss: beginPendingAssistCollection) {
             AssistProblemSelectionView(
@@ -182,6 +188,7 @@ struct MacMainView: View {
                 },
                 entitlements: entitlements
             )
+            .frame(minWidth: 680, minHeight: 620)
         }
         .sheet(isPresented: $showAssistResult) {
             AssistView(
@@ -195,9 +202,11 @@ struct MacMainView: View {
                 onShowDetails: {},
                 entitlements: entitlements
             )
+            .frame(minWidth: 680, minHeight: 620)
         }
         .sheet(isPresented: $showConnectivityTriage) {
             ConnectivityTriageView(onRetry: { viewModel.startTest() })
+                .frame(minWidth: 560, minHeight: 420)
         }
         .sheet(item: $selectedHistoricalMeasurement) { measurement in
             NavigationStack {
@@ -208,23 +217,23 @@ struct MacMainView: View {
                 )
             }
             .environmentObject(entitlements)
-            .frame(minWidth: 620, minHeight: 680)
+            .frame(minWidth: 680, minHeight: 680)
         }
         .sheet(isPresented: $showCurrentMeasurementDetails) {
             NavigationStack {
                 MeasurementDetailView(measurement: currentMeasurement, duration: viewModel.testDuration)
                     .environmentObject(entitlements)
             }
-            .frame(minWidth: 620, minHeight: 680)
+            .frame(minWidth: 680, minHeight: 680)
         }
         .sheet(isPresented: $showUsageDiagnostics) {
             UsageDiagnosticsView(measurement: currentMeasurement)
-                .frame(minWidth: 560, minHeight: 580)
+                .frame(minWidth: 680, minHeight: 580)
         }
         .sheet(isPresented: $showConnectionPath) {
             if let connectionPathReport {
                 ConnectionPathDetailView(report: connectionPathReport)
-                    .frame(minWidth: 560, minHeight: 580)
+                    .frame(minWidth: 680, minHeight: 580)
             }
         }
         .shareMeasurementSheet(isPresented: $showShareSheet, measurement: currentMeasurement)
@@ -289,11 +298,10 @@ struct MacMainView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Image(nsImage: NSApp.applicationIconImage)
+            Image("wordmark")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 44, height: 44)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .frame(width: 104, height: 40)
                 .padding(.horizontal, 10)
                 .padding(.bottom, 28)
 
@@ -358,6 +366,9 @@ struct MacMainView: View {
                         .foregroundColor(.textPrimary)
                         .lineLimit(1)
                     Spacer()
+                    if !isMeasuring, let measurement = activeMeasurement {
+                        resultToolbarActions(for: measurement)
+                    }
                     statusPill
                 }
                 .padding(.horizontal, 28)
@@ -375,11 +386,27 @@ struct MacMainView: View {
                     .padding(.bottom, 28)
                 } else if let m = activeMeasurement {
                     // Estado: Resultado Ativo (Recém medido ou selecionado do histórico)
-                    VStack(spacing: 24) {
+                    VStack(spacing: 20) {
+                        Text("Medição concluída")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(.textPrimary)
                         horizontalHero(for: m)
-                        measurementMetadataBadge(for: m)
-                        advancedMetricsRow(for: m)
-                        usageSuitabilityRow(for: m)
+                        measurementMetadataLine(for: m)
+                        DisclosureGroup(isExpanded: $showMeasurementDetails) {
+                            advancedMetricsRow(for: m)
+                                .padding(.top, 10)
+                        } label: {
+                            Label("Detalhes da medição", systemImage: "chevron.down")
+                                .font(.bodySmallMedium)
+                                .foregroundColor(.textPrimary)
+                        }
+                        .padding(14)
+                        .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
+                                .stroke(Color.borderDefault.opacity(0.35), lineWidth: 0.6)
+                        )
+                        .frame(maxWidth: 600)
                     }
                     .padding(.bottom, 24)
                 } else {
@@ -452,6 +479,44 @@ struct MacMainView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 6)
         .background(Color.surfaceCard, in: Capsule())
+    }
+
+    private func measurementMetadataLine(for m: NetworkMeasurement) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "calendar")
+            Text(Self.dateFormatter.string(from: m.measuredAt))
+            Text("•")
+            Image(systemName: "wifi")
+            Text(networkLabel(for: m))
+            if let server = m.networkIdentifier, !server.isEmpty {
+                Text("•")
+                Text(server)
+                    .lineLimit(1)
+            }
+        }
+        .font(.captionMedium)
+        .foregroundColor(.textSecondary)
+        .lineLimit(1)
+    }
+
+    private func resultToolbarActions(for measurement: NetworkMeasurement) -> some View {
+        HStack(spacing: 14) {
+            Button {
+                requestAssist(from: .result(measurement))
+            } label: {
+                Label("Assist", systemImage: "sparkles")
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                destination = .optimization
+            } label: {
+                Label(LinkaCopy.value("optimization.title"), systemImage: "slider.horizontal.3")
+            }
+            .buttonStyle(.plain)
+        }
+        .font(.captionMedium)
+        .foregroundColor(.textSecondary)
     }
     
     private var horizontalHero: some View {
@@ -533,7 +598,6 @@ struct MacMainView: View {
             RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous)
                 .stroke(Color.borderDefault.opacity(0.35), lineWidth: 0.6)
         )
-        .padding(.horizontal, 40)
     }
     
     private func miniDetailCell(label: String, value: String, unit: String) -> some View {
@@ -584,31 +648,8 @@ struct MacMainView: View {
     // MARK: - Sua rede agora (Bloco Temático de Telemetria e Hardware)
     
     private var macContextFooter: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Cabeçalho do Bloco Temático
-            HStack {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.statusGood)
-                        .frame(width: 7, height: 7)
-                    Text("Sua Rede Agora")
-                        .font(.captionSmallStrong)
-                        .foregroundColor(.textPrimary)
-                }
-                
-                Spacer()
-                
-                if let rssi = viewModel.liveWifiRSSI {
-                    HStack(spacing: 4) {
-                        Image(systemName: "wifi")
-                            .font(.system(size: 11, weight: .regular))
-                        Text(wifiSignalLabel)
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    }
-                    .foregroundColor(liveWifiColor)
-                }
-            }
-
+        DisclosureGroup(isExpanded: $showLiveNetworkDetails) {
+            VStack(alignment: .leading, spacing: 14) {
             // Sinais Físicos em Tempo Real (Hardware e Rádio)
             HStack(spacing: 10) {
                 if viewModel.liveConnectionKind == .wifi {
@@ -628,7 +669,7 @@ struct MacMainView: View {
                         statusColor: liveWifiColor
                     )
 
-                    if let band = viewModel.liveWiFiContext?.bandGHz {
+                    if let band = liveWiFiBandGHz {
                         let bandStr = band.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", band) : String(format: "%.1f", band)
                         let chStr = viewModel.advancedWiFiDiagnostics?.channelNumber.map { " · Ch \($0)" } ?? ""
                         liveMetricCard(
@@ -694,22 +735,17 @@ struct MacMainView: View {
                     if let std = viewModel.advancedWiFiDiagnostics?.wifiStandard {
                         wifiDetail(label: LinkaCopy.value("Padrão"), value: std)
                     }
-                    if let rssi = viewModel.liveWifiRSSI {
-                        wifiDetail(label: "RSSI", value: "\(Int(rssi)) dBm")
-                    }
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 4)
                 .padding(.top, 2)
             }
 
-            // Casos de Uso ao Vivo (Tempo Real)
-            LiveUsageCasesView(
-                report: viewModel.liveUsageReport,
-                cases: [.videoCall, .onlineGaming],
-                isEmbedded: true
-            )
-            .padding(.top, 4)
+            }
+        } label: {
+            Label("Rede agora", systemImage: "wifi")
+                .font(.captionSmallStrong)
+                .foregroundColor(.textPrimary)
         }
         .padding(16)
         .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: LinkaRadius.lg, style: .continuous))
@@ -782,14 +818,20 @@ struct MacMainView: View {
     
     private var wifiSignalLabel: String {
         guard let rssi = viewModel.liveWifiRSSI else { return "—" }
-        if rssi >= -60 { return "\(LinkaCopy.value("Forte")) (\(Int(rssi))dBm)" }
-        if rssi >= -75 { return "\(LinkaCopy.value("Médio")) (\(Int(rssi))dBm)" }
-        return "\(LinkaCopy.value("Fraco")) (\(Int(rssi))dBm)"
+        if rssi >= -60 { return LinkaCopy.value("Forte") }
+        if rssi >= -75 { return LinkaCopy.value("Médio") }
+        return LinkaCopy.value("Fraco")
     }
 
     private var wifiSignalTechnicalValue: String {
         guard let rssi = viewModel.liveWifiRSSI else { return "—" }
         return "\(Int(rssi)) dBm"
+    }
+
+    /// A frequência é telemetria local do rádio. Ela não depende da
+    /// identificação (SSID/BSSID), que a pessoa pode optar por não expor.
+    private var liveWiFiBandGHz: Double? {
+        viewModel.liveWiFiContext?.bandGHz ?? ApplePlatformSignalProvider.currentWifiBandGHz()
     }
 
     private func wifiDetail(label: String, value: String) -> some View {
@@ -947,20 +989,10 @@ struct MacMainView: View {
 
         if let m = activeMeasurement {
             return AnyView(
-                HStack(spacing: 10) {
-                    Button("Medir novamente") { startMeasurement() }
-                        .buttonStyle(.macPrimary)
-                        .frame(maxWidth: 280)
-                        .keyboardShortcut("r", modifiers: .command)
-                    Button { requestAssist(from: .result(m)) } label: {
-                        Label("Assist", systemImage: "sparkles")
-                    }
-                    .buttonStyle(.linkaSecondary)
-                    Button { destination = .optimization } label: {
-                        Label(LinkaCopy.value("optimization.open"), systemImage: "slider.horizontal.3")
-                    }
-                    .buttonStyle(.linkaSecondary)
-                }
+                Button("Medir novamente") { startMeasurement() }
+                    .buttonStyle(.macPrimary)
+                    .frame(maxWidth: 280)
+                    .keyboardShortcut("r", modifiers: .command)
             )
         }
 

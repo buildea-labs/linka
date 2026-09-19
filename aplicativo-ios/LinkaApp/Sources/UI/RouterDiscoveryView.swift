@@ -2,10 +2,18 @@ import SwiftUI
 import NetworkDiagnostics
 
 #if os(iOS)
+import UIKit
+
 private enum RouterPanelState: Equatable {
     case idle
     case locating
     case found(GatewayInfo)
+    /// O roteador foi identificado na rota ativa, mas o painel não respondeu.
+    /// A causa mais provável é a permissão de Rede Local negada para o Linka
+    /// em Ajustes (o iOS não distingue "negado" de "inacessível" na API
+    /// pública, então o Linka comunica a causa mais provável em vez de
+    /// inventar um estado de permissão que a plataforma não expõe).
+    case unreachable(gatewayIP: String)
     case unavailable
 }
 
@@ -34,6 +42,16 @@ struct RouterDiscoveryView: View {
                             .foregroundColor(.statusGood)
                         Text(gateway.ip).font(.footnote).foregroundColor(.secondary)
                         Button(LinkaCopy.value("router.panel.open")) { showOpenConfirmation = true }
+                    }
+                case .unreachable(let gatewayIP):
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label(LinkaCopy.value("router.panel.unreachable.title"), systemImage: "exclamationmark.shield")
+                            .foregroundColor(.orange)
+                        Text(gatewayIP).font(.footnote).foregroundColor(.secondary)
+                        Text(LinkaCopy.value("router.panel.unreachable.message"))
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                        Button(LinkaCopy.value("router.panel.openSettings")) { openSystemSettings() }
                     }
                 case .unavailable:
                     Text(LinkaCopy.value("router.panel.unavailable"))
@@ -91,7 +109,18 @@ struct RouterDiscoveryView: View {
             return
         }
         let gateway = await GatewayProber().probe(gatewayIP: ip)
-        state = gateway.isAccessible && gateway.adminURL != nil ? .found(gateway) : .unavailable
+        if gateway.isAccessible, gateway.adminURL != nil {
+            state = .found(gateway)
+        } else {
+            // O gateway foi identificado (temos o IP real da rota ativa), mas o
+            // painel não respondeu: diferente de não termos achado gateway algum.
+            state = .unreachable(gatewayIP: ip)
+        }
+    }
+
+    private func openSystemSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        openURL(url)
     }
 }
 #endif

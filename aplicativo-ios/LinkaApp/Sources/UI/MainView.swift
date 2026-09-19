@@ -800,8 +800,9 @@ struct MainView: View {
 
             PhaseDots(
                 phases: [
-                    (key: "downloading", label: LinkaCopy.value("metric.download")),
-                    (key: "uploading", label: LinkaCopy.value("metric.upload"))
+                    (key: "ping", label: LinkaCopy.value("measurement.phase.ping")),
+                    (key: "downloading", label: LinkaCopy.value("measurement.phase.download")),
+                    (key: "uploading", label: LinkaCopy.value("measurement.phase.upload"))
                 ],
                 activeKey: activePhaseKey
             )
@@ -1183,7 +1184,9 @@ struct MainView: View {
 
     private var activePhaseKey: String {
         switch viewModel.uiPhase {
-        case .idle, .connecting:
+        case .connecting:
+            return "ping"
+        case .idle:
             return ""
         case .downloading:
             return "downloading"

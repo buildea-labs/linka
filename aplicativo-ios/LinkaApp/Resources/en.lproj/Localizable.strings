@@ -153,6 +153,9 @@
 "legal.terms" = "Terms of Use";
 "legal.privacy" = "Privacy";
 "metric.download" = "DOWNLOAD";
+"measurement.phase.ping" = "Ping";
+"measurement.phase.download" = "Download";
+"measurement.phase.upload" = "Upload";
 "network.wifi" = "Wi-Fi";
 "network.cellular" = "Mobile network";
 "network.other" = "Other network";
@@ -193,6 +196,9 @@
 "router.panel.found" = "Panel found";
 "router.panel.open" = "Open in browser";
 "router.panel.unavailable" = "We couldn't find a panel on this network.";
+"router.panel.unreachable.title" = "Router found, panel blocked";
+"router.panel.unreachable.message" = "Linka identified the router on this network, but couldn't confirm the panel. The most common reason is Local Network permission denied for Linka in Settings.";
+"router.panel.openSettings" = "Open Settings";
 "router.panel.locate" = "Find panel";
 "router.panel.confirmation.title" = "Open the router panel?";
 "router.panel.confirmation.message" = "You'll open the administration page at %@. Linka doesn't access or store the credentials entered there.";
@@ -604,6 +610,12 @@
 "Tendência de Velocidade" = "Speed Trend";
 "Buscar serviço" = "Search service";
 "Status de serviços" = "Service Status";
+"Mensagens" = "Messaging";
+"Redes Sociais" = "Social Media";
+"Jogos" = "Gaming";
+"Produtividade" = "Productivity";
+"IA" = "AI";
+"Infraestrutura" = "Infrastructure";
 "Receber alertas de \(service.name)" = "Receive alerts for \(service.name)";
 "Compara a resposta DNS nesta conexão. Isso não aumenta sua velocidade contratada, ping ou Wi-Fi." = "Compares DNS response on this connection. This doesn't increase your contracted speed, ping, or Wi-Fi.";
 "Não disponível nesta tentativa" = "Not available this time";

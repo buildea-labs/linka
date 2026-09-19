@@ -139,6 +139,14 @@ struct AssistProblemSelectionView: View {
     }
 
     var body: some View {
+        #if os(macOS)
+        macOSContent
+        #else
+        iOSContent
+        #endif
+    }
+
+    private var iOSContent: some View {
         NavigationStack {
             Group {
                 if let objective = selectedObjective { subcategoryStep(for: objective) }
@@ -165,6 +173,188 @@ struct AssistProblemSelectionView: View {
                 .interactiveDismissDisabled()
         }
     }
+
+    #if os(macOS)
+    private var macOSContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(LinkaCopy.value("assist.title"))
+                        .font(.title.weight(.bold))
+                    Text(macSubtitle)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let objective = selectedObjective {
+                    macSubcategoryStep(for: objective)
+                } else if showingReportedProblem {
+                    macReportedProblemStep
+                } else {
+                    macObjectiveStep
+                }
+            }
+            .frame(maxWidth: 680, alignment: .leading)
+            .padding(40)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+        .navigationTitle(LinkaCopy.value("assist.title"))
+        .toolbar {
+            if !isInline || selectedObjective != nil || showingReportedProblem {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(navigationActionTitle, action: handleNavigationAction)
+                }
+            }
+        }
+        .sheet(isPresented: $showAssist) {
+            assistDestination(objective: assistObjective, subcategory: assistSubcategory, reportedProblem: assistReportedProblem)
+                .interactiveDismissDisabled()
+                .frame(minWidth: 680, minHeight: 620)
+        }
+    }
+
+    private var macSubtitle: String {
+        if let objective = selectedObjective {
+            return "Escolha o tipo de \(objective.label.lowercased()) para direcionar a análise."
+        }
+        if showingReportedProblem {
+            return "Descreva o que está acontecendo para a análise considerar seu contexto."
+        }
+        return "Conte o que está acontecendo. O Linka usa a medição atual para explicar o próximo passo."
+    }
+
+    private var macObjectiveStep: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            if let currentMeasurement {
+                macCard(title: "Medição para análise") {
+                    HStack(spacing: 24) {
+                        if let down = currentMeasurement.downloadMbps {
+                            macMeasurementValue("Download", value: String(format: "%.1f Mbps", down), symbol: "arrow.down")
+                        }
+                        if let up = currentMeasurement.uploadMbps {
+                            macMeasurementValue("Upload", value: String(format: "%.1f Mbps", up), symbol: "arrow.up")
+                        }
+                        if let latency = currentMeasurement.latencyMs {
+                            macMeasurementValue("Ping", value: String(format: "%.0f ms", latency), symbol: "gauge.with.needle")
+                        }
+                    }
+                }
+            }
+
+            macCard(title: LinkaCopy.value("assist.problem.question")) {
+                ForEach(AssistProblemObjective.allCases) { objective in
+                    Button {
+                        selectedObjective = objective
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: objective.systemImage)
+                                .frame(width: 20)
+                                .foregroundStyle(Color.brandAccentWarm)
+                            Text(objective.label)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    if objective != AssistProblemObjective.allCases.last { Divider() }
+                }
+                Divider()
+                Button {
+                    showingReportedProblem = true
+                } label: {
+                    Label(LinkaCopy.value("assist.problem.other"), systemImage: "ellipsis.bubble")
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button(LinkaCopy.value("assist.problem.skipToGeneral")) {
+                presentAssist(objective: nil, subcategory: nil, reportedProblem: nil)
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+
+    private func macSubcategoryStep(for objective: AssistProblemObjective) -> some View {
+        macCard(title: objective.label) {
+            Text(LinkaCopy.value("assist.problem.subcategoryHint"))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Divider()
+            ForEach(objective.subcategories) { subcategory in
+                Button(subcategory.label) {
+                    presentAssist(objective: objective.rawValue, subcategory: subcategory.key, reportedProblem: nil)
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if subcategory.id != objective.subcategories.last?.id { Divider() }
+            }
+            Divider()
+            Button(LinkaCopy.value("assist.problem.skipQuestion")) {
+                presentAssist(objective: objective.rawValue, subcategory: nil, reportedProblem: nil)
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+
+    private var macReportedProblemStep: some View {
+        macCard(title: LinkaCopy.value("assist.problem.describeTitle")) {
+            Text(LinkaCopy.value("assist.problem.describeHint"))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            TextEditor(text: $reportedProblemText)
+                .font(.body)
+                .frame(minHeight: 120)
+                .padding(8)
+                .background(Color.surfacePage, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .onChange(of: reportedProblemText) { newValue in
+                    if newValue.count > Self.reportedProblemMaxLength {
+                        reportedProblemText = String(newValue.prefix(Self.reportedProblemMaxLength))
+                    }
+                }
+            HStack {
+                Spacer()
+                Text("\(reportedProblemText.count)/\(Self.reportedProblemMaxLength)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Button(LinkaCopy.value("common.continue")) {
+                presentAssist(
+                    objective: nil,
+                    subcategory: nil,
+                    reportedProblem: String(reportedProblemText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.reportedProblemMaxLength))
+                )
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.brandAccentWarm)
+            .disabled(reportedProblemText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .onAppear { reportedProblemText = "" }
+        }
+    }
+
+    private func macMeasurementValue(_ title: String, value: String, symbol: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Label(title, systemImage: symbol)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.body.weight(.semibold))
+                .monospacedDigit()
+        }
+    }
+
+    private func macCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title.uppercased())
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 12, content: content)
+                .padding(18)
+                .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+    #endif
 
     private var navigationActionTitle: String {
         selectedObjective == nil && !showingReportedProblem ? LinkaCopy.value("common.close") : LinkaCopy.value("common.back")

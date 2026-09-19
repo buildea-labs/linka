@@ -203,6 +203,7 @@ Codex define severidade/escopo → correção cirúrgica pelo Codex principal ou
 - Não implemente antes de entender o problema.
 - Não crie feature só porque é tecnicamente possível.
 - Mudança visual relevante é confrontada com protótipo e Design System.
+- **Regra de completude visual no macOS:** antes de declarar uma padronização de UX concluída, inventarie todos os destinos alcançáveis pela área alterada — sidebar, `NavigationLink`, toolbar, menu, sheet, alerta e detalhe aninhado. Cada destino precisa ser comparado no app contra o padrão definido, nos estados que existirem (vazio, carregando, resultado, erro e ação destrutiva). Não é aceitável validar apenas a tela-raiz e chamar a família inteira de padronizada.
 - Mudança no motor exige revisão de contratos, testes e consumidores.
 - Nenhum agente declara a própria entrega aprovada por outro sem revisão real.
 - Estado vive em artefatos (`plano.md`, issue/PR, verdict de Tito, `RELEASE_NOTES.md`), não em encenação de conversa entre agentes.
@@ -250,6 +251,7 @@ O Design System em `documentacao/design/design_system/` é a fonte visual do Lin
 
 - `documentacao/design/design_system/assets/icons/` é a fonte de verdade dos ícones.
 - O wordmark oficial é `wordmark.svg`; não substitua por texto puro quando a marca é requerida.
+- A direção aprovada para as superfícies macOS está em `documentacao/design/DIRECAO_VISUAL_MACOS.md`; trate-a como critério de produto para novos fluxos e para qualquer refinamento visual no Mac.
 - Não use Material Design 3 como regra do Linka.
 - Não restaure componentes legados quando contradizem protótipo/Design System atuais.
 

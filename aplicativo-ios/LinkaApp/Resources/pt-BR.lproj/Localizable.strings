@@ -153,6 +153,9 @@
 "legal.terms" = "Termos de Uso";
 "legal.privacy" = "Privacidade";
 "metric.download" = "DOWNLOAD";
+"measurement.phase.ping" = "Ping";
+"measurement.phase.download" = "Download";
+"measurement.phase.upload" = "Upload";
 "network.wifi" = "Wi-Fi";
 "network.cellular" = "Rede móvel";
 "network.other" = "Outra rede";
@@ -193,6 +196,9 @@
 "router.panel.found" = "Painel encontrado";
 "router.panel.open" = "Abrir no navegador";
 "router.panel.unavailable" = "Não foi possível localizar um painel nesta rede.";
+"router.panel.unreachable.title" = "Roteador encontrado, painel bloqueado";
+"router.panel.unreachable.message" = "O Linka identificou o roteador desta rede, mas não conseguiu confirmar o painel. O motivo mais comum é a permissão de Rede Local negada para o Linka em Ajustes.";
+"router.panel.openSettings" = "Abrir Ajustes";
 "router.panel.locate" = "Localizar painel";
 "router.panel.confirmation.title" = "Abrir o painel do roteador?";
 "router.panel.confirmation.message" = "Você vai abrir a página de administração em %@. O Linka não acessa nem guarda as credenciais inseridas nela.";
@@ -604,6 +610,12 @@
 "Tendência de Velocidade" = "Tendência de Velocidade";
 "Buscar serviço" = "Buscar serviço";
 "Status de serviços" = "Status de serviços";
+"Mensagens" = "Mensagens";
+"Redes Sociais" = "Redes Sociais";
+"Jogos" = "Jogos";
+"Produtividade" = "Produtividade";
+"IA" = "IA";
+"Infraestrutura" = "Infraestrutura";
 "Receber alertas de \(service.name)" = "Receber alertas de \(service.name)";
 "Compara a resposta DNS nesta conexão. Isso não aumenta sua velocidade contratada, ping ou Wi-Fi." = "Compara a resposta DNS nesta conexão. Isso não aumenta sua velocidade contratada, ping ou Wi-Fi.";
 "Não disponível nesta tentativa" = "Não disponível nesta tentativa";

@@ -29,6 +29,14 @@ struct UsageDiagnosticsView: View {
     }
 
     var body: some View {
+        #if os(macOS)
+        macOSContent
+        #else
+        iOSContent
+        #endif
+    }
+
+    private var iOSContent: some View {
         NavigationStack {
             List {
                 Section {
@@ -68,6 +76,61 @@ struct UsageDiagnosticsView: View {
             .linkaSheetToolbar(title: LinkaCopy.value("usage.title")) { dismiss() }
         }
     }
+
+    #if os(macOS)
+    private var macOSContent: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(LinkaCopy.value("usage.title"))
+                            .font(.title.weight(.bold))
+                        Text(summarySubtitle)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if let report {
+                        macCard(title: LinkaCopy.value("usage.cases")) {
+                            ForEach(UsageCase.allCases, id: \.self) { usageCase in
+                                if let verdict = report.verdict(for: usageCase) {
+                                    UsageVerdictRow(usageCase: usageCase, verdict: verdict)
+                                    if usageCase != UsageCase.allCases.last { Divider() }
+                                }
+                            }
+                        }
+                    } else {
+                        macCard(title: LinkaCopy.value("usage.summary.title")) {
+                            LinkaUnavailableState(
+                                title: "usage.noMeasurement.title",
+                                message: "usage.noMeasurement.message",
+                                systemImage: "speedometer"
+                            )
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                        }
+                    }
+                }
+                .frame(maxWidth: 680, alignment: .leading)
+                .padding(40)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .background(Color.surfacePage)
+            .linkaSheetToolbar(title: LinkaCopy.value("usage.title")) { dismiss() }
+        }
+    }
+
+    private func macCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title.uppercased())
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 12, content: content)
+                .padding(18)
+                .background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+    #endif
 }
 
 private struct UsageVerdictRow: View {

@@ -32,19 +32,36 @@ struct MetricRing: View {
                         .font(.bodyRegular)
                         .foregroundColor(.textSecondary)
                 } else {
-                    Group {
-                        if let id = matchedId, let ns = animation, !reduceMotion {
-                            Text(value)
-                                .matchedGeometryEffect(id: id, in: ns)
-                        } else {
-                            Text(value)
+                    if #available(iOS 17.0, macOS 14.0, *) {
+                        Group {
+                            if let id = matchedId, let ns = animation, !reduceMotion {
+                                Text(value)
+                                    .matchedGeometryEffect(id: id, in: ns)
+                            } else {
+                                Text(value)
+                            }
                         }
+                        .contentTransition(.numericText())
+                        .animation(reduceMotion ? nil : .snappy, value: value)
+                        .font(size > 200 ? .displayHuge : .displayLarge)
+                        .foregroundColor(.textPrimary)
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                    } else {
+                        Group {
+                            if let id = matchedId, let ns = animation, !reduceMotion {
+                                Text(value)
+                                    .matchedGeometryEffect(id: id, in: ns)
+                            } else {
+                                Text(value)
+                            }
+                        }
+                        .font(size > 200 ? .displayHuge : .displayLarge)
+                        .foregroundColor(.textPrimary)
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
                     }
-                    .font(size > 200 ? .displayHuge : .displayLarge)
-                    .foregroundColor(.textPrimary)
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-                    
+
                     if let u = unit {
                         Text(u)
                             .font(.monoCaption)

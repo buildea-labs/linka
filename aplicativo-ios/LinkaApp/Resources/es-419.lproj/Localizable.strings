@@ -153,6 +153,9 @@
 "legal.terms" = "Términos de uso";
 "legal.privacy" = "Privacidad";
 "metric.download" = "DESCARGA";
+"measurement.phase.ping" = "Ping";
+"measurement.phase.download" = "Descarga";
+"measurement.phase.upload" = "Subida";
 "network.wifi" = "Wi-Fi";
 "network.cellular" = "Red móvil";
 "network.other" = "Otra red";
@@ -193,6 +196,9 @@
 "router.panel.found" = "Panel encontrado";
 "router.panel.open" = "Abrir en el navegador";
 "router.panel.unavailable" = "No fue posible encontrar un panel en esta red.";
+"router.panel.unreachable.title" = "Router encontrado, panel bloqueado";
+"router.panel.unreachable.message" = "Linka identificó el router de esta red, pero no pudo confirmar el panel. El motivo más común es el permiso de Red Local denegado para Linka en Ajustes.";
+"router.panel.openSettings" = "Abrir Ajustes";
 "router.panel.locate" = "Buscar panel";
 "router.panel.confirmation.title" = "¿Abrir el panel del router?";
 "router.panel.confirmation.message" = "Abrirás la página de administración en %@. Linka no accede ni guarda las credenciales ingresadas allí.";
@@ -604,6 +610,12 @@
 "Tendência de Velocidade" = "Tendencia de Velocidad";
 "Buscar serviço" = "Buscar servicio";
 "Status de serviços" = "Estado de los servicios";
+"Mensagens" = "Mensajería";
+"Redes Sociais" = "Redes sociales";
+"Jogos" = "Juegos";
+"Produtividade" = "Productividad";
+"IA" = "IA";
+"Infraestrutura" = "Infraestructura";
 "Receber alertas de \(service.name)" = "Recibir alertas de \(service.name)";
 "Compara a resposta DNS nesta conexão. Isso não aumenta sua velocidade contratada, ping ou Wi-Fi." = "Compara la respuesta de DNS en esta conexión. Esto no aumenta tu velocidad contratada, ping o Wi-Fi.";
 "Não disponível nesta tentativa" = "No disponible en este intento";
