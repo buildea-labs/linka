@@ -14,6 +14,8 @@ targets:
       iOS: 16.0
     settings:
       base:
+        MARKETING_VERSION: "1.1.4"
+        CURRENT_PROJECT_VERSION: "50"
         GENERATE_INFOPLIST_FILE: NO
         # O deploymentTarget do XcodeGen não chegou ao alvo da aplicação no
         # projeto gerado. Fixar o valor aqui impede que o Xcode herde o SDK
@@ -23,7 +25,7 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "2Z4T8228GR"
         PRODUCT_BUNDLE_IDENTIFIER: com.linka.assist
-        TARGETED_DEVICE_FAMILY: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
       configs:
         Debug:
           APS_ENVIRONMENT: development
@@ -102,6 +104,7 @@ targets:
           - pt-BR
           - en
           - es-419
+        LSApplicationCategoryType: public.app-category.utilities
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleURLTypes:
@@ -166,6 +169,8 @@ targets:
       iOS: 17.0
     settings:
       base:
+        MARKETING_VERSION: "1.1.4"
+        CURRENT_PROJECT_VERSION: "50"
         GENERATE_INFOPLIST_FILE: NO
         PRODUCT_BUNDLE_IDENTIFIER: com.linka.assist.Widget
         PRODUCT_NAME: LinkaWidget
