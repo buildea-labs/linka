@@ -1012,6 +1012,9 @@
 				114F6A67C7CE3B670CF6AD50 /* 06-historico.png in Resources */,
 				E70DFFFA6549171A03BD19BD /* 06-status-servicos.jpg in Resources */,
 				794A78D7FBF87B7C55A2026C /* 07-status-servicos-source.png in Resources */,
+				4FBFA4B00E64FC22616B4DFF /* README.md in Resources */,
+				C61B62B4C6522F312F3B6526 /* README.md in Resources */,
+				615645512007FA140ACC19BE /* README.md in Resources */,
 				7CF7BA9E1214806740848A59 /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.40.png in Resources */,
 				6E728101447F1EA3746A18FE /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.07.47.png in Resources */,
 				29947FA757E77F75A68839DE /* Simulator Screenshot - iPhone 17 Pro - 2026-09-04 at 00.08.16.png in Resources */,
@@ -1070,6 +1073,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4DB6D1F24A36048C31C7F8AE /* AppStoreScreenshotsUITests.swift in Sources */,
+				65AB245C32EA5A6830552840 /* generate_macos_marketing_kit.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
