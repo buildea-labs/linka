@@ -214,6 +214,7 @@ public struct NetworkAssistResponse: Codable, Equatable, Sendable {
     public let summary: String?
     public let recommendation: NetworkAssistRecommendation?
     public let dimensions: [NetworkAssistDimension]?
+    public let aiAttribution: String?
 
     public init(
         text: String,
@@ -225,7 +226,8 @@ public struct NetworkAssistResponse: Codable, Equatable, Sendable {
         title: String? = nil,
         summary: String? = nil,
         recommendation: NetworkAssistRecommendation? = nil,
-        dimensions: [NetworkAssistDimension]? = nil
+        dimensions: [NetworkAssistDimension]? = nil,
+        aiAttribution: String? = nil
     ) {
         self.text = text
         self.longText = longText
@@ -237,6 +239,7 @@ public struct NetworkAssistResponse: Codable, Equatable, Sendable {
         self.summary = summary
         self.recommendation = recommendation
         self.dimensions = dimensions
+        self.aiAttribution = aiAttribution
     }
 }
 

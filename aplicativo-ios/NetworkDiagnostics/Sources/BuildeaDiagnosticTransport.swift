@@ -56,6 +56,7 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
         let findings = results?.compactMap { $0.cards }.flatMap { $0 } ?? []
 
         let copy: DiagnosticCopy
+        let aiAttribution: String?
         if let v2Explanation = ndsResponse.explanation {
             // Contrato v2: texto já tratado pelo servidor
             // (`explanation.titulo`/`descricao`/`dados`/`acao_usuario`),
@@ -64,6 +65,7 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
             // pronto). `sem_causa_identificada == true` é tratado à parte
             // (AGENTS.md §9 — nunca inventar causa sem lastro).
             copy = Self.copy(fromV2Explanation: v2Explanation, locale: request.locale)
+            aiAttribution = Self.formatProvenance(v2Explanation.provenance)
         } else {
             let aiResult = results?.first(where: { $0.module == "ai" })?.result
             let aiExplanation = aiResult?.explanation
@@ -80,6 +82,11 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
                 locale: request.locale
             )
             copy = await coordinator.resolveCopy(for: input)
+            if copy.source == .ai {
+                aiAttribution = Self.formatProvenance(NDSExplanationProvenance(source: "ai", modelLabel: aiResult?.aiModelUsed))
+            } else {
+                aiAttribution = nil
+            }
         }
 
         let evidenceIDs = [NetworkAssistRequest.currentMeasurementEvidenceID(request.currentMeasurement.id)]
@@ -153,7 +160,8 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
             title: copy.title,
             summary: copy.summary,
             recommendation: parsedRecommendation,
-            dimensions: mappedDimensions
+            dimensions: mappedDimensions,
+            aiAttribution: aiAttribution
         )
     }
 
@@ -238,6 +246,29 @@ public struct BuildeaDiagnosticTransport: NetworkAssistTransport {
             return isHealthy ? "✓ ALL GOOD" : "⚠ NEEDS ATTENTION"
         default:
             return isHealthy ? "✓ TUDO CERTO" : "⚠ PRECISA DE ATENÇÃO"
+        }
+    }
+
+    public static func formatProvenance(_ provenance: NDSExplanationProvenance?) -> String? {
+        guard let provenance, provenance.source == "ai" || provenance.source == "copy_catalog" else {
+            return nil
+        }
+        guard let modelLabel = provenance.modelLabel?.trimmingCharacters(in: .whitespacesAndNewlines), !modelLabel.isEmpty else {
+            return "ChatGPT – Luna"
+        }
+        let lower = modelLabel.lowercased()
+        if lower.contains("luna") {
+            return "ChatGPT – Luna"
+        } else if lower.hasPrefix("gpt-") {
+            return "ChatGPT (\(modelLabel))"
+        } else if lower.hasPrefix("gemini") {
+            return "Gemini (\(modelLabel))"
+        } else if lower.contains("claude") {
+            return "Claude (\(modelLabel))"
+        } else if lower.hasPrefix("@cf/") {
+            return "Workers AI"
+        } else {
+            return modelLabel
         }
     }
 

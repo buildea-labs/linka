@@ -125,27 +125,13 @@ struct AssistView: View {
             // identidade de medição. Duas `.task(id:)` paralelas reagem ao
             // mesmo redraw e deixam o ciclo de análise suscetível a repetição.
             .task(id: currentMeasurement?.id) {
-                guard !isCollectingMeasurement else { return }
-                if let current = currentMeasurement {
-                    // A análise de histórico muda a altura do ScrollView. Ela
-                    // precisa terminar antes de publicar o diagnóstico, para a
-                    // pessoa não perder o ponto que estava lendo quando a
-                    // seção de padrões aparece no meio da tela.
-                    await stabilityViewModel.load(currentMeasurement: current)
-                    await loadAssist(with: current)
-                } else {
-                    async let stability: Void = stabilityViewModel.load(currentMeasurement: nil)
-                    await viewModel.load(
-                        currentMeasurement: nil,
-                        recentMeasurements: recentMeasurements,
-                        usageContext: usageContext,
-                        failureSignal: failureSignal,
-                        objective: objective,
-                        subcategory: subcategory,
-                        reportedProblem: reportedProblem
-                    )
-                    await stability
-                }
+                guard !isCollectingMeasurement, let current = currentMeasurement else { return }
+                // A análise de histórico muda a altura do ScrollView. Ela
+                // precisa terminar antes de publicar o diagnóstico, para a
+                // pessoa não perder o ponto que estava lendo quando a
+                // seção de padrões aparece no meio da tela.
+                await stabilityViewModel.load(currentMeasurement: current)
+                await loadAssist(with: current)
             }
         }
     }
@@ -231,6 +217,20 @@ struct AssistView: View {
                             .font(.bodyRegular)
                             .foregroundColor(.textSecondary)
                             .lineSpacing(4)
+
+                        if let attribution = data.aiAttribution {
+                            HStack(spacing: 5) {
+                                Image(systemName: "sparkles")
+                                    .font(.caption2)
+                                    .accessibilityHidden(true)
+                                Text(attribution)
+                                    .font(.caption2.weight(.medium))
+                            }
+                            .foregroundColor(.textSecondary.opacity(0.8))
+                            .padding(.top, 4)
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel(Text("Origem da análise: \(attribution)"))
+                        }
                     }
                     .padding(20)
                     .frame(maxWidth: .infinity, alignment: .leading)

@@ -380,4 +380,24 @@ final class SpeedTestViewModelResultTimingTests: XCTestCase {
         XCTAssertNil(viewModel.connectionKind)
         XCTAssertNil(viewModel.wifiBandGHz)
     }
+
+    func test_processResultState_populatesLatestFinishedMeasurementSynchronouslyWithDonePhase() {
+        let viewModel = SpeedTestViewModel()
+        XCTAssertNil(viewModel.latestFinishedMeasurement)
+
+        viewModel.processResultState(
+            resultState(),
+            startingKind: .wifi,
+            endingKind: .wifi,
+            startingWiFiContext: WiFiNetworkContext(ssid: "Casa"),
+            endingWiFiContext: WiFiNetworkContext(ssid: "Casa"),
+            generation: 0
+        )
+
+        XCTAssertEqual(viewModel.uiPhase, .done)
+        XCTAssertNotNil(viewModel.latestFinishedMeasurement)
+        XCTAssertEqual(viewModel.latestFinishedMeasurement?.outcome, .complete)
+        XCTAssertEqual(viewModel.latestFinishedMeasurement?.downloadMbps, 87.3)
+        XCTAssertEqual(viewModel.latestFinishedMeasurement?.connectionKind, .wifi)
+    }
 }

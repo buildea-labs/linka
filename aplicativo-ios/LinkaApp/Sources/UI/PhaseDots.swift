@@ -5,6 +5,10 @@ struct PhaseDots: View {
     var activeKey: String
     
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var activePhaseLabel: String {
+        phases.first(where: { $0.key == activeKey })?.label ?? activeKey
+    }
     
     var body: some View {
         HStack(spacing: 12) {
@@ -17,11 +21,13 @@ struct PhaseDots: View {
                         .animation(reduceMotion ? nil : LinkaMotion.fade, value: activeKey)
                     
                     Text(phase.label)
-                        .font(.system(size: 12, weight: isActive ? .semibold : .medium))
+                        .font(.caption2.weight(isActive ? .semibold : .medium))
                         .foregroundColor(isActive ? .textPrimary : .textSecondary)
                         .animation(reduceMotion ? nil : LinkaMotion.fade, value: activeKey)
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(activePhaseLabel))
     }
 }
