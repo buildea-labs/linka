@@ -204,32 +204,41 @@ public enum LinkaRadius {
 
 public struct LinkaPrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
+        // Botão de largura livre (linkaAdaptiveContentWidth não trava mais
+        // o iPad) — sem isso, em .regular ele ficava muito largo e raso,
+        // com o mesmo texto pequeno do iPhone boiando no meio. Sobe um
+        // degrau de tipografia (ainda um text style, escalável por Dynamic
+        // Type) e de altura em vez de esticar só a largura.
+        let isRegular = horizontalSizeClass == .regular
         configuration.label
-            .font(.buttonLabel)
+            .font(isRegular ? .system(.title3, weight: .semibold) : .buttonLabel)
             .foregroundColor(.brandOnSurface)
             .frame(maxWidth: .infinity)
-            .frame(minHeight: 52)
-            .padding(.vertical, LinkaSpacing.sm)
-            .padding(.horizontal, LinkaSpacing.md)
-            .background(Color.brandSurface.opacity(isEnabled ? 1 : 0.42), in: RoundedRectangle(cornerRadius: LinkaRadius.md, style: .continuous))
+            .frame(minHeight: isRegular ? 64 : 52)
+            .padding(.vertical, isRegular ? LinkaSpacing.md : LinkaSpacing.sm)
+            .padding(.horizontal, isRegular ? LinkaSpacing.lg : LinkaSpacing.md)
+            .background(Color.brandSurface.opacity(isEnabled ? 1 : 0.42), in: RoundedRectangle(cornerRadius: isRegular ? LinkaRadius.lg : LinkaRadius.md, style: .continuous))
             .opacity(configuration.isPressed ? 0.82 : 1)
     }
 }
 
 public struct LinkaSecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     public init() {}
 
     public func makeBody(configuration: Configuration) -> some View {
+        let isRegular = horizontalSizeClass == .regular
         configuration.label
-            .font(.bodySmallStrong)
+            .font(isRegular ? .system(.headline, weight: .semibold) : .bodySmallStrong)
             .foregroundColor(.textPrimary.opacity(isEnabled ? 1 : 0.45))
-            .frame(minHeight: 44)
+            .frame(minHeight: isRegular ? 56 : 44)
             .opacity(configuration.isPressed ? 0.65 : 1)
     }
 }
@@ -360,6 +369,30 @@ public extension View {
 
     func linkaCard(cornerRadius: CGFloat = LinkaRadius.md) -> some View {
         background(Color.surfaceCard, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    }
+
+    /// Largura da coluna de conteúdo principal do fluxo de medição (idle,
+    /// medindo, resultado): 500pt em compact (iPhone, igual a sempre); em
+    /// regular (iPad), sem limite — o Luiz pediu explicitamente que o app
+    /// preencha a tela inteira no iPad, sem barra lateral (decisão de
+    /// produto desta sessão, substitui uma tentativa anterior de coluna
+    /// central de 720pt). Único lugar que decide essa regra; qualquer
+    /// outra tela cheia (não-sheet) do fluxo principal reaproveita em vez
+    /// de duplicar a constante.
+    func linkaAdaptiveContentWidth() -> some View {
+        modifier(LinkaAdaptiveContentWidthModifier())
+    }
+}
+
+private struct LinkaAdaptiveContentWidthModifier: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    func body(content: Content) -> some View {
+        if horizontalSizeClass == .regular {
+            content
+        } else {
+            content.frame(maxWidth: 500)
+        }
     }
 }
 
