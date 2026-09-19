@@ -15,6 +15,7 @@ import AppKit
 
 struct SettingsView: View {
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
+    @EnvironmentObject private var ads: LinkaAdsCoordinator
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(\.requestReview) private var requestReview
@@ -104,6 +105,18 @@ struct SettingsView: View {
                     Label(LinkaCopy.value("settings.serviceStatus"), systemImage: "dot.radiowaves.left.and.right")
                 }
             }
+
+            #if os(iOS)
+            if ads.privacyOptionsRequired {
+                Section(LinkaCopy.value("settings.section.privacy")) {
+                    Button {
+                        Task { await ads.presentPrivacyOptions() }
+                    } label: {
+                        Label(LinkaCopy.value("settings.adPrivacyOptions"), systemImage: "hand.raised")
+                    }
+                }
+            }
+            #endif
 
             Section(LinkaCopy.value("settings.section.about")) {
                 Link(destination: LinkaExternalLinks.about) {

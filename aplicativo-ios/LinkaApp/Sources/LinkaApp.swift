@@ -25,6 +25,7 @@ struct LinkaApp: App {
     #endif
     @StateObject private var entitlements: StoreKitEntitlementProvider
     @StateObject private var serviceStatus = ServiceStatusStore()
+    @StateObject private var ads = LinkaAdsCoordinator()
     @AppStorage("appAppearance") private var appAppearance = "system"
     @AppStorage(LinkaLanguagePreference.storageKey) private var languagePreference = LinkaLanguagePreference.system.rawValue
 
@@ -122,6 +123,7 @@ struct LinkaApp: App {
             rootView
                 .environmentObject(entitlements)
                 .environmentObject(serviceStatus)
+                .environmentObject(ads)
                 .preferredColorScheme(preferredColorScheme)
                 .environment(\.locale, effectiveLocale)
             .alert("Instabilidade em serviço", isPresented: Binding(
@@ -144,6 +146,10 @@ struct LinkaApp: App {
             .task {
                 await entitlements.refreshSnapshot()
                 await serviceStatus.refresh()
+                // UMP só consulta o estado global aqui. A eventual interface
+                // de consentimento é apresentada no Histórico, no momento em
+                // que uma pessoa Free realmente pode receber um anúncio.
+                await ads.refreshConsentInformation()
                 syncWidgetLanguagePreference()
             }
             .onChange(of: languagePreference) { _ in syncWidgetLanguagePreference() }

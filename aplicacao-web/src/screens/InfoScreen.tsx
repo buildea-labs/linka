@@ -52,7 +52,7 @@ const pages: Record<string, InfoPage> = {
     eyebrow: 'Privacidade',
     title: 'Privacidade levada a sério.',
     intro: 'Luiz F. Giammattey é o responsável pelo Linka. Esta política explica quais dados o app usa, por quê e quais escolhas você tem.',
-    lastUpdated: '9 de setembro de 2026',
+    lastUpdated: '19 de setembro de 2026',
     sections: [
       {
         title: 'Dados usados na medição',
@@ -71,8 +71,20 @@ const pages: Record<string, InfoPage> = {
         body: 'Quando você usa o Assist, o Linka envia ao seu serviço de diagnóstico o contexto necessário para responder à sua pergunta, como resultados de medição, tipo de conexão e dados técnicos de Wi-Fi que estejam disponíveis. Endereços locais e URLs de administração do roteador não são enviados nesse diagnóstico.'
       },
       {
+        title: 'Publicidade no Histórico',
+        body: 'A versão gratuita pode exibir anúncios nativos fornecidos pelo Google AdMob somente no Histórico, depois que há medições para mostrar. O Linka Plus não exibe nem solicita esses anúncios. Não mostramos anúncios durante a medição nem na tela de resultado.'
+      },
+      {
+        title: 'Dados relacionados a anúncios',
+        body: 'Quando um anúncio é solicitado, o Google pode tratar categorias como identificadores técnicos, informações de uso e diagnóstico para fornecer, proteger, medir e limitar a frequência de anúncios, conforme as configurações e políticas aplicáveis do Google. O Linka solicita tratamento não personalizado (npa=1), mas isso não elimina os tratamentos necessários ao fornecimento, à segurança e à medição do anúncio.'
+      },
+      {
+        title: 'Suas escolhas de anúncios',
+        body: 'Quando aplicável, a mensagem de privacidade do Google permite escolher preferências. A opção para revisar essas escolhas fica em Ajustes do Linka quando o fluxo do Google a exigir. Você também pode mudar suas preferências de privacidade do dispositivo nas configurações do iPhone ou iPad.'
+      },
+      {
         title: 'Compras e compartilhamento',
-        body: 'Assinaturas, cobrança e restauração de compras são processadas pela Apple. O Linka não vende seus dados nem usa os dados de medição para publicidade comportamental.'
+        body: 'Assinaturas, cobrança e restauração de compras são processadas pela Apple. O Linka não vende seus dados de medição para publicidade comportamental.'
       },
       {
         title: 'Fale conosco',
