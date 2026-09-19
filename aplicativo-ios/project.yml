@@ -169,6 +169,7 @@ targets:
           - final/pt-BR/iphone/02-resultado.png
           - rascunhos-*/**
           - "**/README.md"
+          - "scripts/**"
 
   LinkaAppTests:
     type: bundle.unit-test
