@@ -47,6 +47,7 @@ enum HistoryVisualizationState: Equatable {
 struct HistoryView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var entitlements: StoreKitEntitlementProvider
+    @EnvironmentObject private var ads: LinkaAdsCoordinator
     var onSelectMeasurement: ((NetworkMeasurement) -> Void)? = nil
 
     @State private var measurements: [NetworkMeasurement] = []
@@ -183,6 +184,16 @@ struct HistoryView: View {
                                 }
                             }
                         }
+
+                        // A publicidade só existe neste destino, depois de
+                        // conteúdo útil. `BannerView` não reserva espaço até
+                        // um native ad consentido estar realmente pronto.
+                        if !hasPlus, !filteredMeasurements.isEmpty {
+                            Section {
+                                BannerView()
+                            }
+                            .listRowBackground(Color.clear)
+                        }
                     }
                 }
                 .scrollContentBackground(.hidden)
@@ -248,6 +259,10 @@ struct HistoryView: View {
             if hasPlus {
                 insightText = weeklyInsightText(from: measurements)
             }
+
+            // Plus não cria slot nem request. Para Free, a própria
+            // coordenadora garante uma única tentativa nesta sessão.
+            ads.prepareHistoryAd(hasPlus: hasPlus, hasHistory: !measurements.isEmpty)
 
             isLoading = false
         }

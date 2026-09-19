@@ -41,6 +41,10 @@
 	</array>
 	<key>LinkaServiceStatusEndpoint</key>
 	<string>https://linka-assist-relay.buildealabs.workers.dev/v1/service-status</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-5542349230926522~6717355071</string>
+	<key>LinkaAdsEnabled</key>
+	<string>$(LINKA_ADS_ENABLED)</string>
 	<key>NDAssistRelayEndpoint</key>
 	<string>https://linka-assist-relay.buildealabs.workers.dev/v2/assist</string>
 	<key>NSAppTransportSecurity</key>

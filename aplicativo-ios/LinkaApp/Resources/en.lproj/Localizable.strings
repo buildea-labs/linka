@@ -307,6 +307,9 @@
 "settings.about" = "About Linka";
 "settings.howWeMeasure" = "How we measure";
 "settings.privacy" = "Privacy";
+"settings.section.privacy" = "Privacy";
+"settings.adPrivacyOptions" = "Ad privacy options";
+"ads.native.attribution" = "ADVERTISEMENT";
 "settings.terms" = "Terms of Use";
 "settings.support" = "Support";
 "settings.rate" = "Rate Linka";
