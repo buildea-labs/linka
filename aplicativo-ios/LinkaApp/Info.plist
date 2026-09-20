@@ -35,16 +35,16 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-5542349230926522~6717355071</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>shortcuts</string>
 	</array>
-	<key>LinkaServiceStatusEndpoint</key>
-	<string>https://linka-assist-relay.buildealabs.workers.dev/v1/service-status</string>
-	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-5542349230926522~6717355071</string>
 	<key>LinkaAdsEnabled</key>
 	<string>$(LINKA_ADS_ENABLED)</string>
+	<key>LinkaServiceStatusEndpoint</key>
+	<string>https://linka-assist-relay.buildealabs.workers.dev/v1/service-status</string>
 	<key>NDAssistRelayEndpoint</key>
 	<string>https://linka-assist-relay.buildealabs.workers.dev/v2/assist</string>
 	<key>NSAppTransportSecurity</key>
@@ -61,8 +61,12 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>O Linka usa a localização apenas porque o iPhone exige essa autorização para informar o nome da rede Wi-Fi atual. Sua localização não é salva para identificar a rede.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>O Linka usa sua permissão para apresentar anúncios mais relevantes e medir o desempenho deles.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -74,7 +78,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UIRequiresFullScreen</key>
-	<true/>
 </dict>
 </plist>

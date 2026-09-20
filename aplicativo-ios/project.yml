@@ -62,6 +62,7 @@ targets:
         LinkaServiceStatusEndpoint: "https://linka-assist-relay.buildealabs.workers.dev/v1/service-status"
         GADApplicationIdentifier: "ca-app-pub-5542349230926522~6717355071"
         LinkaAdsEnabled: "$(LINKA_ADS_ENABLED)"
+        NSUserTrackingUsageDescription: "O Linka usa sua permissão para apresentar anúncios mais relevantes e medir o desempenho deles."
         NSLocationWhenInUseUsageDescription: "O Linka usa a localização apenas porque o iPhone exige essa autorização para informar o nome da rede Wi-Fi atual. Sua localização não é salva para identificar a rede."
         NSLocationTemporaryUsageDescriptionDictionary:
           WiFiIdentification: "O Linka precisa de precisão total apenas para obter o nome da rede Wi-Fi atual exigido pelo sistema."

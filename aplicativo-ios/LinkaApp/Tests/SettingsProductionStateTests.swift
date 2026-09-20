@@ -8,13 +8,13 @@ import CoreLocation
 
 final class SettingsProductionStateTests: XCTestCase {
     func testExternalLinksUseCanonicalOriginAndSpecificPaths() {
-        XCTAssertEqual(LinkaExternalLinks.canonicalOrigin.absoluteString, "https://linka.app")
-        XCTAssertEqual(LinkaExternalLinks.website.absoluteString, "https://linka.app")
-        XCTAssertEqual(LinkaExternalLinks.about.absoluteString, "https://linka.app/sobre")
-        XCTAssertEqual(LinkaExternalLinks.howWeMeasure.absoluteString, "https://linka.app/como-medimos")
-        XCTAssertEqual(LinkaExternalLinks.privacy.absoluteString, "https://linka.app/privacidade")
-        XCTAssertEqual(LinkaExternalLinks.terms.absoluteString, "https://linka.app/termos")
-        XCTAssertEqual(LinkaExternalLinks.support.absoluteString, "https://linka.app/suporte")
+        XCTAssertEqual(LinkaExternalLinks.canonicalOrigin.absoluteString, "https://linka-speedtest.web.app")
+        XCTAssertEqual(LinkaExternalLinks.website.absoluteString, "https://linka-speedtest.web.app")
+        XCTAssertEqual(LinkaExternalLinks.about.absoluteString, "https://linka-speedtest.web.app/sobre")
+        XCTAssertEqual(LinkaExternalLinks.howWeMeasure.absoluteString, "https://linka-speedtest.web.app/como-medimos")
+        XCTAssertEqual(LinkaExternalLinks.privacy.absoluteString, "https://linka-speedtest.web.app/privacidade")
+        XCTAssertEqual(LinkaExternalLinks.terms.absoluteString, "https://linka-speedtest.web.app/termos")
+        XCTAssertEqual(LinkaExternalLinks.support.absoluteString, "https://linka-speedtest.web.app/suporte")
     }
 
     func testAdvancedWiFiStateReflectsEntitlementConfigurationAndEnabledFlag() {
@@ -149,6 +149,7 @@ final class SettingsProductionStateTests: XCTestCase {
             let contents = try String(contentsOf: url)
             XCTAssertTrue(contents.contains("NSLocationWhenInUseUsageDescription"))
             XCTAssertTrue(contents.contains("NSLocalNetworkUsageDescription"))
+            XCTAssertTrue(contents.contains("NSUserTrackingUsageDescription"))
         }
     }
 
