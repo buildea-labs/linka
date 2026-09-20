@@ -5,7 +5,7 @@ import LinkaWidgetShared
 /// Destinos públicos do Linka. A base é única para que Ajustes, paywall e
 /// futuras superfícies legais não divirjam silenciosamente.
 enum LinkaExternalLinks {
-    static let canonicalOrigin = URL(string: "https://linka.app")!
+    static let canonicalOrigin = URL(string: "https://linka-speedtest.web.app")!
     static let website = canonicalOrigin
     static let about = canonicalOrigin.appending(path: "sobre")
     static let howWeMeasure = canonicalOrigin.appending(path: "como-medimos")

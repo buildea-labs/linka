@@ -146,10 +146,9 @@ struct LinkaApp: App {
             .task {
                 await entitlements.refreshSnapshot()
                 await serviceStatus.refresh()
-                // UMP só consulta o estado global aqui. A eventual interface
-                // de consentimento é apresentada no Histórico, no momento em
-                // que uma pessoa Free realmente pode receber um anúncio.
-                await ads.refreshConsentInformation()
+                // O consentimento de anúncios só começa quando o Histórico
+                // Free fica elegível a mostrar um anúncio. Assim, a ATT vem
+                // antes de qualquer interação com essa trilha.
                 syncWidgetLanguagePreference()
             }
             .onChange(of: languagePreference) { _ in syncWidgetLanguagePreference() }

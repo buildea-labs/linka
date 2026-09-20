@@ -1,5 +1,6 @@
 import Foundation
 #if os(iOS)
+import AppTrackingTransparency
 import GoogleMobileAds
 import UserMessagingPlatform
 #endif
@@ -50,6 +51,12 @@ final class LinkaAdsCoordinator: NSObject, ObservableObject {
     /// mostra uma tela: o formulário só pode aparecer sob demanda no
     /// Histórico elegível.
     func refreshConsentInformation() async {
+        guard isEnabled else {
+            consentInformationWasUpdated = false
+            privacyOptionsRequired = false
+            return
+        }
+
         do {
             try await ConsentInformation.shared.requestConsentInfoUpdate(with: RequestParameters())
             consentInformationWasUpdated = true
@@ -61,9 +68,7 @@ final class LinkaAdsCoordinator: NSObject, ObservableObject {
     }
 
     private func requestHistoryConsentThenLoadNativeAd() async {
-        // A atualização no launch mantém Ajustes correto inclusive para Plus
-        // e para histórico vazio. Repetimos antes do request para não usar um
-        // estado que tenha ficado velho enquanto o app estava aberto.
+        await requestTrackingAuthorizationIfNeeded()
         await refreshConsentInformation()
         guard consentInformationWasUpdated else { return }
 
@@ -96,6 +101,15 @@ final class LinkaAdsCoordinator: NSObject, ObservableObject {
         extras.additionalParameters = ["npa": "1"]
         request.register(extras)
         loader.load(request)
+    }
+
+    /// ATT vem antes de qualquer interação com a trilha de anúncios. A pessoa
+    /// vê o pedido apenas quando o Histórico Free se torna elegível a receber
+    /// publicidade; negar a permissão não bloqueia anúncios não personalizados.
+    private func requestTrackingAuthorizationIfNeeded() async {
+        guard #available(iOS 14, *),
+              ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { return }
+        _ = await ATTrackingManager.requestTrackingAuthorization()
     }
 
     func presentPrivacyOptions() async {
