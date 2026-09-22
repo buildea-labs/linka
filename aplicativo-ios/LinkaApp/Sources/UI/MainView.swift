@@ -39,6 +39,7 @@ private struct LiveUsageDetailSheet: View {
                 Spacer()
             }
             .padding(24)
+            .linkaStaticScreenBackground()
             .navigationTitle(LinkaCopy.value("home.live.details"))
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button(LinkaCopy.value("common.close")) { dismiss() } } }
         }
