@@ -2,6 +2,10 @@
 "settings.language.option.system" = "System";
 "settings.language.hint" = "System uses the language set on your iPhone.";
 "common.unavailable" = "Unavailable";
+"network.wifiBand" = "Wi-Fi band";
+"network.wifiBand.value2_4GHz" = "2.4 GHz";
+"network.wifiBand.value5GHz" = "5 GHz";
+"network.wifiBand.value6GHz" = "6 GHz";
 "linka.plus" = "Linka Plus";
 "optimization.title" = "Optimization";
 "optimization.unavailable.title" = "Measure your connection first";
