@@ -117,6 +117,7 @@ struct AssistView: View {
         NavigationStack {
             ZStack {
                 LinkaScreenBackground(variant: .gradientOnly, showWaves: false)
+                    .ignoresSafeArea()
                 contentView
             }
             .linkaSheetToolbar(title: LinkaCopy.value("assist.title"), onDismiss: closeSheet)

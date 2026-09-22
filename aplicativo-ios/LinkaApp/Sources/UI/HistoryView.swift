@@ -66,6 +66,7 @@ struct HistoryView: View {
     var body: some View {
         ZStack {
             LinkaScreenBackground(variant: .gradientOnly, showWaves: false)
+                .ignoresSafeArea()
             if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -202,6 +203,7 @@ struct HistoryView: View {
         .navigationTitle(LinkaCopy.value("history.title"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         #endif
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet(entryPoint: purchaseEntryPoint) {
