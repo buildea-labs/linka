@@ -96,6 +96,50 @@ const pages: Record<string, InfoPage> = {
       }
     ]
   },
+  '/casawifi/privacidade': {
+    eyebrow: 'WiFi Casa · Privacidade',
+    title: 'Privacidade 100% no seu aparelho.',
+    intro: 'Luiz F. Giammattey (Buildea) é o responsável pelo WiFi Casa. Esta política explica como o aplicativo protege rigorosamente a sua privacidade.',
+    lastUpdated: '20 de setembro de 2026',
+    sections: [
+      {
+        title: 'O que o app faz',
+        body: 'O WiFi Casa é um utilitário para iOS projetado para mapear a cobertura Wi-Fi residencial e diagnosticar a qualidade da conexão em cada cômodo, identificando onde o sinal falha e se a lentidão decorre do Wi-Fi local ou da sua operadora de internet.'
+      },
+      {
+        title: 'Privacidade por Design (100% Local)',
+        body: 'Todos os cômodos, plantas residenciais, medições de latência, jitter, perda de pacotes e o histórico comparativo (Antes × Depois) são processados e armazenados exclusivamente no seu dispositivo (via SwiftData). Nenhuma planta residencial ou mapa de calor é enviado a servidores externos.'
+      },
+      {
+        title: 'Sem Contas ou Cadastros',
+        body: 'O app não exige cadastro, criação de conta, login social, e-mail ou número de telefone. Você utiliza todos os recursos sem qualquer coleta de dados pessoais de identificação.'
+      },
+      {
+        title: 'Permissões do Sistema',
+        body: 'Rede Local: usada estritamente para medir a latência e estabilidade direta com seu roteador residencial (Gateway). Nome do Wi-Fi (SSID): o iOS exige autorização de localização para exibir o nome da rede; o WiFi Casa não monitora, não compartilha sua geolocalização e não constrói histórico de localização.'
+      },
+      {
+        title: 'Tráfego de Medição Externa (WAN)',
+        body: 'Para diagnosticar o segmento de internet e isolar falhas da operadora, o app troca pacotes com servidores públicos de referência. O endereço IP público da sua conexão é tecnicamente necessário para a resposta, sem qualquer uso para criar perfis de usuário.'
+      },
+      {
+        title: 'Sem Rastreamento ou Anúncios',
+        body: 'O WiFi Casa não possui anúncios publicitários, não rastreia usuários (sem IDFA) e não compartilha dados com terceiros ou corretores de dados.'
+      },
+      {
+        title: 'Exclusão de Dados',
+        body: 'Você pode apagar qualquer medição, cômodo ou comparativo diretamente pelo app a qualquer momento, ou desinstalar o app para remover todos os dados locais permanentemente.'
+      },
+      {
+        title: 'Fale sobre Privacidade',
+        body: 'Para dúvidas ou solicitações sobre privacidade ou suporte do WiFi Casa, entre em contato:',
+        action: {
+          href: 'mailto:privacidade@linka.app?subject=Privacidade%20WiFi%20Casa',
+          label: 'Falar com privacidade@linka.app'
+        }
+      }
+    ]
+  },
   '/termos': {
     eyebrow: 'Termos',
     title: 'Regras claras. Uso simples.',

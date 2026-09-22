@@ -1,5 +1,34 @@
 # Architecture Plan: RealtimeNetworkMonitor (V3)
 
+## Evidência de estabilidade e referência regional para jogos — 2026-09-21
+
+**Decisão de produto.** Preservar integralmente UI, cópia e hierarquia. A mudança é só de motor, persistência e critérios: resultado formal usa evidência completa; o diagnóstico silencioso da Home continua observacional.
+
+### Contrato e compatibilidade
+
+1. Adicionar a `NetworkCore` evidências opcionais, versionadas e `Codable`: estabilidade de pacotes (tentativas, sucessos, falhas, timeouts, maior sequência, expansão e conclusão) e referência regional de jogo (id lógico, P50, jitter, contagens e inconclusivo). `packetLossPercent` segue como projeção legada consistente.
+2. Propagar os campos pelo histórico e CloudKit como blobs JSON opcionais, preservando medições antigas e merge.
+3. Não alterar o payload remoto NDS até o Worker/Assist aceitar o contrato novo; o Assist local recebe fatos persistidos, sem fingir que a API remota já os entende.
+
+### Motor
+
+1. Executar 100 probes HTTP sequenciais. Com 1–2 falhas, executar mais 200 (total 300); zero falhas encerra em 100; cancelamento/falha não persiste evidência parcial como válida.
+2. Depois do core e antes da persistência final, medir silenciosamente a referência AWS só para Jogos: UDP unicast com `NWConnection`, lista pública estática/versionada, locale apenas ordena 2–3 candidatas, três pré-probes por candidata (mínimo dois válidos), P50, desempate determinístico e confirmação curta da vencedora. Sem candidata, inconclusivo; sem IP/GPS, sem ping oficial de jogo, sem fallback HTTP/ICMP.
+3. Compor uma única `NetworkMeasurement` final antes de histórico, CloudKit, widget e Assist. No macOS, habilitar a capacidade sandbox de receber UDP; iOS/iPad não recebem permissão nova.
+
+### Regras
+
+1. Videochamada: upload >= 3 Mbps, latência <= 150 ms, jitter <= 30 ms, estabilidade <= 2% e resposta sob carga válida/não baixa.
+2. Jogos: pior latência válida sob carga <= 50 ms, jitter <= 30 ms, estabilidade <= 1% e referência AWS regional <= 50 ms. Sem evidência obrigatória: `notAssessed`. Causa limitante determinística.
+3. Streaming HD, Trabalho e 4K mantêm limites atuais. Cobrir igualdade como adequada e +0,01 como limitada.
+4. A Home deixa de reutilizar conclusão formal: 3 amostras nunca aprovam casos; 5–8 saudáveis são observação normal; falha isolada não define instabilidade; duas/consecutivas mostram sintoma; rede nova/background reinicia aquecimento. Sem tocar Views, textos ou layout.
+
+### Validação
+
+1. Testar contrato/Codable/CloudKit, 100/300, cancelamento, seleção regional/inconclusivo, limites e persistência final.
+2. Testar diagnóstico vivo: amostra insuficiente, falha isolada, falhas repetidas, troca de rede e background.
+3. Build/testes de pacotes e app; recepção UDP em macOS assinado é gate físico separado.
+
 ## 1. Contexto e Problema
 A interface do Mac ("Sua rede agora") exibirá métricas de rede (latência, perda de pacotes e força do sinal Wi-Fi) de forma contínua, mesmo fora de um SpeedTest completo. O motor principal (`LinkaEngine`) é pesado e otimizado para a medição principal, não para polling contínuo.
 
