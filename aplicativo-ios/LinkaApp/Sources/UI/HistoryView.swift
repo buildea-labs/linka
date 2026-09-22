@@ -65,7 +65,8 @@ struct HistoryView: View {
 
     var body: some View {
         ZStack {
-            Color.surfacePage.ignoresSafeArea()
+            LinkaScreenBackground(variant: .gradientOnly, showWaves: false)
+                .ignoresSafeArea()
             if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -202,6 +203,7 @@ struct HistoryView: View {
         .navigationTitle(LinkaCopy.value("history.title"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         #endif
         .sheet(isPresented: $showPurchase) {
             PurchaseSheet(entryPoint: purchaseEntryPoint) {
@@ -419,6 +421,7 @@ struct HistoryWaveChartView: View {
                     Spacer()
                     Text(formatAxisDate(lastDate)).font(.caption2.weight(.medium)).foregroundColor(.textSecondary)
                 }
+                .scrollContentBackground(.hidden)
             }
         }
         .padding(18)
