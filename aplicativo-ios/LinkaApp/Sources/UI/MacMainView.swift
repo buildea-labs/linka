@@ -53,6 +53,7 @@ struct MacMainView: View {
     @State private var assistEntryPoint: MacAssistEntryPoint = .fresh
     @State private var showAssistProblemSelection = false
     @State private var showAssistResult = false
+    @State private var showNetscopeAnalysis = false
     @State private var pendingAssistMeasurement = false
     @State private var pendingAssistObjective: String?
     @State private var pendingAssistSubcategory: String?
@@ -208,6 +209,12 @@ struct MacMainView: View {
                 entitlements: entitlements
             )
             .frame(minWidth: 680, minHeight: 620)
+        }
+        .sheet(isPresented: $showNetscopeAnalysis) {
+            // L-03 não projeta a medição para Netscope. O reader padrão
+            // falha fechado e não executa I/O.
+            NetscopeAnalysisView()
+                .frame(minWidth: 520, minHeight: 380)
         }
         .sheet(isPresented: $showConnectivityTriage) {
             ConnectivityTriageView(onRetry: { viewModel.startTest() })
@@ -1046,6 +1053,12 @@ struct MacMainView: View {
                         .foregroundColor(.textPrimary)
 
                     qualityCard
+                }
+
+                if isFinalResult {
+                    NetscopeResultEntryCard {
+                        showNetscopeAnalysis = true
+                    }
                 }
 
                 // Bloco Temático 2: Histórico Recente

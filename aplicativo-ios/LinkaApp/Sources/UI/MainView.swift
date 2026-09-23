@@ -133,6 +133,7 @@ struct MainView: View {
     @State private var purchaseEntryPoint: PurchaseEntryPoint = .settings
     @State private var showAssistProblemSelection: Bool = false
     @State private var showAssistResult: Bool = false
+    @State private var showNetscopeAnalysis: Bool = false
     @State private var assistEntryPoint: AssistEntryPoint = .fresh
     @State private var pendingAssistMeasurement = false
     @State private var pendingAdvancedWiFiMeasurement = false
@@ -349,6 +350,11 @@ struct MainView: View {
                     onShowDetails: { showDetails = true },
                     entitlements: entitlements
                 )
+            }
+            .sheet(isPresented: $showNetscopeAnalysis) {
+                // L-03 deliberadamente não projeta a medição para Netscope.
+                // O reader padrão é local e indisponível, sem I/O ou egress.
+                NetscopeAnalysisView()
             }
     }
 
@@ -928,6 +934,12 @@ struct MainView: View {
                 )
                 .padding(.horizontal, 24)
                 .padding(.bottom, 18)
+
+                NetscopeResultEntryCard {
+                    showNetscopeAnalysis = true
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
 
                 // 4. CTA para o Assist: "Problemas com sua conexão?"
                 Button {
