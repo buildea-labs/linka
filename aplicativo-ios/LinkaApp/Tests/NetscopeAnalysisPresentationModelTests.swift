@@ -40,8 +40,7 @@ final class NetscopeAnalysisPresentationModelTests: XCTestCase {
 
     func test_wifiDetailsAreOmittedUnlessTheObservedRouteIsWifi() {
         let details = NetscopeMeasurementEvidence.WiFiDetails(
-            bandGHz: 5.0,
-            rssiDbm: -55,
+            band: .fiveGHz,
             linkSpeedMbps: 866
         )
 
@@ -66,7 +65,7 @@ final class NetscopeAnalysisPresentationModelTests: XCTestCase {
 
         XCTAssertNil(cellular.wifiDetails)
         XCTAssertEqual(wifi.wifiDetails, details)
-        XCTAssertEqual(wifi.wifiDetails?.bandGHz, 5.0)
+        XCTAssertEqual(wifi.wifiDetails?.band, .fiveGHz)
     }
 
     func test_declaredContextIsASeparateInputFromObservedEvidence() {
