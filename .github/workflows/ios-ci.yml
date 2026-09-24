@@ -26,6 +26,10 @@ jobs:
         working-directory: aplicativo-ios/NetworkCore
         run: swift test
 
+      - name: Test NetscopeEvidence
+        working-directory: aplicativo-ios/NetscopeEvidence
+        run: swift test
+
       - name: Test MeasurementHistory
         working-directory: aplicativo-ios/MeasurementHistory
         run: swift test
