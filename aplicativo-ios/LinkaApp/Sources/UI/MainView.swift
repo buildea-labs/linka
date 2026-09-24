@@ -352,9 +352,13 @@ struct MainView: View {
                 )
             }
             .sheet(isPresented: $showNetscopeAnalysis) {
-                // L-03 deliberadamente não projeta a medição para Netscope.
-                // O reader padrão é local e indisponível, sem I/O ou egress.
-                NetscopeAnalysisView()
+                if let currentMeasurement {
+                    NetscopeAnalysisView(
+                        input: NetscopeAnalysisInput(projectingFinalMeasurement: currentMeasurement)
+                    )
+                } else {
+                    NetscopeAnalysisView()
+                }
             }
     }
 

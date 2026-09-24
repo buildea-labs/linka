@@ -79,8 +79,9 @@ public struct NetscopeDeclaredContext: Codable, Equatable, Sendable {
     }
 }
 
-/// Entrada local tipada para um consumidor futuro. Nesta fatia ela não é
-/// enviada pela rede nem conectada à UI L-03.
+/// Entrada local tipada conectada ao sheet L-03 somente como preparação local.
+/// Nesta fatia ela não é enviada pela rede: o reader padrão permanece
+/// indisponível e não transmite a evidência.
 public struct NetscopeLocalAnalysisInput: Codable, Equatable, Sendable {
     public let observedEvidence: NetscopeMeasurementEvidence
     public let declaredContext: NetscopeDeclaredContext

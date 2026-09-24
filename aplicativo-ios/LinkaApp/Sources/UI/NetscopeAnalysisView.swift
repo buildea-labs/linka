@@ -1,60 +1,32 @@
 import SwiftUI
+import NetworkCore
+import NetscopeEvidence
 
-/// Informação observada pelo sistema que uma entrega posterior poderá
-/// allowlistar para o Netscope. Esta UI não constrói esse valor a partir de
-/// `NetworkMeasurement` e não o serializa.
-struct NetscopeObservedEvidence: Equatable, Sendable {
-    enum ConnectionKind: String, Equatable, Sendable {
-        case wifi
-        case cellular
-        case ethernet
-        case other
-        case unknown
-    }
+/// A apresentação recebe o contrato local canônico. Ela não serializa nem
+/// transmite esse valor: o reader padrão continua deliberadamente desligado.
+typealias NetscopeAnalysisInput = NetscopeLocalAnalysisInput
 
-    struct WiFiDetails: Equatable, Sendable {
-        let frequencyMHz: Double?
-        let band: String?
-        let channel: Int?
-        let linkSpeedMbps: Double?
-    }
-
-    let connectionKind: ConnectionKind?
-    let wifiDetails: WiFiDetails?
-
-    init(connectionKind: ConnectionKind?, wifiDetails: WiFiDetails?) {
-        self.connectionKind = connectionKind
-        // Detalhe Wi-Fi não tem significado em outra rota e não deve ganhar
-        // um valor substituto. Ausência continua sendo ausência.
-        self.wifiDetails = connectionKind == .wifi ? wifiDetails : nil
-    }
-
-    static let absent = NetscopeObservedEvidence(connectionKind: nil, wifiDetails: nil)
-}
-
-/// Enquadramento escolhido pela pessoa. Não é evidência de rede e nunca deve
-/// ser apresentado como uma métrica observada.
-struct NetscopeDeclaredContext: Equatable, Sendable {
-    enum Objective: String, Equatable, Sendable {
-        case videoCall
-        case gaming
-        case streaming
-        case general
-    }
-
-    let objective: Objective?
-
-    static let absent = NetscopeDeclaredContext(objective: nil)
-}
-
-struct NetscopeAnalysisInput: Equatable, Sendable {
-    let observedEvidence: NetscopeObservedEvidence
-    let declaredContext: NetscopeDeclaredContext
-
-    static let empty = NetscopeAnalysisInput(
-        observedEvidence: .absent,
-        declaredContext: .absent
+extension NetscopeLocalAnalysisInput {
+    static let empty = NetscopeLocalAnalysisInput(
+        observedEvidence: NetscopeMeasurementEvidence(
+            downloadMbps: nil,
+            uploadMbps: nil,
+            latencyMs: nil,
+            jitterMs: nil,
+            packetLossPercent: nil,
+            connectionKind: .unknown,
+            wifiDetails: nil
+        )
     )
+
+    /// A abertura da análise só reaproveita a mesma medição final mostrada no
+    /// resultado. Não busca histórico, não reconstrói a medição e não coleta
+    /// sinal novo para completar campos ausentes.
+    init(projectingFinalMeasurement measurement: NetworkMeasurement) {
+        self.init(
+            observedEvidence: NetscopeMeasurementEvidenceProjector.project(measurement)
+        )
+    }
 }
 
 struct NetscopePresentationItem: Equatable, Sendable {

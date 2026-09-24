@@ -1,5 +1,7 @@
 import XCTest
 @testable import LinkaApp
+import NetworkCore
+import NetscopeEvidence
 
 @MainActor
 final class NetscopeAnalysisPresentationModelTests: XCTestCase {
@@ -37,29 +39,90 @@ final class NetscopeAnalysisPresentationModelTests: XCTestCase {
     }
 
     func test_wifiDetailsAreOmittedUnlessTheObservedRouteIsWifi() {
-        let details = NetscopeObservedEvidence.WiFiDetails(
-            frequencyMHz: 5_180,
-            band: "5ghz",
-            channel: 36,
+        let details = NetscopeMeasurementEvidence.WiFiDetails(
+            bandGHz: 5.0,
+            rssiDbm: -55,
             linkSpeedMbps: 866
         )
 
-        let cellular = NetscopeObservedEvidence(connectionKind: .cellular, wifiDetails: details)
-        let wifi = NetscopeObservedEvidence(connectionKind: .wifi, wifiDetails: details)
+        let cellular = NetscopeMeasurementEvidence(
+            downloadMbps: nil,
+            uploadMbps: nil,
+            latencyMs: nil,
+            jitterMs: nil,
+            packetLossPercent: nil,
+            connectionKind: .cellular,
+            wifiDetails: details
+        )
+        let wifi = NetscopeMeasurementEvidence(
+            downloadMbps: nil,
+            uploadMbps: nil,
+            latencyMs: nil,
+            jitterMs: nil,
+            packetLossPercent: nil,
+            connectionKind: .wifi,
+            wifiDetails: details
+        )
 
         XCTAssertNil(cellular.wifiDetails)
         XCTAssertEqual(wifi.wifiDetails, details)
-        XCTAssertEqual(wifi.wifiDetails?.frequencyMHz, 5_180)
+        XCTAssertEqual(wifi.wifiDetails?.bandGHz, 5.0)
     }
 
     func test_declaredContextIsASeparateInputFromObservedEvidence() {
-        let evidence = NetscopeObservedEvidence(connectionKind: .ethernet, wifiDetails: nil)
+        let evidence = NetscopeMeasurementEvidence(
+            downloadMbps: nil,
+            uploadMbps: nil,
+            latencyMs: nil,
+            jitterMs: nil,
+            packetLossPercent: nil,
+            connectionKind: .ethernet,
+            wifiDetails: nil
+        )
         let context = NetscopeDeclaredContext(objective: .gaming)
         let input = NetscopeAnalysisInput(observedEvidence: evidence, declaredContext: context)
 
         XCTAssertEqual(input.observedEvidence.connectionKind, .ethernet)
         XCTAssertEqual(input.declaredContext.objective, .gaming)
         XCTAssertNil(input.observedEvidence.wifiDetails)
+    }
+
+    func test_finalMeasurementProjectionUsesTheLocalCanonicalProjector() {
+        let measurement = NetworkMeasurement(
+            downloadMbps: 240,
+            uploadMbps: 80,
+            latencyMs: 18,
+            jitterMs: 2,
+            packetLossPercent: 0,
+            connectionKind: .wifi,
+            wifiBandGHz: 5
+        )
+
+        let input = NetscopeAnalysisInput(projectingFinalMeasurement: measurement)
+
+        XCTAssertEqual(
+            input.observedEvidence,
+            NetscopeMeasurementEvidenceProjector.project(measurement)
+        )
+        XCTAssertNil(input.declaredContext.objective)
+    }
+
+    func test_disabledReaderKeepsAProjectedFinalMeasurementUnavailable() async {
+        let measurement = NetworkMeasurement(
+            downloadMbps: 240,
+            uploadMbps: 80,
+            latencyMs: 18,
+            jitterMs: 2,
+            packetLossPercent: 0,
+            connectionKind: .wifi,
+            wifiBandGHz: 5
+        )
+        let input = NetscopeAnalysisInput(projectingFinalMeasurement: measurement)
+        let model = NetscopeAnalysisPresentationModel(input: input)
+
+        await model.load()
+
+        XCTAssertEqual(model.state, .reading(.unavailable))
     }
 
     func test_completedReadingCarriesObservedEvidenceLimitsAndContextSeparately() {
@@ -123,10 +186,7 @@ final class NetscopeAnalysisPresentationModelTests: XCTestCase {
     }
 
     func test_retryReloadsTheSameReaderAndInputWithoutStartingMeasurement() async {
-        let input = NetscopeAnalysisInput(
-            observedEvidence: NetscopeObservedEvidence(connectionKind: .unknown, wifiDetails: nil),
-            declaredContext: .absent
-        )
+        let input: NetscopeAnalysisInput = .empty
         let reader = CountingReader()
         let model = NetscopeAnalysisPresentationModel(reader: reader, input: input)
 
