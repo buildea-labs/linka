@@ -67,8 +67,8 @@ struct NetscopePresentationItem: Equatable, Sendable {
 /// fornecidos, em grupos semânticos separados. `summary` só pode resumir
 /// evidência efetivamente recebida, deve declarar limites e dados ausentes
 /// relevantes e nunca afirmar saúde, causa ou qualidade sem sustentação.
-/// Em erro, timeout, inconclusão, indisponibilidade, limite de taxa ou fora
-/// de escopo, a implementação futura não deve construir um `completed`.
+/// Em erro, timeout, inconclusão, indisponibilidade ou fora de escopo, a
+/// implementação futura não deve construir um `completed`.
 struct NetscopeAnalysisPresentation: Equatable, Sendable {
     let summary: String
     let observedEvidence: [NetscopePresentationItem]
@@ -100,7 +100,6 @@ enum NetscopeAnalysisReading: Equatable, Sendable {
     case completed(NetscopeAnalysisPresentation)
     case inconclusive
     case unavailable
-    case rateLimited
     case outOfScope
 }
 
@@ -305,11 +304,6 @@ struct NetscopeReadingCopy {
             message = LinkaCopy.value("netscope.unavailable.message")
             symbol = "exclamationmark.circle"
             color = .textSecondary
-        case .rateLimited:
-            title = LinkaCopy.value("netscope.rateLimited.title")
-            message = LinkaCopy.value("netscope.rateLimited.message")
-            symbol = "clock"
-            color = .statusAttention
         case .outOfScope:
             title = LinkaCopy.value("netscope.outOfScope.title")
             message = LinkaCopy.value("netscope.outOfScope.message")

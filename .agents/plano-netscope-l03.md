@@ -10,7 +10,7 @@ snapshot permitido, atestação e cliente autenticado.
 ## Escopo
 
 - CTA pós-resultado, loading calmo e estados `completed`, `inconclusive`,
-  `unavailable`, `rateLimited` e `outOfScope` em iPhone, iPad e Mac.
+  `unavailable` e `outOfScope` em iPhone, iPad e Mac.
 - Protocolo injetável de leitura e provider padrão desligado, sem URLSession,
   endpoint, DNS, segredo, API key ou egress.
 - Evidência e contexto declarado modelados separadamente na apresentação.

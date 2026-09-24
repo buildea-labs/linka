@@ -30,15 +30,14 @@ medição local como a única fonte de resultado.
 
 ## Estados
 
-O destino suporta `completed`, `inconclusive`, `unavailable`, `rateLimited` e
-`outOfScope`. Nenhum estado de erro declara a conexão saudável, nem expõe
+O destino suporta `completed`, `inconclusive`, `unavailable` e `outOfScope`.
+Nenhum estado de erro declara a conexão saudável, nem expõe
 detalhes de rede, identificadores, payloads ou diagnóstico parcial.
 `completed` também não declara saúde: indica apenas que uma leitura foi
 recebida e usa ícone/cor neutros.
 
 Em `unavailable`, **Tentar novamente** apenas recarrega o mesmo reader com o
-mesmo input. Não inicia uma nova medição. `rateLimited` não oferece retentativa
-imediata.
+mesmo input. Não inicia uma nova medição.
 
 Toda a superfície de leitura fica em `ScrollView`. Isso mantém evidência,
 limitações, contexto e ações alcançáveis com Dynamic Type grande em iPhone,
@@ -49,8 +48,8 @@ iPad e Mac, inclusive via VoiceOver.
 O campo `summary` de uma leitura concluída só pode resumir evidência recebida
 de fato. A implementação precisa declarar limitações e dados ausentes que
 afetem a leitura; nunca pode afirmar saúde, causa ou qualidade sem sustentação
-na evidência. Em erro, timeout, `inconclusive`, `unavailable`, `rateLimited`
-ou `outOfScope`, ela deve retornar o estado correspondente, nunca fabricar uma
+na evidência. Em erro, timeout, `inconclusive`, `unavailable` ou `outOfScope`,
+ela deve retornar o estado correspondente, nunca fabricar uma
 leitura `completed`.
 
 ## Plataformas e inclusão no projeto

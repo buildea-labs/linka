@@ -770,8 +770,6 @@
 "netscope.inconclusive.message" = "Aún no hay evidencia suficiente para una lectura confiable. Haz otra medición si quieres confirmar el resultado.";
 "netscope.unavailable.title" = "Lectura no disponible";
 "netscope.unavailable.message" = "Esta lectura no está disponible ahora. La medición mostrada no cambió.";
-"netscope.rateLimited.title" = "Inténtalo de nuevo más tarde";
-"netscope.rateLimited.message" = "La lectura no está disponible ahora. Tu medición no cambió.";
 "netscope.outOfScope.title" = "Lectura no disponible para este resultado";
 "netscope.outOfScope.message" = "No hay evidencia compatible para interpretar esta medición.";
 "netscope.backToResult" = "Volver al resultado";

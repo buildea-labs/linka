@@ -21,7 +21,6 @@ final class NetscopeAnalysisPresentationModelTests: XCTestCase {
             )),
             .inconclusive,
             .unavailable,
-            .rateLimited,
             .outOfScope
         ]
 
