@@ -98,6 +98,7 @@ targets:
       - package: LinkaModules
       - package: NetworkConnectivityTriage
       - package: LinkaAppIntents
+      - package: NetscopeEvidence
       - package: MeasurementHistoryCloudKit
       - package: LinkaWidgetShared
       - package: NetworkDiagnostics
@@ -165,6 +166,7 @@ targets:
       - package: LinkaModules
       - package: NetworkConnectivityTriage
       - package: LinkaAppIntents
+      - package: NetscopeEvidence
       - package: MeasurementHistoryCloudKit
       - package: LinkaWidgetShared
       - package: NetworkDiagnostics
@@ -259,6 +261,8 @@ packages:
     path: NetworkConnectivityTriage
   LinkaAppIntents:
     path: LinkaAppIntents
+  NetscopeEvidence:
+    path: NetscopeEvidence
   MeasurementHistoryCloudKit:
     path: MeasurementHistoryCloudKit
   LinkaWidgetShared:
