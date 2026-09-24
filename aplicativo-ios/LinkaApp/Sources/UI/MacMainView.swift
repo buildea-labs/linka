@@ -211,10 +211,15 @@ struct MacMainView: View {
             .frame(minWidth: 680, minHeight: 620)
         }
         .sheet(isPresented: $showNetscopeAnalysis) {
-            // L-03 não projeta a medição para Netscope. O reader padrão
-            // falha fechado e não executa I/O.
-            NetscopeAnalysisView()
+            if let currentMeasurement {
+                NetscopeAnalysisView(
+                    input: NetscopeAnalysisInput(projectingFinalMeasurement: currentMeasurement)
+                )
                 .frame(minWidth: 520, minHeight: 380)
+            } else {
+                NetscopeAnalysisView()
+                    .frame(minWidth: 520, minHeight: 380)
+            }
         }
         .sheet(isPresented: $showConnectivityTriage) {
             ConnectivityTriageView(onRetry: { viewModel.startTest() })

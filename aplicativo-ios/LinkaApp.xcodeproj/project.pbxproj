@@ -137,6 +137,8 @@
 		9D1C7E570533983B88AD50A0 /* 06-dns-source.png in Resources */ = {isa = PBXBuildFile; fileRef = B7E8C4EA895703CD0131B373 /* 06-dns-source.png */; };
 		9FFFA7A4330D0D605C30667E /* AssistFailureSignalMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E2413E81B1C0AF7D31BBC0 /* AssistFailureSignalMapping.swift */; };
 		A0CC5891DA43622BBD6D22C0 /* LinkaEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 4DBDF7A405844E04CC1D5AF7 /* LinkaEngine */; };
+		A20000000000000000000001 /* NetscopeEvidence in Frameworks */ = {isa = PBXBuildFile; productRef = A20000000000000000000004 /* NetscopeEvidence */; };
+		A20000000000000000000002 /* NetscopeEvidence in Frameworks */ = {isa = PBXBuildFile; productRef = A20000000000000000000005 /* NetscopeEvidence */; };
 		A11D357CC4C079407819131E /* 03-contexto.png in Resources */ = {isa = PBXBuildFile; fileRef = 0D1B97BED85D92A6875D8B5A /* 03-contexto.png */; };
 		A1448C6403A7DFB5C5B2FE7F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8041784263895147F69C02D2 /* Assets.xcassets */; };
 		A475A78FD53F375ED48B3017 /* LinkaAppIntents in Frameworks */ = {isa = PBXBuildFile; productRef = AF94459C34286AD1C350EB80 /* LinkaAppIntents */; };
@@ -409,6 +411,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A20000000000000000000001 /* NetscopeEvidence in Frameworks */,
 				A0CC5891DA43622BBD6D22C0 /* LinkaEngine in Frameworks */,
 				FB7407CEB412703490AA5E10 /* LinkaModules in Frameworks */,
 				2AFD031B79132D055356C33B /* NetworkConnectivityTriage in Frameworks */,
@@ -437,6 +440,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A20000000000000000000002 /* NetscopeEvidence in Frameworks */,
 				847E859C6B4B4BC90D19D8BE /* LinkaEngine in Frameworks */,
 				2D978D5BAD95A0E29AE7AE85 /* LinkaModules in Frameworks */,
 				CF756CF19A8EA39ED487FAD2 /* NetworkConnectivityTriage in Frameworks */,
@@ -847,6 +851,7 @@
 			);
 			name = LinkaApp;
 			packageProductDependencies = (
+				A20000000000000000000004 /* NetscopeEvidence */,
 				4DBDF7A405844E04CC1D5AF7 /* LinkaEngine */,
 				E832F69684B9093AE00D0994 /* LinkaModules */,
 				595A3968E32845EFFA683074 /* NetworkConnectivityTriage */,
@@ -916,6 +921,7 @@
 			);
 			name = LinkaApp_macOS;
 			packageProductDependencies = (
+				A20000000000000000000005 /* NetscopeEvidence */,
 				86760C16968147ADE1D36961 /* LinkaEngine */,
 				2A1ED27B4CE61C438B43B40C /* LinkaModules */,
 				A4BBA0D383EFDFF0002A9E76 /* NetworkConnectivityTriage */,
@@ -981,6 +987,7 @@
 				109D4BCBC6698BC9B91ED79D /* XCLocalSwiftPackageReference "NetworkDiagnostics" */,
 				3031149103E6570B304B61F4 /* XCLocalSwiftPackageReference "NetworkOptimization" */,
 				CBDC3C280C5D5524F0D95049 /* XCLocalSwiftPackageReference "NetworkProfiles" */,
+				A20000000000000000000003 /* XCLocalSwiftPackageReference "NetscopeEvidence" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 89593D469806B613A3DDE80D /* Products */;
@@ -1777,6 +1784,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = LinkaWidgetShared;
 		};
+		A20000000000000000000003 /* XCLocalSwiftPackageReference "NetscopeEvidence" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = NetscopeEvidence;
+		};
 		B2C64BDD2A8270C25380EDDE /* XCLocalSwiftPackageReference "MeasurementHistoryCloudKit" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = MeasurementHistoryCloudKit;
@@ -1886,6 +1897,14 @@
 		A80A78B4DB132E6B27081B7D /* LinkaWidgetShared */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = LinkaWidgetShared;
+		};
+		A20000000000000000000004 /* NetscopeEvidence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NetscopeEvidence;
+		};
+		A20000000000000000000005 /* NetscopeEvidence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NetscopeEvidence;
 		};
 		AF94459C34286AD1C350EB80 /* LinkaAppIntents */ = {
 			isa = XCSwiftPackageProductDependency;
