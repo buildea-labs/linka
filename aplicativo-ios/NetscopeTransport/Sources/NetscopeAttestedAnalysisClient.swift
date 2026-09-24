@@ -23,7 +23,14 @@ public struct NetscopeServiceConfiguration: Equatable, Sendable {
     public let baseURL: URL
 
     public init(baseURL: URL) throws {
-        guard baseURL.scheme?.lowercased() == "https", baseURL.host != nil else {
+        let pathIsOriginOnly = baseURL.path.isEmpty || baseURL.path == "/"
+        guard baseURL.scheme?.lowercased() == "https",
+              baseURL.host != nil,
+              baseURL.user == nil,
+              baseURL.password == nil,
+              pathIsOriginOnly,
+              baseURL.query == nil,
+              baseURL.fragment == nil else {
             throw NetscopeServiceConfigurationError.invalidBaseURL
         }
         self.baseURL = baseURL
@@ -38,12 +45,40 @@ public enum NetscopeServiceConfigurationError: Error, Equatable, Sendable {
     case invalidBaseURL
 }
 
-/// Challenge efêmero recebido antes de uma assertion. A implementação real é
-/// responsável por fazer o nonce ser de uso único; o cliente solicita sempre
-/// um novo challenge por análise e nunca armazena este valor. `timestamp`
-/// vem do servidor no challenge em milissegundos Unix; sua representação no
-/// wire é o inteiro decimal, sem relógio local ou conversão para `Date`.
-public struct NetscopeAttestationChallenge: Equatable, Sendable {
+/// Challenge opaco e de curta duração usado somente para registrar uma chave
+/// App Attest. Ele não pode ser reaproveitado como challenge de assertion de
+/// análise e nunca é persistido pelo cliente.
+public struct NetscopeRegistrationChallenge: Equatable, Sendable {
+    public let value: Data
+
+    public init(value: Data) {
+        self.value = value
+    }
+
+    fileprivate var isUsable: Bool { !value.isEmpty }
+}
+
+/// Binding imutável enviado ao servidor para obter um challenge de assertion.
+/// Método e rota são fechados; o único dado variável é SHA-256 do body exato.
+public struct NetscopeAnalysisAssertionBinding: Equatable, Sendable {
+    public let method: String
+    public let path: String
+    public let payloadSHA256: Data
+
+    public init(exactBody: Data) {
+        method = "POST"
+        path = "/v1/linka/analysis"
+        payloadSHA256 = Data(SHA256.hash(data: exactBody))
+    }
+
+    public func binds(exactBody: Data) -> Bool {
+        payloadSHA256 == Data(SHA256.hash(data: exactBody))
+    }
+}
+
+/// Challenge de uso único emitido pelo servidor depois de receber o binding da
+/// análise. O timestamp é Unix em milissegundos e usa inteiro decimal no wire.
+public struct NetscopeAnalysisAssertionChallenge: Equatable, Sendable {
     public let nonce: String
     public let timestampUnixMilliseconds: Int64
 
@@ -55,31 +90,26 @@ public struct NetscopeAttestationChallenge: Equatable, Sendable {
     fileprivate var isUsable: Bool { !nonce.isEmpty && timestampUnixMilliseconds > 0 }
 }
 
-/// Material que a assertion deve assinar. O digest é SHA-256 do exato JSON
-/// que seguirá no POST. Um segundo digest prende método, rota, body exato,
-/// nonce e timestamp do challenge ao pedido. Os hashes usam campos UTF-8 com
-/// prefixo de tamanho de oito bytes, na ordem abaixo, sem serialização JSON
-/// implícita. O payload bruto não é guardado nesta estrutura.
+/// Material que a assertion deve assinar. O binding já foi aceito pelo
+/// servidor e um segundo digest prende método, rota, body exato, nonce e
+/// timestamp ao pedido. Os hashes usam campos UTF-8 prefixados por tamanho,
+/// sem serialização JSON implícita. O payload bruto não é armazenado aqui.
 public struct NetscopeAttestationAssertionInput: Equatable, Sendable {
-    public let method: String
-    public let path: String
-    public let payloadSHA256: Data
+    public let binding: NetscopeAnalysisAssertionBinding
     public let signedRequestSHA256: Data
-    public let nonce: String
-    public let timestampUnixMilliseconds: Int64
 
-    public init(exactBody: Data, challenge: NetscopeAttestationChallenge) {
-        method = "POST"
-        path = "/v1/linka/analysis"
-        payloadSHA256 = Data(SHA256.hash(data: exactBody))
-        nonce = challenge.nonce
-        timestampUnixMilliseconds = challenge.timestampUnixMilliseconds
+    public init(
+        binding: NetscopeAnalysisAssertionBinding,
+        exactBody: Data,
+        challenge: NetscopeAnalysisAssertionChallenge
+    ) {
+        self.binding = binding
         signedRequestSHA256 = Self.signedRequestSHA256(
-            method: method,
-            path: path,
+            method: binding.method,
+            path: binding.path,
             exactBody: exactBody,
-            nonce: nonce,
-            timestampUnixMilliseconds: timestampUnixMilliseconds
+            nonce: challenge.nonce,
+            timestampUnixMilliseconds: challenge.timestampUnixMilliseconds
         )
     }
 
@@ -93,9 +123,7 @@ public struct NetscopeAttestationAssertionInput: Equatable, Sendable {
         nonce: String,
         timestampUnixMilliseconds: Int64
     ) -> Bool {
-        self.method == method && self.path == path && self.nonce == nonce &&
-            self.timestampUnixMilliseconds == timestampUnixMilliseconds &&
-            payloadSHA256 == Data(SHA256.hash(data: exactBody)) &&
+        binding.method == method && binding.path == path && binding.binds(exactBody: exactBody) &&
             signedRequestSHA256 == Self.signedRequestSHA256(
                 method: method,
                 path: path,
@@ -138,9 +166,15 @@ public struct NetscopeAttestationProof: Equatable, Sendable {
 /// testáveis sem rede. A implementação concreta ainda será habilitada somente
 /// depois do provisionamento Apple e da prova física em iPhone e iPad.
 public protocol NetscopeAttestationProviding: Sendable {
-    func requestChallenge() async throws -> NetscopeAttestationChallenge
-    func registerIfNeeded(for challenge: NetscopeAttestationChallenge) async throws
-    func makeAssertion(for input: NetscopeAttestationAssertionInput) async throws -> NetscopeAttestationProof
+    func requestRegistrationChallenge() async throws -> NetscopeRegistrationChallenge
+    func registerIfNeeded(for challenge: NetscopeRegistrationChallenge) async throws
+    func requestAnalysisAssertionChallenge(
+        for binding: NetscopeAnalysisAssertionBinding
+    ) async throws -> NetscopeAnalysisAssertionChallenge
+    func makeAssertion(
+        for input: NetscopeAttestationAssertionInput,
+        using challenge: NetscopeAnalysisAssertionChallenge
+    ) async throws -> NetscopeAttestationProof
 }
 
 /// Limite de I/O injetado. Esta PR deliberadamente não fornece URLSession nem
@@ -164,13 +198,14 @@ public struct NetscopeAuthenticatedHTTPRequest: Equatable, Sendable {
         url: URL,
         body: Data,
         assertionInput: NetscopeAttestationAssertionInput,
+        analysisChallenge: NetscopeAnalysisAssertionChallenge,
         attestation: NetscopeAttestationProof
     ) {
         self.url = url
-        method = assertionInput.method
+        method = assertionInput.binding.method
         self.body = body
-        nonce = assertionInput.nonce
-        timestampUnixMilliseconds = assertionInput.timestampUnixMilliseconds
+        nonce = analysisChallenge.nonce
+        timestampUnixMilliseconds = analysisChallenge.timestampUnixMilliseconds
         signedRequestSHA256 = assertionInput.signedRequestSHA256
         self.attestation = attestation
     }
@@ -222,15 +257,26 @@ public struct NetscopeAttestedAnalysisClient: Sendable {
         guard platform.acceptsAppAttest else { return .unavailable }
 
         do {
+            let registrationChallenge = try await attestation.requestRegistrationChallenge()
+            guard registrationChallenge.isUsable else { return .unavailable }
+            try await attestation.registerIfNeeded(for: registrationChallenge)
             let exactBody = try NetscopeV1Codec.encodeRequest(input: input, locale: locale, app: app)
-            let challenge = try await attestation.requestChallenge()
-            guard challenge.isUsable else { return .unavailable }
-            try await attestation.registerIfNeeded(for: challenge)
+            let binding = NetscopeAnalysisAssertionBinding(exactBody: exactBody)
+            let analysisChallenge = try await attestation.requestAnalysisAssertionChallenge(for: binding)
+            guard analysisChallenge.isUsable else { return .unavailable }
             let assertionInput = NetscopeAttestationAssertionInput(
+                binding: binding,
                 exactBody: exactBody,
-                challenge: challenge
+                challenge: analysisChallenge
             )
-            let proof = try await attestation.makeAssertion(for: assertionInput)
+            guard assertionInput.binds(
+                method: binding.method,
+                path: binding.path,
+                exactBody: exactBody,
+                nonce: analysisChallenge.nonce,
+                timestampUnixMilliseconds: analysisChallenge.timestampUnixMilliseconds
+            ) else { return .unavailable }
+            let proof = try await attestation.makeAssertion(for: assertionInput, using: analysisChallenge)
             guard !proof.keyID.isEmpty, !proof.assertion.isEmpty else { return .unavailable }
 
             let expectedURL = configuration.analysisURL
@@ -239,6 +285,7 @@ public struct NetscopeAttestedAnalysisClient: Sendable {
                     url: expectedURL,
                     body: exactBody,
                     assertionInput: assertionInput,
+                    analysisChallenge: analysisChallenge,
                     attestation: proof
                 )
             )

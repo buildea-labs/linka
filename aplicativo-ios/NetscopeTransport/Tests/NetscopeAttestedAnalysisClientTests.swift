@@ -4,6 +4,24 @@ import NetscopeEvidence
 import XCTest
 
 final class NetscopeAttestedAnalysisClientTests: XCTestCase {
+    func testServiceConfigurationAcceptsOnlyHTTPSOriginWithoutPrefix() throws {
+        XCTAssertNoThrow(try NetscopeServiceConfiguration(baseURL: URL(string: "https://configured.example")!))
+        XCTAssertNoThrow(try NetscopeServiceConfiguration(baseURL: URL(string: "https://configured.example:8443/")!))
+
+        for value in [
+            "http://configured.example",
+            "https://configured.example/prefix",
+            "https://configured.example/v1/",
+            "https://configured.example?query=value",
+            "https://configured.example#fragment",
+            "https://user:password@configured.example"
+        ] {
+            XCTAssertThrowsError(try NetscopeServiceConfiguration(baseURL: try XCTUnwrap(URL(string: value)))) {
+                XCTAssertEqual($0 as? NetscopeServiceConfigurationError, .invalidBaseURL)
+            }
+        }
+    }
+
     #if os(macOS)
     func testSystemAvailabilityDoesNotOfferMacOSFallback() {
         XCTAssertFalse(NetscopeSystemAppAttestAvailability.isSupported)
@@ -47,37 +65,46 @@ final class NetscopeAttestedAnalysisClientTests: XCTestCase {
             let calls = await attestation.calls()
             let requestCount = await transport.requestCount()
             let lastRequest = await transport.lastRequest()
-            XCTAssertEqual(calls, [.challenge, .register, .assertion])
+            let lastBinding = await attestation.lastBinding()
+            let lastAssertionChallenge = await attestation.lastAssertionChallenge()
+            XCTAssertEqual(calls, [.registrationChallenge, .register, .analysisChallenge, .assertion])
             XCTAssertEqual(requestCount, 1)
             let request = try XCTUnwrap(lastRequest)
+            let binding = try XCTUnwrap(lastBinding)
+            let assertionChallenge = try XCTUnwrap(lastAssertionChallenge)
             XCTAssertEqual(request.method, "POST")
             XCTAssertEqual(request.url, URL(string: "https://configured.example/v1/linka/analysis"))
             XCTAssertEqual(request.nonce, "single-use-nonce")
             XCTAssertEqual(request.timestampUnixMilliseconds, 1_700_000_000_000)
             XCTAssertTrue(request.signedRequestSHA256.isEmpty == false)
+            XCTAssertEqual(binding.method, "POST")
+            XCTAssertEqual(binding.path, "/v1/linka/analysis")
+            XCTAssertTrue(binding.binds(exactBody: request.body))
+            XCTAssertEqual(assertionChallenge.nonce, request.nonce)
+            XCTAssertEqual(assertionChallenge.timestampUnixMilliseconds, request.timestampUnixMilliseconds)
         }
     }
 
     func testBodyNonceOrTimestampMutationInvalidatesAssertionBinding() {
-        let challenge = NetscopeAttestationChallenge(nonce: "nonce", timestampUnixMilliseconds: 1_700_000_000_000)
+        let challenge = NetscopeAnalysisAssertionChallenge(nonce: "nonce", timestampUnixMilliseconds: 1_700_000_000_000)
         let body = Data("{\"a\":1}".utf8)
-        let original = NetscopeAttestationAssertionInput(exactBody: body, challenge: challenge)
-        let mutatedBody = NetscopeAttestationAssertionInput(exactBody: Data("{\"a\":2}".utf8), challenge: challenge)
+        let binding = NetscopeAnalysisAssertionBinding(exactBody: body)
+        let original = NetscopeAttestationAssertionInput(binding: binding, exactBody: body, challenge: challenge)
+        let mutatedBody = NetscopeAttestationAssertionInput(binding: binding, exactBody: Data("{\"a\":2}".utf8), challenge: challenge)
         let mutatedNonce = NetscopeAttestationAssertionInput(
-            exactBody: body,
+            binding: binding, exactBody: body,
             challenge: .init(nonce: "other-nonce", timestampUnixMilliseconds: challenge.timestampUnixMilliseconds)
         )
         let mutatedTimestamp = NetscopeAttestationAssertionInput(
-            exactBody: body,
+            binding: binding, exactBody: body,
             challenge: .init(nonce: challenge.nonce, timestampUnixMilliseconds: challenge.timestampUnixMilliseconds + 1)
         )
 
-        XCTAssertNotEqual(original.payloadSHA256, mutatedBody.payloadSHA256)
         XCTAssertNotEqual(original.signedRequestSHA256, mutatedBody.signedRequestSHA256)
         XCTAssertNotEqual(original.signedRequestSHA256, mutatedNonce.signedRequestSHA256)
         XCTAssertNotEqual(original.signedRequestSHA256, mutatedTimestamp.signedRequestSHA256)
-        XCTAssertEqual(original.method, "POST")
-        XCTAssertEqual(original.path, "/v1/linka/analysis")
+        XCTAssertEqual(original.binding.method, "POST")
+        XCTAssertEqual(original.binding.path, "/v1/linka/analysis")
         XCTAssertTrue(original.binds(
             method: "POST", path: "/v1/linka/analysis", exactBody: body,
             nonce: challenge.nonce, timestampUnixMilliseconds: challenge.timestampUnixMilliseconds
@@ -184,33 +211,48 @@ final class NetscopeAttestedAnalysisClientTests: XCTestCase {
 }
 
 private actor RecordingAttestation: NetscopeAttestationProviding {
-    enum Call: Equatable { case challenge, register, assertion }
+    enum Call: Equatable { case registrationChallenge, register, analysisChallenge, assertion }
 
     private let failure: FailurePoint?
     private var recordedCalls: [Call] = []
+    private var recordedBinding: NetscopeAnalysisAssertionBinding?
+    private var recordedAssertionChallenge: NetscopeAnalysisAssertionChallenge?
 
     init(failure: FailurePoint? = nil) {
         self.failure = failure
     }
 
-    func requestChallenge() throws -> NetscopeAttestationChallenge {
-        recordedCalls.append(.challenge)
-        if failure == .challenge { throw TransportFailure.timedOut }
-        return .init(nonce: "single-use-nonce", timestampUnixMilliseconds: 1_700_000_000_000)
+    func requestRegistrationChallenge() throws -> NetscopeRegistrationChallenge {
+        recordedCalls.append(.registrationChallenge)
+        if failure == .registrationChallenge { throw TransportFailure.timedOut }
+        return .init(value: Data("registration-challenge".utf8))
     }
 
-    func registerIfNeeded(for challenge: NetscopeAttestationChallenge) throws {
+    func registerIfNeeded(for challenge: NetscopeRegistrationChallenge) throws {
         recordedCalls.append(.register)
         if failure == .register { throw TransportFailure.timedOut }
     }
 
-    func makeAssertion(for input: NetscopeAttestationAssertionInput) throws -> NetscopeAttestationProof {
+    func requestAnalysisAssertionChallenge(for binding: NetscopeAnalysisAssertionBinding) throws -> NetscopeAnalysisAssertionChallenge {
+        recordedCalls.append(.analysisChallenge)
+        recordedBinding = binding
+        if failure == .analysisChallenge { throw TransportFailure.timedOut }
+        return .init(nonce: "single-use-nonce", timestampUnixMilliseconds: 1_700_000_000_000)
+    }
+
+    func makeAssertion(
+        for input: NetscopeAttestationAssertionInput,
+        using challenge: NetscopeAnalysisAssertionChallenge
+    ) throws -> NetscopeAttestationProof {
         recordedCalls.append(.assertion)
         if failure == .assertion { throw TransportFailure.timedOut }
+        recordedAssertionChallenge = challenge
         return .init(keyID: "ephemeral-key-id", assertion: Data("proof".utf8))
     }
 
     func calls() -> [Call] { recordedCalls }
+    func lastBinding() -> NetscopeAnalysisAssertionBinding? { recordedBinding }
+    func lastAssertionChallenge() -> NetscopeAnalysisAssertionChallenge? { recordedAssertionChallenge }
 }
 
 private actor RecordingTransport: NetscopeHTTPTransporting {
@@ -238,5 +280,5 @@ private actor RecordingTransport: NetscopeHTTPTransporting {
     func lastRequest() -> NetscopeAuthenticatedHTTPRequest? { requests.last }
 }
 
-private enum FailurePoint { case challenge, register, assertion }
+private enum FailurePoint { case registrationChallenge, register, analysisChallenge, assertion }
 private enum TransportFailure: Error { case cancelled, timedOut }
