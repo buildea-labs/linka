@@ -26,6 +26,7 @@ public enum NetscopeV1Codec {
         case invalidLocale
         case invalidAppVersion
         case malformedResponse
+        case responseDoesNotMatchRequest
     }
 
     /// Serializa os campos obrigatórios de `AnalysisRequest`. Métricas e
@@ -62,6 +63,27 @@ public enum NetscopeV1Codec {
             return try JSONDecoder().decode(AnalysisResponse.self, from: data)
         } catch {
             throw Error.malformedResponse
+        }
+    }
+
+    /// Confirma que uma resposta já decodificada só cita fatos que este cliente
+    /// realmente colocaria no payload V1. A projeção é a mesma usada por
+    /// `encodeRequest`, portanto nunca compara com a evidência local bruta.
+    /// Esta validação não envia a resposta nem abre qualquer conexão.
+    public static func validateResponse(
+        _ response: AnalysisResponse,
+        for input: NetscopeLocalAnalysisInput
+    ) throws {
+        if let declaredContext = response.declaredContext,
+           declaredContext.objective != input.declaredContext.objective {
+            throw Error.responseDoesNotMatchRequest
+        }
+
+        let measurement = Measurement(input.observedEvidence)
+        for evidence in response.evidenceUsed ?? [] {
+            guard measurement.value(for: evidence.metric) == evidence.value else {
+                throw Error.responseDoesNotMatchRequest
+            }
         }
     }
 
@@ -211,6 +233,30 @@ private extension NetscopeV1Codec {
             case latencyMs = "latency_ms", jitterMs = "jitter_ms"
             case packetLossPercent = "packet_loss_percent"
             case connectionKind = "connection_kind", wifiDetails = "wifi_details"
+        }
+
+        func value(for metric: AnalysisResponse.EvidenceUsed.Metric) -> AnalysisResponse.EvidenceUsed.Value? {
+            switch metric {
+            case .downloadMbps:
+                downloadMbps.map(AnalysisResponse.EvidenceUsed.Value.number)
+            case .uploadMbps:
+                uploadMbps.map(AnalysisResponse.EvidenceUsed.Value.number)
+            case .latencyMs:
+                latencyMs.map(AnalysisResponse.EvidenceUsed.Value.number)
+            case .jitterMs:
+                jitterMs.map(AnalysisResponse.EvidenceUsed.Value.number)
+            case .packetLossPercent:
+                packetLossPercent.map(AnalysisResponse.EvidenceUsed.Value.number)
+            case .connectionKind:
+                .string(connectionKind)
+            case .wifiBand:
+                wifiDetails?.band.map(AnalysisResponse.EvidenceUsed.Value.string)
+            case .wifiLinkSpeedMbps:
+                wifiDetails?.linkSpeedMbps.map(AnalysisResponse.EvidenceUsed.Value.number)
+            case .loadedLatencyDownloadMs, .loadedLatencyUploadMs, .dnsResolutionMs,
+                 .wifiFrequencyMHz, .wifiChannel:
+                nil
+            }
         }
     }
 
