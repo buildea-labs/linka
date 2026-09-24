@@ -288,6 +288,91 @@ final class NetscopeEvidenceTests: XCTestCase {
         XCTAssertEqual(response.evidenceUsed?.last?.value, .string("wifi"))
     }
 
+    func test_v1ResponseValidationAcceptsOnlyCanonicalRequestEvidence() throws {
+        let input = NetscopeLocalAnalysisInput(
+            observedEvidence: .init(
+                downloadMbps: 400,
+                uploadMbps: nil,
+                latencyMs: 12.5,
+                jitterMs: nil,
+                packetLossPercent: nil,
+                connectionKind: .wifi,
+                wifiDetails: .init(band: .fiveGHz, linkSpeedMbps: 1_200)
+            ),
+            declaredContext: .init(objective: .gaming)
+        )
+        let response = try NetscopeV1Codec.decodeResponse(try fixture("analysis-response-completed"))
+
+        XCTAssertNoThrow(try NetscopeV1Codec.validateResponse(response, for: input))
+    }
+
+    func test_v1ResponseValidationRejectsMissingDivergentOrUnsupportedEvidence() throws {
+        let input = NetscopeLocalAnalysisInput(
+            observedEvidence: .init(
+                downloadMbps: nil,
+                uploadMbps: nil,
+                latencyMs: 12.5,
+                jitterMs: nil,
+                packetLossPercent: nil,
+                connectionKind: .wifi,
+                wifiDetails: .init(band: .fiveGHz, linkSpeedMbps: 1_200)
+            ),
+            declaredContext: .init(objective: .gaming)
+        )
+        let completed = try fixture("analysis-response-completed")
+
+        let missingMetric = try replacingEvidenceMetric("upload_mbps", at: 0, in: completed)
+        XCTAssertValidationFails(missingMetric, for: input)
+
+        let divergentMetric = try replacingEvidenceValue(13, at: 0, in: completed)
+        XCTAssertValidationFails(divergentMetric, for: input)
+
+        let unsupportedMetric = try replacingEvidenceMetric("dns_resolution_ms", at: 0, in: completed)
+        XCTAssertValidationFails(unsupportedMetric, for: input)
+    }
+
+    func test_v1ResponseValidationRejectsWrongEvidenceTypeAndMismatchedObjective() throws {
+        let input = NetscopeLocalAnalysisInput(
+            observedEvidence: .init(
+                downloadMbps: nil,
+                uploadMbps: nil,
+                latencyMs: 12.5,
+                jitterMs: nil,
+                packetLossPercent: nil,
+                connectionKind: .wifi,
+                wifiDetails: nil
+            ),
+            declaredContext: .init(objective: .gaming)
+        )
+        let completed = try fixture("analysis-response-completed")
+
+        let wrongType = try replacingEvidenceValue("12.5", at: 0, in: completed)
+        XCTAssertValidationFails(wrongType, for: input)
+
+        let mismatchedObjective = try replacingDeclaredObjective("streaming", in: completed)
+        XCTAssertValidationFails(mismatchedObjective, for: input)
+    }
+
+    func test_v1ResponseValidationUsesWireSanitizationInsteadOfRawEvidence() throws {
+        let input = NetscopeLocalAnalysisInput(
+            observedEvidence: .init(
+                downloadMbps: nil,
+                uploadMbps: nil,
+                latencyMs: .nan,
+                jitterMs: nil,
+                packetLossPercent: nil,
+                connectionKind: .wifi,
+                wifiDetails: nil
+            ),
+            declaredContext: .init(objective: .gaming)
+        )
+        let response = try NetscopeV1Codec.decodeResponse(try fixture("analysis-response-completed"))
+
+        XCTAssertThrowsError(try NetscopeV1Codec.validateResponse(response, for: input)) {
+            XCTAssertEqual($0 as? NetscopeV1Codec.Error, .responseDoesNotMatchRequest)
+        }
+    }
+
     func test_v1ResponseDecodesUnavailableFixtureWithoutConclusion() throws {
         let response = try NetscopeV1Codec.decodeResponse(try fixture("analysis-response-unavailable"))
 
@@ -370,6 +455,41 @@ final class NetscopeEvidenceTests: XCTestCase {
         var nested = try XCTUnwrap(object[nestedKey] as? [String: Any])
         nested[key] = value
         object[nestedKey] = nested
+        return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    private func XCTAssertValidationFails(
+        _ data: Data,
+        for input: NetscopeLocalAnalysisInput,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        XCTAssertThrowsError(
+            try NetscopeV1Codec.validateResponse(try NetscopeV1Codec.decodeResponse(data), for: input),
+            file: file,
+            line: line
+        ) { XCTAssertEqual($0 as? NetscopeV1Codec.Error, .responseDoesNotMatchRequest, file: file, line: line) }
+    }
+
+    private func replacingEvidenceValue(_ value: Any, at index: Int, in data: Data) throws -> Data {
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var evidence = try XCTUnwrap(object["evidence_used"] as? [[String: Any]])
+        evidence[index]["value"] = value
+        object["evidence_used"] = evidence
+        return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    private func replacingEvidenceMetric(_ metric: String, at index: Int, in data: Data) throws -> Data {
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var evidence = try XCTUnwrap(object["evidence_used"] as? [[String: Any]])
+        evidence[index]["metric"] = metric
+        object["evidence_used"] = evidence
+        return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    private func replacingDeclaredObjective(_ objective: String, in data: Data) throws -> Data {
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["declared_context"] = ["objective": objective]
         return try JSONSerialization.data(withJSONObject: object)
     }
 }
