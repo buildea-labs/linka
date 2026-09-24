@@ -27,7 +27,10 @@ let package = Package(
                 "NetscopeEvidence",
                 .product(name: "NetworkCore", package: "NetworkCore")
             ],
-            path: "Tests"
+            path: "Tests",
+            resources: [
+                .process("Fixtures")
+            ]
         )
     ]
 )
