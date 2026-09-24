@@ -194,6 +194,149 @@ final class NetscopeEvidenceTests: XCTestCase {
         XCTAssertFalse(payload.contains("snrDb"))
     }
 
+    func test_v1RequestContainsRequiredFieldsAndOmitsAbsentMeasurementFacts() throws {
+        let data = try NetscopeV1Codec.encodeRequest(
+            input: NetscopeLocalAnalysisInput(
+                observedEvidence: NetscopeMeasurementEvidence(
+                    downloadMbps: 400,
+                    uploadMbps: nil,
+                    latencyMs: nil,
+                    jitterMs: 2,
+                    packetLossPercent: 0,
+                    connectionKind: .wifi,
+                    wifiDetails: .init(band: .fiveGHz, linkSpeedMbps: nil)
+                ),
+                declaredContext: .init(objective: .gaming)
+            ),
+            locale: "pt-BR",
+            app: .init(version: "1.2.3", platform: .ios)
+        )
+
+        let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(payload["schema_version"] as? String, "1.0.0")
+        XCTAssertEqual(payload["locale"] as? String, "pt-BR")
+        XCTAssertEqual((payload["usage_context"] as? [String: Any])?["objective"] as? String, "gaming")
+        XCTAssertEqual((payload["app"] as? [String: Any])?["version"] as? String, "1.2.3")
+        XCTAssertEqual((payload["app"] as? [String: Any])?["platform"] as? String, "ios")
+        XCTAssertEqual((payload["consent"] as? [String: Any])?["diagnostic_processing"] as? Bool, true)
+
+        let measurement = try XCTUnwrap(payload["measurement"] as? [String: Any])
+        XCTAssertEqual(measurement["download_mbps"] as? Double, 400)
+        XCTAssertEqual(measurement["jitter_ms"] as? Double, 2)
+        XCTAssertEqual(measurement["packet_loss_percent"] as? Double, 0)
+        XCTAssertEqual(measurement["connection_kind"] as? String, "wifi")
+        XCTAssertNil(measurement["upload_mbps"])
+        XCTAssertNil(measurement["latency_ms"])
+        XCTAssertEqual((measurement["wifi_details"] as? [String: Any])?["band"] as? String, "5ghz")
+        XCTAssertNil((measurement["wifi_details"] as? [String: Any])?["link_speed_mbps"])
+    }
+
+    func test_v1RequestRequiresDeclaredObjectiveAndValidMetadata() {
+        let input = NetscopeLocalAnalysisInput(
+            observedEvidence: NetscopeMeasurementEvidenceProjector.project(NetworkMeasurement(connectionKind: .wifi))
+        )
+
+        XCTAssertThrowsError(try NetscopeV1Codec.encodeRequest(
+            input: input,
+            locale: "pt-BR",
+            app: .init(version: "1", platform: .ios)
+        )) { XCTAssertEqual($0 as? NetscopeV1Codec.Error, .missingUsageObjective) }
+        XCTAssertThrowsError(try NetscopeV1Codec.encodeRequest(
+            input: input,
+            locale: "x",
+            app: .init(version: "1", platform: .ios)
+        )) { XCTAssertEqual($0 as? NetscopeV1Codec.Error, .invalidLocale) }
+    }
+
+    func test_v1RequestSanitizesManuallyConstructedEvidenceAtTheWireBoundary() throws {
+        let data = try NetscopeV1Codec.encodeRequest(
+            input: .init(
+                observedEvidence: .init(
+                    downloadMbps: -1,
+                    uploadMbps: .infinity,
+                    latencyMs: 0,
+                    jitterMs: .nan,
+                    packetLossPercent: 100.1,
+                    connectionKind: .wifi,
+                    wifiDetails: .init(band: nil, linkSpeedMbps: 0)
+                ),
+                declaredContext: .init(objective: .browsing)
+            ),
+            locale: "en",
+            app: .init(version: "1", platform: .macos)
+        )
+
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let measurement = try XCTUnwrap(root["measurement"] as? [String: Any])
+        XCTAssertEqual(measurement["latency_ms"] as? Double, 0)
+        XCTAssertNil(measurement["download_mbps"])
+        XCTAssertNil(measurement["upload_mbps"])
+        XCTAssertNil(measurement["jitter_ms"])
+        XCTAssertNil(measurement["packet_loss_percent"])
+        XCTAssertNil(measurement["wifi_details"])
+    }
+
+    func test_v1ResponseDecodesCompletedFixtureStrictly() throws {
+        let response = try NetscopeV1Codec.decodeResponse(try fixture("analysis-response-completed"))
+
+        XCTAssertEqual(response.status, .completed)
+        XCTAssertEqual(response.requestID, "fixture-completed-001")
+        XCTAssertEqual(response.declaredContext?.objective, .gaming)
+        XCTAssertEqual(response.assessment?.confidence, .high)
+        XCTAssertEqual(response.evidenceUsed?.count, 2)
+        XCTAssertEqual(response.evidenceUsed?.first?.value, .number(12.5))
+        XCTAssertEqual(response.evidenceUsed?.last?.value, .string("wifi"))
+    }
+
+    func test_v1ResponseDecodesUnavailableFixtureWithoutConclusion() throws {
+        let response = try NetscopeV1Codec.decodeResponse(try fixture("analysis-response-unavailable"))
+
+        XCTAssertEqual(response.status, .unavailable)
+        XCTAssertNil(response.assessment)
+        XCTAssertNil(response.evidenceUsed)
+        XCTAssertEqual(response.limitations, ["A análise não está disponível agora."])
+    }
+
+    func test_v1ResponseDecodesInconclusiveFixtureWithoutAssessment() throws {
+        let response = try NetscopeV1Codec.decodeResponse(try fixture("analysis-response-inconclusive"))
+
+        XCTAssertEqual(response.status, .inconclusive)
+        XCTAssertEqual(response.requestID, "fixture-inconclusive-001")
+        XCTAssertEqual(response.declaredContext?.objective, .streaming)
+        XCTAssertNil(response.assessment)
+        XCTAssertEqual(response.evidenceUsed?.first?.metric, .packetLossPercent)
+        XCTAssertEqual(response.evidenceUsed?.first?.value, .number(0))
+        XCTAssertEqual(response.nextAction?.steps, ["Repita a medição em alguns minutos."])
+    }
+
+    func test_v1ResponseDecodesOutOfScopeFixtureWithoutConclusionOrEvidence() throws {
+        let response = try NetscopeV1Codec.decodeResponse(try fixture("analysis-response-out-of-scope"))
+
+        XCTAssertEqual(response.status, .outOfScope)
+        XCTAssertEqual(response.requestID, "fixture-out-of-scope-001")
+        XCTAssertNil(response.assessment)
+        XCTAssertNil(response.evidenceUsed)
+        XCTAssertEqual(response.limitations, ["A solicitação não pertence ao escopo desta análise."])
+    }
+
+    func test_v1ResponseRejectsExtraPropertyAndInvalidStatusCombinations() throws {
+        let completed = try fixture("analysis-response-completed")
+        let unavailable = try fixture("analysis-response-unavailable")
+
+        XCTAssertThrowsError(try NetscopeV1Codec.decodeResponse(try adding("unexpected", value: true, to: completed)))
+        XCTAssertThrowsError(try NetscopeV1Codec.decodeResponse(try adding("unexpected", value: true, toNested: "assessment", in: completed)))
+        XCTAssertThrowsError(try NetscopeV1Codec.decodeResponse(try adding("assessment", value: [
+            "title": "não permitido", "summary": "não permitido", "confidence": "low"
+        ], to: unavailable)))
+        XCTAssertThrowsError(try NetscopeV1Codec.decodeResponse(try removing("assessment", from: completed)))
+        XCTAssertThrowsError(try NetscopeV1Codec.decodeResponse(Data("""
+        {"schema_version":"1.0.0","request_id":"i","status":"inconclusive","assessment":{"title":"x","summary":"x","confidence":"low"},"limitations":["x"]}
+        """.utf8)))
+        XCTAssertThrowsError(try NetscopeV1Codec.decodeResponse(Data("""
+        {"schema_version":"1.0.0","request_id":"i","status":"inconclusive","evidence_used":[],"limitations":["x"]}
+        """.utf8)))
+    }
+
     private func projectedBand(_ gigahertz: Double?) -> NetscopeMeasurementEvidence.WiFiDetails.Band? {
         NetscopeMeasurementEvidenceProjector.project(NetworkMeasurement(
             connectionKind: .wifi,
@@ -203,5 +346,30 @@ final class NetscopeEvidenceTests: XCTestCase {
 
     private func projectedKind(_ kind: NetworkConnectionKind?) -> NetscopeMeasurementEvidence.ConnectionKind {
         NetscopeMeasurementEvidenceProjector.project(NetworkMeasurement(connectionKind: kind)).connectionKind
+    }
+
+    private func fixture(_ name: String) throws -> Data {
+        let path = try XCTUnwrap(Bundle.module.path(forResource: name, ofType: "json"))
+        return Data(try String(contentsOfFile: path).utf8)
+    }
+
+    private func adding(_ key: String, value: Any, to data: Data) throws -> Data {
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object[key] = value
+        return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    private func removing(_ key: String, from data: Data) throws -> Data {
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: key)
+        return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    private func adding(_ key: String, value: Any, toNested nestedKey: String, in data: Data) throws -> Data {
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var nested = try XCTUnwrap(object[nestedKey] as? [String: Any])
+        nested[key] = value
+        object[nestedKey] = nested
+        return try JSONSerialization.data(withJSONObject: object)
     }
 }
