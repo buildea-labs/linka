@@ -33,10 +33,13 @@ final class NetscopeEvidenceTests: XCTestCase {
         XCTAssertEqual(evidence.jitterMs, 1.5)
         XCTAssertEqual(evidence.packetLossPercent, 0)
         XCTAssertEqual(evidence.connectionKind, .wifi)
-        XCTAssertEqual(evidence.wifiDetails, .init(bandGHz: 5, rssiDbm: -58, linkSpeedMbps: 1200))
+        XCTAssertEqual(evidence.wifiDetails, .init(band: .fiveGHz, linkSpeedMbps: 1200))
 
         let encoded = try! JSONEncoder().encode(evidence)
         let payload = String(decoding: encoded, as: UTF8.self)
+        XCTAssertTrue(payload.contains("\"band\":\"5ghz\""))
+        XCTAssertTrue(payload.contains("\"link_speed_mbps\":1200"))
+        XCTAssertFalse(payload.contains("rssi"))
         XCTAssertFalse(payload.contains("Casa privada"))
         XCTAssertFalse(payload.contains("identificador-local"))
         XCTAssertFalse(payload.contains("192.168.0.1"))
@@ -66,7 +69,7 @@ final class NetscopeEvidenceTests: XCTestCase {
             packetLossPercent: 100.1,
             connectionKind: .wifi,
             wifiBandGHz: -.infinity,
-            wifiContext: WiFiNetworkContext(rssiDbm: .nan, linkSpeedMbps: -1)
+            wifiContext: WiFiNetworkContext(rssiDbm: .nan, linkSpeedMbps: 0)
         ))
 
         XCTAssertNil(evidence.downloadMbps)
@@ -134,13 +137,42 @@ final class NetscopeEvidenceTests: XCTestCase {
         XCTAssertEqual(input.declaredContext.objective, .gaming)
     }
 
-    func test_advancedWifiDiagnosticsAreNotInTheAllowlistedJSON() throws {
+    func test_onlyWirePermittedBandsAreProjectedAndUnprovenBandIsOmitted() {
+        XCTAssertEqual(projectedBand(2.4), .twoPointFourGHz)
+        XCTAssertEqual(projectedBand(5), .fiveGHz)
+        XCTAssertEqual(projectedBand(6), .sixGHz)
+        XCTAssertNil(projectedBand(5.8))
+        XCTAssertNil(projectedBand(.nan))
+    }
+
+    func test_zeroOrNegativeLinkSpeedIsOmittedRatherThanSentAsObserved() {
+        for linkSpeed: Double in [0, -1] {
+            let evidence = NetscopeMeasurementEvidenceProjector.project(NetworkMeasurement(
+                connectionKind: .wifi,
+                wifiContext: WiFiNetworkContext(linkSpeedMbps: linkSpeed)
+            ))
+
+            XCTAssertNil(evidence.wifiDetails)
+        }
+    }
+
+    func test_wifiJSONExcludesRssiIdentifiersGatewayAndAdvancedDiagnostics() throws {
         let evidence = NetscopeMeasurementEvidenceProjector.project(NetworkMeasurement(
             connectionKind: .wifi,
+            wifiBandGHz: 5,
+            wifiContext: WiFiNetworkContext(
+                ssid: "Casa privada",
+                accessPointIdentifier: "local-ap-id",
+                rssiDbm: -58,
+                linkSpeedMbps: 1200,
+                gatewayIP: "192.168.0.1",
+                gatewayVendor: "Fabricante",
+                gatewayAdminURL: "http://192.168.0.1"
+            ),
             advancedWiFiDiagnostics: AdvancedWiFiDiagnostics(
                 capturedAt: Date(timeIntervalSince1970: 1),
                 wifiStandard: "802.11ax",
-                rxRateMbps: 1200,
+                rxRateMbps: 1300,
                 txRateMbps: 900,
                 noiseDbm: -95,
                 channelNumber: 36,
@@ -149,12 +181,24 @@ final class NetscopeEvidenceTests: XCTestCase {
         ))
 
         let payload = String(decoding: try JSONEncoder().encode(evidence), as: UTF8.self)
-        XCTAssertNil(evidence.wifiDetails)
+        XCTAssertEqual(evidence.wifiDetails, .init(band: .fiveGHz, linkSpeedMbps: 1200))
+        XCTAssertFalse(payload.contains("rssi"))
+        XCTAssertFalse(payload.contains("Casa privada"))
+        XCTAssertFalse(payload.contains("local-ap-id"))
+        XCTAssertFalse(payload.contains("192.168.0.1"))
+        XCTAssertFalse(payload.contains("Fabricante"))
         XCTAssertFalse(payload.contains("802.11ax"))
-        XCTAssertFalse(payload.contains("1200"))
+        XCTAssertFalse(payload.contains("1300"))
         XCTAssertFalse(payload.contains("900"))
         XCTAssertFalse(payload.contains("channelNumber"))
         XCTAssertFalse(payload.contains("snrDb"))
+    }
+
+    private func projectedBand(_ gigahertz: Double?) -> NetscopeMeasurementEvidence.WiFiDetails.Band? {
+        NetscopeMeasurementEvidenceProjector.project(NetworkMeasurement(
+            connectionKind: .wifi,
+            wifiBandGHz: gigahertz
+        )).wifiDetails?.band
     }
 
     private func projectedKind(_ kind: NetworkConnectionKind?) -> NetscopeMeasurementEvidence.ConnectionKind {

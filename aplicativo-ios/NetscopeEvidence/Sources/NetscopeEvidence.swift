@@ -18,18 +18,30 @@ public struct NetscopeMeasurementEvidence: Codable, Equatable, Sendable {
     /// Detalhes factuais de Wi-Fi que não identificam a rede. Todos permanecem
     /// opcionais porque as APIs públicas variam entre plataformas.
     public struct WiFiDetails: Codable, Equatable, Sendable {
-        public let bandGHz: Double?
-        public let rssiDbm: Double?
+        /// Valores fechados do contrato wire. A banda só é enviada quando foi
+        /// observada como um destes valores; nunca é inferida de canal, SSID,
+        /// BSSID ou qualquer outra métrica local.
+        public enum Band: String, Codable, Equatable, Sendable {
+            case twoPointFourGHz = "2.4ghz"
+            case fiveGHz = "5ghz"
+            case sixGHz = "6ghz"
+        }
+
+        public let band: Band?
         public let linkSpeedMbps: Double?
 
-        public init(bandGHz: Double?, rssiDbm: Double?, linkSpeedMbps: Double?) {
-            self.bandGHz = bandGHz
-            self.rssiDbm = rssiDbm
+        public init(band: Band?, linkSpeedMbps: Double?) {
+            self.band = band
             self.linkSpeedMbps = linkSpeedMbps
         }
 
         fileprivate var hasObservedValue: Bool {
-            bandGHz != nil || rssiDbm != nil || linkSpeedMbps != nil
+            band != nil || linkSpeedMbps != nil
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case band
+            case linkSpeedMbps = "link_speed_mbps"
         }
     }
 
@@ -40,6 +52,16 @@ public struct NetscopeMeasurementEvidence: Codable, Equatable, Sendable {
     public let packetLossPercent: Double?
     public let connectionKind: ConnectionKind
     public let wifiDetails: WiFiDetails?
+
+    private enum CodingKeys: String, CodingKey {
+        case downloadMbps = "download_mbps"
+        case uploadMbps = "upload_mbps"
+        case latencyMs = "latency_ms"
+        case jitterMs = "jitter_ms"
+        case packetLossPercent = "packet_loss_percent"
+        case connectionKind = "connection_kind"
+        case wifiDetails = "wifi_details"
+    }
 
     public init(
         downloadMbps: Double?,
@@ -66,10 +88,11 @@ public struct NetscopeMeasurementEvidence: Codable, Equatable, Sendable {
 /// da evidência observada para não ser interpretado como propriedade da rede.
 public struct NetscopeDeclaredContext: Codable, Equatable, Sendable {
     public enum Objective: String, Codable, Equatable, Sendable {
-        case videoCall
+        case videoCall = "video_call"
         case gaming
         case streaming
-        case general
+        case browsing
+        case other
     }
 
     public let objective: Objective?
@@ -128,20 +151,14 @@ public enum NetscopeMeasurementEvidenceProjector {
     }
 
     private static func projectedWiFiDetails(_ measurement: NetworkMeasurement) -> NetscopeMeasurementEvidence.WiFiDetails? {
-        // `wifiBandGHz`, RSSI e taxa de enlace são fatos expostos pela
-        // plataforma. Não usa SSID, BSSID/AP, gateway ou diagnósticos
-        // importados para inferir detalhes ausentes.
+        // Só banda canônica e taxa de enlace positiva entram na allowlist.
+        // Não usa SSID, BSSID/AP, RSSI, gateway ou diagnósticos importados
+        // para inferir detalhes ausentes.
         let details = NetscopeMeasurementEvidence.WiFiDetails(
-            bandGHz: positiveFinite(measurement.wifiBandGHz),
-            rssiDbm: finite(measurement.wifiContext?.rssiDbm),
-            linkSpeedMbps: nonNegativeFinite(measurement.wifiContext?.linkSpeedMbps)
+            band: NetscopeMeasurementEvidence.WiFiDetails.Band(observedGHz: measurement.wifiBandGHz),
+            linkSpeedMbps: positiveFinite(measurement.wifiContext?.linkSpeedMbps)
         )
         return details.hasObservedValue ? details : nil
-    }
-
-    private static func finite(_ value: Double?) -> Double? {
-        guard let value, value.isFinite else { return nil }
-        return value
     }
 
     private static func nonNegativeFinite(_ value: Double?) -> Double? {
@@ -157,5 +174,18 @@ public enum NetscopeMeasurementEvidenceProjector {
     private static func percentage(_ value: Double?) -> Double? {
         guard let value, value.isFinite, (0...100).contains(value) else { return nil }
         return value
+    }
+}
+
+private extension NetscopeMeasurementEvidence.WiFiDetails.Band {
+    init?(observedGHz: Double?) {
+        guard let observedGHz, observedGHz.isFinite else { return nil }
+
+        switch observedGHz {
+        case 2.4: self = .twoPointFourGHz
+        case 5: self = .fiveGHz
+        case 6: self = .sixGHz
+        default: return nil
+        }
     }
 }
