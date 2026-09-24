@@ -3,9 +3,10 @@
 **Status:** mapeamento factual para aprovação. Não cria backend, IA, chamada
 remota, segredo, permissão, entitlement ou alteração no motor.
 
-**Fonte de produto e arquitetura:** `PLANO_NETSCOPE.md`. Este documento mapeia
-o que o Linka já observa; ele não transforma uma capacidade possível em dado
-existente.
+**Base verificável:** `AGENTS.md`, o modelo
+`NetworkCore/Sources/NetworkMeasurement.swift` e os adaptadores e consumidores
+citados em cada seção. Este documento mapeia o que o Linka já observa; ele não
+transforma uma capacidade possível em dado existente.
 
 ## 1. Inventário factual já disponível
 
@@ -25,7 +26,7 @@ zero e não autoriza uma conclusão positiva.
 | Estabilidade/metodologia | `packetProbeEvidence`, `loadResponsiveness` | contagens, timeouts e integridade da metodologia | Integridade só como guarda local; não enviar os envelopes brutos na V1 |
 | Referência de jogo | `regionalGameReference` | referência regional, não ping de jogo | Não entra na allowlist inicial |
 | Wi-Fi local | SSID, hash local de AP, segurança, gateway, IP, fornecedor e URL de admin | contexto local/identificador | Não enviar |
-| Wi-Fi avançado | `AdvancedWiFiDiagnostics` importado por Atalho | importação voluntária; inclui campos derivados | Não enviar |
+| Wi-Fi avançado | `AdvancedWiFiDiagnostics` capturado nativamente no Mac ou importado por Atalho | diagnóstico avançado fora da allowlist inicial | Não enviar |
 | Móvel/local | operadora, tecnologia, localização, IDs, servidor, rede e histórico | identificadores ou contexto além da necessidade | Não enviar |
 
 Evidência de implementação: o modelo e a semântica de ausência estão em
@@ -71,8 +72,10 @@ O Linka atual tem `NEHotspotNetwork.fetchCurrent()` e textos de localização
 para a identificação Wi-Fi já existente. Netscope não o chama, não aciona
 prompt, não depende de localização precisa e não amplia capability. No Mac,
 CoreWLAN é a única fonte nativa elegível nesta etapa. `AdvancedWiFiDiagnostics`
-fica excluído: vem de importação por Atalho e contém banda derivada de canal,
-o que viola a regra de banda explicitamente observada pela plataforma.
+fica excluído, seja capturado nativamente no Mac ou importado por Atalho: seus
+campos de diagnóstico avançado não fazem parte da allowlist inicial. Netscope
+usa somente os valores CoreWLAN explicitamente mapeados nesta tabela e não
+infere banda por SSID, BSSID ou canal.
 
 ## 4. Fato observado versus contexto declarado
 
@@ -191,15 +194,12 @@ Wi-Fi→móvel/Ethernet; e a leitura nativa Mac com cada valor disponível ou
 ausente. A confirmação em aparelho de entitlement/provisionamento e das
 trilhas iPhone, iPad e Mac permanece gate de hardware posterior.
 
-## Pareceres reais da squad
+## Decisões e pendências para L-02
 
-- **Íris (somente leitura):** confirmou a jornada pós-resultado e exigiu
-  separar intenção declarada de medição; alertou para não herdar a copy
-  otimista do Assist/NDS.
-- **Camillo (somente leitura):** propôs snapshot independente de NDS, enum
-  remoto com `unknown` e projection allowlist; identificou a lacuna de
-  `path.status` no sampler atual.
-- **Tito (somente leitura):** veredito **AJUSTA**. As quatro travas desta
-  entrega são origem por plataforma, `unknown` para rota indeterminada,
-  exclusão de diagnósticos importados/derivados e alinhamento futuro de
-  Privacy Manifest/App Privacy antes da rede.
+- manter intenção declarada, evidência observada e limites do diagnóstico em
+  seções distintas, sem reutilizar copy otimista do Assist/NDS;
+- projetar um snapshot independente de NDS, com enum remoto `unknown` e
+  projection estritamente allowlisted;
+- preservar a exclusão de diagnósticos avançados, nativos ou importados, e o
+  estado `unknown` quando a rota não puder ser determinada;
+- alinhar Privacy Manifest e App Privacy antes de qualquer tráfego de rede.
